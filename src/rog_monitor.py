@@ -1,252 +1,246 @@
 #!/usr/bin/env python3
 
 import subprocess
-import re
 import time
+import statistics
+from collections import deque
 
-from rich.live import Live
-from rich.table import Table
-from rich.panel import Panel
-from rich.layout import Layout
-from rich.console import Group
+RESET = "\033[0m"
 
+RED = "\033[91m"
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+BLUE = "\033[94m"
+CYAN = "\033[96m"
+WHITE = "\033[97m"
 
-MAX_FAN_RPM = 7000
+cpu_history = deque(maxlen=60)
+gpu_history = deque(maxlen=60)
 
 
 def run(cmd):
+
     try:
+
         return subprocess.check_output(
             cmd,
             shell=True,
             text=True,
             stderr=subprocess.DEVNULL
-        )
+        ).strip()
+
     except:
+
         return ""
 
 
-def get_cpu_data():
+def bar(percent, width=20):
+
+    filled = int(width * percent / 100)
+
+    return "█" * filled + "░" * (width - filled)
+
+
+def temp_color(temp):
+
+    if temp < 70:
+        return GREEN
+
+    if temp < 85:
+        return YELLOW
+
+    if temp < 92:
+        return "\033[38;5;208m"
+
+    return RED
+
+
+def sparkline(values):
+
+    chars = "▁▂▃▄▅▆▇█"
+
+    if not values:
+        return ""
+
+    mn = min(values)
+    mx = max(values)
+
+    if mx == mn:
+        return chars[0] * len(values)
+
+    out = ""
+
+    for v in values:
+
+        idx = int((v - mn) / (mx - mn) * 7)
+
+        out += chars[idx]
+
+    return out
+
+
+while True:
 
     sensors = run("sensors")
 
-    cores = [
-        float(x)
-        for x in re.findall(r"Core .*?\+([0-9.]+)", sensors)
-    ]
+    cores = []
 
-    package = re.search(
-        r"Package id 0:\s+\+([0-9.]+)",
-        sensors
+    for line in sensors.splitlines():
+
+        if line.startswith("Core "):
+
+            try:
+
+                t = float(
+                    line.split()[2]
+                    .replace("+", "")
+                    .replace("°C", "")
+                )
+
+                cores.append(t)
+
+            except:
+                pass
+
+    if not cores:
+
+        continue
+
+    avg = round(statistics.mean(cores), 1)
+    mx = round(max(cores), 1)
+    mn = round(min(cores), 1)
+
+    hot90 = len([x for x in cores if x >= 90])
+
+    package = "N/A"
+
+    for line in sensors.splitlines():
+
+        if "Package id 0" in line:
+
+            package = (
+                line.split()[3]
+                .replace("+", "")
+                .replace("°C", "")
+            )
+
+    cpu_fan = gpu_fan = mid_fan = 0
+
+    for line in sensors.splitlines():
+
+        if "cpu_fan" in line:
+            cpu_fan = int(line.split()[1])
+
+        if "gpu_fan" in line:
+            gpu_fan = int(line.split()[1])
+
+        if "mid_fan" in line:
+            mid_fan = int(line.split()[1])
+
+    gpu_name = "Intel iGPU"
+
+    gpu_temp = "N/A"
+    gpu_util = "N/A"
+    gpu_power = "N/A"
+
+    nvidia = run(
+        "nvidia-smi --query-gpu=name,temperature.gpu,utilization.gpu,power.draw --format=csv,noheader,nounits"
     )
 
-    package_temp = (
-        float(package.group(1))
-        if package else 0
-    )
+    if nvidia:
 
-    if cores:
-        avg = sum(cores) / len(cores)
-        minimum = min(cores)
-        maximum = max(cores)
-        hot90 = len([x for x in cores if x >= 90])
-    else:
-        avg = minimum = maximum = hot90 = 0
+        parts = [x.strip() for x in nvidia.split(",")]
 
-    return {
-        "avg": avg,
-        "min": minimum,
-        "max": maximum,
-        "package": package_temp,
-        "hot90": hot90
-    }
+        gpu_name = parts[0]
+        gpu_temp = parts[1]
+        gpu_util = parts[2]
+        gpu_power = parts[3]
 
-
-def get_fans():
-
-    sensors = run("sensors")
-
-    def fan(name):
-
-        match = re.search(
-            rf"{name}:\s+([0-9]+)",
-            sensors
-        )
-
-        rpm = int(match.group(1)) if match else 0
-
-        percent = rpm / MAX_FAN_RPM * 100
-
-        return rpm, percent
-
-    return {
-        "cpu": fan("cpu_fan"),
-        "gpu": fan("gpu_fan"),
-        "mid": fan("mid_fan")
-    }
-
-
-def get_gpu():
-
-    data = run(
-        "nvidia-smi "
-        "--query-gpu=temperature.gpu,"
-        "utilization.gpu,power.draw "
-        "--format=csv,noheader,nounits"
-    )
-
-    try:
-
-        temp, util, power = [
-            x.strip()
-            for x in data.split(",")
-        ]
-
-        return {
-            "temp": temp,
-            "util": util,
-            "power": power
-        }
-
-    except:
-
-        return {
-            "temp": "?",
-            "util": "?",
-            "power": "?"
-        }
-
-
-def get_profile():
-
-    profile = run(
-        "tuned-adm active"
+    tuned = run(
+        "tuned-adm active | cut -d':' -f2"
     )
 
     governor = run(
-        "cat /sys/devices/system/cpu/"
-        "cpufreq/policy0/scaling_governor"
+        "cat /sys/devices/system/cpu/cpufreq/policy0/scaling_governor"
     )
 
-    profile = profile.split(":")[-1].strip()
+    cpu_history.append(avg)
 
-    return profile, governor.strip()
+    try:
+        gpu_history.append(float(gpu_temp))
+    except:
+        pass
 
+    print("\033[H\033[J", end="")
 
-def build_ui():
+    print(f"{CYAN}")
+    print("╔══════════════════════════════════════════════╗")
+    print("║              ROG MONITOR V2                 ║")
+    print("╚══════════════════════════════════════════════╝")
+    print(RESET)
 
-    cpu = get_cpu_data()
-    gpu = get_gpu()
-    fans = get_fans()
+    print(f"{WHITE}PERFIL{RESET}")
+    print(f"Tuned     : {tuned}")
+    print(f"Governor  : {governor}")
+    print()
 
-    profile, governor = get_profile()
+    print(f"{WHITE}CPU{RESET}")
 
-    cpu_table = Table()
+    print(f"Promedio  : {temp_color(avg)}{avg}°C{RESET}")
+    print(f"Máximo    : {mx}°C")
+    print(f"Mínimo    : {mn}°C")
+    print(f"Package   : {package}°C")
+    print(f">90°C     : {hot90} núcleos")
 
-    cpu_table.add_column("CPU")
-    cpu_table.add_column("Valor")
+    print()
 
-    cpu_table.add_row(
-        "Promedio",
-        f"{cpu['avg']:.1f}°C"
+    print(f"{WHITE}GPU{RESET}")
+
+    print(f"Modelo    : {gpu_name}")
+    print(f"Temp      : {gpu_temp}°C")
+    print(f"Uso       : {gpu_util}%")
+    print(f"Potencia  : {gpu_power} W")
+
+    print()
+
+    print(f"{WHITE}VENTILADORES{RESET}")
+
+    print(
+        f"CPU  {bar(cpu_fan/70)} {cpu_fan} RPM"
     )
 
-    cpu_table.add_row(
-        "Máximo",
-        f"{cpu['max']:.1f}°C"
+    print(
+        f"GPU  {bar(gpu_fan/70)} {gpu_fan} RPM"
     )
 
-    cpu_table.add_row(
-        "Mínimo",
-        f"{cpu['min']:.1f}°C"
+    print(
+        f"MID  {bar(mid_fan/70)} {mid_fan} RPM"
     )
 
-    cpu_table.add_row(
-        "Package",
-        f"{cpu['package']:.1f}°C"
-    )
+    print()
 
-    cpu_table.add_row(
-        ">90°C",
-        str(cpu["hot90"])
-    )
+    print(f"{WHITE}CPU HISTORY{RESET}")
+    print(sparkline(cpu_history))
 
-    gpu_table = Table()
+    print()
 
-    gpu_table.add_column("GPU")
-    gpu_table.add_column("Valor")
+    print(f"{WHITE}GPU HISTORY{RESET}")
+    print(sparkline(gpu_history))
 
-    gpu_table.add_row(
-        "Temp",
-        f"{gpu['temp']}°C"
-    )
+    print()
 
-    gpu_table.add_row(
-        "Uso",
-        f"{gpu['util']}%"
-    )
+    if avg < 70:
+        state = f"{GREEN}FRÍO{RESET}"
 
-    gpu_table.add_row(
-        "Potencia",
-        f"{gpu['power']} W"
-    )
+    elif avg < 85:
+        state = f"{YELLOW}NORMAL{RESET}"
 
-    fan_table = Table()
+    elif avg < 92:
+        state = f"\033[38;5;208mCALIENTE{RESET}"
 
-    fan_table.add_column("Fan")
-    fan_table.add_column("RPM")
-    fan_table.add_column("%")
+    else:
+        state = f"{RED}CRÍTICO{RESET}"
 
-    fan_table.add_row(
-        "CPU",
-        str(fans["cpu"][0]),
-        f"{fans['cpu'][1]:.0f}%"
-    )
+    print(f"Estado térmico: {state}")
 
-    fan_table.add_row(
-        "GPU",
-        str(fans["gpu"][0]),
-        f"{fans['gpu'][1]:.0f}%"
-    )
-
-    fan_table.add_row(
-        "MID",
-        str(fans["mid"][0]),
-        f"{fans['mid'][1]:.0f}%"
-    )
-
-    profile_panel = Panel(
-        f"""
-Perfil: {profile}
-
-Governor: {governor}
-""",
-        title="Energía"
-    )
-
-    return Group(
-        profile_panel,
-        Panel(cpu_table, title="CPU"),
-        Panel(gpu_table, title="GPU"),
-        Panel(fan_table, title="Ventiladores")
-    )
-
-
-def main():
-
-    with Live(
-        build_ui(),
-        refresh_per_second=2
-    ) as live:
-
-        while True:
-
-            live.update(
-                build_ui()
-            )
-
-            time.sleep(1)
-
-
-if __name__ == "__main__":
-    main()
+    time.sleep(1)
