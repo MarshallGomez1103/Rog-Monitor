@@ -1,5 +1,31 @@
 # Changelog
 
+## 7.0.0 — 2026-06-10 · "Centro de Control"
+
+### Added
+- **Fan control center**: click the Fans panel to open it. Per-profile RPM
+  cap (recalculates the hot end of the curves), full 8-point curve editor
+  for the three fans, and a 60-second max-RPM benchmark (runs the fans at
+  100% via pkexec and measures the real maximums). Dangerous curves (fans
+  under 60% at the hottest points) require explicit consent. Changes are
+  written to `Rog-Monitor-Scripts/scripts/rog-profile-sync.sh` (with a
+  `.bak` backup) and applied by restarting the root service via pkexec.
+- Live clocks: GPU core and VRAM frequency in MHz (NVIDIA and AMD), in the
+  app and the TUI.
+- GPU power history chart (app and TUI).
+- Six original theme palettes replacing the previous set: Magma, Nébula,
+  Océano, Glaciar, Reactor, Grafito — each with light and dark variants.
+
+### Fixed
+- The app now shows up in the taskbar as "ROG Monitor" with its icon instead
+  of a generic "Electron" window (app name, desktopName, --class flag and
+  StartupWMClass in the desktop entry).
+
+### Changed
+- Roadmap restructured: v7 = Control Center (done), v8 = universal laptop
+  support, v9 = power-user tools, v10 = open-source release (last, on
+  Marshall's go-ahead).
+
 ## 6.2.0 — 2026-06-10
 
 ### Added

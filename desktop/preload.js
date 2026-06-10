@@ -10,6 +10,9 @@ contextBridge.exposeInMainWorld('rog', {
   appInfo: () => ipcRenderer.invoke('app-info'),
   killProcess: (pid) => ipcRenderer.invoke('kill-process', pid),
   exportEvents: (text) => ipcRenderer.invoke('export-events', text),
+  getFanConfig: (profile) => ipcRenderer.invoke('get-fan-config', profile),
+  setFanConfig: (cfg) => ipcRenderer.invoke('set-fan-config', cfg),
+  fanBenchmark: () => ipcRenderer.invoke('fan-benchmark'),
   zoom: (delta) => {
     if (delta === null) { webFrame.setZoomLevel(0); return; }
     webFrame.setZoomLevel(Math.max(-3, Math.min(4, webFrame.getZoomLevel() + delta)));

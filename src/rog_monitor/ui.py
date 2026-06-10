@@ -153,6 +153,12 @@ def gpu_panel(state, t, th) -> Panel:
             row.append(f" {util:.0f}%")
             _kv(table, t("usage"), row)
         _kv(table, t("power"), _fmt(active.get("power"), " W"))
+        clock, vclock = active.get("clock_mhz"), active.get("vram_clock_mhz")
+        if clock is not None:
+            freq = Text(f"{clock:.0f} MHz")
+            if vclock is not None:
+                freq.append(f"  (VRAM {vclock:.0f} MHz)", style="grey58")
+            _kv(table, t("freq"), freq)
         used, total = active.get("vram_used"), active.get("vram_total")
         if used is not None and total:
             _kv(table, t("vram"), f"{used:.0f} / {total:.0f} MiB")
@@ -238,6 +244,8 @@ def history_panel(state, t, th, console_width: int) -> Panel:
         blocks.append(("gpu_temp_graph", "gpu_temp", "graph_gpu"))
     if series["cpu_power"].values():
         blocks.append(("cpu_power_graph", "cpu_power", "graph_power"))
+    if series["gpu_power"].values():
+        blocks.append(("gpu_power_graph", "gpu_power", "graph_gpu"))
 
     width = max(24, (console_width - 8) // len(blocks))
     table = Table.grid(padding=(0, 2))

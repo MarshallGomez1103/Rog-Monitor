@@ -2,7 +2,7 @@
 
 ## Estado actual del proyecto
 
-**Versión actual:** v6.0 (junio 2026)
+**Versión actual:** v7.0 (junio 2026)
 
 ---
 
@@ -138,49 +138,35 @@ Crear una interfaz gráfica moderna.
 
 ---
 
-# v7 - Open Source
+# v7 - Centro de Control (Completado) ✅
 
-## Objetivo
-
-Publicar el proyecto para la comunidad: fácil de descargar, transparente,
-sin telemetría de ningún tipo.
-
-### Funciones
-
-* [x] Repositorio Git inicializado
-* [x] Estructura base del proyecto
-* [x] README inicial
-* [x] Roadmap inicial
-* [x] README profesional
-* [x] Licencia MIT
-* [x] Instalador automático (`scripts/install.sh`, `scripts/install-desktop.sh`)
-* [ ] GitHub Actions (lint + prueba `--json` en runner Ubuntu)
-* [ ] Releases con tag semver y notas de cambio
-* [ ] Capturas de pantalla en el README
-* [ ] CONTRIBUTING.md + plantillas de issues
-* [ ] Wiki (sensores soportados, troubleshooting por modelo)
-* [ ] Publicación pública + post en r/linuxhardware y foros ROG
-
----
-
-# v8 - Centro de Control + Compatibilidad Universal (propuesto)
-
-> La meta: que la app deje de ser solo un monitor y se vuelva un centro de
-> control clicable, y que funcione en cualquier portátil Linux.
-
-## Centro de control (pedido por Marshall, jun 2026)
+> La app deja de ser solo un monitor: ahora es un centro de control clicable.
 
 * [x] Cerrar procesos con clic + confirmación (v6.2)
 * [x] Exportar log de eventos a .txt (v6.2)
-* [x] Temas claro/oscuro con 6 paletas (v6.2)
-* [ ] Clic en cada panel (CPU/GPU/ventiladores/sistema) abre su configuración
-* [ ] Cap de ventiladores editable por perfil desde la app, con diálogo de
-      consentimiento ("entiendo el riesgo") para valores peligrosos
-      (hoy el cap vive en Rog-Monitor-Scripts/scripts/rog-profile-sync.sh)
-* [ ] Apagar ventiladores solo tras aceptar advertencia explícita
-* [ ] Gráfica de potencia GPU en el historial
-* [ ] Salud de discos (SMART vía helper con permiso de root)
-* [ ] Umbrales de temperatura/alertas editables desde la app
+* [x] Temas claro/oscuro con 6 paletas originales (Magma, Nébula, Océano,
+      Glaciar, Reactor, Grafito) (v6.2 → renovados v7.0)
+* [x] Clic en Ventiladores abre su centro de configuración (v7.0)
+* [x] Cap de RPM editable por perfil desde la app (recalcula los puntos
+      altos de la curva; aplica con pkexec) (v7.0)
+* [x] Editor de curvas de ventilación completo (8 puntos × 3 ventiladores,
+      por perfil) con diálogo de consentimiento para valores peligrosos (v7.0)
+* [x] Benchmark de máximos: 60 s al 100% y mide el RPM real de cada
+      ventilador (usa scripts/test-max-fans.sh con pkexec) (v7.0)
+* [x] Frecuencias en vivo: GPU núcleo y VRAM en MHz, CPU en GHz (v7.0)
+* [x] Gráfica de potencia GPU en el historial (app y TUI) (v7.0)
+* [x] Identidad de aplicación correcta en la barra de tareas
+      (nombre + ícono, StartupWMClass/desktopName) (v7.0)
+* [ ] Salud de discos (SMART vía helper con permiso de root) (→ v8)
+* [ ] Umbrales de temperatura/alertas editables desde la app (→ v8)
+
+---
+
+# v8 - Compatibilidad Universal (propuesto)
+
+> La meta: que funcione en cualquier portátil Linux, priorizando la familia
+> ASUS ROG (Strix, Zephyrus, TUF) y degradando con elegancia en el resto.
+
 * [ ] Autodetección de plataforma (ASUS / Lenovo Legion / HP Omen / genérico)
 * [ ] Soporte AMD completo (k10temp por CCD, RAPL amd_energy, amdgpu probado)
 * [ ] Perfiles vía `platform_profile` genérico cuando no haya asus-wmi
@@ -202,6 +188,29 @@ sin telemetría de ningún tipo.
 * [ ] Alertas con acciones (ej. bajar perfil automáticamente al throttlear)
 * [ ] Perfil automático por aplicación (gaming detecta Steam/juego activo)
 * [ ] Telemetría remota en LAN (ver el portátil desde otro equipo, opt-in)
+
+---
+
+# v10 - Open Source (lo último, cuando Marshall dé el visto bueno)
+
+## Objetivo
+
+Publicar el proyecto para la comunidad: fácil de descargar, transparente,
+sin telemetría de ningún tipo.
+
+### Funciones
+
+* [x] Repositorio Git inicializado
+* [x] Estructura base del proyecto
+* [x] README profesional
+* [x] Licencia MIT
+* [x] Instalador automático (`scripts/install.sh`, `scripts/install-desktop.sh`)
+* [ ] GitHub Actions (lint + prueba `--json` en runner Ubuntu)
+* [ ] Releases con tag semver y notas de cambio
+* [ ] Capturas de pantalla en el README
+* [ ] CONTRIBUTING.md + plantillas de issues
+* [ ] Wiki (sensores soportados, troubleshooting por modelo)
+* [ ] Publicación pública + post en r/linuxhardware y foros ROG
 
 ---
 

@@ -24,6 +24,7 @@ Exec=$REPO/desktop/start.sh
 Icon=$REPO/desktop/assets/icon.png
 Terminal=false
 Categories=System;Monitor;
+StartupWMClass=rog-monitor
 EOF
 
 update-desktop-database "$APPS_DIR" 2>/dev/null || true

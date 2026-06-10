@@ -8,4 +8,5 @@ if [[ ! -d "$DIR/node_modules" ]]; then
     (cd "$DIR" && npm install --no-audit --no-fund)
 fi
 
-exec "$DIR/node_modules/.bin/electron" "$DIR" "$@"
+# --class/--name make the window match rog-monitor.desktop (taskbar icon/name)
+exec "$DIR/node_modules/.bin/electron" "$DIR" --class=rog-monitor --name=rog-monitor "$@"

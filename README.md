@@ -44,6 +44,9 @@ reads sensors directly from sysfs — no root required for the core features.
   charts, profile/GPU buttons and a one-click updater — fed by the same
   Python core over `--json-stream`. Six themes × light/dark mode, working
   Ctrl+wheel zoom, click-to-kill processes, event-log export to .txt.
+- **Fan control center** (ASUS): click the Fans panel to cap RPM per power
+  profile, edit the full fan curves (with a consent dialog for risky values)
+  and benchmark the real maximum RPM of each fan.
 - **Semantic colors**: blue = cold, green = normal, orange = near your
   configured limits, red = critical — consistent across app and terminal.
 - Spanish and English UI (auto-detected from `$LANG`).
@@ -137,9 +140,9 @@ cpu/gpu/mid). Missing sensors degrade gracefully to `N/A` — no error spam.
 
 ## Roadmap
 
-See [docs/roadmap.md](docs/roadmap.md). v1–v6 are done; next up: the public
-open-source release (v7), universal laptop compatibility (v8) and power-user
-tools like fan-curve editing and a gaming overlay (v9).
+See [docs/roadmap.md](docs/roadmap.md). v1–v7 are done; next up: universal
+laptop compatibility (v8), power-user tools like a gaming overlay (v9), and
+finally the public open-source release (v10).
 
 ## License
 

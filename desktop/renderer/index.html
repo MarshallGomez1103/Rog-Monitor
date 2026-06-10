@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="ember" data-mode="dark">
+<html lang="es" data-theme="magma" data-mode="dark">
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
@@ -50,7 +50,7 @@
           <div><label>Mín</label><b id="cpu-min">--</b></div>
           <div><label>Package</label><b id="cpu-pkg">--</b></div>
           <div><label>&gt;90°C</label><b id="cpu-hot">--</b></div>
-          <div><label>GHz</label><b id="cpu-freq">--</b></div>
+          <div><label>GHz</label><b id="cpu-freq" title="Frecuencia promedio de los núcleos (1 GHz = 1000 MHz)">--</b></div>
           <div><label>Watts</label><b id="cpu-watts" title="Consumo actual del paquete CPU — sube y baja con la carga, bajo en reposo es normal">--</b></div>
           <div><label>Throttle</label><b id="cpu-throttle">--</b></div>
           <div><label>EPP</label><b id="cpu-epp" class="small">--</b></div>
@@ -70,13 +70,15 @@
           <div><label>Uso</label><b id="gpu-util">--</b></div>
           <div><label>Watts</label><b id="gpu-watts" title="Consumo actual de la GPU — depende de la carga">--</b></div>
           <div><label>VRAM</label><b id="gpu-vram" class="small">--</b></div>
+          <div><label>MHz</label><b id="gpu-clock" title="Frecuencia actual del núcleo gráfico">--</b></div>
+          <div><label>VRAM MHz</label><b id="gpu-vram-clock" class="small" title="Frecuencia actual de la memoria de video">--</b></div>
           <div><label>Modo</label><b id="gpu-mode" class="small">--</b></div>
         </div>
         <p id="gpu-off-note" class="note hidden">dGPU apagada (modo Integrated)</p>
       </article>
 
-      <article class="block" id="fans-block">
-        <h2><i>03</i> Ventiladores</h2>
+      <article class="block clickable" id="fans-block" title="Clic para configurar caps y curvas de ventilación">
+        <h2><i>03</i> Ventiladores <small>clic para configurar</small></h2>
         <div class="fans" id="fans"></div>
       </article>
     </section>
@@ -88,6 +90,7 @@
           <div class="chart"><label>CPU °C</label><canvas id="chart-cpu"></canvas></div>
           <div class="chart"><label>GPU °C</label><canvas id="chart-gpu"></canvas></div>
           <div class="chart"><label>CPU W</label><canvas id="chart-power"></canvas></div>
+          <div class="chart"><label>GPU W</label><canvas id="chart-gpu-power"></canvas></div>
         </div>
       </article>
 
@@ -134,6 +137,38 @@
   </footer>
 
   <div id="toast" class="hidden"></div>
+
+  <div id="fan-modal" class="hidden">
+    <div class="modal-card wide">
+      <h3>Ventiladores — perfil <span id="fan-profile" class="accent2"></span></h3>
+      <p class="sub">
+        Los cambios aplican <b>solo al perfil activo</b> y se guardan en el
+        script del sistema (<code id="fan-script-path"></code>). Aplicarlos
+        reinicia el servicio de curvas y pide tu contraseña.
+      </p>
+
+      <div class="fan-cap-row">
+        <div>
+          <label>Cap de RPM (tope para los 3 ventiladores)</label>
+          <input type="number" id="fan-cap" min="2000" max="8000" step="100" value="6800">
+        </div>
+        <button class="ghost" id="fan-apply-cap" title="Recalcula los puntos altos de las curvas para no pasar del cap">APLICAR CAP</button>
+        <button class="ghost" id="fan-benchmark" title="Pone los 3 ventiladores al 100% durante 60 segundos y mide su RPM máximo real. Restaura todo al terminar.">MEDIR MÁXIMOS (60 s)</button>
+      </div>
+      <p class="sub" id="fan-max-note">Máximos estimados: CPU 7000 · GPU 6900 · MID 7500 RPM (mide los reales con el botón).</p>
+
+      <div id="fan-curves"></div>
+
+      <p class="sub warn-note">
+        ⚠ Ventiladores muy lentos a temperaturas altas pueden dañar el equipo.
+        Si tu curva queda agresivamente baja, se te pedirá confirmarlo.
+      </p>
+      <div class="mode-row">
+        <button class="ghost" id="fan-save">GUARDAR Y APLICAR</button>
+        <button class="ghost" id="fan-close">Cancelar</button>
+      </div>
+    </div>
+  </div>
 
   <div id="theme-modal" class="hidden">
     <div class="modal-card">

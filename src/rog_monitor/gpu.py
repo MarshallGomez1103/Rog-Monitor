@@ -7,7 +7,8 @@ import time
 from . import hwmon
 
 NVIDIA_QUERY = (
-    "name,temperature.gpu,utilization.gpu,power.draw,memory.used,memory.total"
+    "name,temperature.gpu,utilization.gpu,power.draw,memory.used,memory.total,"
+    "clocks.gr,clocks.mem"
 )
 
 
@@ -99,6 +100,8 @@ class GpuReader:
             "power": _num(parts[3]),
             "vram_used": _num(parts[4]),
             "vram_total": _num(parts[5]),
+            "clock_mhz": _num(parts[6]) if len(parts) > 6 else None,
+            "vram_clock_mhz": _num(parts[7]) if len(parts) > 7 else None,
         }
 
     def _read_amd(self) -> dict | None:
@@ -107,6 +110,8 @@ class GpuReader:
         temps = hwmon.temps(self.amd)
         power = hwmon.read_int(self.amd / "power1_average")
         busy = hwmon.read_int(self.amd.parent.parent / "gpu_busy_percent")
+        sclk = hwmon.read_int(self.amd / "freq1_input")
+        mclk = hwmon.read_int(self.amd / "freq2_input")
         return {
             "vendor": "amd",
             "name": "AMD GPU",
@@ -115,6 +120,8 @@ class GpuReader:
             "power": round(power / 1_000_000, 1) if power else None,
             "vram_used": None,
             "vram_total": None,
+            "clock_mhz": round(sclk / 1_000_000) if sclk else None,
+            "vram_clock_mhz": round(mclk / 1_000_000) if mclk else None,
         }
 
     def read(self) -> dict:

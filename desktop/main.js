@@ -13,6 +13,13 @@ const PYTHON = fs.existsSync(VENV_PY) ? VENV_PY : 'python3';
 let win = null;
 let backend = null;
 
+// Taskbar identity: app name + desktop-file match so KDE/GNOME show
+// "ROG Monitor" with its icon instead of a generic "Electron" window.
+app.setName('ROG Monitor');
+if (process.platform === 'linux') {
+  app.setDesktopName('rog-monitor.desktop');
+}
+
 function startBackend() {
   if (backend) {
     backend.removeAllListeners();
@@ -82,6 +89,87 @@ ipcMain.handle('do-update', async () => {
     ['install', '--quiet', '--upgrade', '-r', 'requirements.txt'], 120000);
   startBackend();
   return { ok: true, out: pull.out };
+});
+
+/* ---------- fan control center ----------
+   The fan curves live in the (user-owned) system-scripts repo; the root
+   service rog-profile-sync.service applies them. Editing the file needs no
+   privileges; restarting the service prompts for the password via pkexec. */
+
+const os = require('os');
+const SCRIPTS_DIR = process.env.ROG_SCRIPTS_DIR
+  || path.join(os.homedir(), 'Rog-Monitor-Scripts');
+const SYNC_SCRIPT = path.join(SCRIPTS_DIR, 'scripts', 'rog-profile-sync.sh');
+const FAN_TEST = path.join(SCRIPTS_DIR, 'scripts', 'test-max-fans.sh');
+const FANS = ['cpu', 'gpu', 'mid'];
+
+function profileBlock(source, profile) {
+  // the case block: `performance)` ... `;;`
+  const re = new RegExp(`(${profile}\\)\\n)([\\s\\S]*?)(;;)`);
+  return source.match(re);
+}
+
+ipcMain.handle('get-fan-config', (_e, profile) => {
+  if (!fs.existsSync(SYNC_SCRIPT)) {
+    return { ok: false, err: `No encuentro ${SYNC_SCRIPT} — este control requiere el repo de scripts ASUS` };
+  }
+  const src = fs.readFileSync(SYNC_SCRIPT, 'utf-8');
+  const block = profileBlock(src, profile);
+  if (!block) return { ok: false, err: `Perfil "${profile}" no está en el script` };
+  const curves = {};
+  for (const fan of FANS) {
+    const temps = block[2].match(new RegExp(`${fan}_temps="([\\d ]+)"`));
+    const pwms = block[2].match(new RegExp(`${fan}_pwm="([\\d ]+)"`));
+    if (!temps || !pwms) return { ok: false, err: `No pude leer la curva de ${fan}` };
+    curves[fan] = {
+      temps: temps[1].split(/\s+/).map(Number),
+      pwms: pwms[1].split(/\s+/).map(Number),
+    };
+  }
+  return { ok: true, profile, curves, path: SYNC_SCRIPT };
+});
+
+ipcMain.handle('set-fan-config', async (_e, { profile, curves }) => {
+  if (!fs.existsSync(SYNC_SCRIPT)) return { ok: false, err: 'script no encontrado' };
+  for (const fan of FANS) {
+    const c = curves[fan];
+    if (!c || c.temps.length !== 8 || c.pwms.length !== 8) {
+      return { ok: false, err: `curva de ${fan} inválida (deben ser 8 puntos)` };
+    }
+    const bad = [...c.temps, ...c.pwms].some((v) => !Number.isFinite(v) || v < 0 || v > 255);
+    if (bad) return { ok: false, err: `valores fuera de rango en ${fan} (0-255)` };
+  }
+  let src = fs.readFileSync(SYNC_SCRIPT, 'utf-8');
+  const block = profileBlock(src, profile);
+  if (!block) return { ok: false, err: `perfil "${profile}" no encontrado` };
+  let body = block[2];
+  for (const fan of FANS) {
+    body = body
+      .replace(new RegExp(`${fan}_temps="[\\d ]+"`), `${fan}_temps="${curves[fan].temps.join(' ')}"`)
+      .replace(new RegExp(`${fan}_pwm="[\\d ]+"`), `${fan}_pwm="${curves[fan].pwms.join(' ')}"`);
+  }
+  fs.writeFileSync(SYNC_SCRIPT + '.bak', src);          // safety net
+  fs.writeFileSync(SYNC_SCRIPT, src.replace(block[0], block[1] + body + block[3]));
+  // apply now: restart the root service (GUI password prompt)
+  const res = await run('pkexec', ['systemctl', 'restart', 'rog-profile-sync.service'], 60000);
+  return res.ok ? { ok: true } : { ok: false, err: 'Curvas guardadas, pero no se reinició el servicio: ' + res.err };
+});
+
+ipcMain.handle('fan-benchmark', async () => {
+  if (!fs.existsSync(FAN_TEST)) return { ok: false, err: 'test-max-fans.sh no encontrado' };
+  // 60s at 100% PWM, reports RPM every 10s, restores everything on exit
+  const res = await run('pkexec', ['bash', FAN_TEST], 120000);
+  if (!res.ok) return res;
+  const max = { cpu: 0, gpu: 0, mid: 0 };
+  for (const line of res.out.split('\n')) {
+    const m = line.match(/^\d+,(\d+),(\d+),(\d+)$/);
+    if (m) {
+      max.cpu = Math.max(max.cpu, +m[1]);
+      max.gpu = Math.max(max.gpu, +m[2]);
+      max.mid = Math.max(max.mid, +m[3]);
+    }
+  }
+  return { ok: true, max, raw: res.out };
 });
 
 ipcMain.handle('kill-process', (_e, pid) => {

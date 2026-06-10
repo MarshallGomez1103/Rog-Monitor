@@ -9,19 +9,19 @@ let gpuBusy = false;
 
 const THEMES = [
   // id, name, description, [dark bg, dark accent], [light bg, light accent]
-  ['ember',    'Ember',    'Carmesí cálido y bronce',      ['#16100c', '#d96c47'], ['#faf4ee', '#b9532e']],
-  ['midnight', 'Midnight', 'Azul-violeta profundo',        ['#0e0e1a', '#7c83f7'], ['#f2f2fa', '#5158d8']],
-  ['nous',     'Nous',     'Neutros con acento azul',      ['#121418', '#5a8df0'], ['#f4f6fa', '#2f63cf']],
-  ['mono',     'Mono',     'Escala de grises, minimalista', ['#101113', '#c8cdd4'], ['#f5f6f7', '#3c4248']],
-  ['cyber',    'Cyber',    'Verde neón sobre negro',       ['#050a05', '#2ee65f'], ['#f0f8f0', '#1c8a3f']],
-  ['slate',    'Slate',    'Azul pizarra, enfocado',       ['#11151b', '#6da3d8'], ['#f1f4f8', '#38649b']],
+  ['magma',   'Magma',   'Rojo volcánico — firma ROG',     ['#140d0b', '#f25c3d'], ['#fbf2ec', '#c44a26']],
+  ['nebula',  'Nébula',  'Violeta espacial con magenta',   ['#120c1c', '#b07af5'], ['#f6f2fb', '#7b3fd4']],
+  ['oceano',  'Océano',  'Teal profundo, calmado',         ['#0a1416', '#2fbfb0'], ['#eef7f6', '#0f8a7d']],
+  ['glaciar', 'Glaciar', 'Azul hielo sobre azul noche',    ['#0d1420', '#6fb7ff'], ['#f0f5fb', '#2670c2']],
+  ['reactor', 'Reactor', 'Verde fosforescente de máquina', ['#070d07', '#46e873'], ['#f0f8f0', '#1c8a3f']],
+  ['grafito', 'Grafito', 'Escala de grises, sin ruido',    ['#101113', '#c8cdd4'], ['#f5f6f7', '#3c4248']],
 ];
 
 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
 
 function appearance() {
   return {
-    theme: localStorage.getItem('theme') || 'ember',
+    theme: localStorage.getItem('theme') || 'magma',
     mode: localStorage.getItem('mode') || 'dark',
   };
 }
@@ -228,12 +228,15 @@ function update(stats) {
     gt.className = tempClass(active.temp, limits.gpu);
     $('gpu-util').textContent = fmt(active.util, 0) + '%';
     $('gpu-watts').textContent = fmt(active.power, 1);
+    $('gpu-clock').textContent = fmt(active.clock_mhz, 0);
+    $('gpu-vram-clock').textContent = fmt(active.vram_clock_mhz, 0);
     $('gpu-vram').textContent = active.vram_total
       ? `${fmt(active.vram_used, 0)}/${fmt(active.vram_total, 0)}M` : '--';
   } else {
     $('gpu-off-note').classList.remove('hidden');
     $('gpu-temp').textContent = '--';
     $('gpu-util').textContent = $('gpu-watts').textContent = $('gpu-vram').textContent = '--';
+    $('gpu-clock').textContent = $('gpu-vram-clock').textContent = '--';
   }
 
   /* pending banner */
@@ -261,6 +264,7 @@ function update(stats) {
   drawChart($('chart-cpu'), series.cpu_temp, cssVar('--cold'));
   drawChart($('chart-gpu'), series.gpu_temp, cssVar('--okstate'));
   drawChart($('chart-power'), series.cpu_power, cssVar('--accent'));
+  drawChart($('chart-gpu-power'), series.gpu_power, cssVar('--hot'));
 
   $('rapl-note').classList.toggle('hidden', !!stats.rapl_available);
 
@@ -440,6 +444,105 @@ $('procs-body').addEventListener('click', async (e) => {
     'Si es una app, perderás lo que no hayas guardado en ella.')) return;
   const res = await window.rog.killProcess(pid);
   toast(res.ok ? `Señal de cierre enviada a ${name}` : `No se pudo: ${res.err}`);
+});
+
+/* ---------- fan control center ---------- */
+
+const FAN_NAMES = { cpu: 'CPU', gpu: 'GPU', mid: 'MID (central)' };
+const FAN_MAX_DEFAULT = { cpu: 7000, gpu: 6900, mid: 7500 };
+let fanMax = JSON.parse(localStorage.getItem('fanMax') || 'null') || { ...FAN_MAX_DEFAULT };
+let fanCfg = null;
+
+function renderCurves() {
+  $('fan-curves').innerHTML = Object.entries(fanCfg.curves).map(([fan, c]) => `
+    <div class="curve-fan" data-fan="${fan}">
+      <h4>${FAN_NAMES[fan]} — máx estimado ${fanMax[fan]} RPM</h4>
+      <div class="curve-table">
+        <span>°C</span>
+        ${c.temps.map((v, i) => `<input type="number" min="0" max="110" data-kind="temps" data-i="${i}" value="${v}">`).join('')}
+        <span title="0 = apagado, 255 = 100%">PWM</span>
+        ${c.pwms.map((v, i) => `<input type="number" min="0" max="255" data-kind="pwms" data-i="${i}" value="${v}">`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function readCurvesFromForm() {
+  const curves = {};
+  document.querySelectorAll('.curve-fan').forEach((box) => {
+    const fan = box.dataset.fan;
+    curves[fan] = { temps: Array(8).fill(0), pwms: Array(8).fill(0) };
+    box.querySelectorAll('input').forEach((inp) => {
+      curves[fan][inp.dataset.kind][+inp.dataset.i] = Math.round(+inp.value);
+    });
+  });
+  return curves;
+}
+
+$('fans-block').addEventListener('click', async () => {
+  const profile = lastStats?.asus_profile;
+  if (!profile) { toast('Aún no conozco el perfil ASUS activo'); return; }
+  const res = await window.rog.getFanConfig(profile);
+  if (!res.ok) { toast(res.err); return; }
+  fanCfg = res;
+  $('fan-profile').textContent = profile;
+  $('fan-script-path').textContent = res.path;
+  $('fan-max-note').textContent =
+    `Máximos estimados: CPU ${fanMax.cpu} · GPU ${fanMax.gpu} · MID ${fanMax.mid} RPM (mide los reales con el botón).`;
+  renderCurves();
+  $('fan-modal').classList.remove('hidden');
+});
+
+$('fan-close').addEventListener('click', () => $('fan-modal').classList.add('hidden'));
+$('fan-modal').addEventListener('click', (e) => {
+  if (e.target === $('fan-modal')) $('fan-modal').classList.add('hidden');
+});
+
+$('fan-apply-cap').addEventListener('click', () => {
+  const cap = Math.round(+$('fan-cap').value);
+  if (!cap || cap < 2000) { toast('Cap inválido (mínimo 2000 RPM)'); return; }
+  const curves = readCurvesFromForm();
+  for (const fan of Object.keys(curves)) {
+    const maxPwm = Math.min(255, Math.round((cap / fanMax[fan]) * 255));
+    curves[fan].pwms = curves[fan].pwms.map((v) => Math.min(v, maxPwm));
+  }
+  fanCfg.curves = curves;
+  renderCurves();
+  toast(`Cap de ${cap} RPM aplicado a las curvas del perfil ${fanCfg.profile}.\nRevisa y oprime GUARDAR Y APLICAR.`);
+});
+
+$('fan-benchmark').addEventListener('click', async () => {
+  if (!window.confirm(
+    'Medir máximos reales:\n\n' +
+    'Los 3 ventiladores irán al 100% durante 60 segundos (va a sonar fuerte).\n' +
+    'Al terminar todo se restaura solo. Pedirá tu contraseña.\n\n¿Continuar?')) return;
+  toast('Midiendo máximos… 60 segundos al 100%');
+  const res = await window.rog.fanBenchmark();
+  if (!res.ok) { toast(`No se pudo: ${res.err}`); return; }
+  fanMax = res.max;
+  localStorage.setItem('fanMax', JSON.stringify(fanMax));
+  $('fan-max-note').textContent =
+    `Máximos medidos: CPU ${fanMax.cpu} · GPU ${fanMax.gpu} · MID ${fanMax.mid} RPM ✓`;
+  renderCurves();
+  toast(`Máximos reales: CPU ${fanMax.cpu} · GPU ${fanMax.gpu} · MID ${fanMax.mid} RPM`);
+});
+
+$('fan-save').addEventListener('click', async () => {
+  const curves = readCurvesFromForm();
+  // consent gate: slow fans at the two hottest points are dangerous
+  const risky = Object.entries(curves).filter(([, c]) =>
+    c.pwms[6] < 150 || c.pwms[7] < 150);
+  if (risky.length && !window.confirm(
+    'ADVERTENCIA: dejaste los ventiladores por debajo del 60% en los puntos ' +
+    'más calientes de la curva (' + risky.map(([f]) => FAN_NAMES[f]).join(', ') + ').\n\n' +
+    'Esto puede sobrecalentar y dañar tu equipo bajo carga.\n\n' +
+    'Escribe OK en el siguiente paso… ¿Entiendes el riesgo y quieres continuar?')) return;
+  const res = await window.rog.setFanConfig({ profile: fanCfg.profile, curves });
+  if (res.ok) {
+    $('fan-modal').classList.add('hidden');
+    toast(`Curvas del perfil ${fanCfg.profile} guardadas y aplicadas ✓`);
+  } else {
+    toast(`Error: ${res.err}`);
+  }
 });
 
 /* ---------- export events ---------- */
