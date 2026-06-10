@@ -12,6 +12,7 @@
       <span class="brand-mark">ROG<span class="slash">//</span>MONITOR</span>
       <span id="thermal-lamp" class="lamp"></span>
       <span id="thermal-label" class="lamp-label">—</span>
+      <span id="power-source" class="power-source" title="Fuente de energía">—</span>
     </div>
 
     <div class="controls">
@@ -22,8 +23,9 @@
       </div>
 
       <div class="segment" id="gpu-seg" title="Modo de GPU (requiere cerrar sesión)">
-        <button data-gpu="Integrated">iGPU</button>
-        <button data-gpu="Hybrid">HYBRID</button>
+        <button data-gpu="Integrated" title="Solo gráficos Intel: máxima batería, la RTX 4060 queda apagada">iGPU</button>
+        <button data-gpu="Hybrid" title="Intel para el escritorio + RTX 4060 para juegos (recomendado)">HYBRID</button>
+        <button data-gpu="AsusMuxDgpu" title="MUX: solo la RTX 4060 para todo. Más FPS pero gasta más batería. Requiere REINICIAR">dGPU</button>
       </div>
 
       <button id="update-btn" class="ghost" title="Buscar actualizaciones del repositorio">
@@ -47,7 +49,7 @@
           <div><label>Package</label><b id="cpu-pkg">--</b></div>
           <div><label>&gt;90°C</label><b id="cpu-hot">--</b></div>
           <div><label>GHz</label><b id="cpu-freq">--</b></div>
-          <div><label>Watts</label><b id="cpu-watts" class="accent">--</b></div>
+          <div><label>Watts</label><b id="cpu-watts" title="Consumo actual del paquete CPU — sube y baja con la carga, bajo en reposo es normal">--</b></div>
           <div><label>Throttle</label><b id="cpu-throttle">--</b></div>
           <div><label>EPP</label><b id="cpu-epp" class="small">--</b></div>
         </div>
@@ -58,7 +60,7 @@
         <div class="bignum"><span id="gpu-temp">--</span><em>°C</em></div>
         <div class="statgrid">
           <div><label>Uso</label><b id="gpu-util">--</b></div>
-          <div><label>Watts</label><b id="gpu-watts" class="accent">--</b></div>
+          <div><label>Watts</label><b id="gpu-watts" title="Consumo actual de la GPU — depende de la carga">--</b></div>
           <div><label>VRAM</label><b id="gpu-vram" class="small">--</b></div>
           <div><label>Modo</label><b id="gpu-mode" class="small">--</b></div>
         </div>
@@ -102,8 +104,15 @@
         </article>
 
         <article class="block" id="procs-block">
-          <h2><i>07</i> Procesos</h2>
-          <table id="procs"></table>
+          <h2><i>07</i> Procesos <small>top 5 por uso de CPU</small></h2>
+          <table id="procs">
+            <thead>
+              <tr><th>PID</th><th>proceso</th>
+                  <th class="r" title="Porcentaje de un núcleo que usó en el último segundo">% CPU</th>
+                  <th class="r" title="Memoria RAM residente">RAM</th></tr>
+            </thead>
+            <tbody id="procs-body"></tbody>
+          </table>
         </article>
       </div>
     </section>

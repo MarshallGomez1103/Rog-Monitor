@@ -54,8 +54,10 @@ function drawChart(canvas, values, color) {
 
   if (!values || values.length < 2) return;
   const data = values.slice(-Math.max(60, Math.floor(w / 4)));
-  let lo = Math.min(...data), hi = Math.max(...data);
-  if (hi - lo < 4) { const m = (hi + lo) / 2; lo = m - 2; hi = m + 2; }
+  // snap the axis to steps of 5 so min/max don't jitter every second
+  let lo = Math.floor(Math.min(...data) / 5) * 5;
+  let hi = Math.ceil(Math.max(...data) / 5) * 5;
+  if (hi - lo < 10) { hi = lo + 10; }
   const pad = 8;
   const x = (i) => (i / (data.length - 1)) * w;
   const y = (v) => h - pad - ((v - lo) / (hi - lo)) * (h - pad * 2);
@@ -79,12 +81,14 @@ function drawChart(canvas, values, color) {
 
   ctx.fillStyle = '#6b7480';
   ctx.font = '10px monospace';
-  ctx.fillText(hi.toFixed(0), 4, 11);
-  ctx.fillText(lo.toFixed(0), 4, h - 3);
+  ctx.textAlign = 'right';
+  ctx.fillText(hi.toFixed(0), 22, 11);
+  ctx.fillText(lo.toFixed(0), 22, h - 3);
   const last = data[data.length - 1];
   ctx.fillStyle = color;
   ctx.font = 'bold 13px monospace';
-  ctx.fillText(last.toFixed(1), w - 44, 14);
+  ctx.fillText(last.toFixed(1), w - 6, 14);
+  ctx.textAlign = 'left';
 }
 
 /* ---------- fans ---------- */
@@ -156,7 +160,10 @@ function update(stats) {
   $('cpu-pkg').textContent = fmt(cpu.package, 0) + '°';
   $('cpu-hot').textContent = cpu.hot90 ?? '--';
   $('cpu-freq').textContent = fmt(cpu.freq_ghz, 2);
-  $('cpu-watts').textContent = stats.rapl_available ? fmt(stats.cpu_watts, 1) : 'root';
+  const cpuWatts = $('cpu-watts');
+  cpuWatts.textContent = stats.rapl_available ? fmt(stats.cpu_watts, 1) : 'root';
+  // only flag power that is actually abnormal, not just "is a number"
+  cpuWatts.className = (stats.cpu_watts ?? 0) >= 140 ? 'accent' : '';
   $('cpu-throttle').textContent = cpu.throttle_count ?? '--';
   $('cpu-epp').textContent = cpu.epp || '--';
 
@@ -204,7 +211,7 @@ function update(stats) {
   const series = stats.series || {};
   drawChart($('chart-cpu'), series.cpu_temp, '#4cc9f0');
   drawChart($('chart-gpu'), series.gpu_temp, '#2a9d8f');
-  drawChart($('chart-power'), series.cpu_power, '#e63946');
+  drawChart($('chart-power'), series.cpu_power, '#f4a261');
 
   /* system */
   const sys = stats.sys || {};
@@ -226,6 +233,13 @@ function update(stats) {
     : '--';
   $('asus-profile').textContent = stats.asus_profile || '--';
 
+  /* power source */
+  const src = $('power-source');
+  if (bat) {
+    src.textContent = bat.on_ac ? '⚡ CONECTADO' : '🔋 BATERÍA';
+    src.className = 'power-source ' + (bat.on_ac ? 'ac' : 'bat');
+  }
+
   /* events */
   const events = (stats.events || []).slice(-30).reverse();
   $('events').innerHTML = events.length
@@ -234,7 +248,7 @@ function update(stats) {
     : '<li class="dim">sin eventos</li>';
 
   /* processes */
-  $('procs').innerHTML = (stats.procs || []).map((p) => `
+  $('procs-body').innerHTML = (stats.procs || []).map((p) => `
     <tr><td class="pid">${p.pid}</td><td>${p.name}</td>
         <td class="cpu">${p.cpu.toFixed(1)}%</td><td class="mem">${p.mem_mb} MB</td></tr>`).join('');
 
@@ -259,12 +273,20 @@ document.querySelectorAll('#gpu-seg button').forEach((btn) => {
       toast(`Ya estás en modo ${mode}`);
       return;
     }
+    if (mode === 'AsusMuxDgpu' && !window.confirm(
+      'Modo dGPU (MUX): la RTX 4060 maneja TODO, incluida la pantalla.\n\n' +
+      '✓ Más FPS en juegos (sin pasar por la Intel)\n' +
+      '✗ Mucho más consumo de batería\n' +
+      '✗ Requiere REINICIAR el equipo (no basta cerrar sesión)\n\n' +
+      '¿Continuar?')) return;
     gpuBusy = true;
     toast(`Solicitando modo ${mode}… (puede tardar)`);
     const res = await window.rog.setGpuMode(mode);
     gpuBusy = false;
     toast(res.ok
-      ? `Modo ${mode} solicitado — cierra sesión para aplicar`
+      ? (mode === 'AsusMuxDgpu'
+          ? 'Modo dGPU solicitado — REINICIA el equipo para aplicar'
+          : `Modo ${mode} solicitado — cierra sesión para aplicar`)
       : `No se pudo: ${res.err || res.out}`);
   });
 });
@@ -307,3 +329,10 @@ window.rog.appInfo().then((info) => {
   $('versions').textContent = `app v${info.appVersion} · ${info.repo}`;
 });
 window.addEventListener('resize', () => lastStats && update(lastStats));
+
+// Ctrl+wheel zooms Electron pages by default and "unsquares" the layout.
+window.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); },
+  { passive: false });
+window.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && ['+', '-', '=', '0'].includes(e.key)) e.preventDefault();
+});

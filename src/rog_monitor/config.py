@@ -21,6 +21,9 @@ DEFAULTS = {
         "cpu_power_warn": 140,
         "fan_stopped_cpu_temp": 60,
         "cooldown_seconds": 120,
+        # ms of real throttle time per sample before alerting (micro-blips
+        # of a few ms are normal on modern Intel HX chips)
+        "throttle_min_ms": 100,
     },
     # color thresholds [green_below, yellow_below, orange_below] in °C;
     # at or above the last value everything turns red

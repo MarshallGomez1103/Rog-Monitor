@@ -106,6 +106,11 @@ function createWindow() {
     },
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  // lock zoom: ctrl+wheel / pinch would scale and break the fixed layout
+  win.webContents.on('did-finish-load', () => {
+    win.webContents.setZoomFactor(1);
+    win.webContents.setVisualZoomLevelLimits(1, 1);
+  });
 }
 
 app.whenReady().then(() => {

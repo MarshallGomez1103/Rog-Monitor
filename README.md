@@ -110,7 +110,8 @@ or scripts.
     "gpu_temp_warn": 85,
     "cpu_power_warn": 140,
     "fan_stopped_cpu_temp": 60,
-    "cooldown_seconds": 120
+    "cooldown_seconds": 120,
+    "throttle_min_ms": 100
   },
   "temp_colors": {
     "cpu": [70, 85, 92],

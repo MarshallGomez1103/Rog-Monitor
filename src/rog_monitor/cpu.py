@@ -8,6 +8,7 @@ from . import hwmon
 
 CPUFREQ = Path("/sys/devices/system/cpu/cpufreq")
 THROTTLE_GLOB = "/sys/devices/system/cpu/cpu*/thermal_throttle/package_throttle_count"
+THROTTLE_MS = "package_throttle_total_time_ms"
 
 
 class CpuReader:
@@ -16,7 +17,11 @@ class CpuReader:
         self.dev = hwmon.find(chips, "coretemp", "k10temp", "zenpower")
         self.model = self._model_name()
         self._throttle_files = sorted(glob.glob(THROTTLE_GLOB))[:1]
+        self._throttle_ms_files = [
+            str(Path(p).with_name(THROTTLE_MS)) for p in self._throttle_files
+        ]
         self.last_throttle = self._throttle_count()
+        self.last_throttle_ms = self._throttle_ms()
 
     @staticmethod
     def _model_name() -> str:
@@ -32,6 +37,14 @@ class CpuReader:
     def _throttle_count(self) -> int:
         total = 0
         for path in self._throttle_files:
+            value = hwmon.read_int(Path(path))
+            if value:
+                total += value
+        return total
+
+    def _throttle_ms(self) -> int:
+        total = 0
+        for path in self._throttle_ms_files:
             value = hwmon.read_int(Path(path))
             if value:
                 total += value
@@ -59,8 +72,11 @@ class CpuReader:
 
         policy0 = CPUFREQ / "policy0"
         throttle = self._throttle_count()
-        throttled_now = throttle > self.last_throttle
+        throttle_ms = self._throttle_ms()
+        throttle_delta = throttle - self.last_throttle
+        throttle_ms_delta = throttle_ms - self.last_throttle_ms
         self.last_throttle = throttle
+        self.last_throttle_ms = throttle_ms
 
         return {
             "model": self.model,
@@ -75,5 +91,8 @@ class CpuReader:
             "driver": hwmon.read_str(policy0 / "scaling_driver"),
             "epp": hwmon.read_str(policy0 / "energy_performance_preference"),
             "throttle_count": throttle,
-            "throttled_now": throttled_now,
+            "throttle_ms": throttle_ms,
+            "throttle_delta": throttle_delta,
+            "throttle_ms_delta": throttle_ms_delta,
+            "throttled_now": throttle_delta > 0,
         }

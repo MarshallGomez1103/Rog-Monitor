@@ -1,5 +1,30 @@
 # Changelog
 
+## 6.1.0 — 2026-06-10
+
+### Added
+- Power-source indicator (⚡ plugged in / 🔋 on battery) in the desktop app
+  top bar and in the TUI battery line.
+- dGPU (AsusMuxDgpu / MUX) button in the desktop app with confirmation dialog
+  — the RTX drives everything, more FPS, more battery use, requires a reboot.
+- Process table headers with explanations (% CPU where 100 = 1 core; RAM is
+  resident memory), in both the app and the TUI.
+- `alerts.throttle_min_ms` config (default 100 ms).
+
+### Changed
+- Thermal-throttling notifications are explicit (how many times, for how many
+  ms, at what package temperature) and only fire when real throttle time
+  accumulates — micro-blips of a few ms, normal on 13th-gen HX CPUs, no longer
+  spam notifications.
+- Desktop notifications auto-dismiss after 5 seconds (normal urgency — KDE
+  pins critical ones forever).
+- CPU/GPU watts are no longer painted red by default; red now only means
+  abnormal power. The CPU W chart is amber instead of alarm-red.
+- Chart min/max axis labels snap to steps of 5 so they stop jittering.
+
+### Fixed
+- Ctrl+mouse-wheel no longer zooms/breaks the desktop app layout (zoom locked).
+
 ## 6.0.0 — 2026-06-10
 
 ### Added

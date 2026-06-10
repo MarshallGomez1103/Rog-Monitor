@@ -281,3 +281,26 @@ main {
   max-width: 70%;
   box-shadow: 0 8px 30px rgba(0,0,0,.5);
 }
+
+/* ---------- power source pill ---------- */
+.power-source {
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 3px 9px;
+  border: 1px solid var(--hair);
+  border-radius: 3px;
+  color: var(--dim);
+}
+.power-source.ac { color: var(--ok); border-color: var(--ok); }
+.power-source.bat { color: var(--accent2); border-color: var(--accent2); }
+
+#procs th {
+  text-align: left;
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #3d454f;
+  padding: 0 4px 4px;
+  border-bottom: 1px solid var(--hair);
+}
+#procs th.r { text-align: right; }

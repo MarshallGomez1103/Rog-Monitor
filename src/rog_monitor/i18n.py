@@ -59,6 +59,9 @@ STRINGS = {
         "events_hint": "v ver todos",
         "events_all_title": "TODOS LOS EVENTOS",
         "processes": "PROCESOS",
+        "proc_name": "proceso",
+        "proc_cpu": "% CPU (100 = 1 núcleo)",
+        "proc_ram": "RAM",
         "keys_pairs": [
             ["q", "salir"], ["p", "perfil"], ["g", "GPU"], ["t", "tema"],
             ["e", "exportar"], ["v", "eventos"], ["h", "ayuda"],
@@ -84,7 +87,11 @@ STRINGS = {
         "exported": "Exportado a {path}",
         "alert_cpu": "CPU caliente: {v}°C",
         "alert_gpu": "GPU caliente: {v}°C",
-        "alert_throttle": "Thermal throttling detectado (paquete CPU)",
+        "alert_throttle": ("Thermal throttling: la CPU bajó su frecuencia para "
+                           "protegerse ({n} veces, {ms} ms, package {temp}°C). "
+                           "Si pasa seguido bajo carga, revisa ventilación."),
+        "on_ac": "conectado",
+        "on_battery": "batería",
         "alert_fan": "Ventilador {f} detenido con CPU a {v}°C",
         "alert_power": "Potencia CPU anómala: {v} W",
     },
@@ -144,6 +151,9 @@ STRINGS = {
         "events_hint": "v view all",
         "events_all_title": "ALL EVENTS",
         "processes": "PROCESSES",
+        "proc_name": "process",
+        "proc_cpu": "% CPU (100 = 1 core)",
+        "proc_ram": "RAM",
         "keys_pairs": [
             ["q", "quit"], ["p", "profile"], ["g", "GPU"], ["t", "theme"],
             ["e", "export"], ["v", "events"], ["h", "help"],
@@ -169,7 +179,11 @@ STRINGS = {
         "exported": "Exported to {path}",
         "alert_cpu": "CPU hot: {v}°C",
         "alert_gpu": "GPU hot: {v}°C",
-        "alert_throttle": "Thermal throttling detected (CPU package)",
+        "alert_throttle": ("Thermal throttling: the CPU lowered its frequency to "
+                           "protect itself ({n} times, {ms} ms, package {temp}°C). "
+                           "If it happens often under load, check cooling."),
+        "on_ac": "plugged in",
+        "on_battery": "on battery",
         "alert_fan": "Fan {f} stopped while CPU at {v}°C",
         "alert_power": "Abnormal CPU power: {v} W",
     },

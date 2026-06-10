@@ -192,6 +192,10 @@ def profile_panel(state, t, th) -> Panel:
     battery = state["battery"]
     if battery and battery.get("capacity") is not None:
         text = Text()
+        if battery.get("on_ac"):
+            text.append(f"⚡ {t('on_ac')}  ", style="bold green")
+        else:
+            text.append(f"🔋 {t('on_battery')}  ", style="bold yellow")
         text.append(f"{battery['capacity']}% ", style="bold")
         text.append(f"({battery.get('status') or '?'}", style="grey58")
         if battery.get("charge_limit"):
@@ -291,6 +295,10 @@ def processes_panel(state, t, th) -> Panel:
     table.add_column(min_width=26)
     table.add_column(min_width=9, justify="right")
     table.add_column(justify="right")
+    table.add_row(
+        Text("PID", style="grey42"), Text(t("proc_name"), style="grey42"),
+        Text(t("proc_cpu"), style="grey42"), Text(t("proc_ram"), style="grey42"),
+    )
     for proc in state["procs"]:
         table.add_row(
             Text(str(proc["pid"]), style="grey58"),
