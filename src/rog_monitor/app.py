@@ -12,6 +12,7 @@ from rich.live import Live
 
 from . import actions, hwmon, ui
 from .alerts import AlertEngine
+from .aura import AuraManager
 from .config import DATA_DIR, Config
 from .cpu import CpuReader
 from .fans import FanReader
@@ -47,6 +48,7 @@ class App:
         self.sys = SysReader(chips)
         self.procs = ProcReader()
         self.alerts = AlertEngine(self.config, self.t)
+        self.aura = AuraManager()
 
         secs = int(self.config["history_seconds"])
         self.series = {
@@ -106,6 +108,7 @@ class App:
             "sys": self.sys.read(),
             "procs": self.procs.read(),
             "procs_mem": self.procs.top_memory(),
+            "aura": self.aura.snapshot(),
             "series": self.series,
             "events": self.alerts.events,
             "limits": self.config["temp_colors"],

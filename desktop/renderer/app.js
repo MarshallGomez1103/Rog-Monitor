@@ -4,6 +4,16 @@ const $ = (id) => document.getElementById(id);
 
 let lastStats = null;
 let gpuBusy = false;
+let auraState = null;
+let auraBootstrapped = false;
+let auraProfileSelection = '';
+let musicModeActive = false;
+let auraDirty = false;
+let auraFocused = false;
+let benchmarkResult = null;
+let benchBusy = false;
+let benchmarkHistory = JSON.parse(localStorage.getItem('benchmarkHistory') || '[]');
+const AURA_PRIMARY_EFFECTS = ['static', 'breathe', 'rainbow-cycle', 'rainbow-wave', 'stars'];
 
 /* ---------- themes ---------- */
 
@@ -185,6 +195,310 @@ function renderFans(fans) {
   });
 }
 
+/* ---------- aura / rgb ---------- */
+
+function normalizeHex(value, fallback = 'ff5500') {
+  const clean = String(value || fallback).replace('#', '').trim().toLowerCase();
+  return /^[0-9a-f]{6}$/.test(clean) ? clean : fallback;
+}
+
+function auraDraftStorageKey() {
+  return 'auraDraft';
+}
+
+function saveAuraDraft(state) {
+  try { localStorage.setItem(auraDraftStorageKey(), JSON.stringify(state)); } catch (_) {}
+}
+
+function loadAuraDraft() {
+  try { return JSON.parse(localStorage.getItem(auraDraftStorageKey()) || 'null'); } catch (_) { return null; }
+}
+
+function fillSelect(el, items, selectedValue, placeholder = '') {
+  const current = items.some((item) => item.value === selectedValue) ? selectedValue : (items[0]?.value || '');
+  el.innerHTML = '';
+  if (!items.length && placeholder) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = placeholder;
+    el.appendChild(option);
+    el.disabled = true;
+    return;
+  }
+  el.disabled = false;
+  items.forEach((item) => {
+    const option = document.createElement('option');
+    option.value = item.value;
+    option.textContent = item.label;
+    el.appendChild(option);
+  });
+  el.value = current;
+}
+
+function renderEffectGrid(effects, selectedValue) {
+  const host = $('aura-effects');
+  host.innerHTML = effects.length
+    ? effects.map((fx) =>
+        `<button class="effect-chip${fx.value === selectedValue ? ' active' : ''}" data-effect="${fx.value}">${fx.label}</button>`).join('')
+    : '<span class="dim">sin efectos detectados</span>';
+}
+
+function auraEffects() {
+  return auraState?.asus?.effects || [];
+}
+
+function auraBasicEffects() {
+  if (auraState?.asus?.basic_effects?.length) return auraState.asus.basic_effects;
+  const detected = auraEffects().filter((fx) => AURA_PRIMARY_EFFECTS.includes(fx.id));
+  return detected.length ? detected : auraEffects();
+}
+
+function auraExtraEffects() {
+  if (auraState?.asus?.extra_effects) return auraState.asus.extra_effects;
+  return auraEffects().filter((fx) => !AURA_PRIMARY_EFFECTS.includes(fx.id));
+}
+
+function renderAuraEffectControls(selectedValue) {
+  const selected = selectedValue || $('aura-effect').value || 'static';
+  const basic = auraBasicEffects().map((fx) => ({ value: fx.id, label: fx.label }));
+  const extra = auraExtraEffects().map((fx) => ({ value: fx.id, label: fx.label }));
+  renderEffectGrid(basic, selected);
+
+  const wrap = $('aura-extra-wrap');
+  const extraSel = $('aura-extra-effect');
+  wrap.classList.toggle('hidden', !extra.length);
+  if (!extra.length) {
+    extraSel.innerHTML = '<option value="">sin extras</option>';
+    extraSel.value = '';
+    extraSel.disabled = true;
+    return;
+  }
+  extraSel.disabled = false;
+  extraSel.innerHTML = ['<option value="">usar modo basico</option>']
+    .concat(extra.map((fx) => `<option value="${fx.value}">${fx.label}</option>`))
+    .join('');
+  extraSel.value = extra.some((fx) => fx.value === selected) ? selected : '';
+}
+
+function currentAuraFormState() {
+  return {
+    driver: 'asus',
+    effect: $('aura-effect').value || 'static',
+    colour: normalizeHex($('aura-colour').value),
+    colour2: normalizeHex($('aura-colour2').value, '000000'),
+    speed: $('aura-speed').value || 'med',
+    direction: $('aura-direction').value || 'right',
+    brightness: $('aura-brightness').value || 'high',
+  };
+}
+
+function setAuraStatus(message, kind = '') {
+  const el = $('aura-status');
+  if (!message) {
+    el.textContent = '';
+    el.className = 'note hidden';
+    return;
+  }
+  el.textContent = message;
+  el.className = `note ${kind}`.trim();
+}
+
+function markAuraDirty(dirty, reason = '') {
+  auraDirty = dirty;
+  if (musicModeActive) {
+    setAuraStatus('Modo música activo: la iluminación está siendo controlada por el audio.', 'status-live');
+    return;
+  }
+  if (dirty) setAuraStatus(reason || 'Tienes cambios sin aplicar.', 'status-dirty');
+  else if (auraState?.current) setAuraStatus('Iluminación aplicada y lista.', 'status-ok');
+  else setAuraStatus('');
+}
+
+function setAuraForm(state) {
+  if (!state) return;
+  if (state.effect) $('aura-effect').value = state.effect;
+  $('aura-colour').value = '#' + normalizeHex(state.colour);
+  $('aura-colour2').value = '#' + normalizeHex(state.colour2, '000000');
+  if (state.speed) $('aura-speed').value = state.speed;
+  if (state.direction) $('aura-direction').value = state.direction;
+  if (state.brightness) $('aura-brightness').value = state.brightness;
+  renderAuraEffectControls($('aura-effect').value);
+  saveAuraDraft(currentAuraFormState());
+  syncAuraFields();
+}
+
+function selectedAuraMeta() {
+  return auraState?.asus?.effects?.find((fx) => fx.id === $('aura-effect').value) || null;
+}
+
+function syncAuraFields() {
+  const meta = selectedAuraMeta();
+  $('aura-colour2-wrap').classList.toggle('hidden', !(meta?.colours >= 2));
+  $('aura-speed-wrap').classList.toggle('hidden', !meta?.speed);
+  $('aura-direction-wrap').classList.toggle('hidden', !meta?.direction);
+}
+
+function renderAura(aura, resetForm = false) {
+  auraState = aura;
+  const effectSel = $('aura-effect');
+  const profileSel = $('aura-profile-select');
+  const note = $('aura-note');
+  const openrgb = $('openrgb-note');
+
+  if (!aura?.available) {
+    note.textContent = 'No encontré controladores RGB disponibles. Instala asusctl/asusd para Aura.';
+    $('aura-apply').disabled = true;
+    $('aura-music').disabled = true;
+    $('aura-extra-wrap').classList.add('hidden');
+    $('aura-extra-effect').innerHTML = '<option value="">sin extras</option>';
+    fillSelect(effectSel, [], '', 'Sin efectos detectados');
+    return;
+  }
+
+  fillSelect(
+    effectSel,
+    auraEffects().map((fx) => ({ value: fx.id, label: fx.label })),
+    effectSel.value || aura.current?.effect || 'static',
+    'Sin efectos detectados',
+  );
+  renderAuraEffectControls(effectSel.value);
+  fillSelect(
+    $('aura-brightness'),
+    (aura.asus?.brightness_levels || ['off', 'low', 'med', 'high']).map((level) => ({ value: level, label: level })),
+    $('aura-brightness').value || aura.current?.brightness || 'high',
+  );
+
+  const profiles = aura.profiles || [];
+  const selected = profiles.some((p) => p.name === auraProfileSelection)
+    ? auraProfileSelection
+    : (aura.startup_profile || profiles[0]?.name || '');
+  auraProfileSelection = selected;
+  profileSel.innerHTML = ['<option value="">perfiles guardados…</option>']
+    .concat(profiles.map((p) => `<option value="${p.name}">${p.name}</option>`))
+    .join('');
+  profileSel.value = selected;
+  if (document.activeElement !== $('aura-profile-name')) {
+    $('aura-profile-name').value = selected || '';
+  }
+  $('aura-startup').checked = !!(aura.apply_on_startup && selected && selected === aura.startup_profile);
+
+  if ((!auraBootstrapped || resetForm) && !auraFocused && !auraDirty) {
+    const draft = loadAuraDraft();
+    setAuraForm(draft || aura.current || profiles.find((p) => p.name === selected)?.state || {
+      effect: 'static', colour: 'ff5500', colour2: '000000', brightness: 'high', speed: 'med', direction: 'right',
+    });
+    auraBootstrapped = true;
+  }
+
+  note.textContent = aura.asus?.available
+    ? `Aura lista en ${aura.config_path}. Brillo actual: ${aura.asus.current_brightness || 'desconocido'}.`
+    : (aura.asus?.hint || 'asusctl no disponible');
+  const setupBtn = $('aura-setup');
+  if (aura.setup?.needsSetup) {
+    setupBtn.classList.remove('hidden');
+    note.textContent = `${note.textContent} ${aura.setup.statusHint}`;
+  } else {
+    setupBtn.classList.add('hidden');
+  }
+  openrgb.textContent = aura.openrgb?.available
+    ? `OpenRGB detectado${aura.openrgb.sdk_reachable ? ' con SDK local activo' : ', pero su SDK local no responde aún'}.`
+    : aura.openrgb?.hint || '';
+  openrgb.classList.toggle('hidden', !openrgb.textContent);
+
+  $('aura-apply').disabled = !aura.asus?.available;
+  $('aura-music').disabled = !(aura.music?.available && aura.asus?.available);
+  syncAuraFields();
+  if (!musicModeActive && !auraDirty) {
+    setAuraStatus(aura.current ? 'Iluminación aplicada y lista.' : '', aura.current ? 'status-ok' : '');
+  }
+}
+
+async function refreshAuraState(resetForm = false) {
+  const res = await window.rog.getAuraState();
+  if (!res.ok) { toast(`Aura: ${res.err}`); return; }
+  renderAura(res.aura, resetForm);
+}
+
+function selectedAuraProfile() {
+  const name = $('aura-profile-select').value;
+  return auraState?.profiles?.find((p) => p.name === name) || null;
+}
+
+async function applyAuraState(state, successMessage = 'Aura aplicada ✓') {
+  if (auraState?.setup?.needsSetup) {
+    setAuraStatus('Primero activa asusd con el botón ACTIVAR AURA.', 'status-dirty');
+    toast('Aura no está lista todavía: falta activar asusd');
+    return null;
+  }
+  if (musicModeActive) {
+    const off = await window.rog.setMusicMode({ enabled: false, state });
+    if (!off.ok) {
+      toast(`No se pudo apagar música: ${off.err}`);
+      return null;
+    }
+    musicModeActive = false;
+    $('aura-music').textContent = 'MODO MÚSICA';
+  }
+  const res = await window.rog.applyAura(state);
+  if (!res.ok) {
+    setAuraStatus(res.err || 'Aura falló al aplicar.', 'status-dirty');
+    toast(`Aura: ${res.err}`);
+    return null;
+  }
+  saveAuraDraft(res.state || state);
+  markAuraDirty(false);
+  toast(successMessage);
+  await refreshAuraState();
+  return res;
+}
+
+function benchmarkSummaryText(result) {
+  if (!result) return 'sin resultados';
+  if (!result.ok) return result.err || 'benchmark falló';
+  const s = result.summary || {};
+  const fanText = Object.entries(s.fan_rpm_max || {})
+    .map(([k, v]) => `${k}: ${v} RPM`).join(' · ') || 'sin datos de ventiladores';
+  return [
+    `${result.kind.toUpperCase()} · ${result.tool} · ${result.seconds}s`,
+    `CPU máx: ${fmt(s.cpu_temp_max, 1)}°C · paquete ${fmt(s.cpu_package_max, 1)}°C · ${fmt(s.cpu_watts_max, 1)} W`,
+    `GPU máx: ${fmt(s.gpu_temp_max, 1)}°C · ${fmt(s.gpu_watts_max, 1)} W · uso ${fmt(s.gpu_util_max, 0)}%`,
+    `Throttling: ${s.throttle_events ?? 0} eventos · ${s.throttle_ms ?? 0} ms`,
+    `Ventiladores: ${fanText}`,
+  ].join('\n');
+}
+
+function renderBenchmarkHistory() {
+  const host = $('bench-history');
+  if (!benchmarkHistory.length) {
+    host.innerHTML = '<li class="dim">sin historial</li>';
+    $('bench-inline-status').textContent = 'Sin benchmarks en esta sesión.';
+    return;
+  }
+  host.innerHTML = benchmarkHistory.map((item) => `
+    <li>
+      <b>${item.label || item.kind.toUpperCase()} · ${item.when}</b>
+      <span>${item.summary}</span>
+    </li>`).join('');
+  $('bench-inline-status').textContent = benchmarkHistory[0].summary;
+}
+
+function pushBenchmarkHistory(result) {
+  if (!result?.ok) return;
+  const s = result.summary || {};
+  const summary = result.kind === 'cpu'
+    ? `CPU ${fmt(s.cpu_temp_max, 1)}°C · ${fmt(s.cpu_watts_max, 1)} W · throttle ${s.throttle_events ?? 0}`
+    : `GPU ${fmt(s.gpu_temp_max, 1)}°C · ${fmt(s.gpu_watts_max, 1)} W · uso ${fmt(s.gpu_util_max, 0)}%`;
+  const label = result.kind === 'cpu' ? 'CPU' : 'GPU LOCAL';
+  benchmarkHistory = [{
+    kind: result.kind,
+    label,
+    when: new Date().toLocaleString(),
+    summary,
+  }, ...benchmarkHistory].slice(0, 8);
+  localStorage.setItem('benchmarkHistory', JSON.stringify(benchmarkHistory));
+  renderBenchmarkHistory();
+}
+
 /* ---------- main update ---------- */
 
 const LAMP_STATES = [
@@ -264,6 +578,7 @@ function update(stats) {
 
   /* fans */
   renderFans(stats.fans || []);
+  if (stats.aura && !musicModeActive && !auraDirty && !auraFocused) renderAura(stats.aura);
 
   /* charts */
   const series = stats.series || {};
@@ -387,6 +702,12 @@ window.rog.onStats(update);
 window.rog.onBackendDown(() => {
   $('backend-state').textContent = 'backend caído — reiniciando…';
 });
+window.rog.onMusicStopped(() => {
+  musicModeActive = false;
+  $('aura-music').textContent = 'MODO MÚSICA';
+  markAuraDirty(false);
+  refreshAuraState();
+});
 window.rog.appInfo().then((info) => {
   $('versions').textContent = `app v${info.appVersion} · ${info.repo}`;
 });
@@ -436,7 +757,242 @@ $('theme-modal').addEventListener('click', (e) => {
   if (e.target === $('theme-modal')) $('theme-modal').classList.add('hidden');
 });
 
+/* ---------- alert thresholds / colors ---------- */
+
+function setAlertsStatus(message, kind = '') {
+  const el = $('alerts-status');
+  if (!message) { el.textContent = ''; el.className = 'note hidden'; return; }
+  el.textContent = message;
+  el.className = `note ${kind}`.trim();
+}
+
+function fillAlertsForm(s) {
+  const a = s.alerts || {};
+  const c = s.temp_colors || {};
+  $('set-cpu-temp-warn').value = a.cpu_temp_warn ?? '';
+  $('set-gpu-temp-warn').value = a.gpu_temp_warn ?? '';
+  $('set-cpu-power-warn').value = a.cpu_power_warn ?? '';
+  $('set-fan-stopped').value = a.fan_stopped_cpu_temp ?? '';
+  $('set-cooldown').value = a.cooldown_seconds ?? '';
+  $('set-throttle-ms').value = a.throttle_min_ms ?? '';
+  const cpu = c.cpu || [];
+  const gpu = c.gpu || [];
+  $('set-cpu-c0').value = cpu[0] ?? '';
+  $('set-cpu-c1').value = cpu[1] ?? '';
+  $('set-cpu-c2').value = cpu[2] ?? '';
+  $('set-gpu-c0').value = gpu[0] ?? '';
+  $('set-gpu-c1').value = gpu[1] ?? '';
+  $('set-gpu-c2').value = gpu[2] ?? '';
+  $('set-notifications').checked = s.notifications !== false;
+}
+
+const numOrNull = (id) => {
+  const v = $(id).value.trim();
+  return v === '' ? null : Number(v);
+};
+
+async function openAlertsModal() {
+  setAlertsStatus('');
+  const res = await window.rog.getSettings();
+  if (!res.ok) { toast(`No pude leer ajustes: ${res.err}`); return; }
+  fillAlertsForm(res);
+  $('alerts-modal').classList.remove('hidden');
+}
+
+$('alerts-btn').addEventListener('click', openAlertsModal);
+$('alerts-close').addEventListener('click', () => $('alerts-modal').classList.add('hidden'));
+$('alerts-modal').addEventListener('click', (e) => {
+  if (e.target === $('alerts-modal')) $('alerts-modal').classList.add('hidden');
+});
+$('alerts-save').addEventListener('click', async () => {
+  const payload = {
+    alerts: {
+      cpu_temp_warn: numOrNull('set-cpu-temp-warn'),
+      gpu_temp_warn: numOrNull('set-gpu-temp-warn'),
+      cpu_power_warn: numOrNull('set-cpu-power-warn'),
+      fan_stopped_cpu_temp: numOrNull('set-fan-stopped'),
+      cooldown_seconds: numOrNull('set-cooldown'),
+      throttle_min_ms: numOrNull('set-throttle-ms'),
+    },
+    temp_colors: {
+      cpu: [numOrNull('set-cpu-c0'), numOrNull('set-cpu-c1'), numOrNull('set-cpu-c2')],
+      gpu: [numOrNull('set-gpu-c0'), numOrNull('set-gpu-c1'), numOrNull('set-gpu-c2')],
+    },
+    notifications: $('set-notifications').checked,
+  };
+  setAlertsStatus('Guardando y reiniciando el monitor…', 'status-live');
+  const res = await window.rog.saveSettings(payload);
+  if (!res.ok) {
+    setAlertsStatus(res.err || 'No se pudo guardar.', 'status-dirty');
+    toast(`Ajustes: ${res.err}`);
+    return;
+  }
+  fillAlertsForm(res);
+  setAlertsStatus('Guardado y aplicado ✓', 'status-ok');
+  toast('Umbrales actualizados ✓');
+});
+
 applyAppearance();
+refreshAuraState(true);
+renderBenchmarkHistory();
+
+$('aura-effect').addEventListener('change', syncAuraFields);
+$('aura-effects').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-effect]');
+  if (!btn) return;
+  $('aura-effect').value = btn.dataset.effect;
+  $('aura-extra-effect').value = '';
+  renderAuraEffectControls(btn.dataset.effect);
+  syncAuraFields();
+  saveAuraDraft(currentAuraFormState());
+  markAuraDirty(true, 'Efecto cambiado. Falta aplicar.');
+});
+$('aura-block').addEventListener('focusin', () => { auraFocused = true; });
+$('aura-block').addEventListener('focusout', () => {
+  setTimeout(() => {
+    auraFocused = $('aura-block').contains(document.activeElement);
+  }, 0);
+});
+$('aura-effect').addEventListener('change', () => {
+  renderAuraEffectControls($('aura-effect').value);
+  saveAuraDraft(currentAuraFormState());
+  markAuraDirty(true, 'Efecto cambiado. Falta aplicar.');
+});
+$('aura-extra-effect').addEventListener('change', () => {
+  const extra = $('aura-extra-effect').value;
+  if (!extra) {
+    const fallback = auraBasicEffects()[0]?.id || 'static';
+    $('aura-effect').value = fallback;
+  } else {
+    $('aura-effect').value = extra;
+  }
+  renderAuraEffectControls($('aura-effect').value);
+  syncAuraFields();
+  saveAuraDraft(currentAuraFormState());
+  markAuraDirty(true, extra ? 'Efecto avanzado cambiado. Falta aplicar.' : 'Volviste a un modo basico. Falta aplicar.');
+});
+$('aura-colour').addEventListener('input', () => {
+  saveAuraDraft(currentAuraFormState());
+  markAuraDirty(true, 'Color cambiado. Falta aplicar.');
+});
+$('aura-colour2').addEventListener('input', () => {
+  saveAuraDraft(currentAuraFormState());
+  markAuraDirty(true, 'Color secundario cambiado. Falta aplicar.');
+});
+$('aura-speed').addEventListener('change', () => {
+  saveAuraDraft(currentAuraFormState());
+  markAuraDirty(true, 'Velocidad cambiada. Falta aplicar.');
+});
+$('aura-direction').addEventListener('change', () => {
+  saveAuraDraft(currentAuraFormState());
+  markAuraDirty(true, 'Dirección cambiada. Falta aplicar.');
+});
+$('aura-brightness').addEventListener('change', () => {
+  saveAuraDraft(currentAuraFormState());
+  markAuraDirty(true, 'Brillo cambiado. Falta aplicar.');
+});
+$('aura-profile-select').addEventListener('change', () => {
+  auraProfileSelection = $('aura-profile-select').value;
+  $('aura-profile-name').value = auraProfileSelection;
+  $('aura-startup').checked = !!(auraState?.apply_on_startup && auraProfileSelection === auraState?.startup_profile);
+});
+
+$('aura-setup').addEventListener('click', async () => {
+  if (!window.confirm(
+    'Esto configurará y arrancará asusd para Aura sin apagar rog-profile-sync.\n\n' +
+    'Pedirá tu contraseña de administrador. ¿Continuar?')) return;
+  setAuraStatus('Activando asusd para Aura…', 'status-live');
+  const res = await window.rog.enableAuraService();
+  if (!res.ok) {
+    setAuraStatus(`No se pudo activar Aura: ${res.err}`, 'status-dirty');
+    toast(`Aura: ${res.err}`);
+    return;
+  }
+  toast('asusd activado para Aura ✓');
+  await refreshAuraState(true);
+});
+
+$('aura-apply').addEventListener('click', async () => {
+  await applyAuraState(currentAuraFormState(), 'Aura aplicada ✓');
+});
+
+$('aura-save-profile').addEventListener('click', async () => {
+  const name = $('aura-profile-name').value.trim() || auraProfileSelection;
+  if (!name) { toast('Escribe un nombre de perfil'); return; }
+  const res = await window.rog.saveAuraProfile({ name, state: currentAuraFormState() });
+  if (!res.ok) { toast(`No se guardó: ${res.err}`); return; }
+  auraProfileSelection = name;
+  $('aura-profile-name').value = name;
+  toast(`Perfil "${name}" guardado ✓`);
+  await refreshAuraState();
+});
+
+$('aura-load-profile').addEventListener('click', () => {
+  const profile = selectedAuraProfile();
+  if (!profile) { toast('Elige un perfil guardado'); return; }
+  auraProfileSelection = profile.name;
+  $('aura-profile-name').value = profile.name;
+  setAuraForm(profile.state);
+  markAuraDirty(true, `Perfil "${profile.name}" cargado. Falta aplicar.`);
+  toast(`Perfil "${profile.name}" cargado en el formulario`);
+});
+
+$('aura-apply-profile').addEventListener('click', async () => {
+  const profile = selectedAuraProfile();
+  if (!profile) { toast('Ese perfil ya no existe'); return; }
+  auraProfileSelection = profile.name;
+  $('aura-profile-name').value = profile.name;
+  setAuraForm(profile.state);
+  markAuraDirty(true, `Perfil "${profile.name}" cargado. Aplicando…`);
+  await applyAuraState(profile.state, `Perfil "${profile.name}" aplicado ✓`);
+});
+
+$('aura-delete-profile').addEventListener('click', async () => {
+  const name = $('aura-profile-select').value;
+  if (!name) { toast('No hay perfil seleccionado'); return; }
+  if (!window.confirm(`¿Borrar el perfil "${name}"?`)) return;
+  const res = await window.rog.deleteAuraProfile(name);
+  if (!res.ok) { toast(`No se borró: ${res.err}`); return; }
+  auraProfileSelection = '';
+  toast(`Perfil "${name}" borrado`);
+  await refreshAuraState(true);
+});
+
+$('aura-startup').addEventListener('change', async (e) => {
+  const name = $('aura-profile-select').value;
+  if (e.target.checked && !name) {
+    e.target.checked = false;
+    toast('Primero guarda o selecciona un perfil');
+    return;
+  }
+  const res = await window.rog.setAuraStartup({ name, enabled: e.target.checked });
+  if (!res.ok) {
+    e.target.checked = !e.target.checked;
+    toast(`No se pudo: ${res.err}`);
+    return;
+  }
+  toast(res.apply_on_startup ? `Perfil ${name} marcado para inicio` : 'Inicio automático de Aura desactivado');
+  await refreshAuraState();
+});
+
+$('aura-music').addEventListener('click', async () => {
+  if (musicModeActive) {
+    const res = await window.rog.setMusicMode({ enabled: false, state: currentAuraFormState() });
+  if (!res.ok) { toast(`No se pudo apagar: ${res.err}`); return; }
+  musicModeActive = false;
+  $('aura-music').textContent = 'MODO MÚSICA';
+  markAuraDirty(false);
+  toast('Modo música desactivado');
+  await refreshAuraState();
+  return;
+  }
+  const res = await window.rog.setMusicMode({ enabled: true, state: currentAuraFormState() });
+  if (!res.ok) { toast(`No se pudo activar: ${res.err}`); return; }
+  musicModeActive = true;
+  $('aura-music').textContent = 'PARAR MÚSICA';
+  markAuraDirty(false);
+  toast('Modo música activo: el brillo y el color siguen el audio del sistema');
+});
 
 /* ---------- kill process ---------- */
 
@@ -603,6 +1159,64 @@ $('disk-health-btn').addEventListener('click', async () => {
   out.innerHTML = res.disks.map((d) =>
     `<b>${d.device}</b><br>${d.info.join('<br>') || 'sin datos SMART'}`).join('<br><br>');
   out.classList.remove('hidden');
+});
+
+/* ---------- thermal benchmarks ---------- */
+
+function openBenchmarkModal() {
+  $('benchmark-modal').classList.remove('hidden');
+}
+
+function closeBenchmarkModal() {
+  $('benchmark-modal').classList.add('hidden');
+}
+
+async function runBenchmark(kind) {
+  if (benchBusy) return;
+  const warning = kind === 'cpu'
+    ? 'La CPU se irá al 100% durante 45 segundos. Puede subir bastante la temperatura. ¿Continuar?'
+    : 'La GPU se pondrá al máximo durante 45 segundos (se abrirán varias ventanas de carga que se cierran al terminar). Va a subir la temperatura. ¿Continuar?';
+  if (!window.confirm(warning)) return;
+  benchBusy = true;
+  $('bench-status').textContent = `Corriendo benchmark ${kind.toUpperCase()}…`;
+  $('bench-output').textContent = 'Tomando muestras térmicas…';
+  const res = kind === 'cpu'
+    ? await window.rog.cpuBenchmark(45)
+    : await window.rog.gpuBenchmark(45);
+  benchBusy = false;
+  benchmarkResult = res;
+  $('bench-status').textContent = res.ok
+    ? `${kind.toUpperCase()} terminado.`
+    : `Benchmark ${kind.toUpperCase()} no disponible.`;
+  $('bench-output').textContent = benchmarkSummaryText(res);
+  if (res.ok) {
+    pushBenchmarkHistory(res);
+    toast(`Benchmark ${kind.toUpperCase()} terminado ✓`);
+  } else {
+    toast(res.err || `Benchmark ${kind.toUpperCase()} falló`);
+  }
+}
+
+$('benchmark-btn').addEventListener('click', openBenchmarkModal);
+$('bench-run-cpu-quick').addEventListener('click', () => {
+  openBenchmarkModal();
+  runBenchmark('cpu');
+});
+$('bench-run-gpu-quick').addEventListener('click', () => {
+  openBenchmarkModal();
+  runBenchmark('gpu');
+});
+$('benchmark-close').addEventListener('click', closeBenchmarkModal);
+$('benchmark-modal').addEventListener('click', (e) => {
+  if (e.target === $('benchmark-modal')) closeBenchmarkModal();
+});
+$('bench-cpu').addEventListener('click', () => runBenchmark('cpu'));
+$('bench-gpu').addEventListener('click', () => runBenchmark('gpu'));
+$('bench-export').addEventListener('click', async () => {
+  if (!benchmarkResult) { toast('Todavía no hay benchmark para exportar'); return; }
+  const text = JSON.stringify(benchmarkResult, null, 2);
+  const res = await window.rog.exportBenchmark({ kind: benchmarkResult.kind, text });
+  toast(res.ok ? `Benchmark guardado en ${res.path}` : `No se exportó: ${res.err}`);
 });
 
 /* ---------- size / zoom persistence ---------- */

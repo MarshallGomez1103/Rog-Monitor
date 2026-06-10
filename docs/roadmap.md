@@ -2,7 +2,7 @@
 
 ## Estado actual del proyecto
 
-**Versión actual:** v7.0 (junio 2026)
+**Versión actual:** v8.1 (junio 2026)
 
 ---
 
@@ -170,7 +170,19 @@ Crear una interfaz gráfica moderna.
 
 ---
 
-# v8 - Iluminación RGB "Aura" (SIGUIENTE — plan detallado para continuar)
+# v8 - Iluminación RGB "Aura" (Implementado — v8.0 / v8.1) ✅
+
+> Estado v8.1: asusd activo; efectos static/breathe/rainbow-*/stars aplican
+> bien (verificado por CLI y por `rog_monitor.aura apply`). UI del bloque 08
+> reorganizada (APLICAR primario, perfiles en sección propia). **Modo música
+> arreglado** (usaba `parec`→0 bytes y `pw-cat` sin `--target`; ahora
+> `pw-record`/`pw-cat --record --raw --target <sink>.monitor`). Brillo:
+> el comando real es `asusctl leds set <off|low|med|high>` (no `asusctl -k`).
+> Pendiente: OpenRGB/Redragon (no instalado) y prueba con clics reales.
+
+## Plan original (referencia)
+
+# v8 (plan) - Iluminación RGB "Aura"
 
 > Controlar las luces del teclado/chasis como Armoury Crate: efectos, colores,
 > perfiles personalizados y modo música. ASUS primero (asusctl), luego
@@ -187,7 +199,8 @@ Crear una interfaz gráfica moderna.
 2. **Capa de backend** `src/rog_monitor/aura.py`:
    - Detección: ¿existe `asusctl`? → `asusctl aura --help` lista los modos.
    - Comandos: `asusctl aura <modo>` (static, breathe, rainbow-cycle, pulse…),
-     `-c <RRGGBB>` para color, brillo con `asusctl -k <off|low|med|high>`.
+     `--colour <RRGGBB>` para color, brillo con
+     `asusctl leds set <off|low|med|high>`.
    - Alternativa más robusta: D-Bus org.asuslinux.Daemon.
 3. **IPC + UI**: nuevo bloque "08 Iluminación" en la app:
    - Selector de efecto, color (input type=color), brillo.
@@ -217,7 +230,10 @@ Referencias: asusctl https://gitlab.com/asus-linux/asusctl · OpenRGB https://op
 * [ ] Soporte AMD completo (k10temp por CCD, RAPL amd_energy, amdgpu probado)
 * [ ] Perfiles vía `platform_profile` genérico cuando no haya asus-wmi
 * [ ] Historial persistente (SQLite en ~/.local/share/rog-monitor)
-* [ ] Configuración visual desde la app de escritorio (umbrales, tema, idioma)
+* [x] Configuración visual desde la app: umbrales de alerta y colores de
+      temperatura editables (botón ALERTAS → modal; `rog_monitor.settings`;
+      reinicia el backend para recargar AlertEngine) (v8.1). Falta tema/idioma
+      desde la app.
 * [ ] Paquetes: PyPI (`pipx install rog-monitor`), Flatpak, AUR, COPR
 * [ ] Detección automática de máximos de ventilador por modelo (base de datos
       comunitaria en JSON)

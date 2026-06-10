@@ -2,6 +2,56 @@
 
 > Cada agente actualiza esta sección al terminar. El siguiente la lee primero.
 
+## Última sesión: Claude (Opus 4.8) — 2026-06-10 (v8.1.0)
+
+### Estado: arreglos de Aura + benchmarks + primer ítem de v9. Commiteado, SIN push.
+
+Probado con `node --check` (main/preload/app.js), `py_compile` de los módulos
+nuevos y pruebas en vivo de CLI/audio/GPU en esta máquina real (G614JV).
+
+Hecho:
+- **Modo música ARREGLADO (era el bug real).** `parec` devolvía 0 bytes aquí
+  (probado en vivo) y el fallback `pw-cat` no pasaba `--target`, así que
+  grababa el micrófono. Ahora `main.js` resuelve `<sink-por-defecto>.monitor`
+  con `pactl get-default-sink` y usa `pw-record`/`pw-cat --record --raw
+  --target` (verificado: PCM crudo sin header WAV, ~61 KB en 1.4 s con audio).
+  `parec` queda de último recurso. Selección de binario con `spawnSync which`
+  (antes el `for` con `spawn` siempre elegía el primero porque el error de
+  spawn es asíncrono). Brillo en silencio = `low`, nunca `off`.
+- **Aura efectos**: el backend YA aplicaba bien breathe/rainbow-*/static
+  (probado `asusctl aura effect ... ` y `python -m rog_monitor.aura apply`
+  con rc=0 y luz cambiando). Lo que estaba mal era la **UI**: reorganicé el
+  bloque 08 (APLICAR como acción primaria `.aura-primary`; perfiles en
+  sección propia con encabezado y filas separadas guardar / cargar).
+- **Benchmark GPU local**: 1× vkcube se quedaba 7-50% (vsync). Ahora
+  `benchmarks.py` lanza `GPU_LOAD_INSTANCES=4` vkcube en IMMEDIATE 1080p sin
+  vsync (`vblank_mode=0`, `__GL_SYNC_TO_VBLANK=0`) → **99% medido**. Prefiere
+  glmark2/vkmark si existen. Quité el mensaje que mandaba a "modo web VSBM".
+- **GPU WEB eliminado** por completo (botones, IPC `gpu-web-benchmark`,
+  `gpuWebBenchmark` del preload, `VSBM_URL`, helpers `resolveWebGpuBenchmark
+  Command`/`hasFlatpakApp`/`collectLiveBenchmarkSample`/`summarizeLiveSamples`/
+  `terminateSpawned`/`sleep`, var `lastBackendStats`).
+- **v9 primer ítem: umbrales editables.** Nuevo `src/rog_monitor/settings.py`
+  (`get`/`update --json`, valida y acota). Botón `ALERTAS` + modal en la app;
+  IPC `get-settings`/`save-settings` (al guardar hace `startBackend()` para
+  recargar AlertEngine). Verificado: el JSON stream refleja los nuevos
+  `temp_colors` tras update.
+
+### Pendiente / OJO para la siguiente sesión
+1. **Falta prueba con clics reales en la app Electron** (no pude abrir GUI
+   interactiva). Validar: APLICAR con breathe/rainbow desde los chips, MODO
+   MÚSICA reaccionando a audio real, GUARDAR/CARGAR perfiles, y el modal
+   ALERTAS guardando + reinicio del backend sin parpadeo molesto.
+2. **v9 restante** (grande, no lo toqué): soporte AMD, historial persistente
+   (SQLite en `~/.local/share/rog-monitor`), autodetección de plataforma,
+   empaquetado (PyPI/Flatpak/AUR/COPR), DB comunitaria de máximos de fan.
+3. **v10**: OJO — undervolt/overclock NO se debe hacer a ciegas (riesgo real
+   al equipo de Marshall). Requiere su visto bueno, detección exacta del
+   modelo, límites seguros y doble consentimiento. Lo dejé sin tocar a
+   propósito. MangoHud/plasmoide/Prometheus sí son seguros pero grandes.
+4. **v11 (open source / publicar): NO hacer.** Regla del dueño: no publicar
+   nada aún y NUNCA `git push`. Solo dejé commit local.
+
 ## Última sesión: Claude (Fable 5) — 2026-06-10
 
 ### Estado: v7.1.0 lista y commiteada (sin push, como siempre)
@@ -51,3 +101,82 @@ Hecho en esta sesión (todo probado con `--once`, `--json` y `node --check`):
 - supergfxctl modos: Integrated / Hybrid / AsusMuxDgpu (este último = reinicio).
 - Máximos reales de ventiladores aún sin medir con el benchmark de la app
   (estimados: CPU 7000 / GPU 6900 / MID 7500).
+
+---
+
+## Última sesión: Codex (GPT-5) — 2026-06-10
+
+### Estado: v8.0.0 implementada en código, con dos pendientes de prueba viva
+
+Hecho en esta sesión:
+- **Paso 1 v8**: revisado el conflicto `asusd` vs `rog-profile-sync`.
+  `~/Rog-Monitor-Scripts/scripts/enable-asusd.sh` ya NO deshabilita
+  `rog-profile-sync.service`; deja `asusd` para Aura y conserva perfiles +
+  curvas en nuestro stack.
+- **Paso 2 v8**: nuevo backend `src/rog_monitor/aura.py`.
+  Detecta `asusctl`, lista efectos disponibles desde la instalación local,
+  expone brillo/effects/OpenRGB/PipeWire en el JSON stream y guarda perfiles
+  en `~/.config/rog-monitor/aura.json`.
+- **Paso 3 v8**: nuevo bloque **08 Iluminación** en la app Electron.
+  Tiene efecto, color, color secundario, velocidad, dirección, brillo,
+  perfiles guardados, borrar/cargar, y toggle para aplicar al abrir la app.
+- **Paso 4 v8 (parcial)**: detección de **OpenRGB** y mensaje de instalación
+  si falta. En este equipo NO está instalado, así que no se pudo probar ni
+  terminar el control real del Redragon.
+- **Paso 5 v8**: modo música implementado en Electron (`parec`/`pw-cat`).
+  Captura audio del sistema y ajusta brillo/color de Aura en vivo.
+- **Paso 6 v8 (parcial)**: benchmark térmico integrado.
+  - CPU: implementado en `src/rog_monitor/benchmarks.py` con workers Python
+    por `subprocess` (evité `multiprocessing` porque falló con Python 3.14 en
+    sandbox/forkserver).
+  - GPU: hook listo vía `glmark2`, con fallback claro si no está instalado.
+  - UI: modal BENCHMARK + exportación JSON.
+
+### Probado en esta sesión
+
+- `python3 -m py_compile src/rog_monitor/aura.py src/rog_monitor/benchmarks.py src/rog_monitor/app.py`
+- `node --check desktop/main.js`
+- `node --check desktop/preload.js`
+- `node --check desktop/renderer/app.js`
+- `PYTHONPATH=src python3 -m rog_monitor --json`
+- `XDG_CONFIG_HOME=/tmp/rog-aura-test PYTHONPATH=src python3 -m rog_monitor.aura state`
+- `XDG_CONFIG_HOME=/tmp/rog-aura-test PYTHONPATH=src python3 -m rog_monitor.aura save-profile ...`
+- `XDG_CONFIG_HOME=/tmp/rog-aura-test PYTHONPATH=src python3 -m rog_monitor.aura set-startup ...`
+- `PYTHONPATH=src python3 -m rog_monitor.benchmarks cpu --seconds 2 --workers 1`
+- `PYTHONPATH=src python3 -m rog_monitor.benchmarks gpu --seconds 2`
+  devolvió el fallback esperado: falta `glmark2`.
+
+### Ojo / pendiente inmediato
+
+1. **Prueba viva de Aura en escritorio real**:
+   desde el sandbox no pude validar `asusctl leds set` / `asusctl aura effect`
+   contra `asusd` en el bus del sistema. El código está cableado, pero falta
+   abrir la app en la sesión real de Marshall y confirmar:
+   - que el bloque 08 aplica cambios;
+   - que modo música responde;
+   - que `asusd` no pisa `rog-profile-sync`.
+2. **OpenRGB / Redragon**:
+   instalar OpenRGB y decidir si seguir por CLI o por SDK 6742. Ahora mismo la
+   app solo detecta ausencia y muestra la instrucción de instalación.
+3. **Benchmark GPU real**:
+   instalar `glmark2` o cambiar la carga a otra herramienta disponible.
+4. **Actualizar `docs/roadmap.md`**:
+   el texto todavía menciona brillo con `asusctl -k`; en esta máquina real el
+   comando válido es `asusctl leds set <off|low|med|high>`.
+
+### Seguimiento corto (misma sesión, ajustes tras prueba manual)
+
+- El problema real de iluminación no era solo UI: `asusctl` estaba instalado
+  pero **no existía `asusd.service`** en el sistema. Se añadió detección de
+  setup en la app y botón `ACTIVAR AURA` que llama
+  `~/Rog-Monitor-Scripts/scripts/enable-asusd.sh --yes` por `pkexec`.
+- En esta misma máquina quedó **reparado y arrancado**:
+  - `asusd` ahora se instala desde el payload Homebrew hacia `/usr/local/bin`
+    y `/usr/local/share`, no desde `/home/linuxbrew/...` ni `/opt/...`.
+  - Se verificó con `systemctl status asusd.service`: quedó `active (running)`.
+  - Se verificó con `asusctl leds get` y `asusctl aura effect static --colour ff5500`.
+- El selector nativo de efectos se reemplazó en práctica por un grid de chips
+  visibles porque en la prueba manual no estaba mostrando opciones de forma
+  usable en Electron/KDE.
+- Benchmark GPU ya no depende solo de `glmark2`: ahora cae a `vkcube` y luego
+  a `glxgears`. En este entorno devolvió `tool: vkcube`.

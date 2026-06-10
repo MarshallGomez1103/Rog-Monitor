@@ -33,6 +33,7 @@
       </button>
 
       <button id="report-btn" class="ghost" title="Abre un issue en el repositorio de GitHub con la información del sistema ya escrita">REPORTAR ERROR</button>
+      <button id="alerts-btn" class="ghost" title="Editar los umbrales de temperatura, potencia y alertas">ALERTAS</button>
       <button id="theme-btn" class="ghost" title="Apariencia: tema, modo claro/oscuro y tamaño">TEMA</button>
     </div>
   </header>
@@ -82,6 +83,68 @@
         <h2><i>03</i> Ventiladores <small>clic para configurar</small></h2>
         <div class="fans" id="fans"></div>
       </article>
+
+      <article class="block" id="aura-block">
+        <h2><i>08</i> Iluminación <small>Aura ASUS y modo música</small></h2>
+        <div class="aura-grid">
+          <label class="aura-effect-box">
+            <span>Modos basicos</span>
+            <div id="aura-effects" class="effect-grid"></div>
+            <select id="aura-effect" class="hidden"></select>
+          </label>
+          <label id="aura-extra-wrap">
+            <span>Mas efectos ASUS</span>
+            <select id="aura-extra-effect"></select>
+          </label>
+          <label><span>Color</span><input type="color" id="aura-colour" value="#ff5500"></label>
+          <label id="aura-colour2-wrap" class="hidden"><span>Color 2</span><input type="color" id="aura-colour2" value="#000000"></label>
+          <label id="aura-speed-wrap"><span>Velocidad</span><select id="aura-speed">
+            <option value="low">low</option>
+            <option value="med">med</option>
+            <option value="high">high</option>
+          </select></label>
+          <label id="aura-direction-wrap" class="hidden"><span>Dirección</span><select id="aura-direction">
+            <option value="left">left</option>
+            <option value="right">right</option>
+            <option value="up">up</option>
+            <option value="down">down</option>
+          </select></label>
+          <label><span>Brillo</span><select id="aura-brightness">
+            <option value="off">off</option>
+            <option value="low">low</option>
+            <option value="med">med</option>
+            <option value="high">high</option>
+          </select></label>
+        </div>
+
+        <div class="aura-actions">
+          <button class="ghost hidden" id="aura-setup">ACTIVAR AURA</button>
+          <button class="ghost aura-primary" id="aura-apply">APLICAR</button>
+          <button class="ghost" id="aura-music">MODO MÚSICA</button>
+        </div>
+
+        <div class="aura-profiles">
+          <span class="aura-subhead">Perfiles guardados</span>
+          <div class="aura-profile-row">
+            <input type="text" id="aura-profile-name" placeholder="Nombre para guardar">
+            <button class="ghost" id="aura-save-profile">GUARDAR</button>
+          </div>
+          <div class="aura-profile-row">
+            <select id="aura-profile-select"></select>
+            <button class="ghost" id="aura-load-profile">CARGAR</button>
+            <button class="ghost" id="aura-apply-profile">CARGAR Y APLICAR</button>
+            <button class="ghost" id="aura-delete-profile">BORRAR</button>
+          </div>
+          <label class="check-row" for="aura-startup">
+            <input type="checkbox" id="aura-startup">
+            Aplicar este perfil cuando se abra ROG Monitor
+          </label>
+        </div>
+
+        <p id="aura-note" class="note">Detectando asusctl / Aura…</p>
+        <p id="aura-status" class="note hidden"></p>
+        <p id="openrgb-note" class="note hidden"></p>
+      </article>
     </section>
 
     <section class="col col-right">
@@ -93,6 +156,19 @@
           <div class="chart"><label>GPU · Temperatura °C</label><canvas id="chart-gpu"></canvas></div>
           <div class="chart"><label>GPU · Consumo W</label><canvas id="chart-gpu-power"></canvas></div>
         </div>
+      </article>
+
+      <article class="block" id="bench-block">
+        <h2><i>09</i> Benchmarks <small>carga térmica y resultados</small></h2>
+        <div class="bench-actions">
+          <button class="ghost" id="benchmark-btn">ABRIR BENCHMARKS</button>
+          <button class="ghost" id="bench-run-cpu-quick">CPU 45 s</button>
+          <button class="ghost" id="bench-run-gpu-quick">GPU LOCAL 45 s</button>
+        </div>
+        <p id="bench-inline-status" class="note">Sin benchmarks en esta sesión.</p>
+        <ul id="bench-history" class="bench-history">
+          <li class="dim">sin historial</li>
+        </ul>
       </article>
 
       <article class="block" id="system-block">
@@ -207,6 +283,54 @@
         <button data-zoom="1">A++</button>
       </div>
       <button class="ghost modal-close" id="theme-close">Cerrar</button>
+    </div>
+  </div>
+
+  <div id="alerts-modal" class="hidden">
+    <div class="modal-card">
+      <h3>Umbrales y alertas</h3>
+      <p class="sub">Ajusta cuándo avisa el monitor y a qué temperaturas cambian los colores. Se guarda y se aplica al instante.</p>
+      <div class="settings-grid">
+        <label><span>Alerta temp CPU (°C)</span><input type="number" id="set-cpu-temp-warn" min="50" max="110" step="1"></label>
+        <label><span>Alerta temp GPU (°C)</span><input type="number" id="set-gpu-temp-warn" min="45" max="105" step="1"></label>
+        <label><span>Alerta potencia CPU (W)</span><input type="number" id="set-cpu-power-warn" min="20" max="300" step="1"></label>
+        <label><span>Ventilador parado bajo (°C)</span><input type="number" id="set-fan-stopped" min="30" max="100" step="1"></label>
+        <label><span>Enfriamiento alerta (s)</span><input type="number" id="set-cooldown" min="10" max="3600" step="5"></label>
+        <label><span>Throttle mínimo (ms)</span><input type="number" id="set-throttle-ms" min="0" max="5000" step="10"></label>
+      </div>
+      <h3 class="size-title">Colores de temperatura (°C: verde · amarillo · naranja)</h3>
+      <div class="settings-grid">
+        <label><span>CPU verde &lt;</span><input type="number" id="set-cpu-c0" min="40" max="110" step="1"></label>
+        <label><span>CPU amarillo &lt;</span><input type="number" id="set-cpu-c1" min="40" max="110" step="1"></label>
+        <label><span>CPU naranja &lt;</span><input type="number" id="set-cpu-c2" min="40" max="110" step="1"></label>
+        <label><span>GPU verde &lt;</span><input type="number" id="set-gpu-c0" min="40" max="105" step="1"></label>
+        <label><span>GPU amarillo &lt;</span><input type="number" id="set-gpu-c1" min="40" max="105" step="1"></label>
+        <label><span>GPU naranja &lt;</span><input type="number" id="set-gpu-c2" min="40" max="105" step="1"></label>
+      </div>
+      <label class="check-row" for="set-notifications">
+        <input type="checkbox" id="set-notifications">
+        Mostrar notificaciones de escritorio
+      </label>
+      <p id="alerts-status" class="note hidden"></p>
+      <div class="mode-row">
+        <button class="ghost aura-primary" id="alerts-save">GUARDAR Y APLICAR</button>
+        <button class="ghost modal-close" id="alerts-close">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="benchmark-modal" class="hidden">
+    <div class="modal-card">
+      <h3>Benchmark térmico</h3>
+      <p class="sub">Lanza una carga sintética local al máximo y mide temperatura, watts y RPM. Úsalo con el cargador conectado y con ventilación libre.</p>
+      <div class="mode-row">
+        <button class="ghost" id="bench-cpu">CPU 45 s</button>
+        <button class="ghost" id="bench-gpu">GPU LOCAL 45 s</button>
+        <button class="ghost" id="bench-export">EXPORTAR</button>
+      </div>
+      <p id="bench-status" class="note">Aún no hay resultados.</p>
+      <pre id="bench-output" class="bench-output">sin resultados</pre>
+      <button class="ghost modal-close" id="benchmark-close">Cerrar</button>
     </div>
   </div>
 

@@ -1,5 +1,66 @@
 # Changelog
 
+## 8.1.0 — 2026-06-10
+
+### Fixed
+- **Modo música ahora sí funciona.** Capturaba con `parec` (devolvía 0 bytes
+  en este PipeWire) y, en el fallback, `pw-cat` grababa el micrófono por no
+  pasar `--target`. Ahora resuelve el monitor del sink por defecto
+  (`<sink>.monitor`) y prefiere `pw-record`/`pw-cat --record --raw --target`,
+  con `parec` solo como último recurso. Además el brillo nunca baja a `off`
+  en silencio (piso en `low`) para que no parezca apagado.
+- **Benchmark GPU local más exigente.** Una sola instancia de `vkcube` se
+  quedaba ~7-50% (vsync + geometría trivial). Ahora lanza 4 instancias en
+  modo IMMEDIATE a 1080p sin vsync y satura la dGPU al ~99%
+  (sigue prefiriendo `glmark2`/`vkmark` si están instalados).
+
+### Removed
+- **Benchmark "GPU WEB" (VSBM).** Mandaba a un navegador externo; se eliminó
+  por completo (UI, IPC, preload y código de lanzamiento). El benchmark de
+  GPU es 100% local.
+
+### Changed
+- Bloque `08 Iluminación` reorganizado: `APLICAR` pasa a ser la acción
+  principal y los perfiles quedan en una sección propia, con encabezado y
+  filas separadas para guardar vs. cargar/borrar.
+
+### Added (v9 — primer ítem)
+- **Umbrales y colores editables desde la app.** Nuevo botón `ALERTAS` con un
+  modal para ajustar temperaturas/potencia de alerta, cooldown, throttle
+  mínimo, notificaciones y los colores de temperatura. Backend nuevo en
+  `src/rog_monitor/settings.py` (valida y acota rangos); al guardar reinicia
+  el backend para que `AlertEngine` tome los valores al instante.
+
+## 8.0.0 — 2026-06-10
+
+### Added
+- **Aura / RGB control** in the desktop app: new `08 Iluminación` block with
+  ASUS Aura effect, colour, speed, direction and brightness controls.
+- Aura setup assistance in the app: if `asusd` is missing/stopped, the UI now
+  exposes an action to configure/start it with the existing system script.
+- Saved Aura profiles in `~/.config/rog-monitor/aura.json`, including an
+  option to re-apply one automatically when the app starts.
+- Aura backend layer in `src/rog_monitor/aura.py`: detects `asusctl`,
+  enumerates supported effects from the local install, reports OpenRGB and
+  PipeWire availability, and centralises Aura profile persistence.
+- Music mode: captures system audio (`parec` / `pw-cat`) and maps amplitude
+  to Aura brightness/colour in real time.
+- Thermal benchmark modal: CPU synthetic load benchmark (no dependencies),
+  GPU benchmark hook via `glmark2` with fallback to `vkcube` / `glxgears`,
+  and JSON export.
+
+### Changed
+- `Rog-Monitor-Scripts/scripts/enable-asusd.sh` now enables `asusd` for Aura
+  without disabling `rog-profile-sync.service`; profiles and fan curves stay
+  under ROG Monitor control.
+- The app JSON stream now includes Aura capability/state metadata so the
+  desktop UI can degrade gracefully when ASUS/OpenRGB tooling is missing.
+
+### Notes
+- OpenRGB is detected and explained when absent, but this environment still
+  lacks the binary/SDK, so Redragon live control remains pending installation.
+- GPU benchmark support is wired, but requires `glmark2` to be present.
+
 ## 7.1.0 — 2026-06-10
 
 ### Added
