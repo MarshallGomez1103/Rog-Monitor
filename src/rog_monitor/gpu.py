@@ -11,12 +11,20 @@ NVIDIA_QUERY = (
 )
 
 
-def _run(cmd: list[str], timeout: float = 2.0) -> str | None:
+def _run(cmd: list[str], timeout: float = 4.0) -> str | None:
     try:
         return subprocess.run(
-            cmd, capture_output=True, text=True, timeout=timeout, check=True
+            cmd, capture_output=True, text=True, timeout=timeout, check=True,
+            stdin=subprocess.DEVNULL,  # never let children steal terminal keys
         ).stdout.strip()
     except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def _num(value) -> float | None:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
         return None
 
 
@@ -27,24 +35,52 @@ class GpuReader:
         self.has_supergfx = shutil.which("supergfxctl") is not None
         self.amd = hwmon.find(chips, "amdgpu")
         self._mode: str | None = None
+        self._pending: str | None = None
         self._mode_ts = 0.0
         self._nvidia_dead_until = 0.0
+        self.supported: list[str] = self._supported_modes()
 
-    def mode(self) -> str | None:
-        """Hybrid / Integrated / Dedicated via supergfxctl, cached 10s."""
+    def _supported_modes(self) -> list[str]:
         if not self.has_supergfx:
-            return None
+            return []
+        out = _run(["supergfxctl", "-s"])
+        if not out:
+            return []
+        return [m.strip() for m in out.strip("[]").split(",") if m.strip()]
+
+    def invalidate(self) -> None:
+        """Force a fresh supergfx read on the next tick (after a mode change)."""
+        self._mode_ts = 0.0
+
+    def _refresh_supergfx(self) -> None:
+        if not self.has_supergfx:
+            return
         now = time.monotonic()
-        if now - self._mode_ts > 10:
-            self._mode = _run(["supergfxctl", "-g"])
-            self._mode_ts = now
-        return self._mode
+        if now - self._mode_ts < 10:
+            return
+        mode = _run(["supergfxctl", "-g"])
+        if mode is None:
+            # transient failure: keep the last known mode, retry next tick
+            return
+        self._mode = mode
+        pending = _run(["supergfxctl", "-P"]) or ""
+        self._pending = None if pending.lower() in ("", "none", mode.lower()) else pending
+        self._mode_ts = now
+
+    def mode_info(self) -> dict:
+        self._refresh_supergfx()
+        return {
+            "mode": self._mode,
+            "pending": self._pending,
+            "supported": self.supported,
+        }
 
     def _read_nvidia(self) -> dict | None:
         if not self.has_nvidia_smi or time.monotonic() < self._nvidia_dead_until:
             return None
         out = _run(
-            ["nvidia-smi", f"--query-gpu={NVIDIA_QUERY}", "--format=csv,noheader,nounits"]
+            ["nvidia-smi", f"--query-gpu={NVIDIA_QUERY}", "--format=csv,noheader,nounits"],
+            timeout=2.0,
         )
         if not out:
             # dGPU off or driver asleep: back off to avoid 2s stalls every tick
@@ -55,20 +91,14 @@ class GpuReader:
         if len(parts) < 6:
             return None
 
-        def num(value: str) -> float | None:
-            try:
-                return float(value)
-            except ValueError:
-                return None
-
         return {
             "vendor": "nvidia",
             "name": parts[0],
-            "temp": num(parts[1]),
-            "util": num(parts[2]),
-            "power": num(parts[3]),
-            "vram_used": num(parts[4]),
-            "vram_total": num(parts[5]),
+            "temp": _num(parts[1]),
+            "util": _num(parts[2]),
+            "power": _num(parts[3]),
+            "vram_used": _num(parts[4]),
+            "vram_total": _num(parts[5]),
         }
 
     def _read_amd(self) -> dict | None:
@@ -88,9 +118,8 @@ class GpuReader:
         }
 
     def read(self) -> dict:
-        info = {"mode": self.mode(), "active": None}
-        if not self.enabled:
-            return info
-        gpu = self._read_nvidia() or self._read_amd()
-        info["active"] = gpu
+        info = dict(self.mode_info())
+        info["active"] = None
+        if self.enabled:
+            info["active"] = self._read_nvidia() or self._read_amd()
         return info

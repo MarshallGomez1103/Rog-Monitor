@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <title>ROG Monitor</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header id="topbar">
+    <div class="brand">
+      <span class="brand-mark">ROG<span class="slash">//</span>MONITOR</span>
+      <span id="thermal-lamp" class="lamp"></span>
+      <span id="thermal-label" class="lamp-label">—</span>
+    </div>
+
+    <div class="controls">
+      <div class="segment" id="profile-seg" title="Perfil de energía">
+        <button data-profile="power-saver">AHORRO</button>
+        <button data-profile="balanced">BALANCED</button>
+        <button data-profile="performance">PERFORMANCE</button>
+      </div>
+
+      <div class="segment" id="gpu-seg" title="Modo de GPU (requiere cerrar sesión)">
+        <button data-gpu="Integrated">iGPU</button>
+        <button data-gpu="Hybrid">HYBRID</button>
+      </div>
+
+      <button id="update-btn" class="ghost" title="Buscar actualizaciones del repositorio">
+        <span id="update-label">ACTUALIZAR</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="pending-banner" class="hidden">
+    Cambio de GPU pendiente: <b id="pending-mode"></b> — cierra sesión para aplicar
+  </div>
+
+  <main>
+    <section class="col col-left">
+      <article class="block" id="cpu-block">
+        <h2><i>01</i> CPU <small id="cpu-model"></small></h2>
+        <div class="bignum"><span id="cpu-temp">--</span><em>°C</em></div>
+        <div class="statgrid">
+          <div><label>Máx</label><b id="cpu-max">--</b></div>
+          <div><label>Mín</label><b id="cpu-min">--</b></div>
+          <div><label>Package</label><b id="cpu-pkg">--</b></div>
+          <div><label>&gt;90°C</label><b id="cpu-hot">--</b></div>
+          <div><label>GHz</label><b id="cpu-freq">--</b></div>
+          <div><label>Watts</label><b id="cpu-watts" class="accent">--</b></div>
+          <div><label>Throttle</label><b id="cpu-throttle">--</b></div>
+          <div><label>EPP</label><b id="cpu-epp" class="small">--</b></div>
+        </div>
+      </article>
+
+      <article class="block" id="gpu-block">
+        <h2><i>02</i> GPU <small id="gpu-name"></small></h2>
+        <div class="bignum"><span id="gpu-temp">--</span><em>°C</em></div>
+        <div class="statgrid">
+          <div><label>Uso</label><b id="gpu-util">--</b></div>
+          <div><label>Watts</label><b id="gpu-watts" class="accent">--</b></div>
+          <div><label>VRAM</label><b id="gpu-vram" class="small">--</b></div>
+          <div><label>Modo</label><b id="gpu-mode" class="small">--</b></div>
+        </div>
+        <p id="gpu-off-note" class="note hidden">dGPU apagada (modo Integrated)</p>
+      </article>
+
+      <article class="block" id="fans-block">
+        <h2><i>03</i> Ventiladores</h2>
+        <div class="fans" id="fans"></div>
+      </article>
+    </section>
+
+    <section class="col col-right">
+      <article class="block charts">
+        <h2><i>04</i> Historial</h2>
+        <div class="chart-row">
+          <div class="chart"><label>CPU °C</label><canvas id="chart-cpu"></canvas></div>
+          <div class="chart"><label>GPU °C</label><canvas id="chart-gpu"></canvas></div>
+          <div class="chart"><label>CPU W</label><canvas id="chart-power"></canvas></div>
+        </div>
+      </article>
+
+      <article class="block" id="system-block">
+        <h2><i>05</i> Sistema</h2>
+        <div class="sysrow">
+          <div class="meter"><label>RAM <span id="ram-label"></span></label><div class="track"><div id="ram-bar"></div></div></div>
+          <div id="disks"></div>
+          <div class="syskv">
+            <div><label>Red</label><b id="net">--</b></div>
+            <div><label>Carga</label><b id="load">--</b></div>
+            <div><label>Batería</label><b id="battery">--</b></div>
+            <div><label>Perfil ASUS</label><b id="asus-profile">--</b></div>
+          </div>
+        </div>
+      </article>
+
+      <div class="split">
+        <article class="block" id="events-block">
+          <h2><i>06</i> Eventos</h2>
+          <ul id="events"><li class="dim">sin eventos</li></ul>
+        </article>
+
+        <article class="block" id="procs-block">
+          <h2><i>07</i> Procesos</h2>
+          <table id="procs"></table>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer id="statusbar">
+    <span id="backend-state">conectando con sensores…</span>
+    <span id="versions"></span>
+  </footer>
+
+  <div id="toast" class="hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

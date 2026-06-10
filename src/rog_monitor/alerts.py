@@ -29,6 +29,7 @@ class AlertEngine:
                     [self._notify_bin, "--app-name=ROG Monitor",
                      "--urgency=critical" if level == "crit" else "--urgency=normal",
                      "ROG Monitor", message],
+                    stdin=subprocess.DEVNULL,
                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                 )
             except OSError:

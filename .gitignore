@@ -3,3 +3,5 @@
 __pycache__/
 *.pyc
 .directory
+node_modules/
+package-lock.json

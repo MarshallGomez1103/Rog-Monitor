@@ -1,0 +1,65 @@
+"""Top processes by instantaneous CPU usage, computed from /proc deltas."""
+
+import os
+from pathlib import Path
+
+PAGE_KB = os.sysconf("SC_PAGE_SIZE") // 1024
+
+
+def _total_jiffies() -> int:
+    try:
+        with open("/proc/stat") as fh:
+            return sum(int(x) for x in fh.readline().split()[1:])
+    except (OSError, ValueError):
+        return 0
+
+
+class ProcReader:
+    def __init__(self):
+        self._last: dict[int, int] = {}
+        self._last_total = _total_jiffies()
+
+    def read(self, top: int = 5) -> list[dict]:
+        total = _total_jiffies()
+        dt = total - self._last_total
+        ncpu = os.cpu_count() or 1
+        current: dict[int, int] = {}
+        rows = []
+
+        for entry in Path("/proc").iterdir():
+            if not entry.name.isdigit():
+                continue
+            pid = int(entry.name)
+            try:
+                stat = (entry / "stat").read_text()
+            except OSError:
+                continue
+            # comm may contain spaces/parens: split around the last ')'
+            rparen = stat.rfind(")")
+            comm = stat[stat.find("(") + 1 : rparen]
+            fields = stat[rparen + 2 :].split()
+            try:
+                jiffies = int(fields[11]) + int(fields[12])  # utime + stime
+                rss_pages = int(fields[21])
+            except (IndexError, ValueError):
+                continue
+            current[pid] = jiffies
+            prev = self._last.get(pid)
+            if prev is None or dt <= 0:
+                continue
+            cpu = (jiffies - prev) * 100 * ncpu / dt
+            if cpu <= 0:
+                continue
+            rows.append(
+                {
+                    "pid": pid,
+                    "name": comm[:24],
+                    "cpu": round(cpu, 1),
+                    "mem_mb": rss_pages * PAGE_KB // 1024,
+                }
+            )
+
+        self._last = current
+        self._last_total = total
+        rows.sort(key=lambda r: r["cpu"], reverse=True)
+        return rows[:top]

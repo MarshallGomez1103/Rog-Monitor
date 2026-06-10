@@ -65,6 +65,7 @@ def ppd_profile() -> str | None:
         out = subprocess.run(
             ["busctl", "--system", "get-property", *PPD_BUS, "ActiveProfile"],
             capture_output=True, text=True, timeout=1, check=True,
+            stdin=subprocess.DEVNULL,
         ).stdout.strip()
         return out.split('"')[1] if '"' in out else None
     except (OSError, subprocess.SubprocessError, IndexError):

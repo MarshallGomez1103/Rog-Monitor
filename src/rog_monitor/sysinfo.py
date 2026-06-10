@@ -25,6 +25,52 @@ class SysReader:
         self._net_last = self._net_bytes()
         self._net_ts = time.monotonic()
 
+    REAL_FS = {"ext4", "ext3", "btrfs", "xfs", "f2fs", "vfat", "exfat", "ntfs", "ntfs3"}
+
+    # a device can be mounted many times (ostree: /sysroot, /etc, /var, ...);
+    # pick the most user-meaningful mountpoint
+    MOUNT_PRIORITY = ["/var/home", "/home", "/", "/var"]
+
+    def _disks(self) -> list[dict]:
+        """Real mounted filesystems (one per device), largest first, max 4."""
+        by_device: dict[str, list[str]] = {}
+        try:
+            with open("/proc/mounts") as fh:
+                for line in fh:
+                    device, mountpoint, fstype = line.split()[:3]
+                    if fstype not in self.REAL_FS or not device.startswith("/dev/"):
+                        continue
+                    by_device.setdefault(device, []).append(mountpoint.replace("\\040", " "))
+        except OSError:
+            return []
+
+        disks = []
+        for device, mountpoints in by_device.items():
+            mountpoint = next(
+                (p for p in self.MOUNT_PRIORITY if p in mountpoints),
+                min(mountpoints, key=len),
+            )
+            try:
+                usage = shutil.disk_usage(mountpoint)
+            except OSError:
+                continue
+            if usage.total < 5e9:  # skip ESP and other small partitions
+                continue
+            label = "home" if mountpoint in ("/var/home", "/home") else (
+                "/" if mountpoint == "/" else mountpoint.rstrip("/").split("/")[-1]
+            )
+            disks.append(
+                {
+                    "mount": mountpoint,
+                    "label": label[:14],
+                    "used_gb": usage.used / 1e9,
+                    "total_gb": usage.total / 1e9,
+                    "percent": round(usage.used * 100 / usage.total),
+                }
+            )
+        disks.sort(key=lambda d: d["total_gb"], reverse=True)
+        return disks[:4]
+
     @staticmethod
     def _net_bytes() -> tuple[int, int]:
         rx = tx = 0
@@ -55,16 +101,7 @@ class SysReader:
         tx_rate = (tx - self._net_last[1]) / dt
         self._net_last, self._net_ts = (rx, tx), now
 
-        # On image-based distros (Bazzite/Silverblue) "/" is a tiny composefs;
-        # the real data lives in /var/home.
-        disk = None
-        for mount in ("/var/home", "/home", "/"):
-            try:
-                disk = shutil.disk_usage(mount)
-                if disk.total > 1e9:
-                    break
-            except OSError:
-                continue
+        disks = self._disks()
 
         nvme_temps = []
         for dev in self.nvme_devs:
@@ -86,9 +123,7 @@ class SysReader:
             "swap_total_gb": swap_total / 1024 / 1024,
             "rx_mbps": rx_rate * 8 / 1_000_000,
             "tx_mbps": tx_rate * 8 / 1_000_000,
-            "disk_used_gb": (disk.used / 1e9) if disk else None,
-            "disk_total_gb": (disk.total / 1e9) if disk else None,
-            "disk_percent": round(disk.used * 100 / disk.total) if disk else None,
+            "disks": disks,
             "nvme_temps": nvme_temps,
             "load": os.getloadavg(),
             "uptime_h": uptime / 3600,

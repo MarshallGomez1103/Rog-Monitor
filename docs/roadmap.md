@@ -2,7 +2,7 @@
 
 ## Estado actual del proyecto
 
-**Versión actual:** v5.0 (junio 2026)
+**Versión actual:** v6.0 (junio 2026)
 
 ---
 
@@ -118,7 +118,7 @@ Convertir el proyecto en una alternativa ligera a herramientas tipo btop.
 
 ---
 
-# v6 - Aplicación de Escritorio
+# v6 - Aplicación de Escritorio (Completado) ✅
 
 ## Objetivo
 
@@ -126,12 +126,15 @@ Crear una interfaz gráfica moderna.
 
 ### Funciones
 
-* [ ] Aplicación Electron
-* [ ] Dashboard gráfico
-* [ ] Historial persistente
-* [x] Exportación CSV (tecla `e`)
-* [x] Exportación JSON (tecla `e`)
-* [ ] Configuración visual
+* [x] Aplicación Electron (`desktop/`, backend Python `--json-stream`)
+* [x] Dashboard gráfico (gauges, gráficas canvas, ventiladores animados)
+* [x] Botones de perfil de energía y modo GPU desde la app
+* [x] Botón de actualización (git fetch/pull + reinicio del backend)
+* [x] Entrada en el menú de aplicaciones (`scripts/install-desktop.sh`)
+* [x] Exportación CSV (tecla `e` en la TUI)
+* [x] Exportación JSON (tecla `e` en la TUI)
+* [ ] Historial persistente entre sesiones (→ v8)
+* [ ] Configuración visual desde la app (→ v8)
 
 ---
 
@@ -139,7 +142,8 @@ Crear una interfaz gráfica moderna.
 
 ## Objetivo
 
-Publicar el proyecto para la comunidad.
+Publicar el proyecto para la comunidad: fácil de descargar, transparente,
+sin telemetría de ningún tipo.
 
 ### Funciones
 
@@ -147,27 +151,44 @@ Publicar el proyecto para la comunidad.
 * [x] Estructura base del proyecto
 * [x] README inicial
 * [x] Roadmap inicial
-* [ ] README profesional
-* [ ] Wiki
-* [ ] Releases
-* [ ] GitHub Actions
-* [ ] Instalador automático
-* [ ] Publicación pública
+* [x] README profesional
+* [x] Licencia MIT
+* [x] Instalador automático (`scripts/install.sh`, `scripts/install-desktop.sh`)
+* [ ] GitHub Actions (lint + prueba `--json` en runner Ubuntu)
+* [ ] Releases con tag semver y notas de cambio
+* [ ] Capturas de pantalla en el README
+* [ ] CONTRIBUTING.md + plantillas de issues
+* [ ] Wiki (sensores soportados, troubleshooting por modelo)
+* [ ] Publicación pública + post en r/linuxhardware y foros ROG
 
 ---
 
-# Ideas futuras
+# v8 - Compatibilidad Universal (propuesto)
 
-* [ ] Overlay para juegos
-* [ ] Widget KDE Plasma
-* [ ] Widget GNOME
-* [ ] Exportación Prometheus
-* [ ] Integración Grafana
-* [ ] Benchmark térmico integrado
-* [ ] Perfil automático batería
-* [ ] Perfil automático gaming
-* [ ] Compatibilidad con más ASUS ROG
-* [ ] Compatibilidad con otras marcas
+> La meta: que funcione en cualquier portátil Linux, no solo ASUS ROG,
+> degradando funciones con elegancia según el hardware disponible.
+
+* [ ] Autodetección de plataforma (ASUS / Lenovo Legion / HP Omen / genérico)
+* [ ] Soporte AMD completo (k10temp por CCD, RAPL amd_energy, amdgpu probado)
+* [ ] Perfiles vía `platform_profile` genérico cuando no haya asus-wmi
+* [ ] Historial persistente (SQLite en ~/.local/share/rog-monitor)
+* [ ] Configuración visual desde la app de escritorio (umbrales, tema, idioma)
+* [ ] Paquetes: PyPI (`pipx install rog-monitor`), Flatpak, AUR, COPR
+* [ ] Detección automática de máximos de ventilador por modelo (base de datos
+      comunitaria en JSON)
+
+---
+
+# v9 - Power User (propuesto)
+
+* [ ] Editor de curvas de ventilador desde la app (vía asusctl o sysfs)
+* [ ] Benchmark térmico integrado (carga sintética + reporte comparable)
+* [ ] Overlay para juegos (estilo MangoHud, vía socket local)
+* [ ] Widget KDE Plasma 6 (plasmoid leyendo `--json`)
+* [ ] Exportación Prometheus (`--serve :9871/metrics`) + dashboard Grafana
+* [ ] Alertas con acciones (ej. bajar perfil automáticamente al throttlear)
+* [ ] Perfil automático por aplicación (gaming detecta Steam/juego activo)
+* [ ] Telemetría remota en LAN (ver el portátil desde otro equipo, opt-in)
 
 ---
 

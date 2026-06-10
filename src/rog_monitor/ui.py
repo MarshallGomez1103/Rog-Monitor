@@ -5,11 +5,10 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from . import graph
-
 THEMES = {
     "rog": {
         "accent": "bold red",
+        "key": "bold red",
         "border": "grey35",
         "title": "bold white",
         "dim": "grey58",
@@ -20,6 +19,7 @@ THEMES = {
     },
     "ice": {
         "accent": "bold cyan",
+        "key": "bold cyan",
         "border": "blue",
         "title": "bold white",
         "dim": "grey58",
@@ -30,6 +30,7 @@ THEMES = {
     },
     "matrix": {
         "accent": "bold green",
+        "key": "bold bright_green",
         "border": "dark_green",
         "title": "bold bright_green",
         "dim": "green",
@@ -40,15 +41,18 @@ THEMES = {
     },
 }
 
+DEFAULT_LIMITS = [70, 85, 92]
 
-def temp_style(temp: float | None) -> str:
+
+def temp_style(temp: float | None, limits: list | None = None) -> str:
     if temp is None:
         return "grey58"
-    if temp < 70:
+    lo, mid, hi = (limits or DEFAULT_LIMITS)[:3]
+    if temp < lo:
         return "green"
-    if temp < 85:
+    if temp < mid:
         return "yellow"
-    if temp < 92:
+    if temp < hi:
         return "dark_orange"
     return "bold red"
 
@@ -70,6 +74,12 @@ def _fmt(value, suffix="", nd=1):
     return Text(f"{value}{suffix}")
 
 
+def _temp_text(temp, limits) -> Text:
+    if temp is None:
+        return _fmt(None)
+    return Text(f"{temp:.0f}°C", style=temp_style(temp, limits))
+
+
 def _kv(table: Table, key: str, value) -> None:
     table.add_row(Text(key, style="grey74"), value if isinstance(value, Text) else Text(str(value)))
 
@@ -81,14 +91,28 @@ def _grid() -> Table:
     return table
 
 
+def keys_bar(t, th, message: str = "") -> Text:
+    text = Text(justify="center")
+    if message:
+        text.append(message + "   ", style="bold yellow")
+    pairs = t("keys_pairs")
+    for i, (key, label) in enumerate(pairs):
+        if i:
+            text.append("  ·  ", style="grey30")
+        text.append(key, style=th["key"])
+        text.append(f" {label}", style="grey58")
+    return text
+
+
 def cpu_panel(state, t, th) -> Panel:
     cpu = state["cpu"]
+    limits = state["limits"]["cpu"]
     table = _grid()
     avg = cpu["avg"]
-    _kv(table, t("avg"), Text(f"{avg}°C", style=temp_style(avg)) if avg is not None else _fmt(None))
+    _kv(table, t("avg"), Text(f"{avg}°C", style=temp_style(avg, limits)) if avg is not None else _fmt(None))
     _kv(table, t("max"), _fmt(cpu["max"], "°C"))
     _kv(table, t("min"), _fmt(cpu["min"], "°C"))
-    _kv(table, t("package"), Text(f"{cpu['package']:.0f}°C", style=temp_style(cpu["package"])) if cpu["package"] is not None else _fmt(None))
+    _kv(table, t("package"), _temp_text(cpu["package"], limits))
     _kv(table, t("hot_cores"), f"{cpu['hot90']} {t('cores_suffix')}")
     _kv(table, t("freq"), _fmt(cpu["freq_ghz"], " GHz", 2))
 
@@ -107,21 +131,30 @@ def cpu_panel(state, t, th) -> Panel:
 def gpu_panel(state, t, th) -> Panel:
     info = state["gpu"]
     active = info.get("active")
+    limits = state["limits"]["gpu"]
     table = _grid()
-    _kv(table, t("gpu_mode"), Text(info.get("mode") or "N/A", style=th["accent"]))
+
+    mode = Text(info.get("mode") or "N/A", style=th["accent"])
+    if info.get("pending"):
+        mode.append(f" → {info['pending']}", style="bold yellow")
+        mode.append(f" ({t('gpu_pending')})", style="grey58")
+    _kv(table, t("gpu_mode"), mode)
+    if info.get("supported"):
+        _kv(table, t("gpu_modes_avail"), Text(" · ".join(info["supported"]), style="grey58"))
+
     if active:
-        _kv(table, t("model"), active["name"])
-        temp = active["temp"]
-        _kv(table, t("temp"), Text(f"{temp:.0f}°C", style=temp_style(temp)) if temp is not None else _fmt(None))
-        util = active["util"]
+        _kv(table, t("model"), active.get("name") or "N/A")
+        _kv(table, t("temp"), _temp_text(active.get("temp"), limits))
+        util = active.get("util")
         if util is not None:
             row = Text()
             row.append_text(bar(util, 14, th["bar"]))
             row.append(f" {util:.0f}%")
             _kv(table, t("usage"), row)
-        _kv(table, t("power"), _fmt(active["power"], " W"))
-        if active["vram_total"]:
-            _kv(table, t("vram"), f"{active['vram_used']:.0f} / {active['vram_total']:.0f} MiB")
+        _kv(table, t("power"), _fmt(active.get("power"), " W"))
+        used, total = active.get("vram_used"), active.get("vram_total")
+        if used is not None and total:
+            _kv(table, t("vram"), f"{used:.0f} / {total:.0f} MiB")
     else:
         table.add_row(Text(t("gpu_off"), style="grey58"), Text(""))
     return Panel(table, title=Text(f" {t('gpu')} ", style=th["title"]), border_style=th["border"])
@@ -157,20 +190,22 @@ def profile_panel(state, t, th) -> Panel:
     _kv(table, t("governor"), gov)
 
     battery = state["battery"]
-    if battery:
+    if battery and battery.get("capacity") is not None:
         text = Text()
         text.append(f"{battery['capacity']}% ", style="bold")
-        text.append(f"({battery['status']}", style="grey58")
-        if battery["charge_limit"]:
+        text.append(f"({battery.get('status') or '?'}", style="grey58")
+        if battery.get("charge_limit"):
             text.append(f", {t('charge_limit')} {battery['charge_limit']}%", style="grey58")
         text.append(")", style="grey58")
-        if battery["watts"] and not battery["on_ac"]:
+        if battery.get("watts") and not battery.get("on_ac"):
             text.append(f" {battery['watts']} W", style="yellow")
         _kv(table, t("battery"), text)
     return Panel(table, title=Text(f" {t('profile')} ", style=th["title"]), border_style=th["border"])
 
 
 def _graph_block(title: str, serie, width: int, style: str, th) -> Group:
+    from . import graph
+
     values = serie.values()
     rows = graph.render(values, width - 6, height=4)
     hi, lo = graph.axis_labels(values, width - 6)
@@ -215,20 +250,12 @@ def history_panel(state, t, th, console_width: int) -> Panel:
 def system_panel(state, t, th) -> Panel:
     info = state["sys"]
     table = Table.grid(padding=(0, 2))
-    for _ in range(4):
+    for _ in range(3):
         table.add_column()
 
     ram = Text()
     ram.append_text(bar(info["ram_percent"], 12, th["bar"]))
     ram.append(f" {info['ram_used_gb']:.1f}/{info['ram_total_gb']:.0f}G")
-
-    disk = Text("N/A", style="grey58")
-    if info["disk_percent"] is not None:
-        disk = Text()
-        disk.append_text(bar(info["disk_percent"], 12, th["bar"]))
-        disk.append(f" {info['disk_used_gb']:.0f}/{info['disk_total_gb']:.0f}G")
-        if info["nvme_temps"]:
-            disk.append(f" {max(info['nvme_temps']):.0f}°C", style="grey58")
 
     net = Text(f"↓{info['rx_mbps']:.1f} ↑{info['tx_mbps']:.1f} Mb/s")
     load = Text(f"{info['load'][0]:.2f} {info['load'][1]:.2f} {info['load'][2]:.2f}")
@@ -236,15 +263,49 @@ def system_panel(state, t, th) -> Panel:
 
     table.add_row(
         Text(f"{t('ram')} ", style="grey74") + ram,
-        Text(f"{t('disk')} ", style="grey74") + disk,
         Text(f"{t('net')} ", style="grey74") + net,
         Text(f"{t('load')} ", style="grey74") + load,
     )
-    return Panel(table, title=Text(f" {t('system')} ", style=th["title"]), border_style=th["border"])
+
+    disks = Table.grid(padding=(0, 1))
+    disks.add_column(min_width=11)
+    disks.add_column()
+    disks.add_column()
+    for disk in info["disks"]:
+        usage = Text(f" {disk['used_gb']:.0f}/{disk['total_gb']:.0f}G ({disk['percent']}%)")
+        if info["nvme_temps"] and disk["mount"] in ("/", "/var/home", "/home"):
+            usage.append(f" · NVMe {max(info['nvme_temps']):.0f}°C", style="grey58")
+        disks.add_row(
+            Text(disk["label"], style="grey74"),
+            bar(disk["percent"], 18, th["bar"]),
+            usage,
+        )
+
+    return Panel(Group(table, disks), title=Text(f" {t('system')} ", style=th["title"]),
+                 border_style=th["border"])
 
 
-def events_panel(state, t, th) -> Panel:
-    events = list(state["events"])[-4:]
+def processes_panel(state, t, th) -> Panel:
+    table = Table.grid(padding=(0, 2))
+    table.add_column(min_width=7, justify="right")
+    table.add_column(min_width=26)
+    table.add_column(min_width=9, justify="right")
+    table.add_column(justify="right")
+    for proc in state["procs"]:
+        table.add_row(
+            Text(str(proc["pid"]), style="grey58"),
+            Text(proc["name"]),
+            Text(f"{proc['cpu']:.1f}%", style=th["accent"]),
+            Text(f"{proc['mem_mb']} MB", style="grey74"),
+        )
+    return Panel(table, title=Text(f" {t('processes')} ", style=th["title"]),
+                 border_style=th["border"])
+
+
+def events_panel(state, t, th, full: bool = False) -> Panel:
+    events = list(state["events"])
+    if not full:
+        events = events[-4:]
     if events:
         lines = []
         for stamp, level, message in events:
@@ -255,17 +316,21 @@ def events_panel(state, t, th) -> Panel:
         body = Group(*lines)
     else:
         body = Text(t("no_events"), style="grey58")
-    return Panel(body, title=Text(f" {t('events')} ", style=th["title"]), border_style=th["border"])
+    title = t("events_all_title") if full else t("events")
+    subtitle = None if full else Text(t("events_hint"), style=th["dim"])
+    return Panel(body, title=Text(f" {title} ", style=th["title"]),
+                 subtitle=subtitle, border_style=th["border"])
 
 
-def thermal_state(avg: float | None, t) -> Text:
+def thermal_state(avg: float | None, t, limits) -> Text:
     if avg is None:
         return Text("N/A", style="grey58")
-    if avg < 70:
+    lo, mid, hi = (limits or DEFAULT_LIMITS)[:3]
+    if avg < lo:
         return Text(t("state_cold"), style="bold green")
-    if avg < 85:
+    if avg < mid:
         return Text(t("state_normal"), style="bold yellow")
-    if avg < 92:
+    if avg < hi:
         return Text(t("state_hot"), style="bold dark_orange")
     return Text(t("state_critical"), style="bold red")
 
@@ -278,14 +343,20 @@ def build(state, t, console_width: int):
     header = Text(justify="center")
     header.append(f"ROG MONITOR v{__version__}", style=th["accent"])
     header.append("   ")
-    header.append_text(thermal_state(state["cpu"]["avg"], t))
+    header.append_text(thermal_state(state["cpu"]["avg"], t, state["limits"]["cpu"]))
+
+    bar_line = keys_bar(t, th, state.get("message", ""))
 
     if state.get("help_visible"):
         return Group(
             header,
+            bar_line,
             Panel(Text(t("help_body")), title=Text(f" {t('help_title')} ", style=th["title"]),
                   border_style=th["border"]),
         )
+
+    if state.get("events_visible"):
+        return Group(header, bar_line, events_panel(state, t, th, full=True))
 
     top = Table.grid(expand=True)
     top.add_column(ratio=1)
@@ -293,16 +364,12 @@ def build(state, t, console_width: int):
     top.add_row(cpu_panel(state, t, th), gpu_panel(state, t, th))
     top.add_row(fans_panel(state, t, th), profile_panel(state, t, th))
 
-    footer = Text(justify="center")
-    if state.get("message"):
-        footer.append(state["message"] + "   ", style="bold yellow")
-    footer.append(t("keys"), style="grey58")
-
     return Group(
         header,
+        bar_line,
         top,
         history_panel(state, t, th, console_width),
         system_panel(state, t, th),
         events_panel(state, t, th),
-        footer,
+        processes_panel(state, t, th),
     )

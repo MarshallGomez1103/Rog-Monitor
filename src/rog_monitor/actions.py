@@ -12,7 +12,8 @@ PROFILE_CYCLE = ["power-saver", "balanced", "performance"]
 
 def _run(cmd: list[str], timeout: float = 5.0) -> tuple[bool, str]:
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
+                              stdin=subprocess.DEVNULL)
         return proc.returncode == 0, (proc.stdout + proc.stderr).strip()
     except (OSError, subprocess.SubprocessError) as exc:
         return False, str(exc)
@@ -31,10 +32,21 @@ def cycle_profile(current: str | None) -> tuple[bool, str]:
     return ok, target
 
 
-def toggle_gpu_mode(current: str | None) -> tuple[bool, str]:
-    target = "Integrated" if (current or "").lower() == "hybrid" else "Hybrid"
-    ok, _ = _run(["supergfxctl", "--mode", target], timeout=10)
-    return ok, target
+def gpu_toggle_target(current: str | None, pending: str | None) -> tuple[str, bool]:
+    """Next mode for the g key. If a change is pending, request the current
+    mode back (i.e. cancel). Returns (target, is_cancel)."""
+    if pending and current and pending != current:
+        return current, True
+    if (current or "").lower() == "hybrid":
+        return "Integrated", False
+    return "Hybrid", False
+
+
+def set_gpu_mode(target: str) -> tuple[bool, str]:
+    """Blocking supergfxctl call; run it from a worker thread, the daemon can
+    take tens of seconds while a previous transition is in flight."""
+    ok, out = _run(["supergfxctl", "--mode", target], timeout=90)
+    return ok, out
 
 
 def export_history(series: dict, events) -> str:

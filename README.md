@@ -35,9 +35,18 @@ reads sensors directly from sysfs — no root required for the core features.
   abnormal power) with desktop notifications and an on-screen event log.
 - **System**: RAM, disk (NVMe temp), network rate, load, uptime, battery with
   charge limit.
-- **Interactive**: switch power profile (`p`), toggle iGPU/dGPU mode (`g`),
-  themes (`t`), export history to JSON/CSV (`e`).
+- **System**: RAM, every real disk (with NVMe temp), network rate, load,
+  uptime, battery with charge limit, top processes by CPU.
+- **Interactive**: switch power profile (`p`), toggle iGPU/dGPU mode (`g`,
+  with pending-change display and cancel), themes (`t`), full event view
+  (`v`), export history to JSON/CSV (`e`).
+- **Desktop app**: Electron dashboard (`desktop/`) with animated fans, canvas
+  charts, profile/GPU buttons and a one-click updater — fed by the same
+  Python core over `--json-stream`.
 - Spanish and English UI (auto-detected from `$LANG`).
+- **No telemetry, no network access**: everything is read locally from sysfs;
+  the only network use is the optional update button (git fetch on your own
+  clone).
 
 ## Install
 
@@ -55,22 +64,35 @@ default since CVE-2020-8694):
 sudo bash scripts/enable-cpu-power.sh
 ```
 
+Desktop app (requires Node.js/npm):
+
+```bash
+bash scripts/install-desktop.sh   # npm deps + "ROG Monitor" menu entry
+monitor --desktop                 # or launch from the app menu
+```
+
 ## Keys
 
 | Key | Action |
 |-----|--------|
 | `q` | quit |
 | `p` | cycle power profile (power-saver → balanced → performance) |
-| `g` | toggle GPU mode Hybrid ↔ Integrated (logout required to apply) |
+| `g` | toggle GPU mode Hybrid ↔ Integrated; press again while pending to cancel (logout required to apply) |
 | `t` | cycle color theme (rog / ice / matrix) |
+| `v` | view full event log |
 | `e` | export history as JSON + CSV |
 | `h` | help |
 
 ## CLI
 
 ```
-monitor [--once] [--interval S] [--no-gpu] [--theme rog|ice|matrix] [--lang es|en]
+monitor [--once] [--json] [--json-stream] [--desktop] [--interval S]
+        [--no-gpu] [--theme rog|ice|matrix] [--lang es|en]
 ```
+
+`--json` / `--json-stream` emit machine-readable snapshots (NDJSON) — this is
+the API the desktop app consumes, and an easy integration point for widgets
+or scripts.
 
 ## Configuration
 
@@ -89,9 +111,17 @@ monitor [--once] [--interval S] [--no-gpu] [--theme rog|ice|matrix] [--lang es|e
     "cpu_power_warn": 140,
     "fan_stopped_cpu_temp": 60,
     "cooldown_seconds": 120
+  },
+  "temp_colors": {
+    "cpu": [70, 85, 92],
+    "gpu": [60, 75, 83]
   }
 }
 ```
+
+`temp_colors` sets your personal color limits `[green_below, yellow_below,
+orange_below]` — above the last value everything shows red, in the terminal
+and in the desktop app.
 
 ## Supported hardware
 
@@ -103,8 +133,9 @@ cpu/gpu/mid). Missing sensors degrade gracefully to `N/A` — no error spam.
 
 ## Roadmap
 
-See [docs/roadmap.md](docs/roadmap.md). Next up: Electron desktop app (v6) and
-the public open-source release (v7).
+See [docs/roadmap.md](docs/roadmap.md). v1–v6 are done; next up: the public
+open-source release (v7), universal laptop compatibility (v8) and power-user
+tools like fan-curve editing and a gaming overlay (v9).
 
 ## License
 

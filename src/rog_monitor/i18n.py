@@ -24,6 +24,8 @@ STRINGS = {
         "events_suffix": "eventos",
         "gpu": "GPU",
         "gpu_mode": "Modo",
+        "gpu_modes_avail": "Modos",
+        "gpu_pending": "pendiente: cierra sesión para aplicar",
         "gpu_off": "dGPU apagada (modo Integrated)",
         "model": "Modelo",
         "temp": "Temp",
@@ -54,19 +56,31 @@ STRINGS = {
         "state_critical": "CRÍTICO",
         "events": "EVENTOS",
         "no_events": "sin eventos",
-        "keys": "q salir · p perfil · g GPU · t tema · e exportar · h ayuda",
+        "events_hint": "v ver todos",
+        "events_all_title": "TODOS LOS EVENTOS",
+        "processes": "PROCESOS",
+        "keys_pairs": [
+            ["q", "salir"], ["p", "perfil"], ["g", "GPU"], ["t", "tema"],
+            ["e", "exportar"], ["v", "eventos"], ["h", "ayuda"],
+        ],
         "help_title": "AYUDA",
         "help_body": (
             "q  salir\n"
             "p  cambiar perfil (power-saver → balanced → performance)\n"
-            "g  cambiar GPU (Hybrid ↔ Integrated, requiere cerrar sesión)\n"
+            "g  cambiar GPU Hybrid ↔ Integrated; con un cambio pendiente,\n"
+            "   volver a oprimir g lo cancela. Aplicar requiere cerrar sesión.\n"
             "t  cambiar tema\n"
             "e  exportar historial (JSON + CSV)\n"
+            "v  ver todos los eventos\n"
             "h  cerrar esta ayuda"
         ),
         "profile_set": "Perfil cambiado a {p}",
         "gpu_mode_set": "Modo GPU solicitado: {m} (cierra sesión para aplicar)",
-        "gpu_mode_err": "No se pudo cambiar el modo GPU",
+        "gpu_mode_cancel": "Cambio de GPU cancelado, se queda en {m}",
+        "gpu_mode_busy": "Cambio de GPU en curso, espera un momento…",
+        "gpu_mode_sent": "Solicitando modo {m}…",
+        "gpu_mode_err": "No se pudo cambiar el modo GPU: {e}",
+        "internal_error": "Error interno (registrado en {path})",
         "exported": "Exportado a {path}",
         "alert_cpu": "CPU caliente: {v}°C",
         "alert_gpu": "GPU caliente: {v}°C",
@@ -95,6 +109,8 @@ STRINGS = {
         "events_suffix": "events",
         "gpu": "GPU",
         "gpu_mode": "Mode",
+        "gpu_modes_avail": "Modes",
+        "gpu_pending": "pending: log out to apply",
         "gpu_off": "dGPU off (Integrated mode)",
         "model": "Model",
         "temp": "Temp",
@@ -125,19 +141,31 @@ STRINGS = {
         "state_critical": "CRITICAL",
         "events": "EVENTS",
         "no_events": "no events",
-        "keys": "q quit · p profile · g GPU · t theme · e export · h help",
+        "events_hint": "v view all",
+        "events_all_title": "ALL EVENTS",
+        "processes": "PROCESSES",
+        "keys_pairs": [
+            ["q", "quit"], ["p", "profile"], ["g", "GPU"], ["t", "theme"],
+            ["e", "export"], ["v", "events"], ["h", "help"],
+        ],
         "help_title": "HELP",
         "help_body": (
             "q  quit\n"
             "p  cycle profile (power-saver → balanced → performance)\n"
-            "g  toggle GPU (Hybrid ↔ Integrated, logout required)\n"
+            "g  toggle GPU Hybrid ↔ Integrated; pressing g again while a\n"
+            "   change is pending cancels it. Applying requires logging out.\n"
             "t  cycle theme\n"
             "e  export history (JSON + CSV)\n"
+            "v  view all events\n"
             "h  close this help"
         ),
         "profile_set": "Profile set to {p}",
         "gpu_mode_set": "GPU mode requested: {m} (log out to apply)",
-        "gpu_mode_err": "Could not change GPU mode",
+        "gpu_mode_cancel": "GPU change cancelled, staying on {m}",
+        "gpu_mode_busy": "GPU change in progress, hold on…",
+        "gpu_mode_sent": "Requesting {m} mode…",
+        "gpu_mode_err": "Could not change GPU mode: {e}",
+        "internal_error": "Internal error (logged to {path})",
         "exported": "Exported to {path}",
         "alert_cpu": "CPU hot: {v}°C",
         "alert_gpu": "GPU hot: {v}°C",

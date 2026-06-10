@@ -22,6 +22,12 @@ DEFAULTS = {
         "fan_stopped_cpu_temp": 60,
         "cooldown_seconds": 120,
     },
+    # color thresholds [green_below, yellow_below, orange_below] in °C;
+    # at or above the last value everything turns red
+    "temp_colors": {
+        "cpu": [70, 85, 92],
+        "gpu": [60, 75, 83],
+    },
 }
 
 

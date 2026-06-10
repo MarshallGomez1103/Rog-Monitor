@@ -1,5 +1,36 @@
 # Changelog
 
+## 6.0.0 — 2026-06-10
+
+### Added
+- **Electron desktop app** (`desktop/`): instrument-panel design, animated
+  fans at real RPM, canvas history charts, power-profile and GPU-mode buttons,
+  one-click repo updater, auto-recovering Python backend over `--json-stream`.
+- `monitor --desktop` flag and "ROG Monitor" application-menu entry
+  (`scripts/install-desktop.sh`).
+- `--json` / `--json-stream` machine-readable output (NDJSON API).
+- Top-processes panel (instantaneous CPU% from /proc deltas).
+- All real disks shown (one per device, ostree-aware mount dedup).
+- Full event log view (`v` key) and key bar pinned under the title with
+  theme-colored keys.
+- User-customizable temperature color limits (`temp_colors` in config).
+- GPU mode panel now shows supported modes and pending changes
+  ("Hybrid → Integrated, log out to apply"); pressing `g` during a pending
+  change cancels it.
+- MIT LICENSE file; proposed v8/v9 roadmap.
+
+### Fixed
+- GPU toggle no longer requests the mode you are already in after a transient
+  supergfxctl read failure (failures are no longer cached).
+- GPU mode changes run in a worker thread — the UI no longer freezes (and
+  could previously appear to hang) while supergfxd is mid-transition.
+- Child processes (supergfxctl, busctl, notify-send) no longer inherit the
+  terminal stdin, which could swallow keystrokes (the "t crashed it" bug).
+- Crash-proof render loop: unexpected errors are logged to
+  `~/.local/share/rog-monitor/error.log` and shown as a flash message instead
+  of killing the app.
+- VRAM display no longer crashes on `[N/A]` values during GPU transitions.
+
 ## 5.0.0 — 2026-06-10
 
 Complete rewrite: single script → modular Python package (`src/rog_monitor/`).
