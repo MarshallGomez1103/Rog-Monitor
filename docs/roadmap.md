@@ -157,12 +157,58 @@ Crear una interfaz gráfica moderna.
 * [x] Gráfica de potencia GPU en el historial (app y TUI) (v7.0)
 * [x] Identidad de aplicación correcta en la barra de tareas
       (nombre + ícono, StartupWMClass/desktopName) (v7.0)
-* [ ] Salud de discos (SMART vía helper con permiso de root) (→ v8)
-* [ ] Umbrales de temperatura/alertas editables desde la app (→ v8)
+* [x] Salud de discos SMART (botón en Sistema, pkexec + smartctl) (v7.1)
+* [x] Procesos en % del CPU total por defecto (antes era por núcleo) (v7.1)
+* [x] Clic en RAM → qué procesos consumen la memoria, con cierre (v7.1)
+* [x] Historial 2×2 (CPU temp|W arriba, GPU temp|W abajo) con eje de tiempo (v7.1)
+* [x] Botón REPORTAR ERROR → abre issue en GitHub con info del sistema (v7.1)
+* [x] Curvas de ventilador editadas en % (no PWM crudo); ajuste individual por fila (v7.1)
+* [x] Tamaño de letra configurable (A−/Normal/A+/A++ en TEMA, persiste) (v7.1)
+* [x] Scrollbars delgadas con color del tema (v7.1)
+* [x] TUI: la rueda del mouse ya no descuadra la pantalla (mouse tracking) (v7.1)
+* [ ] Umbrales de temperatura/alertas editables desde la app (→ v9)
 
 ---
 
-# v8 - Compatibilidad Universal (propuesto)
+# v8 - Iluminación RGB "Aura" (SIGUIENTE — plan detallado para continuar)
+
+> Controlar las luces del teclado/chasis como Armoury Crate: efectos, colores,
+> perfiles personalizados y modo música. ASUS primero (asusctl), luego
+> periféricos de otras marcas (Redragon, etc.) vía OpenRGB.
+
+## Orden de trabajo (hacer en esta secuencia)
+
+1. **Habilitar asusd** (el demonio de asusctl; rog-control-center es su GUI):
+   - Ya existe `scripts/enable-asusd.sh` en el repo de scripts del sistema
+     (carpeta `Rog-Monitor-Scripts` en el home). OJO: verificar que NO pelee
+     con rog-profile-sync.service (ambos tocan platform_profile y curvas).
+     Solución esperada: asusd maneja SOLO los LED (aura); perfiles y curvas
+     siguen en nuestros scripts. Probar en vivo antes de seguir.
+2. **Capa de backend** `src/rog_monitor/aura.py`:
+   - Detección: ¿existe `asusctl`? → `asusctl aura --help` lista los modos.
+   - Comandos: `asusctl aura <modo>` (static, breathe, rainbow-cycle, pulse…),
+     `-c <RRGGBB>` para color, brillo con `asusctl -k <off|low|med|high>`.
+   - Alternativa más robusta: D-Bus org.asuslinux.Daemon.
+3. **IPC + UI**: nuevo bloque "08 Iluminación" en la app:
+   - Selector de efecto, color (input type=color), brillo.
+   - Perfiles con nombre (JSON en ~/.config/rog-monitor/aura.json),
+     opción de aplicar al iniciar sesión.
+4. **Periféricos no-ASUS (Redragon, etc.)** vía **OpenRGB**:
+   - Detectar `openrgb`; si falta, explicar instalación (Flatpak).
+   - Usar su SDK local (puerto 6742): listar dispositivos, aplicar color/efecto.
+5. **Modo música**: nivel de audio del sistema (PipeWire: `parec`/pw API),
+   amplitud → brillo/color, máx 15-20 fps. Botón ON/OFF claro.
+6. **Benchmarks térmicos** (mismo sprint):
+   - CPU: carga 100% N segundos (multiproceso Python, sin dependencias) →
+     reporte: temp máx, watts máx, throttling, RPM alcanzados.
+   - GPU: `glmark2` si existe (o carga Vulkan simple) → mismo reporte.
+   - Botón "BENCHMARK" con advertencia de calor y resultados exportables.
+
+Referencias: asusctl https://gitlab.com/asus-linux/asusctl · OpenRGB https://openrgb.org
+
+---
+
+# v9 - Compatibilidad Universal (propuesto)
 
 > La meta: que funcione en cualquier portátil Linux, priorizando la familia
 > ASUS ROG (Strix, Zephyrus, TUF) y degradando con elegancia en el resto.
@@ -178,9 +224,12 @@ Crear una interfaz gráfica moderna.
 
 ---
 
-# v9 - Power User (propuesto)
+# v10 - Power User (propuesto)
 
-* [ ] Editor de curvas de ventilador desde la app (vía asusctl o sysfs)
+* [ ] Undervolt/overclock de CPU (intel offset vía msr/x86_energy_perf) y GPU
+      (nvidia-smi -lgc/-pl, GreenWithEnvy como referencia) — MUY serio:
+      detectar el modelo exacto, mostrar documentación por modelo, límites
+      seguros, doble consentimiento y botón de restaurar valores de fábrica
 * [ ] Benchmark térmico integrado (carga sintética + reporte comparable)
 * [ ] Overlay para juegos (estilo MangoHud, vía socket local)
 * [ ] Widget KDE Plasma 6 (plasmoid leyendo `--json`)
@@ -191,7 +240,7 @@ Crear una interfaz gráfica moderna.
 
 ---
 
-# v10 - Open Source (lo último, cuando Marshall dé el visto bueno)
+# v11 - Open Source (lo último, cuando Marshall dé el visto bueno)
 
 ## Objetivo
 

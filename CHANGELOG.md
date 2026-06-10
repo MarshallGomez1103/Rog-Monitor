@@ -1,5 +1,26 @@
 # Changelog
 
+## 7.1.0 — 2026-06-10
+
+### Added
+- Process CPU% is now over the TOTAL CPU by default (per-core figure kept as
+  `cpu_core` in the JSON API).
+- Click the RAM bar: modal with the top memory consumers (click to close one).
+- Disk health button (SMART via pkexec + smartctl) in the System block.
+- REPORT ERROR button: opens a pre-filled GitHub issue on the repo.
+- Time axis on every chart ("hace N min" / "ahora"); history reorganized 2x2:
+  CPU temp|watts on top, GPU temp|watts below.
+- Font-size options (A-/Normal/A+/A++) in the TEMA modal; zoom persists.
+- Fan curves edited in % of each fan's maximum instead of raw PWM, with
+  per-fan individual adjustment and clearer explanations.
+- AGENTS.md + docs/HANDOFF.md: shared memory so any agent (Claude/Codex/...)
+  can continue the work with full context.
+
+### Fixed
+- TUI no longer breaks when scrolling the mouse wheel (mouse tracking claimed,
+  escape sequences discarded).
+- Thin themed scrollbars; the ugly default body scrollbar is gone.
+
 ## 7.0.0 — 2026-06-10 · "Centro de Control"
 
 ### Added

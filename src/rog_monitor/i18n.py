@@ -61,7 +61,7 @@ STRINGS = {
         "events_all_title": "TODOS LOS EVENTOS",
         "processes": "PROCESOS",
         "proc_name": "proceso",
-        "proc_cpu": "% CPU (100 = 1 núcleo)",
+        "proc_cpu": "% del CPU total",
         "proc_ram": "RAM",
         "keys_pairs": [
             ["q", "salir"], ["p", "perfil"], ["g", "GPU"], ["t", "tema"],
@@ -154,7 +154,7 @@ STRINGS = {
         "events_all_title": "ALL EVENTS",
         "processes": "PROCESSES",
         "proc_name": "process",
-        "proc_cpu": "% CPU (100 = 1 core)",
+        "proc_cpu": "% of total CPU",
         "proc_ram": "RAM",
         "keys_pairs": [
             ["q", "quit"], ["p", "profile"], ["g", "GPU"], ["t", "theme"],

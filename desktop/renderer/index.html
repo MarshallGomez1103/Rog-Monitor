@@ -32,7 +32,8 @@
         <span id="update-label">ACTUALIZAR</span>
       </button>
 
-      <button id="theme-btn" class="ghost" title="Apariencia: tema y modo claro/oscuro">TEMA</button>
+      <button id="report-btn" class="ghost" title="Abre un issue en el repositorio de GitHub con la información del sistema ya escrita">REPORTAR ERROR</button>
+      <button id="theme-btn" class="ghost" title="Apariencia: tema, modo claro/oscuro y tamaño">TEMA</button>
     </div>
   </header>
 
@@ -86,19 +87,21 @@
     <section class="col col-right">
       <article class="block charts">
         <h2><i>04</i> Historial</h2>
-        <div class="chart-row">
-          <div class="chart"><label>CPU °C</label><canvas id="chart-cpu"></canvas></div>
-          <div class="chart"><label>GPU °C</label><canvas id="chart-gpu"></canvas></div>
-          <div class="chart"><label>CPU W</label><canvas id="chart-power"></canvas></div>
-          <div class="chart"><label>GPU W</label><canvas id="chart-gpu-power"></canvas></div>
+        <div class="chart-row grid2">
+          <div class="chart"><label>CPU · Temperatura °C</label><canvas id="chart-cpu"></canvas></div>
+          <div class="chart"><label>CPU · Consumo W</label><canvas id="chart-power"></canvas></div>
+          <div class="chart"><label>GPU · Temperatura °C</label><canvas id="chart-gpu"></canvas></div>
+          <div class="chart"><label>GPU · Consumo W</label><canvas id="chart-gpu-power"></canvas></div>
         </div>
       </article>
 
       <article class="block" id="system-block">
         <h2><i>05</i> Sistema</h2>
         <div class="sysrow">
-          <div class="meter"><label>RAM <span id="ram-label"></span></label><div class="track"><div id="ram-bar"></div></div></div>
+          <div class="meter clickable" id="ram-meter" title="Clic para ver qué está consumiendo la RAM"><label>RAM <span id="ram-label"></span></label><div class="track"><div id="ram-bar"></div></div></div>
           <div id="disks"></div>
+          <button class="ghost" id="disk-health-btn" title="Lee el estado SMART de los discos (pide tu contraseña)">SALUD DE DISCOS</button>
+          <p id="disk-health-out" class="note hidden"></p>
           <div class="syskv">
             <div><label>Red</label><b id="net">--</b></div>
             <div><label>Carga</label><b id="load">--</b></div>
@@ -121,7 +124,7 @@
           <table id="procs">
             <thead>
               <tr><th>PID</th><th>proceso</th>
-                  <th class="r" title="Porcentaje de un núcleo que usó en el último segundo">% CPU</th>
+                  <th class="r" title="Porcentaje del procesador COMPLETO (todos los núcleos) usado en el último segundo">% CPU</th>
                   <th class="r" title="Memoria RAM residente">RAM</th></tr>
             </thead>
             <tbody id="procs-body"></tbody>
@@ -137,6 +140,18 @@
   </footer>
 
   <div id="toast" class="hidden"></div>
+
+  <div id="ram-modal" class="hidden">
+    <div class="modal-card">
+      <h3>¿Qué está usando la RAM?</h3>
+      <p class="sub">Memoria residente real por proceso (clic para cerrar uno).</p>
+      <table id="ram-procs">
+        <thead><tr><th>PID</th><th>proceso</th><th class="r">RAM</th></tr></thead>
+        <tbody id="ram-procs-body"></tbody>
+      </table>
+      <button class="ghost modal-close" id="ram-close">Cerrar</button>
+    </div>
+  </div>
 
   <div id="fan-modal" class="hidden">
     <div class="modal-card wide">
@@ -156,6 +171,10 @@
         <button class="ghost" id="fan-benchmark" title="Pone los 3 ventiladores al 100% durante 60 segundos y mide su RPM máximo real. Restaura todo al terminar.">MEDIR MÁXIMOS (60 s)</button>
       </div>
       <p class="sub" id="fan-max-note">Máximos estimados: CPU 7000 · GPU 6900 · MID 7500 RPM (mide los reales con el botón).</p>
+      <p class="sub">Las velocidades se editan en <b>% del máximo de cada ventilador</b>
+        (100% = su tope real). El cap se traduce a ese porcentaje usando los
+        máximos medidos, por eso conviene medirlos primero. Puedes ajustar cada
+        ventilador individualmente en su fila.</p>
 
       <div id="fan-curves"></div>
 
@@ -180,6 +199,13 @@
         <button data-mode="system">🖥 Sistema</button>
       </div>
       <div class="theme-grid" id="theme-grid"></div>
+      <h3 class="size-title">Tamaño</h3>
+      <div class="mode-row segment" id="size-seg">
+        <button data-zoom="-0.5">A−</button>
+        <button data-zoom="0">Normal</button>
+        <button data-zoom="0.5">A+</button>
+        <button data-zoom="1">A++</button>
+      </div>
       <button class="ghost modal-close" id="theme-close">Cerrar</button>
     </div>
   </div>

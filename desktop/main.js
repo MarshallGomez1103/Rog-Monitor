@@ -1,7 +1,7 @@
 // ROG Monitor desktop: Electron shell over the Python sensor core.
 // The backend is `python -m rog_monitor --json-stream`; one JSON per second.
 
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const { spawn, execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -170,6 +170,40 @@ ipcMain.handle('fan-benchmark', async () => {
     }
   }
   return { ok: true, max, raw: res.out };
+});
+
+ipcMain.handle('report-issue', async (_e, body) => {
+  const remote = await run('git', ['remote', 'get-url', 'origin']);
+  if (!remote.ok || !remote.out) return { ok: false, err: 'sin remoto git' };
+  const url = remote.out
+    .replace(/^git@github\.com:/, 'https://github.com/')
+    .replace(/\.git$/, '');
+  const params = new URLSearchParams({
+    title: '[bug] ',
+    body: body || '',
+    labels: 'bug',
+  });
+  shell.openExternal(`${url}/issues/new?${params}`);
+  return { ok: true };
+});
+
+ipcMain.handle('disk-health', async () => {
+  // smartctl needs root: one pkexec prompt for all disks
+  const devices = fs.readdirSync('/sys/block')
+    .filter((d) => /^(nvme\d+n\d+|sd[a-z])$/.test(d))
+    .map((d) => `/dev/${d}`);
+  if (!devices.length) return { ok: false, err: 'no encontré discos' };
+  const script = devices.map((d) =>
+    `echo "===${d}"; smartctl -H -A ${d} 2>&1 | grep -iE "result|percentage used|temperature|power_on|available spare:|reallocated|wear" || true`
+  ).join('; ');
+  const res = await run('pkexec', ['sh', '-c', script], 30000);
+  if (!res.ok) return res;
+  const disks = [];
+  for (const part of res.out.split(/^===/m).filter(Boolean)) {
+    const [dev, ...lines] = part.trim().split('\n');
+    disks.push({ device: dev, info: lines.map((l) => l.trim()).filter(Boolean) });
+  }
+  return { ok: true, disks };
 });
 
 ipcMain.handle('kill-process', (_e, pid) => {

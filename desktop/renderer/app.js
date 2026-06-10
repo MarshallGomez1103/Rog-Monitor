@@ -107,15 +107,15 @@ function drawChart(canvas, values, color) {
   if (hi - lo < 10) { hi = lo + 10; }
   const pad = 8;
   const x = (i) => (i / (data.length - 1)) * w;
-  const y = (v) => h - pad - ((v - lo) / (hi - lo)) * (h - pad * 2);
+  const y = (v) => (h - 12) - pad - ((v - lo) / (hi - lo)) * ((h - 12) - pad * 2);
 
   const grad = ctx.createLinearGradient(0, 0, 0, h);
   grad.addColorStop(0, color + '55');
   grad.addColorStop(1, color + '00');
   ctx.beginPath();
-  ctx.moveTo(0, h);
+  ctx.moveTo(0, h - 12);
   data.forEach((v, i) => ctx.lineTo(x(i), y(v)));
-  ctx.lineTo(w, h);
+  ctx.lineTo(w, h - 12);
   ctx.closePath();
   ctx.fillStyle = grad;
   ctx.fill();
@@ -130,7 +130,13 @@ function drawChart(canvas, values, color) {
   ctx.font = '11px monospace';
   ctx.textAlign = 'right';
   ctx.fillText(hi.toFixed(0), 22, 11);
-  ctx.fillText(lo.toFixed(0), 22, h - 3);
+  ctx.fillText(lo.toFixed(0), 22, h - 14);
+  // time axis: one sample per second
+  const mins = Math.round(data.length / 60);
+  ctx.textAlign = 'left';
+  ctx.fillText(mins >= 1 ? `hace ${mins} min` : 'hace <1 min', 2, h - 2);
+  ctx.textAlign = 'right';
+  ctx.fillText('ahora', w - 2, h - 2);
   const last = data[data.length - 1];
   ctx.fillStyle = color;
   ctx.font = 'bold 13px monospace';
@@ -458,10 +464,10 @@ function renderCurves() {
     <div class="curve-fan" data-fan="${fan}">
       <h4>${FAN_NAMES[fan]} — máx estimado ${fanMax[fan]} RPM</h4>
       <div class="curve-table">
-        <span>°C</span>
+        <span title="A esta temperatura…">°C</span>
         ${c.temps.map((v, i) => `<input type="number" min="0" max="110" data-kind="temps" data-i="${i}" value="${v}">`).join('')}
-        <span title="0 = apagado, 255 = 100%">PWM</span>
-        ${c.pwms.map((v, i) => `<input type="number" min="0" max="255" data-kind="pwms" data-i="${i}" value="${v}">`).join('')}
+        <span title="…el ventilador gira a este porcentaje de su máximo">% vel</span>
+        ${c.pwms.map((v, i) => `<input type="number" min="0" max="100" data-kind="pwms" data-i="${i}" value="${Math.round(v / 255 * 100)}">`).join('')}
       </div>
     </div>`).join('');
 }
@@ -472,7 +478,10 @@ function readCurvesFromForm() {
     const fan = box.dataset.fan;
     curves[fan] = { temps: Array(8).fill(0), pwms: Array(8).fill(0) };
     box.querySelectorAll('input').forEach((inp) => {
-      curves[fan][inp.dataset.kind][+inp.dataset.i] = Math.round(+inp.value);
+      const raw = Math.round(+inp.value);
+      // speeds are edited as %, stored as PWM 0-255
+      curves[fan][inp.dataset.kind][+inp.dataset.i] =
+        inp.dataset.kind === 'pwms' ? Math.round(raw * 255 / 100) : raw;
     });
   });
   return curves;
@@ -543,6 +552,68 @@ $('fan-save').addEventListener('click', async () => {
   } else {
     toast(`Error: ${res.err}`);
   }
+});
+
+/* ---------- report issue ---------- */
+
+$('report-btn').addEventListener('click', async () => {
+  const s = lastStats || {};
+  const body = [
+    '**Describe el problema:**', '', '_(escribe aquí)_', '',
+    '---', '**Información del sistema (autogenerada):**',
+    `- ROG Monitor: v${s.version || '?'}`,
+    `- CPU: ${s.cpu?.model || '?'}`,
+    `- GPU: ${s.gpu?.active?.name || 'N/A'} (modo ${s.gpu?.mode || '?'})`,
+    `- Perfil: ${s.asus_profile || '?'} / ${s.ppd_profile || '?'}`,
+  ].join('\n');
+  const res = await window.rog.reportIssue(body);
+  toast(res.ok ? 'Abriendo GitHub para crear el issue…' : `No se pudo: ${res.err}`);
+});
+
+/* ---------- RAM detail ---------- */
+
+$('ram-meter').addEventListener('click', () => {
+  const procs = lastStats?.procs_mem || [];
+  $('ram-procs-body').innerHTML = procs.map((p) => `
+    <tr data-pid="${p.pid}" data-name="${p.name}" title="Clic para cerrar ${p.name}">
+      <td class="pid">${p.pid}</td><td>${p.name}</td>
+      <td class="mem">${(p.mem_mb / 1024).toFixed(2)} GB</td></tr>`).join('');
+  $('ram-modal').classList.remove('hidden');
+});
+$('ram-close').addEventListener('click', () => $('ram-modal').classList.add('hidden'));
+$('ram-modal').addEventListener('click', (e) => {
+  if (e.target === $('ram-modal')) $('ram-modal').classList.add('hidden');
+});
+$('ram-procs-body').addEventListener('click', async (e) => {
+  const row = e.target.closest('tr[data-pid]');
+  if (!row) return;
+  const { pid, name } = row.dataset;
+  if (!window.confirm(`¿Cerrar "${name}" (PID ${pid})? Perderás lo no guardado en esa app.`)) return;
+  const res = await window.rog.killProcess(pid);
+  toast(res.ok ? `Señal de cierre enviada a ${name}` : `No se pudo: ${res.err}`);
+});
+
+/* ---------- disk health ---------- */
+
+$('disk-health-btn').addEventListener('click', async () => {
+  toast('Leyendo SMART… (pide tu contraseña)');
+  const res = await window.rog.diskHealth();
+  const out = $('disk-health-out');
+  if (!res.ok) { toast(`No se pudo: ${res.err}`); return; }
+  out.innerHTML = res.disks.map((d) =>
+    `<b>${d.device}</b><br>${d.info.join('<br>') || 'sin datos SMART'}`).join('<br><br>');
+  out.classList.remove('hidden');
+});
+
+/* ---------- size / zoom persistence ---------- */
+
+const savedZoom = parseFloat(localStorage.getItem('zoomLevel') || '0');
+if (savedZoom) window.rog.zoomTo(savedZoom);
+document.querySelectorAll('#size-seg button').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    window.rog.zoomTo(parseFloat(btn.dataset.zoom));
+    toast('Tamaño aplicado (también funciona Ctrl + rueda del mouse)');
+  });
 });
 
 /* ---------- export events ---------- */

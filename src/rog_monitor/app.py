@@ -105,6 +105,7 @@ class App:
             "battery": self.battery.read(),
             "sys": self.sys.read(),
             "procs": self.procs.read(),
+            "procs_mem": self.procs.top_memory(),
             "series": self.series,
             "events": self.alerts.events,
             "limits": self.config["temp_colors"],

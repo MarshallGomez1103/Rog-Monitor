@@ -13,8 +13,16 @@ contextBridge.exposeInMainWorld('rog', {
   getFanConfig: (profile) => ipcRenderer.invoke('get-fan-config', profile),
   setFanConfig: (cfg) => ipcRenderer.invoke('set-fan-config', cfg),
   fanBenchmark: () => ipcRenderer.invoke('fan-benchmark'),
+  reportIssue: (body) => ipcRenderer.invoke('report-issue', body),
+  diskHealth: () => ipcRenderer.invoke('disk-health'),
   zoom: (delta) => {
-    if (delta === null) { webFrame.setZoomLevel(0); return; }
-    webFrame.setZoomLevel(Math.max(-3, Math.min(4, webFrame.getZoomLevel() + delta)));
+    const level = delta === null ? 0
+      : Math.max(-3, Math.min(4, webFrame.getZoomLevel() + delta));
+    webFrame.setZoomLevel(level);
+    try { localStorage.setItem('zoomLevel', String(level)); } catch (_) {}
+  },
+  zoomTo: (level) => {
+    webFrame.setZoomLevel(level);
+    try { localStorage.setItem('zoomLevel', String(level)); } catch (_) {}
   },
 });

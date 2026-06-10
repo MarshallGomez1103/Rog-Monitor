@@ -47,7 +47,9 @@ class ProcReader:
             prev = self._last.get(pid)
             if prev is None or dt <= 0:
                 continue
-            cpu = (jiffies - prev) * 100 * ncpu / dt
+            # % of the WHOLE CPU (all cores); cpu_core is the top-style
+            # per-core figure (100 = one full core)
+            cpu = (jiffies - prev) * 100 / dt
             if cpu <= 0:
                 continue
             rows.append(
@@ -55,6 +57,7 @@ class ProcReader:
                     "pid": pid,
                     "name": comm[:24],
                     "cpu": round(cpu, 1),
+                    "cpu_core": round(cpu * ncpu, 1),
                     "mem_mb": rss_pages * PAGE_KB // 1024,
                 }
             )
@@ -62,4 +65,27 @@ class ProcReader:
         self._last = current
         self._last_total = total
         rows.sort(key=lambda r: r["cpu"], reverse=True)
+        return rows[:top]
+
+    def top_memory(self, top: int = 8) -> list[dict]:
+        """Top processes by resident RAM (no deltas needed)."""
+        rows = []
+        for entry in Path("/proc").iterdir():
+            if not entry.name.isdigit():
+                continue
+            try:
+                stat = (entry / "stat").read_text()
+            except OSError:
+                continue
+            rparen = stat.rfind(")")
+            comm = stat[stat.find("(") + 1 : rparen]
+            fields = stat[rparen + 2 :].split()
+            try:
+                rss_pages = int(fields[21])
+            except (IndexError, ValueError):
+                continue
+            mem = rss_pages * PAGE_KB // 1024
+            if mem > 0:
+                rows.append({"pid": int(entry.name), "name": comm[:24], "mem_mb": mem})
+        rows.sort(key=lambda r: r["mem_mb"], reverse=True)
         return rows[:top]

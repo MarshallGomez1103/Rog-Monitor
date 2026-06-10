@@ -404,3 +404,28 @@ input[type="number"] {
 .curve-table span { font-size: 11px; color: var(--dim); }
 .curve-table input { width: 100%; padding: 4px 4px; font-size: 12px; text-align: center; }
 .warn-note { margin-top: 12px; }
+
+/* ---------- v7.1: layout & polish ---------- */
+.chart-row.grid2 { grid-template-columns: 1fr 1fr; }
+@media (max-width: 760px) { .chart-row.grid2 { grid-template-columns: 1fr; } }
+.size-title { margin-top: 16px; margin-bottom: 8px; font-size: 13px; }
+#ram-modal { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center; }
+#ram-procs { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+#ram-procs th { text-align: left; font-size: 10.5px; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--dim); padding: 0 6px 6px;
+  border-bottom: 1px solid var(--hair); }
+#ram-procs th.r { text-align: right; }
+#ram-procs td { padding: 5px 6px; border-bottom: 1px dashed var(--hair); font-family: var(--mono); }
+#ram-procs td.pid { color: var(--dim); font-size: 12px; }
+#ram-procs td.mem { color: var(--accent); text-align: right; }
+#ram-procs tbody tr { cursor: pointer; }
+#ram-procs tbody tr:hover { background: var(--chip); }
+#disk-health-out { user-select: text; font-family: var(--mono); font-size: 12px; }
+
+/* thin themed scrollbars (no ugly default bar) */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--hair); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+body::-webkit-scrollbar { width: 0; }
