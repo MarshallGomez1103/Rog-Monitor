@@ -2,7 +2,7 @@
 
 ## Estado actual del proyecto
 
-**Versión actual:** v2.1 (en desarrollo)
+**Versión actual:** v5.0 (junio 2026)
 
 ---
 
@@ -33,7 +33,7 @@ Crear un monitor funcional para la ASUS ROG Strix desde terminal.
 
 ---
 
-# v2 - Interfaz Mejorada (En progreso) 🚧
+# v2 - Interfaz Mejorada (Completado) ✅
 
 ## Objetivo
 
@@ -46,19 +46,19 @@ Mejorar la experiencia visual sin perder rendimiento.
 * [x] Historial térmico CPU
 * [x] Historial térmico GPU
 * [x] Estado térmico general
-* [ ] Colores dinámicos completos
-* [ ] Barras visuales para ventiladores
-* [ ] Barras visuales para CPU
-* [ ] Barras visuales para GPU
-* [ ] Detección de GPU activa
-* [ ] Detección de modo Hybrid / Integrated / Dedicated
-* [ ] Eliminación completa de mensajes de error de sensores
-* [ ] Interfaz sin parpadeos
-* [ ] Mejor distribución visual
+* [x] Colores dinámicos completos
+* [x] Barras visuales para ventiladores
+* [x] Barras visuales para CPU
+* [x] Barras visuales para GPU
+* [x] Detección de GPU activa
+* [x] Detección de modo Hybrid / Integrated / Dedicated
+* [x] Eliminación completa de mensajes de error de sensores
+* [x] Interfaz sin parpadeos
+* [x] Mejor distribución visual
 
 ---
 
-# v3 - Estadísticas Avanzadas
+# v3 - Estadísticas Avanzadas (Completado) ✅
 
 ## Objetivo
 
@@ -66,20 +66,23 @@ Convertir el monitor en una herramienta de análisis.
 
 ### Funciones
 
-* [ ] Potencia CPU en tiempo real (Intel RAPL)
-* [ ] Potencia promedio CPU
-* [ ] Potencia máxima CPU
-* [ ] Potencia mínima CPU
-* [ ] Historial de potencia CPU
-* [ ] Temperatura promedio 1 minuto
-* [ ] Temperatura promedio 5 minutos
-* [ ] Temperatura promedio 15 minutos
-* [ ] Registro de thermal throttling
-* [ ] Registro de eventos térmicos
+* [x] Potencia CPU en tiempo real (Intel RAPL)
+* [x] Potencia promedio CPU
+* [x] Potencia máxima CPU
+* [x] Potencia mínima CPU
+* [x] Historial de potencia CPU
+* [x] Temperatura promedio 1 minuto
+* [x] Temperatura promedio 5 minutos
+* [x] Temperatura promedio 15 minutos
+* [x] Registro de thermal throttling
+* [x] Registro de eventos térmicos
+
+> Nota: la potencia CPU requiere `sudo bash scripts/enable-cpu-power.sh`
+> (el kernel restringe RAPL a root por CVE-2020-8694).
 
 ---
 
-# v4 - Sistema de Alertas
+# v4 - Sistema de Alertas (Completado) ✅
 
 ## Objetivo
 
@@ -87,16 +90,16 @@ Avisar cuando exista riesgo térmico o anomalías.
 
 ### Funciones
 
-* [ ] Alerta por temperatura CPU
-* [ ] Alerta por temperatura GPU
-* [ ] Alerta por thermal throttling
-* [ ] Alerta por ventiladores detenidos
-* [ ] Alerta por potencia anormal
-* [ ] Alertas configurables
+* [x] Alerta por temperatura CPU
+* [x] Alerta por temperatura GPU
+* [x] Alerta por thermal throttling
+* [x] Alerta por ventiladores detenidos
+* [x] Alerta por potencia anormal
+* [x] Alertas configurables (config.json + notificaciones de escritorio)
 
 ---
 
-# v5 - Dashboard Profesional
+# v5 - Dashboard Profesional (Completado) ✅
 
 ## Objetivo
 
@@ -104,14 +107,14 @@ Convertir el proyecto en una alternativa ligera a herramientas tipo btop.
 
 ### Funciones
 
-* [ ] Vista CPU
-* [ ] Vista GPU
-* [ ] Vista RAM
-* [ ] Vista almacenamiento
-* [ ] Vista red
-* [ ] Navegación por teclado
-* [ ] Temas visuales
-* [ ] Configuración persistente
+* [x] Vista CPU
+* [x] Vista GPU
+* [x] Vista RAM
+* [x] Vista almacenamiento (uso + temperatura NVMe)
+* [x] Vista red
+* [x] Navegación por teclado (perfil, GPU, temas, exportar, ayuda)
+* [x] Temas visuales (rog / ice / matrix)
+* [x] Configuración persistente (~/.config/rog-monitor/config.json)
 
 ---
 
@@ -126,8 +129,8 @@ Crear una interfaz gráfica moderna.
 * [ ] Aplicación Electron
 * [ ] Dashboard gráfico
 * [ ] Historial persistente
-* [ ] Exportación CSV
-* [ ] Exportación JSON
+* [x] Exportación CSV (tecla `e`)
+* [x] Exportación JSON (tecla `e`)
 * [ ] Configuración visual
 
 ---
@@ -193,5 +196,15 @@ Publicar el proyecto para la comunidad.
   * CPU Package ≈ 95°C
   * Promedio CPU ≈ 75–80°C
   * Solo 1–2 núcleos superaban los 90°C simultáneamente.
-* Los ventiladores alcanzan aproximadamente 7000 RPM en carga máxima.
+* Los ventiladores alcanzan aproximadamente 7000 RPM en carga máxima
+  (CPU ~7000, GPU ~6900, central ~7500 al 100% de PWM).
 * El comportamiento observado es consistente con el diseño térmico del equipo.
+* Con `intel_pstate` (y `amd_pstate`) el governor del kernel siempre reporta
+  `powersave`, incluso en modo performance: lo que cambia entre perfiles es el
+  **EPP** (`energy_performance_preference`) y el perfil de plataforma ASUS.
+  No es un bug; el monitor ahora muestra ambos y lo aclara.
+* Bazzite usa `tuned-ppd` (no existe `powerprofilesctl`); el perfil se lee y
+  se cambia por D-Bus: `org.freedesktop.UPower.PowerProfiles`.
+* La lectura de potencia CPU (RAPL `energy_uj`) está restringida a root por
+  la mitigación de PLATYPUS (CVE-2020-8694); se habilita con una regla
+  tmpfiles (`scripts/enable-cpu-power.sh`).

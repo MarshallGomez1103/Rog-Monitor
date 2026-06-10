@@ -1,0 +1,79 @@
+"""CPU sensors: temperatures, frequency, governor/EPP, thermal throttling."""
+
+import glob
+import statistics
+from pathlib import Path
+
+from . import hwmon
+
+CPUFREQ = Path("/sys/devices/system/cpu/cpufreq")
+THROTTLE_GLOB = "/sys/devices/system/cpu/cpu*/thermal_throttle/package_throttle_count"
+
+
+class CpuReader:
+    def __init__(self, chips: dict):
+        # Intel: coretemp. AMD: k10temp/zenpower (no per-core temps).
+        self.dev = hwmon.find(chips, "coretemp", "k10temp", "zenpower")
+        self.model = self._model_name()
+        self._throttle_files = sorted(glob.glob(THROTTLE_GLOB))[:1]
+        self.last_throttle = self._throttle_count()
+
+    @staticmethod
+    def _model_name() -> str:
+        try:
+            with open("/proc/cpuinfo") as fh:
+                for line in fh:
+                    if line.startswith("model name"):
+                        return line.split(":", 1)[1].strip()
+        except OSError:
+            pass
+        return "CPU"
+
+    def _throttle_count(self) -> int:
+        total = 0
+        for path in self._throttle_files:
+            value = hwmon.read_int(Path(path))
+            if value:
+                total += value
+        return total
+
+    def read(self) -> dict:
+        cores: list[float] = []
+        package = None
+        if self.dev is not None:
+            for label, temp in hwmon.temps(self.dev).items():
+                low = label.lower()
+                if low.startswith("core"):
+                    cores.append(temp)
+                elif "package" in low or low in ("tctl", "tdie", "temp1"):
+                    package = package if package is not None else temp
+
+        if not cores and package is not None:
+            cores = [package]
+
+        freqs = []
+        for path in CPUFREQ.glob("policy*/scaling_cur_freq"):
+            khz = hwmon.read_int(path)
+            if khz:
+                freqs.append(khz / 1_000_000)
+
+        policy0 = CPUFREQ / "policy0"
+        throttle = self._throttle_count()
+        throttled_now = throttle > self.last_throttle
+        self.last_throttle = throttle
+
+        return {
+            "model": self.model,
+            "cores": cores,
+            "avg": round(statistics.mean(cores), 1) if cores else None,
+            "max": round(max(cores), 1) if cores else None,
+            "min": round(min(cores), 1) if cores else None,
+            "package": package,
+            "hot90": sum(1 for c in cores if c >= 90),
+            "freq_ghz": round(statistics.mean(freqs), 2) if freqs else None,
+            "governor": hwmon.read_str(policy0 / "scaling_governor"),
+            "driver": hwmon.read_str(policy0 / "scaling_driver"),
+            "epp": hwmon.read_str(policy0 / "energy_performance_preference"),
+            "throttle_count": throttle,
+            "throttled_now": throttled_now,
+        }
