@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="ember" data-mode="dark">
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
@@ -31,6 +31,8 @@
       <button id="update-btn" class="ghost" title="Buscar actualizaciones del repositorio">
         <span id="update-label">ACTUALIZAR</span>
       </button>
+
+      <button id="theme-btn" class="ghost" title="Apariencia: tema y modo claro/oscuro">TEMA</button>
     </div>
   </header>
 
@@ -53,6 +55,12 @@
           <div><label>Throttle</label><b id="cpu-throttle">--</b></div>
           <div><label>EPP</label><b id="cpu-epp" class="small">--</b></div>
         </div>
+        <p id="rapl-note" class="note hidden">
+          Sensor de potencia CPU no accesible. Ejecuta
+          <code>sudo bash scripts/enable-cpu-power.sh</code> —
+          da permiso de solo lectura al contador de energía Intel RAPL
+          (el kernel lo restringe a root por seguridad, CVE-2020-8694).
+        </p>
       </article>
 
       <article class="block" id="gpu-block">
@@ -99,12 +107,14 @@
 
       <div class="split">
         <article class="block" id="events-block">
-          <h2><i>06</i> Eventos</h2>
+          <h2><i>06</i> Eventos
+            <button id="export-events" class="ghost" title="Guardar el registro de eventos como .txt">EXPORTAR</button>
+          </h2>
           <ul id="events"><li class="dim">sin eventos</li></ul>
         </article>
 
         <article class="block" id="procs-block">
-          <h2><i>07</i> Procesos <small>top 5 por uso de CPU</small></h2>
+          <h2><i>07</i> Procesos <small>top 5 por uso de CPU · clic para cerrar uno</small></h2>
           <table id="procs">
             <thead>
               <tr><th>PID</th><th>proceso</th>
@@ -124,6 +134,20 @@
   </footer>
 
   <div id="toast" class="hidden"></div>
+
+  <div id="theme-modal" class="hidden">
+    <div class="modal-card">
+      <h3>Apariencia</h3>
+      <p class="sub">Elige el modo de color y la paleta. Se guarda automáticamente.</p>
+      <div class="mode-row segment" id="mode-seg">
+        <button data-mode="light">☀ Claro</button>
+        <button data-mode="dark">🌙 Oscuro</button>
+        <button data-mode="system">🖥 Sistema</button>
+      </div>
+      <div class="theme-grid" id="theme-grid"></div>
+      <button class="ghost modal-close" id="theme-close">Cerrar</button>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

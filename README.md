@@ -42,7 +42,10 @@ reads sensors directly from sysfs — no root required for the core features.
   (`v`), export history to JSON/CSV (`e`).
 - **Desktop app**: Electron dashboard (`desktop/`) with animated fans, canvas
   charts, profile/GPU buttons and a one-click updater — fed by the same
-  Python core over `--json-stream`.
+  Python core over `--json-stream`. Six themes × light/dark mode, working
+  Ctrl+wheel zoom, click-to-kill processes, event-log export to .txt.
+- **Semantic colors**: blue = cold, green = normal, orange = near your
+  configured limits, red = critical — consistent across app and terminal.
 - Spanish and English UI (auto-detected from `$LANG`).
 - **No telemetry, no network access**: everything is read locally from sysfs;
   the only network use is the optional update button (git fetch on your own

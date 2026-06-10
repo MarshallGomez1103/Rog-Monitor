@@ -5,6 +5,53 @@ const $ = (id) => document.getElementById(id);
 let lastStats = null;
 let gpuBusy = false;
 
+/* ---------- themes ---------- */
+
+const THEMES = [
+  // id, name, description, [dark bg, dark accent], [light bg, light accent]
+  ['ember',    'Ember',    'Carmesí cálido y bronce',      ['#16100c', '#d96c47'], ['#faf4ee', '#b9532e']],
+  ['midnight', 'Midnight', 'Azul-violeta profundo',        ['#0e0e1a', '#7c83f7'], ['#f2f2fa', '#5158d8']],
+  ['nous',     'Nous',     'Neutros con acento azul',      ['#121418', '#5a8df0'], ['#f4f6fa', '#2f63cf']],
+  ['mono',     'Mono',     'Escala de grises, minimalista', ['#101113', '#c8cdd4'], ['#f5f6f7', '#3c4248']],
+  ['cyber',    'Cyber',    'Verde neón sobre negro',       ['#050a05', '#2ee65f'], ['#f0f8f0', '#1c8a3f']],
+  ['slate',    'Slate',    'Azul pizarra, enfocado',       ['#11151b', '#6da3d8'], ['#f1f4f8', '#38649b']],
+];
+
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+function appearance() {
+  return {
+    theme: localStorage.getItem('theme') || 'ember',
+    mode: localStorage.getItem('mode') || 'dark',
+  };
+}
+
+function applyAppearance() {
+  const { theme, mode } = appearance();
+  const real = mode === 'system' ? (prefersDark.matches ? 'dark' : 'light') : mode;
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.dataset.mode = real;
+  document.querySelectorAll('#mode-seg button').forEach((b) =>
+    b.classList.toggle('active', b.dataset.mode === mode));
+  document.querySelectorAll('.theme-card').forEach((c) => {
+    c.classList.toggle('active', c.dataset.theme === theme);
+    const def = THEMES.find(([id]) => id === c.dataset.theme);
+    if (def) {
+      const [bg, accent] = def[real === 'dark' ? 3 : 4];
+      const swatch = c.querySelector('.swatch');
+      swatch.style.background = bg;
+      swatch.querySelectorAll('i').forEach((i, idx) => {
+        i.style.background = idx === 0 ? accent : accent + '55';
+      });
+    }
+  });
+  if (lastStats) update(lastStats);
+}
+
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
 /* ---------- helpers ---------- */
 
 function fmt(value, digits = 0, fallback = '--') {
@@ -43,7 +90,7 @@ function drawChart(canvas, values, color) {
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, w, h);
 
-  ctx.strokeStyle = '#161b22';
+  ctx.strokeStyle = cssVar('--hair');
   ctx.lineWidth = 1;
   for (let i = 1; i <= 3; i++) {
     ctx.beginPath();
@@ -79,8 +126,8 @@ function drawChart(canvas, values, color) {
   ctx.lineWidth = 1.6;
   ctx.stroke();
 
-  ctx.fillStyle = '#6b7480';
-  ctx.font = '10px monospace';
+  ctx.fillStyle = cssVar('--dim');
+  ctx.font = '11px monospace';
   ctx.textAlign = 'right';
   ctx.fillText(hi.toFixed(0), 22, 11);
   ctx.fillText(lo.toFixed(0), 22, h - 3);
@@ -95,15 +142,15 @@ function drawChart(canvas, values, color) {
 
 const FAN_SVG = `
 <svg viewBox="0 0 64 64">
-  <circle cx="32" cy="32" r="29" fill="none" stroke="#1d232b" stroke-width="2"/>
+  <circle cx="32" cy="32" r="29" fill="none" stroke="var(--hair)" stroke-width="2"/>
   <g>
-    <path d="M32 32 L32 7 A25 25 0 0 1 49 16 Z" fill="#39424e"/>
-    <path d="M32 32 L53 22 A25 25 0 0 1 51 46 Z" fill="#39424e"/>
-    <path d="M32 32 L44 53 A25 25 0 0 1 20 53 Z" fill="#39424e"/>
-    <path d="M32 32 L13 47 A25 25 0 0 1 11 23 Z" fill="#39424e"/>
-    <path d="M32 32 L15 13 A25 25 0 0 1 32 7 Z" fill="#2c343f"/>
+    <path d="M32 32 L32 7 A25 25 0 0 1 49 16 Z" fill="var(--dim)"/>
+    <path d="M32 32 L53 22 A25 25 0 0 1 51 46 Z" fill="var(--dim)"/>
+    <path d="M32 32 L44 53 A25 25 0 0 1 20 53 Z" fill="var(--dim)"/>
+    <path d="M32 32 L13 47 A25 25 0 0 1 11 23 Z" fill="var(--dim)"/>
+    <path d="M32 32 L15 13 A25 25 0 0 1 32 7 Z" fill="var(--hair)"/>
   </g>
-  <circle cx="32" cy="32" r="6" fill="#e63946"/>
+  <circle cx="32" cy="32" r="6" fill="var(--accent)"/>
 </svg>`;
 
 function renderFans(fans) {
@@ -148,7 +195,9 @@ function update(stats) {
   const cls = tempClass(cpu.avg, limits.cpu).replace('t-', '') || '';
   lamp.className = 'lamp ' + cls;
   const lampIdx = { cold: 0, normal: 1, hot: 2, critical: 3 }[cls];
-  $('thermal-label').textContent = lampIdx != null ? LAMP_STATES[lampIdx][1] : '—';
+  const label = $('thermal-label');
+  label.textContent = lampIdx != null ? LAMP_STATES[lampIdx][1] : '—';
+  label.className = 'lamp-label ' + cls;
 
   /* cpu */
   $('cpu-model').textContent = cpu.model || '';
@@ -209,9 +258,11 @@ function update(stats) {
 
   /* charts */
   const series = stats.series || {};
-  drawChart($('chart-cpu'), series.cpu_temp, '#4cc9f0');
-  drawChart($('chart-gpu'), series.gpu_temp, '#2a9d8f');
-  drawChart($('chart-power'), series.cpu_power, '#f4a261');
+  drawChart($('chart-cpu'), series.cpu_temp, cssVar('--cold'));
+  drawChart($('chart-gpu'), series.gpu_temp, cssVar('--okstate'));
+  drawChart($('chart-power'), series.cpu_power, cssVar('--accent'));
+
+  $('rapl-note').classList.toggle('hidden', !!stats.rapl_available);
 
   /* system */
   const sys = stats.sys || {};
@@ -249,7 +300,8 @@ function update(stats) {
 
   /* processes */
   $('procs-body').innerHTML = (stats.procs || []).map((p) => `
-    <tr><td class="pid">${p.pid}</td><td>${p.name}</td>
+    <tr data-pid="${p.pid}" data-name="${p.name}" title="Clic para cerrar ${p.name}">
+        <td class="pid">${p.pid}</td><td>${p.name}</td>
         <td class="cpu">${p.cpu.toFixed(1)}%</td><td class="mem">${p.mem_mb} MB</td></tr>`).join('');
 
   $('backend-state').textContent =
@@ -330,9 +382,75 @@ window.rog.appInfo().then((info) => {
 });
 window.addEventListener('resize', () => lastStats && update(lastStats));
 
-// Ctrl+wheel zooms Electron pages by default and "unsquares" the layout.
-window.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); },
-  { passive: false });
+/* ---------- zoom (ctrl+wheel, ctrl +/-/0) ---------- */
+
+window.addEventListener('wheel', (e) => {
+  if (!e.ctrlKey) return;
+  e.preventDefault();
+  window.rog.zoom(e.deltaY < 0 ? 0.5 : -0.5);
+}, { passive: false });
 window.addEventListener('keydown', (e) => {
-  if (e.ctrlKey && ['+', '-', '=', '0'].includes(e.key)) e.preventDefault();
+  if (!e.ctrlKey) return;
+  if (e.key === '+' || e.key === '=') { e.preventDefault(); window.rog.zoom(0.5); }
+  if (e.key === '-') { e.preventDefault(); window.rog.zoom(-0.5); }
+  if (e.key === '0') { e.preventDefault(); window.rog.zoom(null); }
+});
+
+/* ---------- theme picker ---------- */
+
+$('theme-grid').innerHTML = THEMES.map(([id, name, desc]) => `
+  <button class="theme-card" data-theme="${id}">
+    <span class="swatch"><i class="a"></i><i></i><i></i></span>
+    <span class="name">${name}</span>
+    <span class="desc">${desc}</span>
+  </button>`).join('');
+
+document.querySelectorAll('.theme-card').forEach((card) => {
+  card.addEventListener('click', () => {
+    localStorage.setItem('theme', card.dataset.theme);
+    applyAppearance();
+  });
+});
+
+document.querySelectorAll('#mode-seg button').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    localStorage.setItem('mode', btn.dataset.mode);
+    applyAppearance();
+  });
+});
+prefersDark.addEventListener('change', applyAppearance);
+
+$('theme-btn').addEventListener('click', () => $('theme-modal').classList.remove('hidden'));
+$('theme-close').addEventListener('click', () => $('theme-modal').classList.add('hidden'));
+$('theme-modal').addEventListener('click', (e) => {
+  if (e.target === $('theme-modal')) $('theme-modal').classList.add('hidden');
+});
+
+applyAppearance();
+
+/* ---------- kill process ---------- */
+
+$('procs-body').addEventListener('click', async (e) => {
+  const row = e.target.closest('tr[data-pid]');
+  if (!row) return;
+  const { pid, name } = row.dataset;
+  if (!window.confirm(
+    `¿Cerrar el proceso "${name}" (PID ${pid})?\n\n` +
+    'Se le pedirá terminar de forma ordenada (SIGTERM). ' +
+    'Si es una app, perderás lo que no hayas guardado en ella.')) return;
+  const res = await window.rog.killProcess(pid);
+  toast(res.ok ? `Señal de cierre enviada a ${name}` : `No se pudo: ${res.err}`);
+});
+
+/* ---------- export events ---------- */
+
+$('export-events').addEventListener('click', async (e) => {
+  e.stopPropagation();
+  const events = lastStats?.events || [];
+  if (!events.length) { toast('No hay eventos para exportar'); return; }
+  const today = new Date().toLocaleDateString();
+  const text = `ROG Monitor — registro de eventos (${today})\n\n`
+    + events.map(([ts, level, msg]) => `${ts}  [${level.toUpperCase()}]  ${msg}`).join('\n') + '\n';
+  const res = await window.rog.exportEvents(text);
+  toast(res.ok ? `Eventos guardados en ${res.path}` : `No se exportó: ${res.err}`);
 });

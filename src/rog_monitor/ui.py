@@ -47,11 +47,12 @@ DEFAULT_LIMITS = [70, 85, 92]
 def temp_style(temp: float | None, limits: list | None = None) -> str:
     if temp is None:
         return "grey58"
+    # frío=azul, normal=verde, cerca del límite=naranja, crítico=rojo
     lo, mid, hi = (limits or DEFAULT_LIMITS)[:3]
     if temp < lo:
-        return "green"
+        return "bright_blue"
     if temp < mid:
-        return "yellow"
+        return "green"
     if temp < hi:
         return "dark_orange"
     return "bold red"

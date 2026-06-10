@@ -163,11 +163,24 @@ sin telemetría de ningún tipo.
 
 ---
 
-# v8 - Compatibilidad Universal (propuesto)
+# v8 - Centro de Control + Compatibilidad Universal (propuesto)
 
-> La meta: que funcione en cualquier portátil Linux, no solo ASUS ROG,
-> degradando funciones con elegancia según el hardware disponible.
+> La meta: que la app deje de ser solo un monitor y se vuelva un centro de
+> control clicable, y que funcione en cualquier portátil Linux.
 
+## Centro de control (pedido por Marshall, jun 2026)
+
+* [x] Cerrar procesos con clic + confirmación (v6.2)
+* [x] Exportar log de eventos a .txt (v6.2)
+* [x] Temas claro/oscuro con 6 paletas (v6.2)
+* [ ] Clic en cada panel (CPU/GPU/ventiladores/sistema) abre su configuración
+* [ ] Cap de ventiladores editable por perfil desde la app, con diálogo de
+      consentimiento ("entiendo el riesgo") para valores peligrosos
+      (hoy el cap vive en Rog-Monitor-Scripts/scripts/rog-profile-sync.sh)
+* [ ] Apagar ventiladores solo tras aceptar advertencia explícita
+* [ ] Gráfica de potencia GPU en el historial
+* [ ] Salud de discos (SMART vía helper con permiso de root)
+* [ ] Umbrales de temperatura/alertas editables desde la app
 * [ ] Autodetección de plataforma (ASUS / Lenovo Legion / HP Omen / genérico)
 * [ ] Soporte AMD completo (k10temp por CCD, RAPL amd_energy, amdgpu probado)
 * [ ] Perfiles vía `platform_profile` genérico cuando no haya asus-wmi

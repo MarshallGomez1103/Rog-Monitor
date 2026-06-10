@@ -1,5 +1,27 @@
 # Changelog
 
+## 6.2.0 — 2026-06-10
+
+### Added
+- **Theme system in the desktop app**: 6 palettes (Ember, Midnight, Nous,
+  Mono, Cyber, Slate) × light/dark/system mode, with a visual picker
+  (TEMA button). Saved automatically.
+- Click a process to terminate it (SIGTERM) with a confirmation dialog.
+- Export the event log to a `.txt` file (EXPORTAR button, save dialog).
+- Working zoom: Ctrl+wheel and Ctrl +/-/0; the layout is responsive and
+  reflows instead of breaking.
+- Missing-sensor guidance: when CPU power is not readable the app explains
+  the exact command and what it does, instead of just saying "root".
+
+### Changed
+- Semantic temperature colors everywhere (app and TUI): blue = cold,
+  green = normal, orange = near your limits, red = critical.
+- Bigger, clearer typography; system sans for labels, monospace for numbers.
+- Thermal-throttling alerts go to the event log only — no more desktop
+  notifications for them (the CPU protecting itself is not an emergency).
+- Fan curves capped at ~6800 RPM in the system scripts
+  (`Rog-Monitor-Scripts/scripts/rog-profile-sync.sh`) to reduce bearing wear.
+
 ## 6.1.0 — 2026-06-10
 
 ### Added

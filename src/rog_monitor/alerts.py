@@ -16,14 +16,15 @@ class AlertEngine:
         self._last_fired: dict[str, float] = {}
         self._notify_bin = shutil.which("notify-send")
 
-    def _fire(self, key: str, message: str, level: str = "warn") -> None:
+    def _fire(self, key: str, message: str, level: str = "warn",
+              notify: bool = True) -> None:
         now = time.monotonic()
         cooldown = self.cfg.get("cooldown_seconds", 120)
         if now - self._last_fired.get(key, -cooldown) < cooldown:
             return
         self._last_fired[key] = now
         self.log(message, level)
-        if self.notify_enabled and self._notify_bin:
+        if notify and self.notify_enabled and self._notify_bin:
             try:
                 # urgency=normal on purpose: KDE keeps critical notifications
                 # on screen forever; normal + expire-time auto-dismisses.
@@ -55,10 +56,13 @@ class AlertEngine:
         # the package spent real time throttled within this sample.
         ms = cpu.get("throttle_ms_delta") or 0
         count = cpu.get("throttle_delta") or 0
+        # throttling goes to the event log only — desktop notifications for it
+        # annoy more than they help (the CPU is protecting itself by design)
         if ms >= self.cfg.get("throttle_min_ms", 100) or count >= 5:
             self._fire("throttle",
                        t("alert_throttle", n=count, ms=ms,
-                         temp=cpu.get("package") or cpu.get("avg") or 0), "crit")
+                         temp=cpu.get("package") or cpu.get("avg") or 0),
+                       "warn", notify=False)
 
         if avg is not None and avg >= self.cfg["fan_stopped_cpu_temp"]:
             for fan in fan_list:

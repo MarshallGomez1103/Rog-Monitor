@@ -1,7 +1,7 @@
 // ROG Monitor desktop: Electron shell over the Python sensor core.
 // The backend is `python -m rog_monitor --json-stream`; one JSON per second.
 
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const { spawn, execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -84,6 +84,33 @@ ipcMain.handle('do-update', async () => {
   return { ok: true, out: pull.out };
 });
 
+ipcMain.handle('kill-process', (_e, pid) => {
+  pid = parseInt(pid, 10);
+  if (!pid || pid <= 1) return { ok: false, err: 'PID inválido' };
+  try {
+    process.kill(pid, 'SIGTERM');
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, err: err.code === 'EPERM' ? 'sin permiso (proceso de otro usuario)' : String(err.message) };
+  }
+});
+
+ipcMain.handle('export-events', async (_e, text) => {
+  const { canceled, filePath } = await dialog.showSaveDialog(win, {
+    title: 'Exportar eventos',
+    defaultPath: path.join(app.getPath('documents'),
+      `rog-monitor-eventos-${new Date().toISOString().slice(0, 10)}.txt`),
+    filters: [{ name: 'Texto', extensions: ['txt'] }],
+  });
+  if (canceled || !filePath) return { ok: false, err: 'cancelado' };
+  try {
+    fs.writeFileSync(filePath, text, 'utf-8');
+    return { ok: true, path: filePath };
+  } catch (err) {
+    return { ok: false, err: String(err.message) };
+  }
+});
+
 ipcMain.handle('app-info', () => ({
   appVersion: require('./package.json').version,
   repo: REPO,
@@ -106,11 +133,6 @@ function createWindow() {
     },
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
-  // lock zoom: ctrl+wheel / pinch would scale and break the fixed layout
-  win.webContents.on('did-finish-load', () => {
-    win.webContents.setZoomFactor(1);
-    win.webContents.setVisualZoomLevelLimits(1, 1);
-  });
 }
 
 app.whenReady().then(() => {
