@@ -1,7 +1,7 @@
 // ROG Monitor desktop: Electron shell over the Python sensor core.
 // The backend is `python -m rog_monitor --json-stream`; one JSON per second.
 
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, screen } = require('electron');
 const { spawn, spawnSync, execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -38,6 +38,8 @@ process.env.PATH = APP_ENV.PATH;
 const PY_ENV = { ...APP_ENV, PYTHONPATH: path.join(REPO, 'src') };
 
 let win = null;
+let overlay = null;
+let overlayCfg = { enabled: false, displayId: null, corner: 'top-left' };
 let backend = null;
 let musicProc = null;
 let musicMode = {
@@ -77,6 +79,7 @@ function startBackend() {
       try {
         const stats = JSON.parse(line);
         if (win && !win.isDestroyed()) win.webContents.send('stats', stats);
+        if (overlay && !overlay.isDestroyed()) overlay.webContents.send('stats', stats);
       } catch (_) { /* partial line, ignore */ }
     }
   });
@@ -156,6 +159,10 @@ const SYNC_SCRIPT = path.join(SCRIPTS_DIR, 'scripts', 'rog-profile-sync.sh');
 const FAN_TEST = path.join(SCRIPTS_DIR, 'scripts', 'test-max-fans.sh');
 const ENABLE_ASUSD = path.join(SCRIPTS_DIR, 'scripts', 'enable-asusd.sh');
 const FANS = ['cpu', 'gpu', 'mid'];
+// User-writable curve store; the root service reads it on every profile change.
+const FAN_CURVES_JSON = path.join(
+  os.homedir(), '.config', 'rog-monitor', 'fan-curves.json');
+const PROFILES = ['performance', 'balanced', 'quiet'];
 
 function profileBlock(source, profile) {
   // the case block: `performance)` ... `;;`
@@ -163,28 +170,52 @@ function profileBlock(source, profile) {
   return source.match(re);
 }
 
-ipcMain.handle('get-fan-config', (_e, profile) => {
-  if (!fs.existsSync(SYNC_SCRIPT)) {
-    return { ok: false, err: `No encuentro ${SYNC_SCRIPT} — este control requiere el repo de scripts ASUS` };
-  }
-  const src = fs.readFileSync(SYNC_SCRIPT, 'utf-8');
-  const block = profileBlock(src, profile);
-  if (!block) return { ok: false, err: `Perfil "${profile}" no está en el script` };
+// Built-in default curves (fallback) parsed straight from the system script,
+// so the editor shows the same baseline the service would apply.
+function scriptDefaults(profile) {
+  if (!fs.existsSync(SYNC_SCRIPT)) return null;
+  const block = profileBlock(fs.readFileSync(SYNC_SCRIPT, 'utf-8'), profile);
+  if (!block) return null;
   const curves = {};
   for (const fan of FANS) {
     const temps = block[2].match(new RegExp(`${fan}_temps="([\\d ]+)"`));
     const pwms = block[2].match(new RegExp(`${fan}_pwm="([\\d ]+)"`));
-    if (!temps || !pwms) return { ok: false, err: `No pude leer la curva de ${fan}` };
+    if (!temps || !pwms) return null;
     curves[fan] = {
       temps: temps[1].split(/\s+/).map(Number),
       pwms: pwms[1].split(/\s+/).map(Number),
     };
   }
-  return { ok: true, profile, curves, path: SYNC_SCRIPT };
+  return curves;
+}
+
+function readCurvesStore() {
+  try {
+    return JSON.parse(fs.readFileSync(FAN_CURVES_JSON, 'utf-8')) || {};
+  } catch (_) {
+    return {};
+  }
+}
+
+ipcMain.handle('get-fan-config', (_e, profile) => {
+  const store = readCurvesStore();
+  const saved = store.profiles && store.profiles[profile];
+  const curves = saved || scriptDefaults(profile);
+  if (!curves) {
+    return { ok: false, err: `No encuentro curvas para "${profile}" (¿está el repo de scripts?)` };
+  }
+  const cap = store.cap_rpm || {};
+  return {
+    ok: true,
+    profile,
+    curves,
+    cap,
+    source: saved ? 'guardado' : 'por defecto',
+    path: FAN_CURVES_JSON,
+  };
 });
 
-ipcMain.handle('set-fan-config', async (_e, { profile, curves }) => {
-  if (!fs.existsSync(SYNC_SCRIPT)) return { ok: false, err: 'script no encontrado' };
+ipcMain.handle('set-fan-config', async (_e, { profile, curves, cap }) => {
   for (const fan of FANS) {
     const c = curves[fan];
     if (!c || c.temps.length !== 8 || c.pwms.length !== 8) {
@@ -193,21 +224,39 @@ ipcMain.handle('set-fan-config', async (_e, { profile, curves }) => {
     const bad = [...c.temps, ...c.pwms].some((v) => !Number.isFinite(v) || v < 0 || v > 255);
     if (bad) return { ok: false, err: `valores fuera de rango en ${fan} (0-255)` };
   }
-  let src = fs.readFileSync(SYNC_SCRIPT, 'utf-8');
-  const block = profileBlock(src, profile);
-  if (!block) return { ok: false, err: `perfil "${profile}" no encontrado` };
-  let body = block[2];
-  for (const fan of FANS) {
-    body = body
-      .replace(new RegExp(`${fan}_temps="[\\d ]+"`), `${fan}_temps="${curves[fan].temps.join(' ')}"`)
-      .replace(new RegExp(`${fan}_pwm="[\\d ]+"`), `${fan}_pwm="${curves[fan].pwms.join(' ')}"`);
+  // Merge into the user-writable store (no privileges needed to edit it).
+  const store = readCurvesStore();
+  store.profiles = store.profiles || {};
+  store.profiles[profile] = curves;
+  if (cap && Number.isFinite(+cap) && +cap > 0) {
+    const c = Math.round(+cap);
+    store.cap_rpm = { cpu: c, gpu: c, mid: c };
   }
-  fs.writeFileSync(SYNC_SCRIPT + '.bak', src);          // safety net
-  fs.writeFileSync(SYNC_SCRIPT, src.replace(block[0], block[1] + body + block[3]));
-  // apply now: restart the root service (GUI password prompt)
-  const res = await run('pkexec', ['systemctl', 'restart', 'rog-profile-sync.service'], 60000);
-  return res.ok ? { ok: true } : { ok: false, err: 'Curvas guardadas, pero no se reinició el servicio: ' + res.err };
+  try {
+    fs.mkdirSync(path.dirname(FAN_CURVES_JSON), { recursive: true });
+    fs.writeFileSync(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
+  } catch (err) {
+    return { ok: false, err: `No pude guardar ${FAN_CURVES_JSON}: ${err.message}` };
+  }
+  if (!fs.existsSync(SYNC_SCRIPT)) {
+    return { ok: true, warn: 'Curvas guardadas, pero falta el repo de scripts para aplicarlas en vivo.' };
+  }
+  // One pkexec: (re)install the JSON-reading service script and reapply now.
+  // Installing on every save keeps /usr/local/sbin in sync with the repo and
+  // makes the cap actually persist across reboots.
+  const cmd =
+    `install -m 0755 ${shq(SYNC_SCRIPT)} /usr/local/sbin/rog-profile-sync && ` +
+    `systemctl restart rog-profile-sync.service`;
+  const res = await run('pkexec', ['sh', '-c', cmd], 60000);
+  return res.ok
+    ? { ok: true }
+    : { ok: false, err: 'Curvas guardadas, pero no se aplicaron (servicio): ' + res.err };
 });
+
+// Minimal single-quote shell escaping for the pkexec command above.
+function shq(s) {
+  return `'${String(s).replace(/'/g, `'\\''`)}'`;
+}
 
 ipcMain.handle('fan-benchmark', async () => {
   if (!fs.existsSync(FAN_TEST)) return { ok: false, err: 'test-max-fans.sh no encontrado' };
@@ -536,6 +585,97 @@ ipcMain.handle('app-info', () => ({
   repo: REPO,
 }));
 
+/* ---------- gaming overlay (always-on-top stats) ----------
+   A frameless, click-through, transparent window pinned to a corner of the
+   chosen monitor. It stays above fullscreen games so you can watch temps and
+   fan RPM while playing. No undervolt/overclock here — only read-only stats. */
+
+const OVERLAY_MARGIN = 18;
+
+function displayList() {
+  const primaryId = screen.getPrimaryDisplay().id;
+  return screen.getAllDisplays().map((d, i) => ({
+    id: d.id,
+    label: `Monitor ${i + 1} (${d.size.width}×${d.size.height})${d.id === primaryId ? ' · principal' : ''}`,
+    primary: d.id === primaryId,
+  }));
+}
+
+function pickDisplay(displayId) {
+  const all = screen.getAllDisplays();
+  return all.find((d) => d.id === displayId) || screen.getPrimaryDisplay();
+}
+
+function positionOverlay() {
+  if (!overlay || overlay.isDestroyed()) return;
+  const d = pickDisplay(overlayCfg.displayId);
+  const wa = d.workArea; // respects panels/taskbars
+  const { width, height } = overlay.getBounds();
+  const right = wa.x + wa.width - width - OVERLAY_MARGIN;
+  const bottom = wa.y + wa.height - height - OVERLAY_MARGIN;
+  const left = wa.x + OVERLAY_MARGIN;
+  const top = wa.y + OVERLAY_MARGIN;
+  const pos = {
+    'top-left': [left, top],
+    'top-right': [right, top],
+    'bottom-left': [left, bottom],
+    'bottom-right': [right, bottom],
+  }[overlayCfg.corner] || [left, top];
+  overlay.setPosition(Math.round(pos[0]), Math.round(pos[1]));
+}
+
+function createOverlay() {
+  overlay = new BrowserWindow({
+    width: 232,
+    height: 150,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    skipTaskbar: true,
+    focusable: false,
+    hasShadow: false,
+    alwaysOnTop: true,
+    backgroundColor: '#00000000',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  // float above fullscreen games on every virtual desktop
+  overlay.setAlwaysOnTop(true, 'screen-saver');
+  overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  overlay.setIgnoreMouseEvents(true); // click-through so it never grabs the game
+  overlay.loadFile(path.join(__dirname, 'renderer', 'overlay.html'));
+  overlay.once('ready-to-show', positionOverlay);
+  overlay.on('closed', () => { overlay = null; });
+}
+
+function applyOverlay() {
+  if (overlayCfg.enabled) {
+    if (!overlay || overlay.isDestroyed()) createOverlay();
+    else { positionOverlay(); overlay.showInactive(); }
+  } else if (overlay && !overlay.isDestroyed()) {
+    overlay.close();
+    overlay = null;
+  }
+}
+
+ipcMain.handle('list-displays', () => ({ ok: true, displays: displayList(), current: overlayCfg }));
+
+ipcMain.handle('set-overlay', (_e, cfg) => {
+  overlayCfg = {
+    enabled: !!cfg.enabled,
+    displayId: cfg.displayId ?? overlayCfg.displayId,
+    corner: cfg.corner || overlayCfg.corner,
+  };
+  applyOverlay();
+  return { ok: true, current: overlayCfg };
+});
+
 function createWindow() {
   win = new BrowserWindow({
     width: 1320,
@@ -553,6 +693,10 @@ function createWindow() {
     },
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  // closing the main window tears down the overlay too
+  win.on('closed', () => {
+    if (overlay && !overlay.isDestroyed()) overlay.close();
+  });
 }
 
 app.whenReady().then(() => {

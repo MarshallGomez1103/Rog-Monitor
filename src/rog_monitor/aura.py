@@ -39,6 +39,21 @@ DEFAULTS = {
     "startup_profile": None,
     "last_applied": {},
     "profiles": [],
+    # effects asusctl accepted in its CLI but the keyboard rejected at runtime
+    # (e.g. per-key effects on a 4-zone board). Learned on first failure so we
+    # stop offering them. Reset by deleting aura.json.
+    "unsupported_effects": [],
+}
+
+# asusctl exits 0 even when the firmware rejects an effect; the real outcome is
+# only visible in its text output. These markers mean "it did not apply".
+FAILURE_MARKERS = ("not supported", "error:", "failed", "no such")
+
+# asusctl `aura effect` subcommands listed in AuraModeNum order (9 is unused).
+MODE_NUM_TO_ID = {
+    0: "static", 1: "breathe", 2: "rainbow-cycle", 3: "rainbow-wave",
+    4: "stars", 5: "rain", 6: "highlight", 7: "laser", 8: "ripple",
+    10: "pulse", 11: "comet", 12: "flash",
 }
 
 EFFECT_META = {
@@ -190,6 +205,37 @@ class AuraManager:
             effect_ids = list(EFFECT_META)
         return [dict({"id": key}, **EFFECT_META.get(key, {"label": key, "colours": 1})) for key in effect_ids]
 
+    def _supported_effect_ids(self) -> set[str] | None:
+        """Effect ids the keyboard firmware actually accepts, via asusd D-Bus.
+
+        Returns None when asusd can't be queried, so callers keep the full
+        list and fall back to learn-on-failure.
+        """
+        ok, out = _run(
+            ["busctl", "--system", "tree", "xyz.ljones.Asusd"], timeout=2.0)
+        if not ok:
+            return None
+        path = None
+        for line in out.splitlines():
+            match = re.search(r"/xyz/ljones/aura/[A-Za-z0-9_]+", line)
+            if match:
+                path = match.group(0)
+                break
+        if not path:
+            return None
+        ok, out = _run([
+            "busctl", "--system", "get-property", "xyz.ljones.Asusd", path,
+            "xyz.ljones.Aura", "SupportedBasicModes",
+        ], timeout=2.0)
+        if not ok:
+            return None
+        # Output looks like: "au 5 0 1 2 3 10" (type, count, then mode numbers).
+        nums = [int(tok) for tok in out.split() if tok.isdigit()]
+        if len(nums) < 2:
+            return None
+        ids = {MODE_NUM_TO_ID[n] for n in nums[1:] if n in MODE_NUM_TO_ID}
+        return ids or None
+
     def _brightness(self) -> str | None:
         if not self.asusctl:
             return None
@@ -228,17 +274,25 @@ class AuraManager:
             except ValueError:
                 current = None
 
-        basic_effects = [fx for fx in self._effects if fx["id"] in PRIMARY_EFFECTS]
-        extra_effects = [fx for fx in self._effects if fx["id"] not in PRIMARY_EFFECTS]
+        unsupported = set(store.get("unsupported_effects") or [])
+        supported = self._supported_effect_ids()  # None if asusd unqueryable
+        effects = [
+            fx for fx in self._effects
+            if fx["id"] not in unsupported
+            and (supported is None or fx["id"] in supported)
+        ]
+        basic_effects = [fx for fx in effects if fx["id"] in PRIMARY_EFFECTS]
+        extra_effects = [fx for fx in effects if fx["id"] not in PRIMARY_EFFECTS]
 
         result = {
             "available": bool(self.asusctl or self.openrgb),
             "asus": {
                 "available": bool(self.asusctl),
                 "binary": self.asusctl,
-                "effects": self._effects,
+                "effects": effects,
                 "basic_effects": basic_effects,
                 "extra_effects": extra_effects,
+                "unsupported_effects": sorted(unsupported),
                 "brightness_levels": BRIGHTNESS_LEVELS,
                 "current_brightness": self._brightness(),
                 "hint": None if self.asusctl else "Instala asusctl/asusd para controlar Aura.",
@@ -298,8 +352,20 @@ def apply_state(raw: dict) -> dict:
     outputs = []
     for command in commands:
         ok, out = _run(command, timeout=6.0)
-        if not ok:
-            return {"ok": False, "err": out or "Falló el comando Aura", "command": command}
+        low = out.lower()
+        failed = (not ok) or any(marker in low for marker in FAILURE_MARKERS)
+        if failed:
+            # asusctl may accept the syntax but the keyboard rejects the mode;
+            # remember it so we stop offering it, and report a clear message.
+            if "not supported" in low or "not support" in low:
+                _remember_unsupported(state["effect"])
+                friendly = (
+                    f'Tu teclado no soporta el efecto «{EFFECT_META.get(state["effect"], {}).get("label", state["effect"])}». '
+                    "Lo quité de la lista; prueba con uno de los modos básicos."
+                )
+            else:
+                friendly = _clean_error(out) or "Falló el comando Aura."
+            return {"ok": False, "err": friendly, "command": command, "raw": out}
         if out:
             outputs.append(out)
 
@@ -307,6 +373,25 @@ def apply_state(raw: dict) -> dict:
     store["last_applied"] = state
     _save_store(store)
     return {"ok": True, "state": state, "out": "\n".join(outputs).strip()}
+
+
+def _clean_error(out: str) -> str:
+    """First meaningful line of an asusctl error, without the dump."""
+    for line in (out or "").splitlines():
+        line = line.strip()
+        if line and not line.startswith(("[", "Software version", "Product family",
+                                         "Board name", "Supported")):
+            return line
+    return (out or "").strip().split("\n", 1)[0]
+
+
+def _remember_unsupported(effect: str) -> None:
+    store = _load_store()
+    unsupported = set(store.get("unsupported_effects") or [])
+    if effect not in unsupported:
+        unsupported.add(effect)
+        store["unsupported_effects"] = sorted(unsupported)
+        _save_store(store)
 
 
 def save_profile(name: str, raw_state: dict, apply_on_startup: bool | None = None,

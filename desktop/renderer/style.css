@@ -339,10 +339,14 @@ input[type="color"] {
 }
 .effect-chip.active {
   border-color: var(--accent);
-  color: var(--ink);
-  box-shadow: 0 0 0 1px var(--accent);
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+  box-shadow: 0 0 0 2px var(--accent);
 }
+.effect-chip.active::before { content: "● "; }
 .effect-chip:hover { border-color: var(--accent); color: var(--ink); }
+.effect-chip.active:hover { color: var(--bg); }
 .aura-actions,
 .aura-profile-row {
   display: flex;
@@ -385,6 +389,72 @@ input[type="color"] {
 .aura-grid select {
   min-width: 0;
   width: 100%;
+}
+.profile-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.profile-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  background: var(--chip);
+  cursor: pointer;
+}
+.profile-item:hover { border-color: var(--accent); }
+.profile-item.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.profile-item .pname {
+  flex: 1 1 auto;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-item .pswatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid var(--hair);
+  flex: 0 0 auto;
+}
+.profile-item .ptag {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+.profile-item .pstar { color: var(--accent); font-size: 13px; }
+.profile-item .pbtn {
+  border: 1px solid var(--hair);
+  background: transparent;
+  color: var(--dim);
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.profile-item .pbtn:hover { border-color: var(--accent); color: var(--ink); }
+.profile-item .pbtn.pdelete:hover {
+  border-color: #e2533a;
+  color: #fff;
+  background: #e2533a;
+}
+.profile-empty {
+  margin: 10px 0 0;
+  font-size: 12px;
 }
 #aura-profile-name {
   width: 100%;

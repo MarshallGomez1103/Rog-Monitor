@@ -28,6 +28,8 @@ contextBridge.exposeInMainWorld('rog', {
   cpuBenchmark: (seconds) => ipcRenderer.invoke('cpu-benchmark', seconds),
   gpuBenchmark: (seconds) => ipcRenderer.invoke('gpu-benchmark', seconds),
   exportBenchmark: (payload) => ipcRenderer.invoke('export-benchmark', payload),
+  listDisplays: () => ipcRenderer.invoke('list-displays'),
+  setOverlay: (cfg) => ipcRenderer.invoke('set-overlay', cfg),
   zoom: (delta) => {
     const level = delta === null ? 0
       : Math.max(-3, Math.min(4, webFrame.getZoomLevel() + delta));

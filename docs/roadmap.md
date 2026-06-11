@@ -2,7 +2,13 @@
 
 ## Estado actual del proyecto
 
-**Versión actual:** v8.1 (junio 2026)
+**Versión actual:** v8.2 (junio 2026)
+
+> v8.2: cap de ventilador ahora persiste y limita de verdad (curvas en JSON de
+> usuario que el servicio root lee); % relativo al cap; perfiles bajan RPM.
+> Aura solo ofrece efectos soportados por el teclado (D-Bus SupportedBasicModes)
+> y reporta los fallos reales. Overlay de juegos siempre-encima. Undervolt/
+> overclock descartado por riesgo.
 
 ---
 
@@ -240,14 +246,18 @@ Referencias: asusctl https://gitlab.com/asus-linux/asusctl · OpenRGB https://op
 
 ---
 
-# v10 - Power User (propuesto)
+# v10 - Power User (en progreso)
 
-* [ ] Undervolt/overclock de CPU (intel offset vía msr/x86_energy_perf) y GPU
-      (nvidia-smi -lgc/-pl, GreenWithEnvy como referencia) — MUY serio:
-      detectar el modelo exacto, mostrar documentación por modelo, límites
-      seguros, doble consentimiento y botón de restaurar valores de fábrica
-* [ ] Benchmark térmico integrado (carga sintética + reporte comparable)
-* [ ] Overlay para juegos (estilo MangoHud, vía socket local)
+* [~] ~~Undervolt/overclock de CPU/GPU~~ — **DESCARTADO por decisión de Marshall
+      (2026-06-10).** Riesgo real al equipo; no se hará. Si algún día se retoma
+      requeriría detección exacta del modelo, límites seguros y doble
+      consentimiento.
+* [x] Benchmark térmico integrado (carga sintética + reporte comparable) —
+      CPU (workers por subprocess) y GPU local (vkcube ×4 immediate / glmark2);
+      modal BENCHMARK con exportación JSON. (v8.0–v8.1)
+* [x] Overlay para juegos: ventana siempre-encima, transparente, click-through,
+      con selección de monitor y esquina. Muestra temp/W de CPU y GPU y RPM de
+      los ventiladores. Read-only (sin tocar voltajes). (v8.2)
 * [ ] Widget KDE Plasma 6 (plasmoid leyendo `--json`)
 * [ ] Exportación Prometheus (`--serve :9871/metrics`) + dashboard Grafana
 * [ ] Alertas con acciones (ej. bajar perfil automáticamente al throttlear)

@@ -2,7 +2,75 @@
 
 > Cada agente actualiza esta sección al terminar. El siguiente la lee primero.
 
-## Última sesión: Claude (Opus 4.8) — 2026-06-10 (v8.1.0)
+## Última sesión: Claude (Opus 4.8) — 2026-06-10 (v8.2.0)
+
+### Estado: arreglos grandes de ventiladores + Aura + overlay. Commit local, SIN push.
+
+Probado en vivo en el G614JV real (no solo unit): backend `--json`, `aura
+apply/state` por CLI, lectura D-Bus de asusd, arranque de la app Electron 9 s
+sin errores de JS/python. Lo único SIN clic real: el overlay y el flujo
+`GUARDAR Y APLICAR` con pkexec (no tengo su contraseña).
+
+#### 1. VENTILADORES — causa raíz encontrada y corregida
+- **El bug real:** el servicio root corría `/usr/local/sbin/rog-profile-sync`
+  (copia con topes `255 255` = RPM máximas), pero la app editaba la copia del
+  REPO `~/Rog-Monitor-Scripts/scripts/rog-profile-sync.sh`. Estaban
+  desincronizadas → el cap NO llegaba al hardware, no persistía y los perfiles
+  casi no se diferenciaban a temperatura alta. Verificado leyendo
+  `pwm*_auto_point7/8_pwm` = 255 mientras el repo tenía 247.
+- **Solución:** las curvas viven ahora en un JSON del USUARIO
+  `~/.config/rog-monitor/fan-curves.json` (`{cap_rpm:{cpu,gpu,mid},
+  profiles:{performance|balanced|quiet:{cpu|gpu|mid:{temps[8],pwms[8]}}}}`).
+  Reescribí `rog-profile-sync.sh`: en cada cambio de perfil localiza ese JSON
+  (glob `/var/home/*` y `/home/*`, porque corre como root), lo valida con
+  python3 y lo aplica; si falta cae a curvas por defecto. Persiste entre
+  reinicios porque el JSON sobrevive. Acepta `SIGHUP` para reaplicar.
+- `desktop/main.js`: `get-fan-config` lee del JSON (o defaults del script);
+  `set-fan-config` escribe el JSON (sin pkexec) y luego **un solo pkexec**
+  `install -m0755 <repo script> /usr/local/sbin/rog-profile-sync && systemctl
+  restart`. Reinstalar en cada guardado mantiene root al día con el repo.
+- `src/rog_monitor/fans.py`: el `percent` es **relativo al cap** (denominador =
+  cap si existe; clamp a 100). Recarga el cap por mtime del JSON.
+- Curvas por defecto diferenciadas: performance ~97% tope, balanced ~80%,
+  quiet ~67% — cambiar de perfil SÍ baja RPM aun a 90 °C.
+- **PENDIENTE de Marshall:** la primera vez hay que aplicar para que el script
+  nuevo entre a `/usr/local/sbin`. Abrir Ventiladores → cap → GUARDAR Y APLICAR
+  (pide contraseña), o `sudo bash ~/Rog-Monitor-Scripts/install.sh`.
+
+#### 2. AURA — efectos
+- **Bug:** `asusctl` devuelve rc=0 aunque el firmware rechace el efecto
+  (`laser`, `stars`… no existen en el teclado de 4 zonas). La app decía
+  "aplicada ✓" en falso. Verificado: laser → rc0 + "Error: ... not supported".
+- **Fix en `aura.py`:** `apply_state` marca fallo si el output trae
+  `not supported`/`error:` aunque rc=0, da mensaje claro y recuerda el efecto en
+  `unsupported_effects`. `_supported_effect_ids()` lee por D-Bus
+  `xyz.ljones.Aura SupportedBasicModes` (= `au 5 0 1 2 3 10`) y mapea con el
+  enum de asusctl (orden de subcomandos): **solo se ofrecen los soportados**
+  (aquí: static, breathe, rainbow-cycle, rainbow-wave, pulse). breathe SÍ
+  aplicaba siempre (lo de "no cambia" era la UI/efectos no soportados).
+- UI (`app.js`/`index.html`/`style.css`): chip activo con relleno de acento;
+  perfiles guardados ahora son una LISTA interactiva (color + etiqueta + ★inicio
+  + APLICAR + 🗑 con confirmación). Quité los botones viejos y sus listeners.
+
+#### 3. OVERLAY (v10) — nuevo
+- Ventana Electron extra (`overlay.html`/`overlay.js`): frameless, transparent,
+  alwaysOnTop('screen-saver'), visibleOnFullScreen, click-through, skipTaskbar,
+  no-focusable. Temp/W CPU+GPU + RPM de los 3 ventiladores. `main.js`: IPC
+  `list-displays`/`set-overlay`, posiciona por monitor+esquina, recibe el mismo
+  stream `stats`. Botón `OVERLAY` + modal; preferencia en localStorage.
+  **Falta clic real** para confirmar que flota sobre el juego en KDE/Wayland.
+- Undervolt/overclock: **DESCARTADO** (decisión de Marshall). Roadmap v10 marcado.
+
+### Pendiente para la siguiente sesión
+1. Clic real: GUARDAR Y APLICAR de ventiladores (pkexec) y ver el cap limitando;
+   overlay sobre un juego; lista de perfiles Aura (borrar/aplicar).
+2. v9 grande sin tocar: AMD, historial SQLite, autodetección de plataforma,
+   empaquetado, DB comunitaria de máximos de fan.
+3. (Opcional) usar también `SupportedBasicZones`/brightness por D-Bus.
+
+---
+
+## Sesión previa: Claude (Opus 4.8) — 2026-06-10 (v8.1.0)
 
 ### Estado: arreglos de Aura + benchmarks + primer ítem de v9. Commiteado, SIN push.
 

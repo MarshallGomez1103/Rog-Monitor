@@ -380,6 +380,7 @@ function renderAura(aura, resetForm = false) {
   if (document.activeElement !== $('aura-profile-name')) {
     $('aura-profile-name').value = selected || '';
   }
+  renderAuraProfileList(profiles, selected, aura.startup_profile);
   $('aura-startup').checked = !!(aura.apply_on_startup && selected && selected === aura.startup_profile);
 
   if ((!auraBootstrapped || resetForm) && !auraFocused && !auraDirty) {
@@ -422,6 +423,35 @@ async function refreshAuraState(resetForm = false) {
 function selectedAuraProfile() {
   const name = $('aura-profile-select').value;
   return auraState?.profiles?.find((p) => p.name === name) || null;
+}
+
+function effectLabel(id) {
+  return auraState?.asus?.effects?.find((fx) => fx.id === id)?.label || id || 'efecto';
+}
+
+function renderAuraProfileList(profiles, selected, startupProfile) {
+  const list = $('aura-profile-list');
+  const empty = $('aura-profile-empty');
+  empty.classList.toggle('hidden', profiles.length > 0);
+  list.innerHTML = profiles.map((p) => {
+    const colour = '#' + normalizeHex(p.state?.colour);
+    const isStartup = p.name === startupProfile;
+    const active = p.name === selected;
+    return `
+      <li class="profile-item${active ? ' active' : ''}" data-name="${escapeHtml(p.name)}">
+        <span class="pswatch" style="background:${colour}"></span>
+        <span class="pname" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
+        ${isStartup ? '<span class="pstar" title="Se aplica al abrir la app">★</span>' : ''}
+        <span class="ptag">${escapeHtml(effectLabel(p.state?.effect))}</span>
+        <button class="pbtn papply" data-act="apply" title="Cargar y aplicar ya">APLICAR</button>
+        <button class="pbtn pdelete" data-act="delete" title="Borrar este perfil">🗑</button>
+      </li>`;
+  }).join('');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 async function applyAuraState(state, successMessage = 'Aura aplicada ✓') {
@@ -927,35 +957,46 @@ $('aura-save-profile').addEventListener('click', async () => {
   await refreshAuraState();
 });
 
-$('aura-load-profile').addEventListener('click', () => {
-  const profile = selectedAuraProfile();
-  if (!profile) { toast('Elige un perfil guardado'); return; }
+function selectAuraProfileByName(name) {
+  const profile = auraState?.profiles?.find((p) => p.name === name);
+  if (!profile) return null;
   auraProfileSelection = profile.name;
+  $('aura-profile-select').value = profile.name;
   $('aura-profile-name').value = profile.name;
-  setAuraForm(profile.state);
-  markAuraDirty(true, `Perfil "${profile.name}" cargado. Falta aplicar.`);
-  toast(`Perfil "${profile.name}" cargado en el formulario`);
-});
+  document.querySelectorAll('#aura-profile-list .profile-item').forEach((li) =>
+    li.classList.toggle('active', li.dataset.name === name));
+  return profile;
+}
 
-$('aura-apply-profile').addEventListener('click', async () => {
-  const profile = selectedAuraProfile();
+$('aura-profile-list').addEventListener('click', async (e) => {
+  const row = e.target.closest('.profile-item');
+  if (!row) return;
+  const name = row.dataset.name;
+  const action = e.target.closest('[data-act]')?.dataset.act;
+
+  if (action === 'delete') {
+    if (!window.confirm(`¿Borrar el perfil "${name}"? Esta acción no se puede deshacer.`)) return;
+    const res = await window.rog.deleteAuraProfile(name);
+    if (!res.ok) { toast(`No se borró: ${res.err}`); return; }
+    if (auraProfileSelection === name) auraProfileSelection = '';
+    toast(`Perfil "${name}" borrado`);
+    await refreshAuraState(true);
+    return;
+  }
+
+  const profile = selectAuraProfileByName(name);
   if (!profile) { toast('Ese perfil ya no existe'); return; }
-  auraProfileSelection = profile.name;
-  $('aura-profile-name').value = profile.name;
-  setAuraForm(profile.state);
-  markAuraDirty(true, `Perfil "${profile.name}" cargado. Aplicando…`);
-  await applyAuraState(profile.state, `Perfil "${profile.name}" aplicado ✓`);
-});
 
-$('aura-delete-profile').addEventListener('click', async () => {
-  const name = $('aura-profile-select').value;
-  if (!name) { toast('No hay perfil seleccionado'); return; }
-  if (!window.confirm(`¿Borrar el perfil "${name}"?`)) return;
-  const res = await window.rog.deleteAuraProfile(name);
-  if (!res.ok) { toast(`No se borró: ${res.err}`); return; }
-  auraProfileSelection = '';
-  toast(`Perfil "${name}" borrado`);
-  await refreshAuraState(true);
+  if (action === 'apply') {
+    setAuraForm(profile.state);
+    markAuraDirty(true, `Perfil "${name}" cargado. Aplicando…`);
+    await applyAuraState(profile.state, `Perfil "${name}" aplicado ✓`);
+  } else {
+    // click on the row body: load into the form (no apply yet)
+    setAuraForm(profile.state);
+    markAuraDirty(true, `Perfil "${name}" cargado. Falta aplicar.`);
+    toast(`Perfil "${name}" cargado en el formulario`);
+  }
 });
 
 $('aura-startup').addEventListener('change', async (e) => {
@@ -1051,8 +1092,13 @@ $('fans-block').addEventListener('click', async () => {
   fanCfg = res;
   $('fan-profile').textContent = profile;
   $('fan-script-path').textContent = res.path;
+  // Pre-fill the cap from the saved store (shared by the three fans).
+  const savedCap = res.cap && (res.cap.cpu || res.cap.gpu || res.cap.mid);
+  if (savedCap) $('fan-cap').value = savedCap;
   $('fan-max-note').textContent =
-    `Máximos estimados: CPU ${fanMax.cpu} · GPU ${fanMax.gpu} · MID ${fanMax.mid} RPM (mide los reales con el botón).`;
+    `Curvas ${res.source}. Máximos medidos: CPU ${fanMax.cpu} · GPU ${fanMax.gpu} · MID ${fanMax.mid} RPM. ` +
+    (savedCap ? `Tope activo: ${savedCap} RPM (el % de cada ventilador es respecto al tope).`
+              : 'Aún no hay tope; pon uno y oprime APLICAR CAP.');
   renderCurves();
   $('fan-modal').classList.remove('hidden');
 });
@@ -1101,14 +1147,75 @@ $('fan-save').addEventListener('click', async () => {
     'más calientes de la curva (' + risky.map(([f]) => FAN_NAMES[f]).join(', ') + ').\n\n' +
     'Esto puede sobrecalentar y dañar tu equipo bajo carga.\n\n' +
     'Escribe OK en el siguiente paso… ¿Entiendes el riesgo y quieres continuar?')) return;
-  const res = await window.rog.setFanConfig({ profile: fanCfg.profile, curves });
+  const cap = Math.round(+$('fan-cap').value) || null;
+  const res = await window.rog.setFanConfig({ profile: fanCfg.profile, curves, cap });
   if (res.ok) {
     $('fan-modal').classList.add('hidden');
-    toast(`Curvas del perfil ${fanCfg.profile} guardadas y aplicadas ✓`);
+    toast(res.warn
+      ? res.warn
+      : `Curvas del perfil ${fanCfg.profile} guardadas y aplicadas ✓ (persisten al reiniciar)`);
   } else {
     toast(`Error: ${res.err}`);
   }
 });
+
+/* ---------- gaming overlay ---------- */
+
+const overlayPrefs = JSON.parse(localStorage.getItem('overlayPrefs') || 'null')
+  || { enabled: false, displayId: null, corner: 'top-right' };
+
+function saveOverlayPrefs() {
+  try { localStorage.setItem('overlayPrefs', JSON.stringify(overlayPrefs)); } catch (_) {}
+}
+
+async function pushOverlay() {
+  const res = await window.rog.setOverlay(overlayPrefs);
+  if (!res.ok) toast('No se pudo cambiar el overlay');
+}
+
+async function openOverlayModal() {
+  const res = await window.rog.listDisplays();
+  const sel = $('overlay-display');
+  if (res.ok) {
+    sel.innerHTML = res.displays.map((d) =>
+      `<option value="${d.id}">${d.label}</option>`).join('');
+    // default to the primary display the first time
+    if (overlayPrefs.displayId == null) {
+      overlayPrefs.displayId = (res.displays.find((d) => d.primary) || res.displays[0])?.id ?? null;
+    }
+    if (overlayPrefs.displayId != null) sel.value = String(overlayPrefs.displayId);
+  }
+  $('overlay-enabled').checked = !!overlayPrefs.enabled;
+  $('overlay-corner').value = overlayPrefs.corner;
+  $('overlay-modal').classList.remove('hidden');
+}
+
+$('overlay-btn').addEventListener('click', openOverlayModal);
+$('overlay-close').addEventListener('click', () => $('overlay-modal').classList.add('hidden'));
+$('overlay-modal').addEventListener('click', (e) => {
+  if (e.target === $('overlay-modal')) $('overlay-modal').classList.add('hidden');
+});
+$('overlay-enabled').addEventListener('change', (e) => {
+  overlayPrefs.enabled = e.target.checked;
+  saveOverlayPrefs();
+  pushOverlay();
+});
+$('overlay-display').addEventListener('change', (e) => {
+  overlayPrefs.displayId = Number(e.target.value);
+  saveOverlayPrefs();
+  pushOverlay();
+});
+$('overlay-corner').addEventListener('change', (e) => {
+  overlayPrefs.corner = e.target.value;
+  saveOverlayPrefs();
+  pushOverlay();
+});
+
+// restore the overlay on launch if it was on
+if (overlayPrefs.enabled) {
+  window.addEventListener('DOMContentLoaded', pushOverlay);
+  pushOverlay();
+}
 
 /* ---------- report issue ---------- */
 

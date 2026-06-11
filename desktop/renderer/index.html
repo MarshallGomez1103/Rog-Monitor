@@ -34,6 +34,7 @@
 
       <button id="report-btn" class="ghost" title="Abre un issue en el repositorio de GitHub con la información del sistema ya escrita">REPORTAR ERROR</button>
       <button id="alerts-btn" class="ghost" title="Editar los umbrales de temperatura, potencia y alertas">ALERTAS</button>
+      <button id="overlay-btn" class="ghost" title="Overlay de stats siempre encima para jugar (elige el monitor)">OVERLAY</button>
       <button id="theme-btn" class="ghost" title="Apariencia: tema, modo claro/oscuro y tamaño">TEMA</button>
     </div>
   </header>
@@ -129,15 +130,12 @@
             <input type="text" id="aura-profile-name" placeholder="Nombre para guardar">
             <button class="ghost" id="aura-save-profile">GUARDAR</button>
           </div>
-          <div class="aura-profile-row">
-            <select id="aura-profile-select"></select>
-            <button class="ghost" id="aura-load-profile">CARGAR</button>
-            <button class="ghost" id="aura-apply-profile">CARGAR Y APLICAR</button>
-            <button class="ghost" id="aura-delete-profile">BORRAR</button>
-          </div>
+          <select id="aura-profile-select" class="hidden"></select>
+          <ul id="aura-profile-list" class="profile-list"></ul>
+          <p id="aura-profile-empty" class="dim profile-empty">Aún no has guardado perfiles. Ajusta la iluminación y oprime GUARDAR.</p>
           <label class="check-row" for="aura-startup">
             <input type="checkbox" id="aura-startup">
-            Aplicar este perfil cuando se abra ROG Monitor
+            Aplicar el perfil seleccionado cuando se abra ROG Monitor
           </label>
         </div>
 
@@ -283,6 +281,31 @@
         <button data-zoom="1">A++</button>
       </div>
       <button class="ghost modal-close" id="theme-close">Cerrar</button>
+    </div>
+  </div>
+
+  <div id="overlay-modal" class="hidden">
+    <div class="modal-card">
+      <h3>Overlay para juegos</h3>
+      <p class="sub">Una ventanita siempre encima con temperaturas, vatios y RPM.
+        No roba el foco del juego (es click-through) y aparece sobre pantalla completa.</p>
+      <label class="check-row" for="overlay-enabled">
+        <input type="checkbox" id="overlay-enabled">
+        Mostrar overlay
+      </label>
+      <label>Monitor
+        <select id="overlay-display"></select>
+      </label>
+      <label>Esquina
+        <select id="overlay-corner">
+          <option value="top-left">Arriba izquierda</option>
+          <option value="top-right">Arriba derecha</option>
+          <option value="bottom-left">Abajo izquierda</option>
+          <option value="bottom-right">Abajo derecha</option>
+        </select>
+      </label>
+      <p class="sub">Para esconderlo durante una captura, desactiva «Mostrar overlay».</p>
+      <button class="ghost modal-close" id="overlay-close">Cerrar</button>
     </div>
   </div>
 

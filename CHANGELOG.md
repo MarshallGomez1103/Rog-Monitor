@@ -1,5 +1,46 @@
 # Changelog
 
+## 8.2.0 — 2026-06-10
+
+### Fixed
+- **El TOPE (cap) de RPM ahora SÍ limita y persiste entre reinicios.** La causa
+  raíz: el servicio root corría `/usr/local/sbin/rog-profile-sync` (copia con
+  los topes en `255 255` = RPM máximas), mientras la app editaba la copia del
+  repo, así que ningún cambio llegaba al hardware. Ahora las curvas viven en un
+  JSON del usuario (`~/.config/rog-monitor/fan-curves.json`) que el servicio lee
+  en cada cambio de perfil; el cap queda guardado ahí y sobrevive reinicios. Al
+  GUARDAR Y APLICAR la app reinstala el script (un solo `pkexec`) y reaplica.
+- **El % de cada ventilador es relativo al cap.** Si pones el tope en 6000 RPM
+  y el ventilador llega a 6000, marca 100% (por encima se mantiene en 100, ya no
+  se pasa). Antes el denominador era el máximo medido y siempre daba ~99%.
+- **Cambiar de perfil sí baja las RPM.** Las curvas por defecto de `balanced`
+  (~80% del tope) y `quiet` (~67%) ahora se diferencian de verdad de
+  `performance`; antes los tres tenían el mismo tope alto y a temperaturas altas
+  giraban casi igual.
+- **Aura: efectos que el teclado no soporta.** `asusctl` devolvía código 0
+  aunque el firmware rechazara el efecto (p. ej. `laser` en el G614JV), así que
+  la app decía "aplicada ✓" en falso. Ahora detecta el error real, lo reporta y
+  recuerda el efecto como no soportado. Además se leen por D-Bus los
+  `SupportedBasicModes` de asusd y **solo se ofrecen los efectos que el teclado
+  acepta de verdad** (en este equipo: static, breathe, rainbow-cycle,
+  rainbow-wave y pulse; `stars`/`laser`/etc. dejaron de aparecer).
+
+### Changed
+- **Perfiles de Aura más interactivos.** Se reemplazó el `<select>` + botón
+  BORRAR por una lista: cada perfil es una fila con su color, etiqueta de efecto,
+  estrella si es el de inicio, botón APLICAR y un botón de borrar (🗑) con
+  confirmación. Clic en la fila lo carga en el formulario.
+- El chip del efecto seleccionado ahora se resalta claramente (relleno con el
+  color de acento), para que se note cuál está activo.
+
+### Added (v10 — overlay)
+- **Overlay para juegos.** Ventana sin marco, transparente y siempre encima
+  (sobre pantalla completa), click-through para no robar el foco del juego.
+  Muestra temperatura/vatios de CPU y GPU y las RPM de los tres ventiladores.
+  Botón `OVERLAY` en la barra superior: elige monitor y esquina, y enciéndelo o
+  apágalo. La preferencia se recuerda. **Se quitó undervolt/overclock del plan**
+  (riesgo real al equipo) — el overlay es read-only.
+
 ## 8.1.0 — 2026-06-10
 
 ### Fixed

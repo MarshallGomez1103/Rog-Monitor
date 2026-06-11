@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'">
+  <title>ROG Overlay</title>
+  <style>
+    :root {
+      --ok: #4cd964; --warn: #ffcc33; --hot: #ff8a3d; --crit: #ff453a;
+      --ink: #f2f4f8; --dim: #9aa3b2;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: transparent; overflow: hidden; user-select: none; }
+    body {
+      font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace;
+      color: var(--ink);
+      padding: 2px;
+    }
+    .card {
+      background: rgba(12, 14, 18, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      border-radius: 12px;
+      padding: 10px 12px;
+      backdrop-filter: blur(3px);
+    }
+    .title {
+      font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--dim); margin-bottom: 6px; display: flex; justify-content: space-between;
+    }
+    .row { display: flex; align-items: baseline; gap: 6px; margin: 3px 0; }
+    .row .lbl { font-size: 10px; color: var(--dim); width: 38px; }
+    .row .val { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .row .sub { font-size: 10px; color: var(--dim); margin-left: auto; font-variant-numeric: tabular-nums; }
+    .fans { font-size: 10px; color: var(--dim); margin-top: 6px; font-variant-numeric: tabular-nums; }
+    .fans b { color: var(--ink); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="title"><span>ROG MONITOR</span><span id="prof">--</span></div>
+    <div class="row"><span class="lbl">CPU</span><span class="val" id="cpu-t">--</span><span class="sub" id="cpu-w">-- W</span></div>
+    <div class="row"><span class="lbl">GPU</span><span class="val" id="gpu-t">--</span><span class="sub" id="gpu-w">-- W</span></div>
+    <div class="fans" id="fans">ventiladores --</div>
+  </div>
+  <script src="overlay.js"></script>
+</body>
+</html>
