@@ -13,19 +13,29 @@ FAN_CURVES_FILE = CONFIG_DIR / "fan-curves.json"
 CAP_KEY = {"cpu_fan": "cpu", "gpu_fan": "gpu", "mid_fan": "mid"}
 
 
-def load_caps() -> dict:
-    """RPM cap per fan label from fan-curves.json (empty if none set)."""
+def _store_section(name: str) -> dict:
+    """A cpu/gpu/mid section of fan-curves.json mapped to hwmon fan labels."""
     try:
         with open(FAN_CURVES_FILE) as fh:
-            cap = (json.load(fh) or {}).get("cap_rpm") or {}
+            section = (json.load(fh) or {}).get(name) or {}
     except (OSError, ValueError):
         return {}
     out = {}
     for label, key in CAP_KEY.items():
-        value = cap.get(key)
+        value = section.get(key)
         if isinstance(value, (int, float)) and value > 0:
             out[label] = int(value)
     return out
+
+
+def load_caps() -> dict:
+    """RPM cap per fan label from fan-curves.json (empty if none set)."""
+    return _store_section("cap_rpm")
+
+
+def load_measured_max() -> dict:
+    """Real measured maximums (calibrate-fans.sh) per fan label."""
+    return _store_section("max_rpm")
 
 
 class FanReader:
@@ -44,7 +54,8 @@ class FanReader:
                 if any(dev.glob("fan*_input"))
             ]
         stored = config.get("fan_max_rpm") or {}
-        self.max_rpm = {**DEFAULT_MAX, **stored}
+        # measured maximums (fan-curves.json) win over observed/defaults
+        self.max_rpm = {**DEFAULT_MAX, **stored, **load_measured_max()}
         self.caps = load_caps()
         self._caps_mtime = self._curves_mtime()
         self._dirty = False
@@ -60,6 +71,7 @@ class FanReader:
         mtime = self._curves_mtime()
         if mtime != self._caps_mtime:
             self.caps = load_caps()
+            self.max_rpm.update(load_measured_max())
             self._caps_mtime = mtime
 
     def read(self) -> list[dict]:

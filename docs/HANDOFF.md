@@ -2,7 +2,162 @@
 
 > Cada agente actualiza esta sección al terminar. El siguiente la lee primero.
 
-## Última sesión: Claude (Opus 4.8) — 2026-06-10 (v8.2.0)
+## Última sesión: Claude (Fable 5) — 2026-06-10 (v8.3.0)
+
+### Estado: cap de verdad + Aura arreglado de raíz + modales + overlay AVG/FPS. Commit local, SIN push.
+
+**Probado con CLICS REALES** por primera vez: lancé la app Electron con
+`--remote-debugging-port` y la manejé por CDP (cliente WebSocket stdlib en
+`/tmp/cdp.py`, patrón reutilizable). Marshall escribió su contraseña en los
+pkexec en vivo. Verificado contra hardware (LedMode por D-Bus, pwm points del
+hwmon, RPM reales).
+
+#### 1. VENTILADORES — el cap ya no se hornea (causa raíz de v8.2 reabierta)
+- **Bug:** APLICAR CAP hacía `min(curva, cap)` EN los puntos y los guardaba
+  así. Bajar el cap recortaba para siempre; subirlo no liberaba nada (un min
+  nunca sube). El JSON de Marshall tenía los topes en 181/186/171 PWM = el cap
+  de 5000 de una prueba vieja → benchmark con "cap 6500" se quedaba en ~85% y
+  96 °C con ~9500 eventos de throttle.
+- **Fix:** curva guardada SIEMPRE prístina; el cap lo aplica
+  `rog-profile-sync.sh` al escribir al hardware (json_curve recibe también los
+  defaults y aplica el cap a lo que vaya a usar). QUITAR CAP en la UI manda
+  `cap: null` → borra `cap_rpm` del JSON.
+- **Cap exacto:** PWM→RPM no es lineal (por eso quedaba 200-400 arriba). Nuevo
+  `calibrate-fans.sh`: 7 escalones de PWM × 9 s, mide RPM por ventilador,
+  guarda `calibration` y `max_rpm` en fan-curves.json. El cap se interpola en
+  esa tabla con margen 1.5% (target = cap*0.985, floor). Sin calibrar cae a
+  regla de tres con FALLBACK_MAX (cpu 7000/gpu 6900/mid 7500 — ¡ojo, ese
+  fallback vive también dentro del python del script root!).
+- **N ventiladores:** todo enumera el hwmon (script root `seq 1..6` sobre
+  `pwmN_auto_point1_pwm`, main.js `detectFanKeys()`, calibrate-fans.sh).
+  Mapeo: 1=cpu 2=gpu 3=mid 4+=fanN (extras usan curva default de cpu).
+- `--defaults <perfil>` en el sync script imprime las curvas default como
+  JSON; main.js las lee así (antes regex frágil sobre el case de bash).
+- Los "máximos medidos" de antes eran FALSOS (constantes en localStorage).
+  Ahora viven en fan-curves.json, la UI dice "ESTIMADOS (sin medir)" hasta
+  calibrar, banner de primera vez, y `fans.py` los usa como denominador.
+- benchmarks.py: summary trae `fan_cap` y `cap_respected` (±75 RPM) y la UI
+  lo muestra ("Tope RPM: … respetado ✓ / EXCEDIDO ✗").
+- Reparé el fan-curves.json de Marshall (curvas horneadas fuera; cap 6500 se
+  conservó; backup en fan-curves.json.corrupto.bak).
+
+#### 2. AURA — POR FIN la causa raíz real (dos bugs apilados)
+- **(a) El `<label>` asesino:** los chips estaban dentro de
+  `<label class="aura-effect-box">` sin `for`. El control asociado de un label
+  es su PRIMER elemento labelable descendiente — **los `<button>` son
+  labelables** — o sea el chip Static. Cada clic en cualquier chip se
+  reenviaba como clic sintético al chip Static, el handler corría dos veces y
+  la segunda pisaba todo con static. Por eso "elijo Rainbow y queda Static" y
+  el toast decía "aplicada ✓" (aplicaba static de verdad). Fix: `<div>` (hay
+  nota en style.css para que nadie lo "arregle" de vuelta).
+- **(b) Rebuild cada segundo:** update() llamaba renderAura con cada tick del
+  stream y reconstruía los chips (innerHTML) — clics reales mueren si el botón
+  se destruye entre mousedown y mouseup. Ahora renderAura calcula una firma
+  (auraSignature) y retorna temprano si nada cambió. El efecto elegido vive en
+  `auraSelectedEffect` (variable), no en el `<select>` oculto.
+- **Verificado en hardware:** clic en cada chip + APLICAR → LedMode D-Bus
+  cambió a 3 (rainbow-wave), 2 (rainbow-cycle), 1 (breathe) y de vuelta a
+  static d400ff (el morado de Marshall quedó restaurado).
+
+#### 3. UI / overlay
+- Modales ALERTAS y OVERLAY salían abajo del todo: no tenían CSS (solo 4 de 6
+  ids estaban en style.css). Ahora todos llevan `class="modal"` y una sola
+  regla compartida. Verificado por CDP: position fixed, centrados.
+- Overlay: CPU muestra **promedio (AVG)**, no package. Fila **FPS** vía
+  MangoHud logging (opt-in en modal OVERLAY → escribe bloque marcado en
+  `~/.config/MangoHud/MangoHud.conf` con output_folder/autostart_log/
+  log_interval=500; `src/rog_monitor/fps.py` tail-ea el CSV más fresco <5 s;
+  `fps` va en el stream; la fila solo aparece con dato).
+- Botones de perfil: resaltado optimista + set-profile confirma leyendo
+  ActiveProfile de vuelta (antes parecía que el clic no hacía nada).
+
+#### Límites de potencia: NO había nada que "liberar"
+asus-armoury (sysfs) ya está al máximo del firmware: PL1 140 W, PL2 175 W,
+nv_dynamic_boost 25 W, nv_temp_target 87 °C. Lo que frenaba el rendimiento
+era el throttling térmico por el cap horneado. No tocar PLs.
+
+### Segunda mitad de la sesión (feedback en vivo de Marshall)
+
+**Cap violado jugando → arreglado y verificado.** Con cap 6500 la GPU llegó a
+~6800 en juego. Causas: (1) la calibración con sleep fijo medía mal — estos
+ventiladores aceleran/desaceleran MÁS LENTO que 9-10 s (la GPU "estabilizó" en
+falso a 6000 y el cap le quedó en 255 = sin tope); (2) nada reaplicaba las
+curvas si el firmware/asusd las pisaba. Fixes:
+- `calibrate-fans.sh`: espera estabilización real (2 lecturas seguidas con
+  delta <75 RPM, máx 24 s/escalón, +14 s extra el primero). main.js filtra
+  monotonicidad (descarta puntos donde RPM no baja al bajar PWM).
+- `rog-profile-sync.sh`: `apply_curves … check-only` compara el punto 8 del
+  hardware contra lo esperado en CADA iteración del loop (≤30 s) y reaplica si
+  alguien lo pisó. Probado con hwmon falso (pisotón detectado y corregido).
+- La calibración de la GPU en fan-curves.json quedó FUSIONADA a mano de las
+  dos corridas reales (bajos de la descendente + altos de la ascendente):
+  [[90,3700]…[255,6800]], max 6800. CPU y MID calibraron limpio solos.
+- **PRUEBA FINAL: benchmark 90 s CPU 100% con cap 6500 → RPM máx 6400 (cpu) /
+  5100 (gpu) / 6300 (mid) → `cap_respected: true`** ✓. El summary del
+  benchmark ya trae el veredicto.
+- OJO: el script de /usr/local/sbin instalado NO tiene aún el check-only ni
+  FALLBACK_MAX (es de la primera instalación de hoy). **Falta un GUARDAR Y
+  APLICAR de Marshall** (o sudo bash ~/Rog-Monitor-Scripts/install.sh) para
+  instalar la versión blindada. El cap YA funciona porque max_rpm/calibration
+  están en el JSON.
+
+**Modo música: capturaba el MICRÓFONO.** `pw-record --target <sink>.monitor`
+no matchea nodo PipeWire (nombre de la capa Pulse) → caía a la fuente default
+= micro (verificado con `pw-link -l`: colgaba de alsa_input). Fix:
+`pw-record -P '{ stream.capture.sink = true }' --target <sink>` (verificado:
+cuelga de monitor_FL/FR del sink). Brillo del pulso por busctl set-property
+directo (~20 ms vs ~1 s de asusctl); color cuantizado a 5 niveles para no
+spamear asusctl. Falta probar con música real sonando.
+
+**UI nueva:** modales arrastrables (drag por el título: benchmark/fan/alerts/
+overlay, vuelven centrados al cerrar), ALERTAS con iconos + bordes de color +
+puntos de color en umbrales, overlay personalizable (casillas qué mostrar +
+copy de MangoHud para no-expertos), EXPORTAR/IMPORTAR CONFIG (bundle JSON de
+fan-curves+aura+config, respaldo .pre-import al importar), nota explicando
+thermal throttling en Eventos. Todo verificado por CDP con la app corriendo
+(dots=7, drag handles=4, overlay AVG en vivo con % relativo al cap).
+
+**Redragon K734WCG-RGB-PRO (pedido nuevo):** el exe de Windows
+(~/Downloads/Redragon_K734WCG-RGB-PRO_Software.exe) es Inno Setup; extraído
+con innoextract (instalado por brew): software "BYCOMBO4" de BY Tech.
+**VID/PID: cable 0x258a:0x010c (Sinowealth/BY Tech — lsusb lo ve AHORA
+conectado), dongle 0x3554:0xfa09 (CompX).** Plan: instalar OpenRGB (flatpak) y
+probar detección; 0x258a es el VID clásico Redragon en OpenRGB pero 010c puede
+no estar soportado → en ese caso, protocolo HID propio (python hidapi) mirando
+app/Dev/kb/KB.ini del exe extraído (/tmp/redragon-exe, re-extraíble). NO usar
+Proton/Wine para el driver (frágil); interop nativo.
+
+### Pedidos NUEVOS de Marshall (audio 2, prioridad para próximas sesiones)
+1. **Wizard de primera vez / setup**: al abrir por primera vez, guiar:
+   detectar ventiladores → calibrar (pidiendo permisos con explicación) →
+   benchmark CPU + GPU → guardar todo → tour de qué hace cada cosa. Nada de
+   "máximos medidos" sin medir (eso ya quedó: dice ESTIMADOS hasta calibrar).
+2. **UX de 4 estados por widget**: con datos / cargando / sin datos / error
+   (ej.: RAM que no carga; ventilador dañado → ícono quieto, ya pausa en 0
+   RPM pero hay que mostrarlo explícito).
+3. **Multi-distro y multi-marca**: nada atado a Bazzite ni al G614JV en docs/
+   UI (ya auditado: solo queda 1 mención válida a Bazzite en el copy de
+   MangoHud). Meta a largo plazo: Armoury Crate de Linux, también Legion etc.
+4. **Música por zonas**: graves/medios/agudos en distintas zonas del teclado.
+   OJO: el teclado interno reporta SupportedBasicZones=0 (sin zonas); esto es
+   para el Redragon vía OpenRGB cuando esté.
+5. **Alertas aún más visuales** (hecho parcial: colores/iconos).
+6. La ventanita de benchmarks desplazable (HECHO), explicar throttling en
+   eventos (HECHO), export/import de config (HECHO).
+
+### Pendiente para la siguiente sesión
+1. Marshall: un GUARDAR Y APLICAR para instalar el script blindado (ver
+   arriba). Probar modo música con una canción de verdad.
+2. Wizard de primera vez (pedido #1 de arriba).
+3. OpenRGB + Redragon 258a:010c (plan arriba).
+4. GPU benchmark podría exigir más W (vkcube es geometría trivial; glmark2
+   no está instalado). Idea: probar `brew install glmark2` o flatpak.
+5. v9 grande sigue sin tocar: AMD, historial SQLite, empaquetado, DB
+   comunitaria de máximos.
+
+---
+
+## Sesión previa: Claude (Opus 4.8) — 2026-06-10 (v8.2.0)
 
 ### Estado: arreglos grandes de ventiladores + Aura + overlay. Commit local, SIN push.
 

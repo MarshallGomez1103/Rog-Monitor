@@ -88,11 +88,12 @@
       <article class="block" id="aura-block">
         <h2><i>08</i> Iluminación <small>Aura ASUS y modo música</small></h2>
         <div class="aura-grid">
-          <label class="aura-effect-box">
+          <!-- div, no <label>: ver nota en style.css (.aura-effect-box) -->
+          <div class="aura-effect-box">
             <span>Modos basicos</span>
             <div id="aura-effects" class="effect-grid"></div>
             <select id="aura-effect" class="hidden"></select>
-          </label>
+          </div>
           <label id="aura-extra-wrap">
             <span>Mas efectos ASUS</span>
             <select id="aura-extra-effect"></select>
@@ -191,6 +192,11 @@
             <button id="export-events" class="ghost" title="Guardar el registro de eventos como .txt">EXPORTAR</button>
           </h2>
           <ul id="events"><li class="dim">sin eventos</li></ul>
+          <p class="note dim" id="events-help">🌡 <b>Thermal throttling</b> = la CPU
+            baja su frecuencia un instante para no pasar de su temperatura límite
+            (~100 °C). Es una protección normal del procesador bajo carga fuerte.
+            Muchos eventos seguidos significan que la refrigeración no da abasto:
+            sube el tope de ventiladores, mejora la ventilación o baja el perfil.</p>
         </article>
 
         <article class="block" id="procs-block">
@@ -215,7 +221,7 @@
 
   <div id="toast" class="hidden"></div>
 
-  <div id="ram-modal" class="hidden">
+  <div id="ram-modal" class="modal hidden">
     <div class="modal-card">
       <h3>¿Qué está usando la RAM?</h3>
       <p class="sub">Memoria residente real por proceso (clic para cerrar uno).</p>
@@ -227,7 +233,7 @@
     </div>
   </div>
 
-  <div id="fan-modal" class="hidden">
+  <div id="fan-modal" class="modal hidden">
     <div class="modal-card wide">
       <h3>Ventiladores — perfil <span id="fan-profile" class="accent2"></span></h3>
       <p class="sub">
@@ -236,19 +242,26 @@
         reinicia el servicio de curvas y pide tu contraseña.
       </p>
 
+      <p class="sub warn-note hidden" id="fan-calib-banner">
+        ⚙ <b>Primera vez:</b> calibra los ventiladores (botón CALIBRAR). La app
+        mide las RPM reales de cada uno en 7 velocidades; sin esa tabla el tope
+        es un estimado y puede quedar 200-400 RPM arriba.
+      </p>
       <div class="fan-cap-row">
         <div>
-          <label>Cap de RPM (tope para los 3 ventiladores)</label>
-          <input type="number" id="fan-cap" min="2000" max="8000" step="100" value="6800">
+          <label>Tope de RPM (cap para todos los ventiladores)</label>
+          <input type="number" id="fan-cap" min="2000" max="8000" step="100" placeholder="sin tope">
         </div>
-        <button class="ghost" id="fan-apply-cap" title="Recalcula los puntos altos de las curvas para no pasar del cap">APLICAR CAP</button>
-        <button class="ghost" id="fan-benchmark" title="Pone los 3 ventiladores al 100% durante 60 segundos y mide su RPM máximo real. Restaura todo al terminar.">MEDIR MÁXIMOS (60 s)</button>
+        <button class="ghost" id="fan-clear-cap" title="Borra el tope: cada ventilador vuelve a poder llegar a su máximo">QUITAR CAP</button>
+        <button class="ghost" id="fan-benchmark" title="Mide las RPM reales de cada ventilador en 7 velocidades (~70 s, suena fuerte). Restaura todo al terminar.">CALIBRAR (1-3 min)</button>
       </div>
-      <p class="sub" id="fan-max-note">Máximos estimados: CPU 7000 · GPU 6900 · MID 7500 RPM (mide los reales con el botón).</p>
-      <p class="sub">Las velocidades se editan en <b>% del máximo de cada ventilador</b>
-        (100% = su tope real). El cap se traduce a ese porcentaje usando los
-        máximos medidos, por eso conviene medirlos primero. Puedes ajustar cada
-        ventilador individualmente en su fila.</p>
+      <p class="sub" id="fan-cap-preview"></p>
+      <p class="sub" id="fan-max-note"></p>
+      <p class="sub">Las velocidades se editan en <b>% del máximo de cada ventilador</b>.
+        La curva se guarda <b>completa (sin recortar)</b>: el tope se aplica al
+        momento de mandarla al hardware, así subirlo o quitarlo libera los
+        ventiladores al instante. El % que ves en la tarjeta de ventiladores es
+        respecto al tope cuando hay uno activo.</p>
 
       <div id="fan-curves"></div>
 
@@ -259,11 +272,13 @@
       <div class="mode-row">
         <button class="ghost" id="fan-save">GUARDAR Y APLICAR</button>
         <button class="ghost" id="fan-close">Cancelar</button>
+        <button class="ghost" id="config-export" title="Guarda TODA tu configuración (curvas, cap, calibración, Aura, umbrales) en un solo archivo JSON">EXPORTAR CONFIG</button>
+        <button class="ghost" id="config-import" title="Restaura una configuración exportada (hace respaldo .pre-import de la actual)">IMPORTAR CONFIG</button>
       </div>
     </div>
   </div>
 
-  <div id="theme-modal" class="hidden">
+  <div id="theme-modal" class="modal hidden">
     <div class="modal-card">
       <h3>Apariencia</h3>
       <p class="sub">Elige el modo de color y la paleta. Se guarda automáticamente.</p>
@@ -284,7 +299,7 @@
     </div>
   </div>
 
-  <div id="overlay-modal" class="hidden">
+  <div id="overlay-modal" class="modal hidden">
     <div class="modal-card">
       <h3>Overlay para juegos</h3>
       <p class="sub">Una ventanita siempre encima con temperaturas, vatios y RPM.
@@ -304,32 +319,56 @@
           <option value="bottom-right">Abajo derecha</option>
         </select>
       </label>
+      <h3 class="size-title">¿Qué quieres ver en el overlay?</h3>
+      <label class="check-row" for="ov-show-cpu">
+        <input type="checkbox" id="ov-show-cpu" checked>
+        CPU — temperatura promedio (AVG) y vatios
+      </label>
+      <label class="check-row" for="ov-show-gpu">
+        <input type="checkbox" id="ov-show-gpu" checked>
+        GPU — temperatura, vatios y % de uso
+      </label>
+      <label class="check-row" for="ov-show-fans">
+        <input type="checkbox" id="ov-show-fans" checked>
+        Ventiladores — RPM en vivo
+      </label>
+      <label class="check-row" for="fps-logging">
+        <input type="checkbox" id="fps-logging">
+        FPS del juego
+      </label>
+      <p class="sub" id="fps-note">Los FPS solo puede medirlos algo que corre
+        <b>dentro</b> del juego; en Linux eso es <b>MangoHud</b> (incluido en
+        Bazzite, instalable en cualquier distro). Al activar esta casilla la app
+        lo configura sola; tú solo lanza el juego con MangoHud (en Steam:
+        clic derecho → Propiedades → Opciones de lanzamiento →
+        <code>mangohud %command%</code>) y los FPS aparecen en el overlay.</p>
       <p class="sub">Para esconderlo durante una captura, desactiva «Mostrar overlay».</p>
       <button class="ghost modal-close" id="overlay-close">Cerrar</button>
     </div>
   </div>
 
-  <div id="alerts-modal" class="hidden">
+  <div id="alerts-modal" class="modal hidden">
     <div class="modal-card">
       <h3>Umbrales y alertas</h3>
       <p class="sub">Ajusta cuándo avisa el monitor y a qué temperaturas cambian los colores. Se guarda y se aplica al instante.</p>
       <div class="settings-grid">
-        <label><span>Alerta temp CPU (°C)</span><input type="number" id="set-cpu-temp-warn" min="50" max="110" step="1"></label>
-        <label><span>Alerta temp GPU (°C)</span><input type="number" id="set-gpu-temp-warn" min="45" max="105" step="1"></label>
-        <label><span>Alerta potencia CPU (W)</span><input type="number" id="set-cpu-power-warn" min="20" max="300" step="1"></label>
-        <label><span>Ventilador parado bajo (°C)</span><input type="number" id="set-fan-stopped" min="30" max="100" step="1"></label>
-        <label><span>Enfriamiento alerta (s)</span><input type="number" id="set-cooldown" min="10" max="3600" step="5"></label>
-        <label><span>Throttle mínimo (ms)</span><input type="number" id="set-throttle-ms" min="0" max="5000" step="10"></label>
+        <label class="f-temp"><span>🌡 Alerta temp CPU (°C)</span><input type="number" id="set-cpu-temp-warn" min="50" max="110" step="1"></label>
+        <label class="f-temp"><span>🌡 Alerta temp GPU (°C)</span><input type="number" id="set-gpu-temp-warn" min="45" max="105" step="1"></label>
+        <label class="f-power"><span>⚡ Alerta potencia CPU (W)</span><input type="number" id="set-cpu-power-warn" min="20" max="300" step="1"></label>
+        <label class="f-fan"><span>🌀 Ventilador parado bajo (°C)</span><input type="number" id="set-fan-stopped" min="30" max="100" step="1"></label>
+        <label class="f-time"><span>⏱ Enfriamiento alerta (s)</span><input type="number" id="set-cooldown" min="10" max="3600" step="5"></label>
+        <label class="f-time"><span>⏱ Throttle mínimo (ms)</span><input type="number" id="set-throttle-ms" min="0" max="5000" step="10"></label>
       </div>
-      <h3 class="size-title">Colores de temperatura (°C: verde · amarillo · naranja)</h3>
+      <h3 class="size-title">Colores de temperatura (hasta qué °C llega cada color)</h3>
       <div class="settings-grid">
-        <label><span>CPU verde &lt;</span><input type="number" id="set-cpu-c0" min="40" max="110" step="1"></label>
-        <label><span>CPU amarillo &lt;</span><input type="number" id="set-cpu-c1" min="40" max="110" step="1"></label>
-        <label><span>CPU naranja &lt;</span><input type="number" id="set-cpu-c2" min="40" max="110" step="1"></label>
-        <label><span>GPU verde &lt;</span><input type="number" id="set-gpu-c0" min="40" max="105" step="1"></label>
-        <label><span>GPU amarillo &lt;</span><input type="number" id="set-gpu-c1" min="40" max="105" step="1"></label>
-        <label><span>GPU naranja &lt;</span><input type="number" id="set-gpu-c2" min="40" max="105" step="1"></label>
+        <label><span><i class="dot ok"></i>CPU verde &lt;</span><input type="number" id="set-cpu-c0" min="40" max="110" step="1"></label>
+        <label><span><i class="dot warn"></i>CPU amarillo &lt;</span><input type="number" id="set-cpu-c1" min="40" max="110" step="1"></label>
+        <label><span><i class="dot hot"></i>CPU naranja &lt;</span><input type="number" id="set-cpu-c2" min="40" max="110" step="1"></label>
+        <label><span><i class="dot ok"></i>GPU verde &lt;</span><input type="number" id="set-gpu-c0" min="40" max="105" step="1"></label>
+        <label><span><i class="dot warn"></i>GPU amarillo &lt;</span><input type="number" id="set-gpu-c1" min="40" max="105" step="1"></label>
+        <label><span><i class="dot hot"></i>GPU naranja &lt;</span><input type="number" id="set-gpu-c2" min="40" max="105" step="1"></label>
       </div>
+      <p class="sub"><i class="dot crit"></i>Rojo = por encima del naranja. Estos colores aplican en toda la app y en el overlay.</p>
       <label class="check-row" for="set-notifications">
         <input type="checkbox" id="set-notifications">
         Mostrar notificaciones de escritorio
@@ -342,7 +381,7 @@
     </div>
   </div>
 
-  <div id="benchmark-modal" class="hidden">
+  <div id="benchmark-modal" class="modal hidden">
     <div class="modal-card">
       <h3>Benchmark térmico</h3>
       <p class="sub">Lanza una carga sintética local al máximo y mide temperatura, watts y RPM. Úsalo con el cargador conectado y con ventilación libre.</p>

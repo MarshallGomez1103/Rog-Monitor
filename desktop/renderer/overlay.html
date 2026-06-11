@@ -38,8 +38,9 @@
 <body>
   <div class="card">
     <div class="title"><span>ROG MONITOR</span><span id="prof">--</span></div>
-    <div class="row"><span class="lbl">CPU</span><span class="val" id="cpu-t">--</span><span class="sub" id="cpu-w">-- W</span></div>
-    <div class="row"><span class="lbl">GPU</span><span class="val" id="gpu-t">--</span><span class="sub" id="gpu-w">-- W</span></div>
+    <div class="row" id="fps-row" style="display:none"><span class="lbl">FPS</span><span class="val" id="fps-v">--</span><span class="sub">MangoHud</span></div>
+    <div class="row" id="cpu-row"><span class="lbl">CPU</span><span class="val" id="cpu-t">--</span><span class="sub" id="cpu-w">-- W · AVG</span></div>
+    <div class="row" id="gpu-row"><span class="lbl">GPU</span><span class="val" id="gpu-t">--</span><span class="sub" id="gpu-w">-- W</span></div>
     <div class="fans" id="fans">ventiladores --</div>
   </div>
   <script src="overlay.js"></script>

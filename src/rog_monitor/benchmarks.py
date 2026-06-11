@@ -13,7 +13,7 @@ import time
 from datetime import datetime, timezone
 
 from .cpu import CpuReader
-from .fans import FanReader
+from .fans import FanReader, load_caps
 from .gpu import GpuReader
 from .hwmon import scan
 from .power import RaplReader
@@ -59,7 +59,17 @@ def _summarize(samples: list[dict]) -> dict:
         for label, rpm in sample.get("fans", {}).items():
             fan_max[label] = max(fan_max.get(label, 0), rpm)
 
+    # verdict: did every capped fan stay at/under its cap? (±75 RPM jitter)
+    caps = load_caps()
+    cap_check = {
+        label: {"cap": cap, "max": fan_max.get(label), "ok": fan_max.get(label, 0) <= cap + 75}
+        for label, cap in caps.items()
+        if label in fan_max
+    }
+
     return {
+        "fan_cap": cap_check or None,
+        "cap_respected": all(c["ok"] for c in cap_check.values()) if cap_check else None,
         "cpu_temp_max": max_of("cpu_temp"),
         "cpu_package_max": max_of("cpu_package"),
         "cpu_watts_max": max_of("cpu_watts"),

@@ -16,6 +16,7 @@ from .aura import AuraManager
 from .config import DATA_DIR, Config
 from .cpu import CpuReader
 from .fans import FanReader
+from .fps import read_fps
 from .gpu import GpuReader
 from .history import Series
 from .i18n import Translator
@@ -109,6 +110,7 @@ class App:
             "procs": self.procs.read(),
             "procs_mem": self.procs.top_memory(),
             "aura": self.aura.snapshot(),
+            "fps": read_fps(),
             "series": self.series,
             "events": self.alerts.events,
             "limits": self.config["temp_colors"],

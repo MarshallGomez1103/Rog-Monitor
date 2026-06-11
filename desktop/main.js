@@ -39,7 +39,7 @@ const PY_ENV = { ...APP_ENV, PYTHONPATH: path.join(REPO, 'src') };
 
 let win = null;
 let overlay = null;
-let overlayCfg = { enabled: false, displayId: null, corner: 'top-left' };
+let overlayCfg = { enabled: false, displayId: null, corner: 'top-left', show: null };
 let backend = null;
 let musicProc = null;
 let musicMode = {
@@ -125,8 +125,18 @@ const PPD = [
   'org.freedesktop.UPower.PowerProfiles',
 ];
 
-ipcMain.handle('set-profile', (_e, profile) =>
-  run('busctl', ['--system', 'set-property', ...PPD, 'ActiveProfile', 's', profile]));
+// Sets the PPD profile and reads it back so the renderer can confirm the
+// change really landed (the 1 Hz stats refresh made it look unresponsive).
+ipcMain.handle('set-profile', async (_e, profile) => {
+  const res = await run('busctl', ['--system', 'set-property', ...PPD, 'ActiveProfile', 's', profile]);
+  if (!res.ok) return res;
+  for (let i = 0; i < 5; i++) {
+    const got = await run('busctl', ['--system', 'get-property', ...PPD, 'ActiveProfile'], 3000);
+    if (got.ok && got.out.includes(`"${profile}"`)) return { ok: true, profile, applied: true };
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return { ok: true, profile, applied: false };
+});
 
 ipcMain.handle('set-gpu-mode', (_e, mode) =>
   run('supergfxctl', ['--mode', mode], 90000));
@@ -156,37 +166,49 @@ ipcMain.handle('do-update', async () => {
 const SCRIPTS_DIR = process.env.ROG_SCRIPTS_DIR
   || path.join(os.homedir(), 'Rog-Monitor-Scripts');
 const SYNC_SCRIPT = path.join(SCRIPTS_DIR, 'scripts', 'rog-profile-sync.sh');
-const FAN_TEST = path.join(SCRIPTS_DIR, 'scripts', 'test-max-fans.sh');
+const FAN_CALIBRATE = path.join(SCRIPTS_DIR, 'scripts', 'calibrate-fans.sh');
 const ENABLE_ASUSD = path.join(SCRIPTS_DIR, 'scripts', 'enable-asusd.sh');
-const FANS = ['cpu', 'gpu', 'mid'];
 // User-writable curve store; the root service reads it on every profile change.
 const FAN_CURVES_JSON = path.join(
   os.homedir(), '.config', 'rog-monitor', 'fan-curves.json');
-const PROFILES = ['performance', 'balanced', 'quiet'];
 
-function profileBlock(source, profile) {
-  // the case block: `performance)` ... `;;`
-  const re = new RegExp(`(${profile}\\)\\n)([\\s\\S]*?)(;;)`);
-  return source.match(re);
+// JSON key per hwmon fan index (mirrors fan_key() in the sync script).
+function fanKeyForIndex(i) {
+  return ['cpu', 'gpu', 'mid'][i - 1] || `fan${i}`;
 }
 
-// Built-in default curves (fallback) parsed straight from the system script,
-// so the editor shows the same baseline the service would apply.
+// How many fans this machine actually has (1, 2, 3, 4…), straight from the
+// curve hwmon. Falls back to the classic cpu/gpu/mid trio if unreadable.
+function detectFanKeys() {
+  try {
+    const base = '/sys/class/hwmon';
+    for (const dev of fs.readdirSync(base)) {
+      const dir = path.join(base, dev);
+      let name = '';
+      try { name = fs.readFileSync(path.join(dir, 'name'), 'utf-8').trim(); } catch (_) { continue; }
+      if (name !== 'asus_custom_fan_curve') continue;
+      const keys = [];
+      for (let i = 1; i <= 6; i++) {
+        if (fs.existsSync(path.join(dir, `pwm${i}_auto_point1_pwm`))) keys.push(fanKeyForIndex(i));
+      }
+      if (keys.length) return keys;
+    }
+  } catch (_) { /* fall through */ }
+  return ['cpu', 'gpu', 'mid'];
+}
+
+// Built-in default curves straight from the system script (--defaults runs
+// without root), so the editor shows the same baseline the service applies.
 function scriptDefaults(profile) {
   if (!fs.existsSync(SYNC_SCRIPT)) return null;
-  const block = profileBlock(fs.readFileSync(SYNC_SCRIPT, 'utf-8'), profile);
-  if (!block) return null;
-  const curves = {};
-  for (const fan of FANS) {
-    const temps = block[2].match(new RegExp(`${fan}_temps="([\\d ]+)"`));
-    const pwms = block[2].match(new RegExp(`${fan}_pwm="([\\d ]+)"`));
-    if (!temps || !pwms) return null;
-    curves[fan] = {
-      temps: temps[1].split(/\s+/).map(Number),
-      pwms: pwms[1].split(/\s+/).map(Number),
-    };
+  const res = spawnSync('bash', [SYNC_SCRIPT, '--defaults', profile], { encoding: 'utf-8', env: APP_ENV });
+  if (res.status !== 0 || !res.stdout) return null;
+  try {
+    const curves = JSON.parse(res.stdout);
+    return Object.keys(curves).length ? curves : null;
+  } catch (_) {
+    return null;
   }
-  return curves;
 }
 
 function readCurvesStore() {
@@ -199,25 +221,42 @@ function readCurvesStore() {
 
 ipcMain.handle('get-fan-config', (_e, profile) => {
   const store = readCurvesStore();
-  const saved = store.profiles && store.profiles[profile];
-  const curves = saved || scriptDefaults(profile);
-  if (!curves) {
+  const saved = (store.profiles && store.profiles[profile]) || {};
+  const defaults = scriptDefaults(profile) || {};
+  const keys = detectFanKeys();
+  const curves = {};
+  for (const key of keys) {
+    // extra fans (fan4…) default to the cpu curve, like the sync script
+    const curve = saved[key] || defaults[key] || defaults.cpu;
+    if (curve) curves[key] = curve;
+  }
+  if (!Object.keys(curves).length) {
     return { ok: false, err: `No encuentro curvas para "${profile}" (¿está el repo de scripts?)` };
   }
-  const cap = store.cap_rpm || {};
   return {
     ok: true,
     profile,
     curves,
-    cap,
-    source: saved ? 'guardado' : 'por defecto',
+    cap: store.cap_rpm || {},
+    max_rpm: store.max_rpm || {},
+    calibration: store.calibration || {},
+    source: Object.keys(saved).length ? 'guardado' : 'por defecto',
     path: FAN_CURVES_JSON,
   };
 });
 
+// One pkexec: (re)install the JSON-reading service script and reapply now.
+// Installing on every save keeps /usr/local/sbin in sync with the repo and
+// makes the cap actually persist across reboots.
+async function applyFanService() {
+  const cmd =
+    `install -m 0755 ${shq(SYNC_SCRIPT)} /usr/local/sbin/rog-profile-sync && ` +
+    `systemctl restart rog-profile-sync.service`;
+  return run('pkexec', ['sh', '-c', cmd], 60000);
+}
+
 ipcMain.handle('set-fan-config', async (_e, { profile, curves, cap }) => {
-  for (const fan of FANS) {
-    const c = curves[fan];
+  for (const [fan, c] of Object.entries(curves)) {
     if (!c || c.temps.length !== 8 || c.pwms.length !== 8) {
       return { ok: false, err: `curva de ${fan} inválida (deben ser 8 puntos)` };
     }
@@ -225,12 +264,17 @@ ipcMain.handle('set-fan-config', async (_e, { profile, curves, cap }) => {
     if (bad) return { ok: false, err: `valores fuera de rango en ${fan} (0-255)` };
   }
   // Merge into the user-writable store (no privileges needed to edit it).
+  // The curves are stored PRISTINE: the cap is applied by the root service at
+  // write-to-hardware time, so raising/clearing it unlocks instantly.
   const store = readCurvesStore();
   store.profiles = store.profiles || {};
   store.profiles[profile] = curves;
-  if (cap && Number.isFinite(+cap) && +cap > 0) {
+  if (cap === null) {
+    delete store.cap_rpm;
+  } else if (cap && Number.isFinite(+cap) && +cap > 0) {
     const c = Math.round(+cap);
-    store.cap_rpm = { cpu: c, gpu: c, mid: c };
+    store.cap_rpm = {};
+    for (const key of Object.keys(curves)) store.cap_rpm[key] = c;
   }
   try {
     fs.mkdirSync(path.dirname(FAN_CURVES_JSON), { recursive: true });
@@ -241,13 +285,7 @@ ipcMain.handle('set-fan-config', async (_e, { profile, curves, cap }) => {
   if (!fs.existsSync(SYNC_SCRIPT)) {
     return { ok: true, warn: 'Curvas guardadas, pero falta el repo de scripts para aplicarlas en vivo.' };
   }
-  // One pkexec: (re)install the JSON-reading service script and reapply now.
-  // Installing on every save keeps /usr/local/sbin in sync with the repo and
-  // makes the cap actually persist across reboots.
-  const cmd =
-    `install -m 0755 ${shq(SYNC_SCRIPT)} /usr/local/sbin/rog-profile-sync && ` +
-    `systemctl restart rog-profile-sync.service`;
-  const res = await run('pkexec', ['sh', '-c', cmd], 60000);
+  const res = await applyFanService();
   return res.ok
     ? { ok: true }
     : { ok: false, err: 'Curvas guardadas, pero no se aplicaron (servicio): ' + res.err };
@@ -258,21 +296,176 @@ function shq(s) {
   return `'${String(s).replace(/'/g, `'\\''`)}'`;
 }
 
+// Steps the fans through 7 PWM levels and measures real RPM at each one
+// (~70 s, loud). The PWM→RPM table is what makes an RPM cap land AT the cap
+// instead of 200-400 RPM above (the relation is not linear). Persisted in
+// fan-curves.json so the root service, the backend and the UI all share it.
 ipcMain.handle('fan-benchmark', async () => {
-  if (!fs.existsSync(FAN_TEST)) return { ok: false, err: 'test-max-fans.sh no encontrado' };
-  // 60s at 100% PWM, reports RPM every 10s, restores everything on exit
-  const res = await run('pkexec', ['bash', FAN_TEST], 120000);
+  if (!fs.existsSync(FAN_CALIBRATE)) return { ok: false, err: 'calibrate-fans.sh no encontrado' };
+  const res = await run('pkexec', ['bash', FAN_CALIBRATE], 360000);
   if (!res.ok) return res;
-  const max = { cpu: 0, gpu: 0, mid: 0 };
-  for (const line of res.out.split('\n')) {
-    const m = line.match(/^\d+,(\d+),(\d+),(\d+)$/);
-    if (m) {
-      max.cpu = Math.max(max.cpu, +m[1]);
-      max.gpu = Math.max(max.gpu, +m[2]);
-      max.mid = Math.max(max.mid, +m[3]);
-    }
+  const lines = res.out.split('\n').map((l) => l.trim()).filter(Boolean);
+  const labelLine = lines.find((l) => l.startsWith('labels,'));
+  if (!labelLine) return { ok: false, err: 'la calibración no devolvió datos', raw: res.out };
+  // hwmon labels (cpu_fan/gpu_fan/mid_fan/fanN) → JSON keys (cpu/gpu/mid/fanN)
+  const keys = labelLine.split(',').slice(1).map((label) => {
+    const short = label.replace(/_fan$/, '');
+    return ['cpu', 'gpu', 'mid'].includes(short) ? short : label;
+  });
+  const calibration = {};
+  const max = {};
+  for (const key of keys) calibration[key] = [];
+  for (const line of lines) {
+    const cells = line.split(',');
+    if (cells[0] !== 'pwm') continue;
+    const pwm = +cells[1];
+    keys.forEach((key, i) => {
+      const rpm = +cells[2 + i] || 0;
+      if (rpm > 0) calibration[key].push([pwm, rpm]);
+      max[key] = Math.max(max[key] || 0, rpm);
+    });
   }
-  return { ok: true, max, raw: res.out };
+  // Sanity: RPM debe crecer con el PWM. Si un ventilador venía girando y no
+  // alcanzó a estabilizar, su punto sale alto; se descarta partiendo del
+  // punto más confiable (PWM máximo) hacia abajo.
+  for (const key of keys) {
+    const points = calibration[key].sort((a, b) => b[0] - a[0]);
+    const clean = [];
+    for (const [pwm, rpm] of points) {
+      if (!clean.length || rpm < clean[clean.length - 1][1]) clean.push([pwm, rpm]);
+    }
+    calibration[key] = clean.reverse();
+  }
+  if (!Object.values(max).some((v) => v > 0)) {
+    return { ok: false, err: 'no se midieron RPM (¿curvas no editables?)', raw: res.out };
+  }
+  const store = readCurvesStore();
+  store.calibration = calibration;
+  store.max_rpm = max;
+  try {
+    fs.mkdirSync(path.dirname(FAN_CURVES_JSON), { recursive: true });
+    fs.writeFileSync(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
+  } catch (err) {
+    return { ok: false, err: `Medí los máximos pero no pude guardar: ${err.message}` };
+  }
+  return { ok: true, max, calibration, raw: res.out };
+});
+
+/* ---------- FPS via MangoHud logging ----------
+   Only MangoHud (inside the game) knows the real FPS. With logging enabled it
+   appends CSV rows while playing; the backend tails the freshest file. */
+
+const MANGOHUD_CONF = path.join(os.homedir(), '.config', 'MangoHud', 'MangoHud.conf');
+const FPS_LOG_DIR = path.join(os.homedir(), '.local', 'share', 'rog-monitor', 'mangohud-logs');
+const FPS_BLOCK_START = '# --- ROG Monitor FPS (autogenerado, no editar) ---';
+const FPS_BLOCK_END = '# --- /ROG Monitor FPS ---';
+
+function fpsLoggingEnabled() {
+  try {
+    return fs.readFileSync(MANGOHUD_CONF, 'utf-8').includes(FPS_BLOCK_START);
+  } catch (_) {
+    return false;
+  }
+}
+
+ipcMain.handle('get-fps-logging', () => ({
+  ok: true,
+  enabled: fpsLoggingEnabled(),
+  mangohud: !!whichBin('mangohud'),
+}));
+
+ipcMain.handle('set-fps-logging', (_e, enabled) => {
+  let conf = '';
+  try { conf = fs.readFileSync(MANGOHUD_CONF, 'utf-8'); } catch (_) { /* new file */ }
+  const blockRe = new RegExp(`\\n?${FPS_BLOCK_START}[\\s\\S]*?${FPS_BLOCK_END}\\n?`);
+  conf = conf.replace(blockRe, '\n');
+  if (enabled) {
+    conf = conf.trimEnd() + [
+      '', FPS_BLOCK_START,
+      `output_folder=${FPS_LOG_DIR}`,
+      'autostart_log=1',
+      'log_interval=500',
+      FPS_BLOCK_END, '',
+    ].join('\n');
+  }
+  try {
+    fs.mkdirSync(path.dirname(MANGOHUD_CONF), { recursive: true });
+    fs.mkdirSync(FPS_LOG_DIR, { recursive: true });
+    fs.writeFileSync(MANGOHUD_CONF, conf.trimStart());
+  } catch (err) {
+    return { ok: false, err: `No pude editar ${MANGOHUD_CONF}: ${err.message}` };
+  }
+  return { ok: true, enabled };
+});
+
+/* ---------- config export / import ----------
+   Toda la configuración del usuario vive en ~/.config/rog-monitor (curvas y
+   cap, perfiles Aura, umbrales). Estos botones la empaquetan en un solo JSON
+   para respaldarla o llevarla a otro equipo. */
+
+const CONFIG_DIR_PATH = path.join(os.homedir(), '.config', 'rog-monitor');
+const CONFIG_FILES = ['fan-curves.json', 'aura.json', 'config.json'];
+
+ipcMain.handle('export-config', async () => {
+  const bundle = {
+    app: 'rog-monitor',
+    version: require('./package.json').version,
+    exported_at: new Date().toISOString(),
+    configs: {},
+  };
+  for (const name of CONFIG_FILES) {
+    try {
+      bundle.configs[name] = JSON.parse(fs.readFileSync(path.join(CONFIG_DIR_PATH, name), 'utf-8'));
+    } catch (_) { /* config que aún no existe: se omite */ }
+  }
+  const stamp = new Date().toISOString().slice(0, 10);
+  const { canceled, filePath } = await dialog.showSaveDialog(win, {
+    title: 'Exportar configuración',
+    defaultPath: path.join(app.getPath('documents'), `rog-monitor-config-${stamp}.json`),
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+  });
+  if (canceled || !filePath) return { ok: false, err: 'cancelado' };
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(bundle, null, 2) + '\n');
+    return { ok: true, path: filePath, items: Object.keys(bundle.configs) };
+  } catch (err) {
+    return { ok: false, err: String(err.message) };
+  }
+});
+
+ipcMain.handle('import-config', async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    title: 'Importar configuración',
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+    properties: ['openFile'],
+  });
+  if (canceled || !filePaths.length) return { ok: false, err: 'cancelado' };
+  let bundle;
+  try {
+    bundle = JSON.parse(fs.readFileSync(filePaths[0], 'utf-8'));
+  } catch (err) {
+    return { ok: false, err: `JSON inválido: ${err.message}` };
+  }
+  if (bundle.app !== 'rog-monitor' || typeof bundle.configs !== 'object') {
+    return { ok: false, err: 'Ese archivo no es una configuración de ROG Monitor.' };
+  }
+  const imported = [];
+  try {
+    fs.mkdirSync(CONFIG_DIR_PATH, { recursive: true });
+    for (const name of CONFIG_FILES) {
+      if (!bundle.configs[name]) continue;
+      const target = path.join(CONFIG_DIR_PATH, name);
+      // respaldo del archivo actual antes de pisarlo
+      if (fs.existsSync(target)) fs.copyFileSync(target, `${target}.pre-import`);
+      fs.writeFileSync(target, JSON.stringify(bundle.configs[name], null, 2) + '\n');
+      imported.push(name);
+    }
+  } catch (err) {
+    return { ok: false, err: String(err.message) };
+  }
+  if (!imported.length) return { ok: false, err: 'El archivo no traía configuraciones.' };
+  startBackend(); // recarga umbrales/colores
+  return { ok: true, items: imported };
 });
 
 ipcMain.handle('report-issue', async (_e, body) => {
@@ -398,44 +591,71 @@ function brighten(hex, factor) {
   return rgbToHex(mixed);
 }
 
+// Ruta D-Bus del teclado Aura (para escribir Brightness directo: ~20 ms
+// contra ~1 s de spawnear asusctl — la música necesita esa velocidad).
+let auraDbusPath = null;
+function auraPath() {
+  if (auraDbusPath !== null) return auraDbusPath;
+  try {
+    const res = spawnSync('busctl', ['--system', 'tree', 'xyz.ljones.Asusd'], { encoding: 'utf-8', env: APP_ENV, timeout: 3000 });
+    const m = (res.stdout || '').match(/\/xyz\/ljones\/aura\/[A-Za-z0-9_]+/);
+    auraDbusPath = m ? m[0] : '';
+  } catch (_) {
+    auraDbusPath = '';
+  }
+  return auraDbusPath;
+}
+
+const BRIGHTNESS_NUM = { off: 0, low: 1, med: 2, high: 3 };
+
 async function applyMusicFrame(level) {
   if (!musicMode.active || !musicMode.baseState) return;
   const now = Date.now();
-  if (musicMode.applying || now - musicMode.lastApplyTs < 125) return;
-  const colour = brighten(musicMode.baseState.colour || 'ff5500', Math.min(1, level * 1.4));
+  if (musicMode.applying || now - musicMode.lastApplyTs < 90) return;
+  // Color cuantizado a 5 niveles: cambiarlo cuesta ~1 s de asusctl, así que
+  // solo cuando el salto es notorio. El brillo (rápido) lleva el pulso.
+  const colour = brighten(musicMode.baseState.colour || 'ff5500',
+    Math.min(1, Math.round(level * 5) / 5 * 1.4));
   // Nunca bajamos a 'off' en silencio: el teclado se vería "apagado/roto".
   // El piso es 'low' para que siempre se note que el modo música está vivo.
   const brightness = level < 0.05 ? 'low' : level < 0.15 ? 'med' : 'high';
   if (brightness === musicMode.lastBrightness && colour === musicMode.lastColour) return;
   musicMode.applying = true;
   musicMode.lastApplyTs = now;
-  const payload = {
-    ...musicMode.baseState,
-    effect: 'static',
-    brightness,
-    colour,
-  };
   try {
-    const res = await runJsonModule('rog_monitor.aura', ['apply', '--json', JSON.stringify(payload)], 8000);
-    if (res.ok) {
-      musicMode.lastBrightness = brightness;
-      musicMode.lastColour = colour;
+    const path = auraPath();
+    if (brightness !== musicMode.lastBrightness && path) {
+      const res = await run('busctl', ['--system', 'set-property', 'xyz.ljones.Asusd',
+        path, 'xyz.ljones.Aura', 'Brightness', 'u', String(BRIGHTNESS_NUM[brightness])], 3000);
+      if (res.ok) musicMode.lastBrightness = brightness;
+    }
+    if (colour !== musicMode.lastColour) {
+      const payload = { ...musicMode.baseState, effect: 'static', brightness, colour };
+      const res = await runJsonModule('rog_monitor.aura', ['apply', '--json', JSON.stringify(payload)], 8000);
+      if (res.ok) {
+        musicMode.lastBrightness = brightness;
+        musicMode.lastColour = colour;
+      }
     }
   } finally {
     musicMode.applying = false;
   }
 }
 
-// Resuelve el "monitor" del sink por defecto (lo que suena por los parlantes).
-// PipeWire/PulseAudio exponen <sink>.monitor; si falla, caemos al alias
-// especial @DEFAULT_MONITOR@.
-function resolveMonitorSource() {
+// Sink por defecto (lo que suena por los parlantes). OJO: "<sink>.monitor"
+// solo existe en la capa PulseAudio (parec); NO es un nodo PipeWire, así que
+// pw-record --target <sink>.monitor no matchea nada y cae EN SILENCIO al
+// micrófono (verificado con pw-link: la captura quedaba colgada del
+// alsa_input — por eso el modo música reaccionaba a la voz y no a la
+// canción). Para pw-record/pw-cat el target es el SINK con
+// stream.capture.sink=true.
+function resolveDefaultSink() {
   try {
     const res = spawnSync('pactl', ['get-default-sink'], { encoding: 'utf-8', env: APP_ENV });
     const sink = (res.stdout || '').trim();
-    if (res.status === 0 && sink) return `${sink}.monitor`;
+    if (res.status === 0 && sink) return sink;
   } catch (_) { /* ignore */ }
-  return '@DEFAULT_MONITOR@';
+  return null;
 }
 
 function whichBin(bin) {
@@ -447,26 +667,27 @@ function whichBin(bin) {
   }
 }
 
-// Devuelve [cmd, args] de la primera herramienta de captura instalada.
-// pw-record / pw-cat (PipeWire nativo) capturan bien del monitor con
-// --target; parec (de algunos paquetes) suele devolver 0 bytes, así que
-// queda de último recurso.
-function pickAudioCapture(monitor) {
-  if (whichBin('pw-record')) {
-    return ['pw-record', ['--target', monitor, '--rate', '22050', '--channels', '1', '--format', 's16', '--raw', '-']];
+// Devuelve [cmd, args] de la primera herramienta de captura instalada,
+// SIEMPRE apuntando al monitor del sink (lo que suena), nunca al micrófono:
+// - pw-record/pw-cat: target = sink + stream.capture.sink=true (PipeWire).
+// - parec: device = <sink>.monitor (nombre de la capa Pulse).
+function pickAudioCapture(sink) {
+  const sinkProps = ['-P', '{ stream.capture.sink = true }'];
+  if (whichBin('pw-record') && sink) {
+    return ['pw-record', [...sinkProps, '--target', sink, '--rate', '22050', '--channels', '1', '--format', 's16', '--raw', '-']];
   }
-  if (whichBin('pw-cat')) {
-    return ['pw-cat', ['--record', '--raw', '--target', monitor, '--rate', '22050', '--channels', '1', '--format', 's16', '-']];
+  if (whichBin('pw-cat') && sink) {
+    return ['pw-cat', ['--record', '--raw', ...sinkProps, '--target', sink, '--rate', '22050', '--channels', '1', '--format', 's16', '-']];
   }
   if (whichBin('parec')) {
-    return ['parec', ['--raw', '--rate=22050', '--format=s16le', '--channels=1', `--device=${monitor}`]];
+    return ['parec', ['--raw', '--rate=22050', '--format=s16le', '--channels=1', `--device=${sink ? `${sink}.monitor` : '@DEFAULT_MONITOR@'}`]];
   }
   return null;
 }
 
 function startMusicMode(baseState) {
   if (musicProc) stopMusicMode(false);
-  const monitor = resolveMonitorSource();
+  const monitor = resolveDefaultSink();
   const capture = pickAudioCapture(monitor);
   if (!capture) {
     return { ok: false, err: 'No encontré pw-record, pw-cat ni parec para capturar el audio del sistema.' };
@@ -650,14 +871,24 @@ function createOverlay() {
   overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   overlay.setIgnoreMouseEvents(true); // click-through so it never grabs the game
   overlay.loadFile(path.join(__dirname, 'renderer', 'overlay.html'));
-  overlay.once('ready-to-show', positionOverlay);
+  overlay.once('ready-to-show', () => {
+    positionOverlay();
+    pushOverlayConfig();
+  });
   overlay.on('closed', () => { overlay = null; });
+}
+
+// El overlay decide qué filas pintar según las casillas del modal.
+function pushOverlayConfig() {
+  if (overlay && !overlay.isDestroyed() && overlayCfg.show) {
+    overlay.webContents.send('overlay-config', overlayCfg.show);
+  }
 }
 
 function applyOverlay() {
   if (overlayCfg.enabled) {
     if (!overlay || overlay.isDestroyed()) createOverlay();
-    else { positionOverlay(); overlay.showInactive(); }
+    else { positionOverlay(); pushOverlayConfig(); overlay.showInactive(); }
   } else if (overlay && !overlay.isDestroyed()) {
     overlay.close();
     overlay = null;
@@ -671,6 +902,7 @@ ipcMain.handle('set-overlay', (_e, cfg) => {
     enabled: !!cfg.enabled,
     displayId: cfg.displayId ?? overlayCfg.displayId,
     corner: cfg.corner || overlayCfg.corner,
+    show: cfg.show || overlayCfg.show,
   };
   applyOverlay();
   return { ok: true, current: overlayCfg };

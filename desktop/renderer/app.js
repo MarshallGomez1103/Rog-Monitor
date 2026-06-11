@@ -7,6 +7,13 @@ let gpuBusy = false;
 let auraState = null;
 let auraBootstrapped = false;
 let auraProfileSelection = '';
+// Efecto elegido: fuente de verdad en JS. Antes dependía del <select> oculto
+// y si el valor no existía como <option> caía en silencio a 'static'.
+let auraSelectedEffect = '';
+// Firma del último render: el bloque Aura solo se reconstruye cuando cambia
+// algo real. Reconstruirlo cada segundo destruía los chips entre el mousedown
+// y el mouseup y se comía los clics.
+let lastAuraSig = '';
 let musicModeActive = false;
 let auraDirty = false;
 let auraFocused = false;
@@ -259,7 +266,7 @@ function auraExtraEffects() {
 }
 
 function renderAuraEffectControls(selectedValue) {
-  const selected = selectedValue || $('aura-effect').value || 'static';
+  const selected = selectedValue || auraSelectedEffect || $('aura-effect').value || 'static';
   const basic = auraBasicEffects().map((fx) => ({ value: fx.id, label: fx.label }));
   const extra = auraExtraEffects().map((fx) => ({ value: fx.id, label: fx.label }));
   renderEffectGrid(basic, selected);
@@ -283,7 +290,7 @@ function renderAuraEffectControls(selectedValue) {
 function currentAuraFormState() {
   return {
     driver: 'asus',
-    effect: $('aura-effect').value || 'static',
+    effect: auraSelectedEffect || $('aura-effect').value || 'static',
     colour: normalizeHex($('aura-colour').value),
     colour2: normalizeHex($('aura-colour2').value, '000000'),
     speed: $('aura-speed').value || 'med',
@@ -316,7 +323,10 @@ function markAuraDirty(dirty, reason = '') {
 
 function setAuraForm(state) {
   if (!state) return;
-  if (state.effect) $('aura-effect').value = state.effect;
+  if (state.effect) {
+    auraSelectedEffect = state.effect;
+    $('aura-effect').value = state.effect;
+  }
   $('aura-colour').value = '#' + normalizeHex(state.colour);
   $('aura-colour2').value = '#' + normalizeHex(state.colour2, '000000');
   if (state.speed) $('aura-speed').value = state.speed;
@@ -328,7 +338,8 @@ function setAuraForm(state) {
 }
 
 function selectedAuraMeta() {
-  return auraState?.asus?.effects?.find((fx) => fx.id === $('aura-effect').value) || null;
+  const id = auraSelectedEffect || $('aura-effect').value;
+  return auraState?.asus?.effects?.find((fx) => fx.id === id) || null;
 }
 
 function syncAuraFields() {
@@ -338,8 +349,31 @@ function syncAuraFields() {
   $('aura-direction-wrap').classList.toggle('hidden', !meta?.direction);
 }
 
+function auraSignature(aura) {
+  return JSON.stringify({
+    available: aura?.available,
+    asus: aura?.asus?.available,
+    fx: (aura?.asus?.effects || []).map((f) => f.id),
+    basic: (aura?.asus?.basic_effects || []).map((f) => f.id),
+    extra: (aura?.asus?.extra_effects || []).map((f) => f.id),
+    levels: aura?.asus?.brightness_levels,
+    brightness: aura?.asus?.current_brightness,
+    profiles: (aura?.profiles || []).map((p) => [p.name, p.state?.effect, p.state?.colour]),
+    startup: [aura?.apply_on_startup, aura?.startup_profile],
+    setup: aura?.setup?.needsSetup,
+    openrgb: [aura?.openrgb?.available, aura?.openrgb?.sdk_reachable],
+    music: aura?.music?.available,
+  });
+}
+
 function renderAura(aura, resetForm = false) {
+  // Solo reconstruir el DOM cuando cambió algo real: el stream manda un
+  // snapshot por segundo y rehacer los chips destruía el botón a mitad de
+  // clic (por eso "elegía Rainbow y quedaba Static").
+  const sig = auraSignature(aura);
   auraState = aura;
+  if (!resetForm && sig === lastAuraSig) return;
+  lastAuraSig = sig;
   const effectSel = $('aura-effect');
   const profileSel = $('aura-profile-select');
   const note = $('aura-note');
@@ -358,10 +392,11 @@ function renderAura(aura, resetForm = false) {
   fillSelect(
     effectSel,
     auraEffects().map((fx) => ({ value: fx.id, label: fx.label })),
-    effectSel.value || aura.current?.effect || 'static',
+    auraSelectedEffect || effectSel.value || aura.current?.effect || 'static',
     'Sin efectos detectados',
   );
-  renderAuraEffectControls(effectSel.value);
+  auraSelectedEffect = effectSel.value || auraSelectedEffect;
+  renderAuraEffectControls(auraSelectedEffect);
   fillSelect(
     $('aura-brightness'),
     (aura.asus?.brightness_levels || ['off', 'low', 'med', 'high']).map((level) => ({ value: level, label: level })),
@@ -475,10 +510,12 @@ async function applyAuraState(state, successMessage = 'Aura aplicada ✓') {
     toast(`Aura: ${res.err}`);
     return null;
   }
+  // reflect EXACTLY what was applied; never let a stale snapshot undo it
+  setAuraForm(res.state || state);
   saveAuraDraft(res.state || state);
   markAuraDirty(false);
   toast(successMessage);
-  await refreshAuraState();
+  await refreshAuraState(true);
   return res;
 }
 
@@ -488,13 +525,19 @@ function benchmarkSummaryText(result) {
   const s = result.summary || {};
   const fanText = Object.entries(s.fan_rpm_max || {})
     .map(([k, v]) => `${k}: ${v} RPM`).join(' · ') || 'sin datos de ventiladores';
-  return [
+  const lines = [
     `${result.kind.toUpperCase()} · ${result.tool} · ${result.seconds}s`,
     `CPU máx: ${fmt(s.cpu_temp_max, 1)}°C · paquete ${fmt(s.cpu_package_max, 1)}°C · ${fmt(s.cpu_watts_max, 1)} W`,
     `GPU máx: ${fmt(s.gpu_temp_max, 1)}°C · ${fmt(s.gpu_watts_max, 1)} W · uso ${fmt(s.gpu_util_max, 0)}%`,
     `Throttling: ${s.throttle_events ?? 0} eventos · ${s.throttle_ms ?? 0} ms`,
     `Ventiladores: ${fanText}`,
-  ].join('\n');
+  ];
+  if (s.fan_cap) {
+    const capText = Object.entries(s.fan_cap).map(([k, c]) =>
+      `${k.replace('_fan', '').toUpperCase()} ${c.max ?? '--'}/${c.cap}`).join(' · ');
+    lines.push(`Tope RPM: ${capText} → ${s.cap_respected ? 'respetado ✓' : 'EXCEDIDO ✗'}`);
+  }
+  return lines.join('\n');
 }
 
 function renderBenchmarkHistory() {
@@ -667,8 +710,18 @@ function update(stats) {
 
 document.querySelectorAll('#profile-seg button').forEach((btn) => {
   btn.addEventListener('click', async () => {
+    // optimistic highlight: the 1 Hz stats refresh made it feel ignored
+    document.querySelectorAll('#profile-seg button').forEach((b) =>
+      b.classList.toggle('active', b === btn));
     const res = await window.rog.setProfile(btn.dataset.profile);
-    toast(res.ok ? `Perfil cambiado a ${btn.dataset.profile}` : `Error: ${res.err}`);
+    if (!res.ok) {
+      toast(`Error: ${res.err}`);
+      if (lastStats) update(lastStats); // revert highlight to reality
+      return;
+    }
+    toast(res.applied
+      ? `Perfil cambiado a ${btn.dataset.profile} ✓`
+      : `Perfil ${btn.dataset.profile} solicitado…`);
   });
 });
 
@@ -870,6 +923,7 @@ $('aura-effect').addEventListener('change', syncAuraFields);
 $('aura-effects').addEventListener('click', (e) => {
   const btn = e.target.closest('[data-effect]');
   if (!btn) return;
+  auraSelectedEffect = btn.dataset.effect;
   $('aura-effect').value = btn.dataset.effect;
   $('aura-extra-effect').value = '';
   renderAuraEffectControls(btn.dataset.effect);
@@ -884,7 +938,8 @@ $('aura-block').addEventListener('focusout', () => {
   }, 0);
 });
 $('aura-effect').addEventListener('change', () => {
-  renderAuraEffectControls($('aura-effect').value);
+  auraSelectedEffect = $('aura-effect').value;
+  renderAuraEffectControls(auraSelectedEffect);
   saveAuraDraft(currentAuraFormState());
   markAuraDirty(true, 'Efecto cambiado. Falta aplicar.');
 });
@@ -896,7 +951,8 @@ $('aura-extra-effect').addEventListener('change', () => {
   } else {
     $('aura-effect').value = extra;
   }
-  renderAuraEffectControls($('aura-effect').value);
+  auraSelectedEffect = $('aura-effect').value;
+  renderAuraEffectControls(auraSelectedEffect);
   syncAuraFields();
   saveAuraDraft(currentAuraFormState());
   markAuraDirty(true, extra ? 'Efecto avanzado cambiado. Falta aplicar.' : 'Volviste a un modo basico. Falta aplicar.');
@@ -1053,13 +1109,70 @@ $('procs-body').addEventListener('click', async (e) => {
 
 const FAN_NAMES = { cpu: 'CPU', gpu: 'GPU', mid: 'MID (central)' };
 const FAN_MAX_DEFAULT = { cpu: 7000, gpu: 6900, mid: 7500 };
-let fanMax = JSON.parse(localStorage.getItem('fanMax') || 'null') || { ...FAN_MAX_DEFAULT };
 let fanCfg = null;
+localStorage.removeItem('fanMax'); // legado: vivía aquí y nunca era real
+
+function fanName(fan) {
+  return FAN_NAMES[fan] || fan.toUpperCase();
+}
+
+function fanCalibrated(fan) {
+  return (fanCfg?.calibration?.[fan] || []).length >= 2;
+}
+
+function fanMaxRpm(fan) {
+  return fanCfg?.max_rpm?.[fan] || FAN_MAX_DEFAULT[fan] || 6000;
+}
+
+// PWM límite para un cap en RPM: interpola la calibración medida (igual que
+// el servicio root); sin calibración, regla de tres con el máximo estimado.
+function capToPwm(cap, fan) {
+  const target = cap * 0.985;
+  const pts = (fanCfg?.calibration?.[fan] || [])
+    .filter(([p, r]) => r > 0).sort((a, b) => a[0] - b[0]);
+  if (pts.length >= 2) {
+    if (target >= pts[pts.length - 1][1]) return 255;
+    let prev = [0, 0];
+    for (const [p, r] of pts) {
+      if (r >= target) {
+        if (r === prev[1]) return p;
+        return Math.round(prev[0] + ((target - prev[1]) / (r - prev[1])) * (p - prev[0]));
+      }
+      prev = [p, r];
+    }
+  }
+  return Math.min(255, Math.round(target * 255 / fanMaxRpm(fan)));
+}
+
+function currentCap() {
+  const cap = Math.round(+$('fan-cap').value);
+  return cap >= 2000 ? cap : null;
+}
+
+// La curva guardada queda PRISTINA: el cap se aplica al escribir al hardware.
+// Esta nota muestra qué recortará el cap actual sin tocar los inputs.
+function updateCapPreview() {
+  const note = $('fan-cap-preview');
+  const cap = currentCap();
+  if (!fanCfg) return;
+  if (!cap) {
+    note.textContent = 'Sin tope: cada ventilador puede llegar a su máximo real.';
+    return;
+  }
+  const parts = Object.keys(fanCfg.curves).map((fan) => {
+    const pct = Math.round(capToPwm(cap, fan) / 255 * 100);
+    return `${fanName(fan)} ≤${pct}%`;
+  });
+  note.textContent =
+    `Tope ${cap} RPM: al aplicar, los puntos de curva que lo superen se recortan a ` +
+    parts.join(' · ') + (Object.keys(fanCfg.curves).some(fanCalibrated)
+      ? ' (con calibración real).' : ' (estimado — mide los máximos para precisión).');
+}
 
 function renderCurves() {
   $('fan-curves').innerHTML = Object.entries(fanCfg.curves).map(([fan, c]) => `
     <div class="curve-fan" data-fan="${fan}">
-      <h4>${FAN_NAMES[fan]} — máx estimado ${fanMax[fan]} RPM</h4>
+      <h4>${fanName(fan)} — máx ${fanCalibrated(fan) ? 'medido' : 'estimado'} ${fanMaxRpm(fan)} RPM</h4>
       <div class="curve-table">
         <span title="A esta temperatura…">°C</span>
         ${c.temps.map((v, i) => `<input type="number" min="0" max="110" data-kind="temps" data-i="${i}" value="${v}">`).join('')}
@@ -1084,6 +1197,22 @@ function readCurvesFromForm() {
   return curves;
 }
 
+function fanMaxSummary() {
+  if (!fanCfg) return '';
+  return Object.keys(fanCfg.curves)
+    .map((fan) => `${fanName(fan)} ${fanMaxRpm(fan)}`).join(' · ');
+}
+
+function refreshFanNotes() {
+  const calibrated = Object.keys(fanCfg.curves).some(fanCalibrated);
+  $('fan-max-note').textContent =
+    `Curvas ${fanCfg.source}. Máximos ${calibrated ? 'medidos ✓' : 'ESTIMADOS (sin medir)'}: ` +
+    `${fanMaxSummary()} RPM · ${Object.keys(fanCfg.curves).length} ventiladores detectados.`;
+  $('fan-calib-banner').classList.toggle('hidden', calibrated);
+  $('fan-benchmark').classList.toggle('attention', !calibrated);
+  updateCapPreview();
+}
+
 $('fans-block').addEventListener('click', async () => {
   const profile = lastStats?.asus_profile;
   if (!profile) { toast('Aún no conozco el perfil ASUS activo'); return; }
@@ -1092,14 +1221,11 @@ $('fans-block').addEventListener('click', async () => {
   fanCfg = res;
   $('fan-profile').textContent = profile;
   $('fan-script-path').textContent = res.path;
-  // Pre-fill the cap from the saved store (shared by the three fans).
-  const savedCap = res.cap && (res.cap.cpu || res.cap.gpu || res.cap.mid);
-  if (savedCap) $('fan-cap').value = savedCap;
-  $('fan-max-note').textContent =
-    `Curvas ${res.source}. Máximos medidos: CPU ${fanMax.cpu} · GPU ${fanMax.gpu} · MID ${fanMax.mid} RPM. ` +
-    (savedCap ? `Tope activo: ${savedCap} RPM (el % de cada ventilador es respecto al tope).`
-              : 'Aún no hay tope; pon uno y oprime APLICAR CAP.');
+  // Pre-fill the cap from the saved store (shared by all fans).
+  const savedCap = res.cap && Object.values(res.cap).find((v) => v > 0);
+  $('fan-cap').value = savedCap || '';
   renderCurves();
+  refreshFanNotes();
   $('fan-modal').classList.remove('hidden');
 });
 
@@ -1108,61 +1234,86 @@ $('fan-modal').addEventListener('click', (e) => {
   if (e.target === $('fan-modal')) $('fan-modal').classList.add('hidden');
 });
 
-$('fan-apply-cap').addEventListener('click', () => {
-  const cap = Math.round(+$('fan-cap').value);
-  if (!cap || cap < 2000) { toast('Cap inválido (mínimo 2000 RPM)'); return; }
-  const curves = readCurvesFromForm();
-  for (const fan of Object.keys(curves)) {
-    const maxPwm = Math.min(255, Math.round((cap / fanMax[fan]) * 255));
-    curves[fan].pwms = curves[fan].pwms.map((v) => Math.min(v, maxPwm));
-  }
-  fanCfg.curves = curves;
-  renderCurves();
-  toast(`Cap de ${cap} RPM aplicado a las curvas del perfil ${fanCfg.profile}.\nRevisa y oprime GUARDAR Y APLICAR.`);
+$('fan-cap').addEventListener('input', updateCapPreview);
+$('fan-clear-cap').addEventListener('click', () => {
+  $('fan-cap').value = '';
+  updateCapPreview();
+  toast('Tope quitado. Oprime GUARDAR Y APLICAR para liberar los ventiladores.');
 });
 
 $('fan-benchmark').addEventListener('click', async () => {
   if (!window.confirm(
-    'Medir máximos reales:\n\n' +
-    'Los 3 ventiladores irán al 100% durante 60 segundos (va a sonar fuerte).\n' +
-    'Al terminar todo se restaura solo. Pedirá tu contraseña.\n\n¿Continuar?')) return;
-  toast('Midiendo máximos… 60 segundos al 100%');
+    'Calibrar ventiladores (medir máximos reales):\n\n' +
+    'Los ventiladores pasarán por 7 velocidades (1-3 min: espera a que\n' +
+    'estabilicen en cada una, va a sonar fuerte) midiendo sus RPM reales.\n' +
+    'Con esa tabla el tope de RPM cae exacto. Al terminar se restaura solo.\n' +
+    'Pedirá tu contraseña.\n\n¿Continuar?')) return;
+  toast('Calibrando… 1-3 min (va a sonar fuerte)');
   const res = await window.rog.fanBenchmark();
   if (!res.ok) { toast(`No se pudo: ${res.err}`); return; }
-  fanMax = res.max;
-  localStorage.setItem('fanMax', JSON.stringify(fanMax));
-  $('fan-max-note').textContent =
-    `Máximos medidos: CPU ${fanMax.cpu} · GPU ${fanMax.gpu} · MID ${fanMax.mid} RPM ✓`;
+  fanCfg.max_rpm = res.max;
+  fanCfg.calibration = res.calibration;
   renderCurves();
-  toast(`Máximos reales: CPU ${fanMax.cpu} · GPU ${fanMax.gpu} · MID ${fanMax.mid} RPM`);
+  refreshFanNotes();
+  toast(`Calibración lista ✓ Máximos reales: ${fanMaxSummary()} RPM`);
 });
 
 $('fan-save').addEventListener('click', async () => {
   const curves = readCurvesFromForm();
-  // consent gate: slow fans at the two hottest points are dangerous
-  const risky = Object.entries(curves).filter(([, c]) =>
-    c.pwms[6] < 150 || c.pwms[7] < 150);
+  const cap = currentCap();
+  // consent gate: slow fans at the two hottest points are dangerous. The cap
+  // also counts, because the service trims the curve with it at apply time.
+  const risky = Object.entries(curves).filter(([fan, c]) => {
+    const limit = cap ? capToPwm(cap, fan) : 255;
+    return Math.min(c.pwms[6], limit) < 150 || Math.min(c.pwms[7], limit) < 150;
+  });
   if (risky.length && !window.confirm(
     'ADVERTENCIA: dejaste los ventiladores por debajo del 60% en los puntos ' +
-    'más calientes de la curva (' + risky.map(([f]) => FAN_NAMES[f]).join(', ') + ').\n\n' +
+    'más calientes de la curva (' + risky.map(([f]) => fanName(f)).join(', ') + ').\n\n' +
     'Esto puede sobrecalentar y dañar tu equipo bajo carga.\n\n' +
-    'Escribe OK en el siguiente paso… ¿Entiendes el riesgo y quieres continuar?')) return;
-  const cap = Math.round(+$('fan-cap').value) || null;
+    '¿Entiendes el riesgo y quieres continuar?')) return;
   const res = await window.rog.setFanConfig({ profile: fanCfg.profile, curves, cap });
   if (res.ok) {
     $('fan-modal').classList.add('hidden');
     toast(res.warn
       ? res.warn
-      : `Curvas del perfil ${fanCfg.profile} guardadas y aplicadas ✓ (persisten al reiniciar)`);
+      : (cap
+          ? `Guardado ✓ Tope de ${cap} RPM activo para el perfil ${fanCfg.profile} (persiste al reiniciar).`
+          : `Guardado ✓ Sin tope: ventiladores libres en el perfil ${fanCfg.profile}.`));
   } else {
     toast(`Error: ${res.err}`);
   }
+});
+
+/* ---------- config export / import ---------- */
+
+$('config-export').addEventListener('click', async () => {
+  const res = await window.rog.exportConfig();
+  toast(res.ok
+    ? `Configuración exportada a ${res.path}\n(${res.items.join(', ')})`
+    : (res.err === 'cancelado' ? 'Exportación cancelada' : `No se exportó: ${res.err}`));
+});
+
+$('config-import').addEventListener('click', async () => {
+  if (!window.confirm(
+    'Importar una configuración reemplaza tus curvas, cap, calibración, perfiles ' +
+    'Aura y umbrales actuales (se guarda un respaldo .pre-import).\n\n¿Continuar?')) return;
+  const res = await window.rog.importConfig();
+  if (!res.ok) {
+    toast(res.err === 'cancelado' ? 'Importación cancelada' : `No se importó: ${res.err}`);
+    return;
+  }
+  toast(`Importado: ${res.items.join(', ')} ✓\nAbre VENTILADORES → GUARDAR Y APLICAR para mandar las curvas al sistema.`);
+  $('fan-modal').classList.add('hidden');
+  await refreshAuraState(true);
 });
 
 /* ---------- gaming overlay ---------- */
 
 const overlayPrefs = JSON.parse(localStorage.getItem('overlayPrefs') || 'null')
   || { enabled: false, displayId: null, corner: 'top-right' };
+// qué muestra el overlay (personalizable desde el modal)
+overlayPrefs.show = { cpu: true, gpu: true, fans: true, ...(overlayPrefs.show || {}) };
 
 function saveOverlayPrefs() {
   try { localStorage.setItem('overlayPrefs', JSON.stringify(overlayPrefs)); } catch (_) {}
@@ -1187,6 +1338,15 @@ async function openOverlayModal() {
   }
   $('overlay-enabled').checked = !!overlayPrefs.enabled;
   $('overlay-corner').value = overlayPrefs.corner;
+  $('ov-show-cpu').checked = overlayPrefs.show.cpu !== false;
+  $('ov-show-gpu').checked = overlayPrefs.show.gpu !== false;
+  $('ov-show-fans').checked = overlayPrefs.show.fans !== false;
+  const fps = await window.rog.getFpsLogging();
+  $('fps-logging').checked = !!fps.enabled;
+  $('fps-logging').disabled = !fps.mangohud;
+  if (!fps.mangohud) {
+    $('fps-note').textContent = 'MangoHud no está instalado, así que no hay FPS disponibles.';
+  }
   $('overlay-modal').classList.remove('hidden');
 }
 
@@ -1209,6 +1369,24 @@ $('overlay-corner').addEventListener('change', (e) => {
   overlayPrefs.corner = e.target.value;
   saveOverlayPrefs();
   pushOverlay();
+});
+['cpu', 'gpu', 'fans'].forEach((part) => {
+  $(`ov-show-${part}`).addEventListener('change', (e) => {
+    overlayPrefs.show[part] = e.target.checked;
+    saveOverlayPrefs();
+    pushOverlay();
+  });
+});
+$('fps-logging').addEventListener('change', async (e) => {
+  const res = await window.rog.setFpsLogging(e.target.checked);
+  if (!res.ok) {
+    e.target.checked = !e.target.checked;
+    toast(`FPS: ${res.err}`);
+    return;
+  }
+  toast(res.enabled
+    ? 'Registro de FPS activado: lanza el juego con MangoHud y el overlay los mostrará.'
+    : 'Registro de FPS desactivado.');
 });
 
 // restore the overlay on launch if it was on
@@ -1267,6 +1445,48 @@ $('disk-health-btn').addEventListener('click', async () => {
     `<b>${d.device}</b><br>${d.info.join('<br>') || 'sin datos SMART'}`).join('<br><br>');
   out.classList.remove('hidden');
 });
+
+/* ---------- draggable modals ---------- */
+
+// Arrastra la tarjeta del modal desde su título — útil para correr la
+// ventana del benchmark y ver los sensores debajo mientras trabaja.
+function makeDraggable(modalId) {
+  const modal = $(modalId);
+  const card = modal.querySelector('.modal-card');
+  const handle = card.querySelector('h3');
+  handle.classList.add('drag-handle');
+  let startX = 0, startY = 0, baseLeft = 0, baseTop = 0;
+  const onMove = (e) => {
+    card.style.left = `${baseLeft + e.clientX - startX}px`;
+    card.style.top = `${baseTop + e.clientY - startY}px`;
+  };
+  const onUp = () => {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  };
+  handle.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    const rect = card.getBoundingClientRect();
+    card.classList.add('dragged');
+    card.style.left = `${rect.left}px`;
+    card.style.top = `${rect.top}px`;
+    baseLeft = rect.left; baseTop = rect.top;
+    startX = e.clientX; startY = e.clientY;
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    e.preventDefault();
+  });
+  // al cerrar/reabrir vuelve centrado
+  const observer = new MutationObserver(() => {
+    if (modal.classList.contains('hidden')) {
+      card.classList.remove('dragged');
+      card.style.left = card.style.top = '';
+    }
+  });
+  observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+}
+
+['benchmark-modal', 'fan-modal', 'alerts-modal', 'overlay-modal'].forEach(makeDraggable);
 
 /* ---------- thermal benchmarks ---------- */
 

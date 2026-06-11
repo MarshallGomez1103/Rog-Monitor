@@ -258,6 +258,24 @@ Referencias: asusctl https://gitlab.com/asus-linux/asusctl · OpenRGB https://op
 * [x] Overlay para juegos: ventana siempre-encima, transparente, click-through,
       con selección de monitor y esquina. Muestra temp/W de CPU y GPU y RPM de
       los ventiladores. Read-only (sin tocar voltajes). (v8.2)
+* [x] Overlay con temperatura promedio (AVG) y FPS reales vía registro de
+      MangoHud (opt-in desde el modal OVERLAY). (v8.3)
+* [x] Calibración PWM→RPM real por ventilador + cap aplicado en runtime por el
+      servicio root (curvas prístinas, QUITAR CAP libera al instante). (v8.3)
+* [ ] **Wizard de primera vez** (pedido de Marshall 2026-06-10): detectar
+      ventiladores → calibrar con explicación de permisos → benchmark CPU/GPU
+      → guardar → tour de funciones. Nunca mostrar "medido" sin medir.
+* [ ] **UX de 4 estados por widget**: con datos / cargando / sin datos / error
+      (RAM que no carga, ventilador dañado → mostrarlo parado explícito).
+* [ ] **Redragon K734WCG-RGB-PRO**: cable VID 0x258a PID 0x010c (Sinowealth/
+      BY Tech), dongle 0x3554:0xfa09 (CompX). Paso 1: OpenRGB flatpak y probar
+      detección; si 010c no está soportado, protocolo HID propio (hidapi)
+      usando el software BYCOMBO4 extraído del exe como referencia. Sin Wine.
+* [ ] **Música por zonas** (graves/medios/agudos): requiere teclado con zonas
+      (el interno reporta 0; apunta al Redragon vía OpenRGB).
+* [ ] **Multi-distro / multi-marca**: probar en Mint/Fedora; detectar hwmon
+      genérico (ya enumeramos N ventiladores); meta = Armoury Crate de Linux
+      que también sirva en Legion y otros.
 * [ ] Widget KDE Plasma 6 (plasmoid leyendo `--json`)
 * [ ] Exportación Prometheus (`--serve :9871/metrics`) + dashboard Grafana
 * [ ] Alertas con acciones (ej. bajar perfil automáticamente al throttlear)

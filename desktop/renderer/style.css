@@ -311,6 +311,7 @@ input[type="color"] {
 }
 @media (max-width: 760px) { .aura-grid { grid-template-columns: 1fr; } }
 .aura-grid label,
+.aura-effect-box,
 .check-row {
   display: flex;
   flex-direction: column;
@@ -320,7 +321,11 @@ input[type="color"] {
   text-transform: uppercase;
   color: var(--dim);
 }
-.aura-grid label span { display: block; }
+.aura-grid label span,
+.aura-effect-box span { display: block; }
+/* DIV a propósito, NUNCA <label>: un label sin `for` adopta su primer
+   control "labelable" (¡los <button> lo son!) y reenvía cada clic al primer
+   chip — por eso elegir Rainbow terminaba seleccionando Static. */
 .aura-effect-box { grid-column: 1 / -1; }
 .effect-grid {
   display: flex;
@@ -602,12 +607,15 @@ input[type="color"] {
   z-index: 20;
 }
 
-/* ---------- theme modal ---------- */
-#theme-modal {
+/* ---------- modals (shared) ----------
+   Every dialog needs this class: without position:fixed the div renders in
+   normal flow at the bottom of the page (bug que tuvo ALERTAS/OVERLAY). */
+.modal {
   position: fixed; inset: 0; z-index: 30;
   background: rgba(0,0,0,.45);
   display: flex; align-items: center; justify-content: center;
 }
+.modal.hidden { display: none; }
 .modal-card {
   background: var(--bg); border: 1px solid var(--hair); border-radius: 14px;
   padding: 22px; width: min(560px, 92vw); max-height: 86vh; overflow-y: auto;
@@ -649,8 +657,6 @@ input[type="color"] {
 .clickable:hover { border-color: var(--accent); }
 .modal-card.wide { width: min(760px, 94vw); }
 .accent2 { color: var(--accent2); }
-#fan-modal { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,.45);
-  display: flex; align-items: center; justify-content: center; }
 .fan-cap-row { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; margin-bottom: 8px; }
 .fan-cap-row label { display: block; font-size: 11px; letter-spacing: 1px;
   text-transform: uppercase; color: var(--dim); margin-bottom: 4px; }
@@ -671,10 +677,6 @@ input[type="number"] {
 .chart-row.grid2 { grid-template-columns: 1fr 1fr; }
 @media (max-width: 760px) { .chart-row.grid2 { grid-template-columns: 1fr; } }
 .size-title { margin-top: 16px; margin-bottom: 8px; font-size: 13px; }
-#ram-modal { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,.45);
-  display: flex; align-items: center; justify-content: center; }
-#benchmark-modal { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,.45);
-  display: flex; align-items: center; justify-content: center; }
 #ram-procs { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 #ram-procs th { text-align: left; font-size: 10.5px; letter-spacing: 1px;
   text-transform: uppercase; color: var(--dim); padding: 0 6px 6px;
@@ -693,3 +695,25 @@ input[type="number"] {
 ::-webkit-scrollbar-thumb { background: var(--hair); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--dim); }
 body::-webkit-scrollbar { width: 0; }
+
+/* ---------- v8.3: modales arrastrables + alertas con color ---------- */
+.drag-handle { cursor: move; user-select: none; }
+.drag-handle::before { content: '⠿ '; color: var(--dim); font-size: 12px; }
+.modal-card.dragged { position: fixed; margin: 0; }
+
+/* puntos de color para que el modal de alertas se lea de un vistazo */
+.dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  display: inline-block; margin-right: 6px; vertical-align: baseline;
+}
+.dot.cold { background: var(--cold); }
+.dot.ok { background: var(--okstate); }
+.dot.warn { background: #ffcc33; }
+.dot.hot { background: var(--hot); }
+.dot.crit { background: var(--crit); }
+.settings-grid label { border-left: 3px solid var(--hair); padding-left: 8px; }
+.settings-grid label.f-temp { border-left-color: var(--hot); }
+.settings-grid label.f-power { border-left-color: var(--accent); }
+.settings-grid label.f-fan { border-left-color: var(--cold); }
+.settings-grid label.f-time { border-left-color: var(--dim); }
+#events-help { margin-top: 8px; }

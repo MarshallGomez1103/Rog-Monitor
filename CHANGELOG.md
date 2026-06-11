@@ -1,5 +1,91 @@
 # Changelog
 
+## 8.3.0 — 2026-06-10
+
+### Fixed
+- **El cap ya no se "hornea" en la curva.** APLICAR CAP hacía `min(curva, cap)`
+  sobre los puntos y eso quedaba guardado: bajar el cap recortaba la curva para
+  siempre y subirlo no la liberaba (un `min()` nunca sube valores). Por eso con
+  cap 6500 el ventilador se quedaba en ~85% y la CPU llegaba a 96 °C con miles
+  de eventos de throttling. Ahora la curva se guarda **prístina** y el servicio
+  root aplica el cap al escribirla al hardware: subirlo o quitarlo (botón
+  QUITAR CAP) libera los ventiladores al instante.
+- **El cap cae EN el cap, no 200-400 RPM arriba.** PWM→RPM no es lineal, así
+  que la regla de tres se pasaba. Nuevo `calibrate-fans.sh`: mide las RPM
+  reales de cada ventilador en 7 escalones de PWM (~70 s) y el cap se traduce
+  interpolando esa tabla (con margen del 1.5% para quedar en o bajo el tope).
+- **Aura: elegir Rainbow/Breathe/Colorcycle ya no selecciona Static.** Dos
+  causas reales, verificadas con clics automatizados (CDP) en la app corriendo:
+  (1) los chips vivían dentro de un `<label>` sin `for`, y el control asociado
+  de un label es su primer elemento *labelable* — ¡los `<button>` lo son! — así
+  que cada clic se reenviaba como clic sintético al primer chip (Static), que
+  pisaba la selección; ahora es un `<div>`. (2) el bloque se reconstruía con
+  cada tick del stream (1/s) y los chips morían entre mousedown y mouseup;
+  ahora solo se reconstruye cuando cambia algo real (firma del estado) y el
+  efecto elegido vive en una variable, no en un `<select>` oculto.
+  Probado contra el hardware: rainbow-wave→LedMode 3, rainbow-cycle→2,
+  breathe→1 ✓.
+- **Los modales de ALERTAS y OVERLAY aparecían abajo del todo** (en el flujo
+  del documento, debajo de la barra de estado) porque no tenían CSS de modal.
+  Ahora los seis modales comparten la clase `.modal` (position fixed, centrado).
+- **El botón de perfil responde al primer clic.** Resaltado optimista
+  inmediato + el backend confirma leyendo `ActiveProfile` de vuelta.
+
+### Added
+- **Los "máximos medidos" ahora son medidos de verdad.** Antes salían de
+  constantes en localStorage (7000/6900/7500) aunque dijera "medidos". La
+  calibración los guarda en `fan-curves.json` (compartidos por servicio,
+  backend y UI), el modal dice claramente "ESTIMADOS (sin medir)" hasta que
+  calibres, y hay banner de primera vez. Soporta 1-N ventiladores: todo se
+  enumera del hwmon (`calibrate-fans.sh`, servicio root, editor de curvas).
+- **El benchmark verifica el cap.** El resumen incluye `Tope RPM: CPU max/cap …
+  → respetado ✓ / EXCEDIDO ✗` comparando las RPM máximas medidas contra el
+  cap activo (tolerancia ±75 RPM de jitter).
+- **Overlay: temperatura promedio (AVG) y FPS.** La CPU muestra el promedio de
+  núcleos con etiqueta AVG (el package siempre va unos grados arriba y asusta).
+  FPS reales vía registro de MangoHud (opt-in en el modal OVERLAY: configura
+  `output_folder`/`autostart_log` y el backend lee el CSV más fresco; la fila
+  FPS solo aparece cuando hay dato).
+
+### Fixed (segunda tanda, mismo día)
+- **El cap se violaba jugando (GPU a ~6800 con tope 6500).** Dos causas:
+  la calibración medía con sleep fijo y estos ventiladores aceleran/desaceleran
+  más lento que eso (la GPU "estabilizaba" en falso), y nada protegía las
+  curvas si el firmware/asusd las reseteaba al cambiar de perfil. Ahora la
+  calibración espera estabilización real (dos lecturas seguidas con delta
+  < 75 RPM, hasta 24 s por escalón) y el servicio verifica cada ≤30 s que el
+  hardware tenga la curva esperada (punto 8) y la reaplica si alguien la pisó.
+  Verificado con benchmark de 90 s al 100% de CPU: máximas 6400/5100/6300 RPM
+  con cap 6500 → **cap respetado** ✓.
+- **Modo música: capturaba el MICRÓFONO, no la música.** `pw-record --target
+  "<sink>.monitor"` no matchea ningún nodo PipeWire (ese nombre solo existe en
+  la capa Pulse) y caía en silencio a la fuente por defecto = micro — por eso
+  reaccionaba a la voz. Verificado con `pw-link -l`: la captura colgaba de
+  `alsa_input`. Ahora: `pw-record -P '{ stream.capture.sink = true }' --target
+  <sink>` (verificado: cuelga de `monitor_FL/FR`). Además el brillo del pulso
+  va por D-Bus directo (~20 ms) en vez de spawnear asusctl (~1 s): la música
+  ahora sí se siente.
+
+### Added (segunda tanda)
+- **Modales arrastrables** (benchmark, ventiladores, alertas, overlay): agarra
+  el título y muévelo para ver los sensores mientras corre un benchmark.
+- **Overlay personalizable:** casillas para elegir qué ver (CPU, GPU,
+  ventiladores, FPS) y explicación de MangoHud para quien no lo conozca.
+- **ALERTAS más intuitivo:** iconos y borde de color por tipo de campo
+  (🌡 temperatura, ⚡ potencia, 🌀 ventilador, ⏱ tiempos) y puntos de color
+  verde/amarillo/naranja/rojo junto a cada umbral de color.
+- **EXPORTAR/IMPORTAR CONFIG** (en el modal de ventiladores): toda la
+  configuración (curvas, cap, calibración, perfiles Aura, umbrales) en un solo
+  JSON para respaldar o llevar a otro equipo; al importar se respalda lo
+  actual como `.pre-import`.
+- **Eventos:** nota fija explicando qué es el thermal throttling y qué hacer
+  cuando hay muchos eventos.
+
+### Changed
+- `rog-profile-sync.sh --defaults <perfil>` imprime las curvas por defecto en
+  JSON; la app las lee de ahí (antes parseaba el script con regex).
+- `test-max-fans.sh` queda archivado; lo reemplaza `calibrate-fans.sh`.
+
 ## 8.2.0 — 2026-06-10
 
 ### Fixed

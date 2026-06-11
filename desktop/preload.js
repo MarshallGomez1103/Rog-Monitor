@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 contextBridge.exposeInMainWorld('rog', {
   onStats: (callback) => ipcRenderer.on('stats', (_e, stats) => callback(stats)),
+  onOverlayConfig: (callback) => ipcRenderer.on('overlay-config', (_e, show) => callback(show)),
   onBackendDown: (callback) => ipcRenderer.on('backend-down', (_e, code) => callback(code)),
   onMusicStopped: (callback) => ipcRenderer.on('music-stopped', () => callback()),
   setProfile: (profile) => ipcRenderer.invoke('set-profile', profile),
@@ -30,6 +31,10 @@ contextBridge.exposeInMainWorld('rog', {
   exportBenchmark: (payload) => ipcRenderer.invoke('export-benchmark', payload),
   listDisplays: () => ipcRenderer.invoke('list-displays'),
   setOverlay: (cfg) => ipcRenderer.invoke('set-overlay', cfg),
+  getFpsLogging: () => ipcRenderer.invoke('get-fps-logging'),
+  setFpsLogging: (enabled) => ipcRenderer.invoke('set-fps-logging', enabled),
+  exportConfig: () => ipcRenderer.invoke('export-config'),
+  importConfig: () => ipcRenderer.invoke('import-config'),
   zoom: (delta) => {
     const level = delta === null ? 0
       : Math.max(-3, Math.min(4, webFrame.getZoomLevel() + delta));
