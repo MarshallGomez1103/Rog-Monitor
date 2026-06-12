@@ -10,6 +10,11 @@ NVIDIA_QUERY = (
     "name,temperature.gpu,utilization.gpu,power.draw,memory.used,memory.total,"
     "clocks.gr,clocks.mem"
 )
+# power.draw devuelve la muestra INSTANTÁNEA: en las RTX 40 cae a ~1-3 W cada
+# vez que la GPU entra un instante a un estado de sueño y la gráfica se ve
+# "desplomándose". power.draw.average es el valor estable; se usa si el driver
+# lo soporta (se detecta una sola vez, sin despertar la GPU).
+NVIDIA_QUERY_AVG = NVIDIA_QUERY + ",power.draw.average"
 
 
 def _run(cmd: list[str], timeout: float = 4.0) -> str | None:
@@ -33,6 +38,9 @@ class GpuReader:
     def __init__(self, chips: dict, enabled: bool = True):
         self.enabled = enabled
         self.has_nvidia_smi = shutil.which("nvidia-smi") is not None
+        self.has_power_avg = self.has_nvidia_smi and "power.draw.average" in (
+            _run(["nvidia-smi", "--help-query-gpu"], timeout=4.0) or ""
+        )
         self.has_supergfx = shutil.which("supergfxctl") is not None
         self.amd = hwmon.find(chips, "amdgpu")
         self._mode: str | None = None
@@ -79,8 +87,9 @@ class GpuReader:
     def _read_nvidia(self) -> dict | None:
         if not self.has_nvidia_smi or time.monotonic() < self._nvidia_dead_until:
             return None
+        query = NVIDIA_QUERY_AVG if self.has_power_avg else NVIDIA_QUERY
         out = _run(
-            ["nvidia-smi", f"--query-gpu={NVIDIA_QUERY}", "--format=csv,noheader,nounits"],
+            ["nvidia-smi", f"--query-gpu={query}", "--format=csv,noheader,nounits"],
             timeout=2.0,
         )
         if not out:
@@ -92,12 +101,16 @@ class GpuReader:
         if len(parts) < 6:
             return None
 
+        power = _num(parts[3])
+        if len(parts) > 8:
+            power = _num(parts[8]) or power
+
         return {
             "vendor": "nvidia",
             "name": parts[0],
             "temp": _num(parts[1]),
             "util": _num(parts[2]),
-            "power": _num(parts[3]),
+            "power": power,
             "vram_used": _num(parts[4]),
             "vram_total": _num(parts[5]),
             "clock_mhz": _num(parts[6]) if len(parts) > 6 else None,

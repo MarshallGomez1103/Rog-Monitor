@@ -2,7 +2,80 @@
 
 > Cada agente actualiza esta sección al terminar. El siguiente la lee primero.
 
-## Última sesión: Claude (Fable 5) — 2026-06-10 (v8.3.0)
+## Última sesión: Claude (Fable 5) — 2026-06-12 (v8.4.0)
+
+### Estado: rediseño visual + hover en gráficas + GPU power estable + Redragon detectado. Commit local, SIN push.
+
+Pedidos de Marshall (audio 3): acabar roadmap, Redragon propio, UI que no
+parezca de IA, numeración desordenada (1,2,3 → 4 → "9"), hueco abajo a la
+izquierda, hover con valor+hace-cuánto en las 4 gráficas, consumo GPU raro,
+¿RTX 4060 hardcodeada?, 2 temas nuevos, modo claro muy tenue.
+
+**Verificado con la app real por CDP** (cliente reescrito en /tmp/cdp.py, el
+de la otra vez se borró con /tmp; OJO: lanzar la app con el run_in_background
+del harness — un `nohup &` en Bash muere con SIGTERM al cerrar el comando).
+Marshall estuvo jugando con la app EN VIVO durante la sesión (cambió temas
+mientras yo media — buena señal 😄).
+
+#### 1. UI v8.4 (todo verificado con screenshots por CDP)
+- **Renumeración**: izquierda 01 CPU, 02 GPU, 03 Ventiladores, 04 Iluminación;
+  derecha 05 Historial, 06 Benchmarks, 07 Sistema, 08 Eventos, 09 Procesos.
+- **Hueco inferior izquierdo**: quité `align-items:start` del grid de main y
+  `.col > :last-child { flex: 1 0 auto }` — ambas columnas terminan parejas
+  (verificado: mismos bottom px).
+- **Identidad visual** (regla de oro 7): esquinas superiores derechas cortadas
+  con clip-path + franja de acento diagonal (.block::before), números en
+  placas skewX(-12°), fondo con radial del acento + rayado diagonal 2.5%,
+  border-image de acento bajo el topbar, botones con corte inferior derecho,
+  glow en .bignum. Electron 33 = Chromium 130: color-mix OK.
+- **Temas**: +Neón (cian/magenta) y +Atardecer (oro/rosa) = 8 paletas. Modo
+  claro REHECHO: paneles tintados por paleta (antes panel #fff en todas y no
+  se diferenciaban). El array THEMES de app.js lleva los swatches del picker.
+- **Hover en las 4 gráficas**: chartState (Map por canvas) guarda data/escala;
+  crosshair punteado + punto; tooltip #chart-tip fijo ("70.1 °C · hace 9 s").
+  1 muestra/s ⇒ antigüedad = distancia al final. wireChartHover() por canvas.
+
+#### 2. Backend
+- **Consumo GPU raro (plano en 10 y desplomes)**: era real — `power.draw` de
+  nvidia-smi es muestra instantánea y cae a ~1-3 W en micro-sueños de la GPU.
+  gpu.py ahora consulta `power.draw.average` (parts[8], fallback a parts[3]);
+  soporte detectado UNA vez con `--help-query-gpu` (no despierta la GPU).
+  Además las gráficas de W van desde 0 (fromZero) para no dramatizar.
+- **"RTX 4060" hardcodeada**: SÍ lo estaba en los title de iGPU/HYBRID/dGPU y
+  en el confirm del MUX. El bloque 02 siempre fue detectado. Ahora
+  refreshGpuTooltips() usa el nombre del stream acortado ("RTX 4060"),
+  recordado en localStorage('dgpuName') para modo Integrated.
+
+#### 3. Redragon K734WCG (¡LEER docs/redragon-protocol.md ANTES de tocar!)
+- OpenRGB 1.0rc2 flatpak instalado y probado: NO detecta 010c (sí el teclado
+  ASUS interno). hidraw0/1 son rw para el usuario en Bazzite (ACL) — no se
+  necesita root cuando tengamos protocolo.
+- **Detección YA en la app**: aura.py `_detect_peripherals()` (sysfs read-only,
+  KNOWN_PERIPHERALS con cable+dongle) → snapshot["peripherals"] → fila en el
+  bloque Iluminación (renderPeripherals; está en auraSignature).
+- Protocolo mapeado en estático: BYCOMBO4/OemDrv.exe (innoextract del exe de
+  Downloads, re-extraíble en /tmp/redragon-exe), clase CDevG5KB (KB.ini Fw=24),
+  feature 0x05 de 5 bytes = comandos (cmd id en Buffer[2], eco + CRC en la
+  respuesta), feature 0x06 de 1794 bytes = datos paginados (LEDs/macros).
+- **PELIGRO REAL**: OpenRGB deshabilitó su controlador Sinowealth por BRICKEOS
+  con estos VID:PID reutilizados. KB.ini trae CmdReset/IC2481. Por eso NO se
+  manda NADA al teclado sin capturas USB del software oficial. Marshall tiene
+  dual boot Win11: guía de captura de 10 min en docs/redragon-protocol.md.
+
+### Pendiente para la siguiente sesión
+1. **Marshall**: captura USB en Windows (guía en docs/redragon-protocol.md)
+   → con eso escribir src/rog_monitor/redragon.py (ioctl HIDIOC*FEATURE,
+   lista blanca de comandos vistos en captura, verificar eco+CRC).
+2. Sigue pendiente de v8.3: un GUARDAR Y APLICAR de Marshall para instalar el
+   rog-profile-sync blindado; probar modo música con música real.
+3. Wizard de primera vez (pedido #1 del audio 2) y UX de 4 estados por widget.
+4. v9 grande sin tocar: AMD, historial SQLite, empaquetado, DB comunitaria.
+5. Idea para Iluminación: Marshall pidió "más cosas" — cuando esté el Redragon,
+   música por zonas (graves/medios/agudos); el teclado interno no tiene zonas.
+
+---
+
+## Sesión previa: Claude (Fable 5) — 2026-06-10 (v8.3.0)
 
 ### Estado: cap de verdad + Aura arreglado de raíz + modales + overlay AVG/FPS. Commit local, SIN push.
 

@@ -26,12 +26,14 @@ const AURA_PRIMARY_EFFECTS = ['static', 'breathe', 'rainbow-cycle', 'rainbow-wav
 
 const THEMES = [
   // id, name, description, [dark bg, dark accent], [light bg, light accent]
-  ['magma',   'Magma',   'Rojo volcánico — firma ROG',     ['#140d0b', '#f25c3d'], ['#fbf2ec', '#c44a26']],
-  ['nebula',  'Nébula',  'Violeta espacial con magenta',   ['#120c1c', '#b07af5'], ['#f6f2fb', '#7b3fd4']],
-  ['oceano',  'Océano',  'Teal profundo, calmado',         ['#0a1416', '#2fbfb0'], ['#eef7f6', '#0f8a7d']],
-  ['glaciar', 'Glaciar', 'Azul hielo sobre azul noche',    ['#0d1420', '#6fb7ff'], ['#f0f5fb', '#2670c2']],
-  ['reactor', 'Reactor', 'Verde fosforescente de máquina', ['#070d07', '#46e873'], ['#f0f8f0', '#1c8a3f']],
-  ['grafito', 'Grafito', 'Escala de grises, sin ruido',    ['#101113', '#c8cdd4'], ['#f5f6f7', '#3c4248']],
+  ['magma',     'Magma',     'Rojo volcánico — firma ROG',     ['#140d0b', '#f25c3d'], ['#f8e8de', '#c2401f']],
+  ['nebula',    'Nébula',    'Violeta espacial con magenta',   ['#120c1c', '#b07af5'], ['#efe9fa', '#6f2fd0']],
+  ['oceano',    'Océano',    'Teal profundo, calmado',         ['#0a1416', '#2fbfb0'], ['#ddf0ed', '#0c7f72']],
+  ['glaciar',   'Glaciar',   'Azul hielo sobre azul noche',    ['#0d1420', '#6fb7ff'], ['#e2ecf8', '#1f66b8']],
+  ['reactor',   'Reactor',   'Verde fosforescente de máquina', ['#070d07', '#46e873'], ['#e3f2e0', '#18843a']],
+  ['grafito',   'Grafito',   'Escala de grises, sin ruido',    ['#101113', '#c8cdd4'], ['#eceef0', '#2f353b']],
+  ['neon',      'Neón',      'Cian y magenta de arcade',       ['#0c0a18', '#2de2e6'], ['#e2f2f4', '#067a8c']],
+  ['atardecer', 'Atardecer', 'Oro y rosa sobre púrpura',       ['#160f1e', '#ff9d4d'], ['#fdeede', '#c45f10']],
 ];
 
 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
@@ -97,7 +99,11 @@ function toast(message) {
 
 /* ---------- charts ---------- */
 
-function drawChart(canvas, values, color) {
+// Estado por canvas para el hover: la serie dibujada y su mapeo x/y, para
+// poder redibujar con crosshair y saber qué valor hay bajo el cursor.
+const chartState = new Map();
+
+function drawChart(canvas, values, color, opts = {}) {
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth, h = canvas.clientHeight;
   if (!w || !h) return;
@@ -116,15 +122,18 @@ function drawChart(canvas, values, color) {
     ctx.stroke();
   }
 
-  if (!values || values.length < 2) return;
+  if (!values || values.length < 2) { chartState.delete(canvas.id); return; }
   const data = values.slice(-Math.max(60, Math.floor(w / 4)));
   // snap the axis to steps of 5 so min/max don't jitter every second
-  let lo = Math.floor(Math.min(...data) / 5) * 5;
+  // fromZero: los watts arrancan en 0 — si no, una bajada de 10→3 W llena
+  // toda la altura de la gráfica y parece un desplome dramático
+  let lo = opts.fromZero ? 0 : Math.floor(Math.min(...data) / 5) * 5;
   let hi = Math.ceil(Math.max(...data) / 5) * 5;
   if (hi - lo < 10) { hi = lo + 10; }
   const pad = 8;
   const x = (i) => (i / (data.length - 1)) * w;
   const y = (v) => (h - 12) - pad - ((v - lo) / (hi - lo)) * ((h - 12) - pad * 2);
+  chartState.set(canvas.id, { data, color, opts, w, h, lo, hi });
 
   const grad = ctx.createLinearGradient(0, 0, 0, h);
   grad.addColorStop(0, color + '55');
@@ -159,6 +168,78 @@ function drawChart(canvas, values, color) {
   ctx.font = 'bold 13px monospace';
   ctx.fillText(last.toFixed(1), w - 6, 14);
   ctx.textAlign = 'left';
+
+  if (chartHover.canvasId === canvas.id) drawChartCrosshair(canvas);
+}
+
+/* hover sobre las gráficas: crosshair + valor y hace cuántos segundos */
+
+const chartHover = { canvasId: null, px: 0 };
+
+function chartIndexAt(state, px) {
+  return Math.max(0, Math.min(state.data.length - 1,
+    Math.round((px / state.w) * (state.data.length - 1))));
+}
+
+function drawChartCrosshair(canvas) {
+  const state = chartState.get(canvas.id);
+  if (!state) return;
+  const { data, color, w, h, lo, hi } = state;
+  const i = chartIndexAt(state, chartHover.px);
+  const pad = 8;
+  const cx = (i / (data.length - 1)) * w;
+  const cy = (h - 12) - pad - ((data[i] - lo) / (hi - lo)) * ((h - 12) - pad * 2);
+  const ctx = canvas.getContext('2d');
+  ctx.save();
+  ctx.strokeStyle = cssVar('--dim');
+  ctx.setLineDash([3, 3]);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx, 2);
+  ctx.lineTo(cx, h - 12);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = cssVar('--bg');
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function agoText(secondsAgo) {
+  if (secondsAgo < 1) return 'ahora';
+  if (secondsAgo < 60) return `hace ${secondsAgo} s`;
+  return `hace ${Math.floor(secondsAgo / 60)} min ${secondsAgo % 60} s`;
+}
+
+function wireChartHover(canvasId, unit) {
+  const canvas = $(canvasId);
+  const tip = $('chart-tip');
+  canvas.addEventListener('mousemove', (e) => {
+    const state = chartState.get(canvasId);
+    if (!state) return;
+    const rect = canvas.getBoundingClientRect();
+    chartHover.canvasId = canvasId;
+    chartHover.px = e.clientX - rect.left;
+    const i = chartIndexAt(state, chartHover.px);
+    // una muestra por segundo: la distancia al final ES la antigüedad
+    tip.textContent = `${state.data[i].toFixed(1)} ${unit} · ${agoText(state.data.length - 1 - i)}`;
+    tip.classList.remove('hidden');
+    const tw = tip.offsetWidth;
+    const left = Math.min(Math.max(e.clientX - tw / 2, 6), window.innerWidth - tw - 6);
+    tip.style.left = `${left}px`;
+    tip.style.top = `${rect.top - 30}px`;
+    drawChart(canvas, state.data, state.color, state.opts);
+  });
+  canvas.addEventListener('mouseleave', () => {
+    chartHover.canvasId = null;
+    tip.classList.add('hidden');
+    const state = chartState.get(canvasId);
+    if (state) drawChart(canvas, state.data, state.color, state.opts);
+  });
 }
 
 /* ---------- fans ---------- */
@@ -363,7 +444,21 @@ function auraSignature(aura) {
     setup: aura?.setup?.needsSetup,
     openrgb: [aura?.openrgb?.available, aura?.openrgb?.sdk_reachable],
     music: aura?.music?.available,
+    periph: (aura?.peripherals || []).map((p) => [p.name, p.link, p.supported]),
   });
+}
+
+function renderPeripherals(peripherals) {
+  const host = $('peripherals');
+  if (!peripherals?.length) { host.classList.add('hidden'); host.innerHTML = ''; return; }
+  host.classList.remove('hidden');
+  host.innerHTML = peripherals.map((p) => `
+    <div class="periph${p.supported ? '' : ' pending'}">
+      <span class="periph-dot"></span>
+      <span class="periph-name">${escapeHtml(p.name)}</span>
+      <span class="periph-link">${escapeHtml(p.link)} · ${escapeHtml(p.vid_pid)}</span>
+      <span class="periph-note">${p.supported ? 'listo' : escapeHtml(p.note || '')}</span>
+    </div>`).join('');
 }
 
 function renderAura(aura, resetForm = false) {
@@ -440,6 +535,7 @@ function renderAura(aura, resetForm = false) {
     ? `OpenRGB detectado${aura.openrgb.sdk_reachable ? ' con SDK local activo' : ', pero su SDK local no responde aún'}.`
     : aura.openrgb?.hint || '';
   openrgb.classList.toggle('hidden', !openrgb.textContent);
+  renderPeripherals(aura.peripherals);
 
   $('aura-apply').disabled = !aura.asus?.available;
   $('aura-music').disabled = !(aura.music?.available && aura.asus?.available);
@@ -578,6 +674,34 @@ const LAMP_STATES = [
   ['cold', 'FRÍO'], ['normal', 'NORMAL'], ['hot', 'CALIENTE'], ['critical', 'CRÍTICO'],
 ];
 
+// Nombre corto de la dGPU detectada (p. ej. "RTX 4060"); se recuerda para que
+// los tooltips sigan diciendo el modelo real aun en modo Integrated (dGPU off).
+let dgpuName = localStorage.getItem('dgpuName') || '';
+
+function shortGpuName(full) {
+  return String(full || '')
+    .replace(/NVIDIA |GeForce |AMD |Radeon\(TM\) | Laptop GPU| Graphics/g, '')
+    .trim();
+}
+
+function refreshGpuTooltips(active) {
+  const detected = active?.vendor !== 'intel' ? shortGpuName(active?.name) : '';
+  if (detected && detected !== dgpuName) {
+    dgpuName = detected;
+    localStorage.setItem('dgpuName', dgpuName);
+  }
+  const gpu = dgpuName ? `la ${dgpuName}` : 'la GPU dedicada';
+  const seg = $('gpu-seg');
+  if (seg.dataset.tipFor === dgpuName) return;
+  seg.dataset.tipFor = dgpuName;
+  seg.querySelector('[data-gpu="Integrated"]').title =
+    `Solo gráficos integrados: máxima batería, ${gpu} queda apagada`;
+  seg.querySelector('[data-gpu="Hybrid"]').title =
+    `Integrados para el escritorio + ${gpu} para juegos (recomendado)`;
+  seg.querySelector('[data-gpu="AsusMuxDgpu"]').title =
+    `MUX: solo ${gpu} para todo. Más FPS pero gasta más batería. Requiere REINICIAR`;
+}
+
 function update(stats) {
   lastStats = stats;
   const cpu = stats.cpu || {};
@@ -612,6 +736,7 @@ function update(stats) {
   /* gpu */
   const gpu = stats.gpu || {};
   const active = gpu.active;
+  refreshGpuTooltips(active);
   $('gpu-mode').textContent = (gpu.mode || '--') + (gpu.pending ? ` → ${gpu.pending}` : '');
   if (active) {
     $('gpu-off-note').classList.add('hidden');
@@ -657,8 +782,8 @@ function update(stats) {
   const series = stats.series || {};
   drawChart($('chart-cpu'), series.cpu_temp, cssVar('--cold'));
   drawChart($('chart-gpu'), series.gpu_temp, cssVar('--okstate'));
-  drawChart($('chart-power'), series.cpu_power, cssVar('--accent'));
-  drawChart($('chart-gpu-power'), series.gpu_power, cssVar('--hot'));
+  drawChart($('chart-power'), series.cpu_power, cssVar('--accent'), { fromZero: true });
+  drawChart($('chart-gpu-power'), series.gpu_power, cssVar('--hot'), { fromZero: true });
 
   $('rapl-note').classList.toggle('hidden', !!stats.rapl_available);
 
@@ -734,8 +859,8 @@ document.querySelectorAll('#gpu-seg button').forEach((btn) => {
       return;
     }
     if (mode === 'AsusMuxDgpu' && !window.confirm(
-      'Modo dGPU (MUX): la RTX 4060 maneja TODO, incluida la pantalla.\n\n' +
-      '✓ Más FPS en juegos (sin pasar por la Intel)\n' +
+      `Modo dGPU (MUX): ${dgpuName ? 'la ' + dgpuName : 'la GPU dedicada'} maneja TODO, incluida la pantalla.\n\n` +
+      '✓ Más FPS en juegos (sin pasar por los gráficos integrados)\n' +
       '✗ Mucho más consumo de batería\n' +
       '✗ Requiere REINICIAR el equipo (no basta cerrar sesión)\n\n' +
       '¿Continuar?')) return;
@@ -780,6 +905,11 @@ $('update-btn').addEventListener('click', async () => {
 });
 
 /* ---------- wiring ---------- */
+
+wireChartHover('chart-cpu', '°C');
+wireChartHover('chart-gpu', '°C');
+wireChartHover('chart-power', 'W');
+wireChartHover('chart-gpu-power', 'W');
 
 window.rog.onStats(update);
 window.rog.onBackendDown(() => {

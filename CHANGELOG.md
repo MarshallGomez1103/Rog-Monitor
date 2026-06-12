@@ -1,5 +1,45 @@
 # Changelog
 
+## 8.4.0 — 2026-06-12
+
+### Added
+- **Hover en las 4 gráficas del historial**: al pasar el cursor aparece un
+  crosshair punteado con el punto marcado y un tooltip con el valor exacto y
+  hace cuántos segundos fue ("70.1 °C · hace 9 s").
+- **Dos temas nuevos**: Neón (cian y magenta de arcade) y Atardecer (oro y
+  rosa sobre púrpura). Ya son 8 paletas × claro/oscuro.
+- **Redragon K734WCG-RGB-PRO detectado** (cable 258a:010c y dongle 3554:fa09)
+  por lectura de sysfs; aparece en el bloque Iluminación. El control real está
+  bloqueado a propósito hasta tener capturas USB del software oficial — los
+  teclados Sinowealth/BY Tech se han brickeado con comandos adivinados (por eso
+  OpenRGB deshabilitó su controlador). Protocolo documentado en
+  `docs/redragon-protocol.md` con guía de captura para Windows.
+
+### Changed
+- **Identidad visual propia** (que no parezca "hecha por IA"): esquinas
+  cortadas en diagonal con franja de acento, números de bloque en placas
+  inclinadas, fondo con brillo del acento + rayado diagonal sutil, línea de
+  acento bajo la barra superior, botones angulares y glow en la temperatura
+  grande. Sin tarjetas redondeadas genéricas.
+- **Bloques renumerados en orden visual**: izquierda 01 CPU → 04 Iluminación,
+  derecha 05 Historial → 09 Procesos (antes: 1,2,3,8 / 4,9,5,6,7).
+- **Sin hueco abajo a la izquierda**: las columnas ahora miden lo mismo y el
+  último bloque de cada una crece para rellenar.
+- **Modo claro con identidad real**: paneles y fondos tintados por paleta
+  (antes todas eran "panel blanco + pastel" y apenas se diferenciaban).
+- Las gráficas de consumo (W) arrancan en 0: una bajada de 10→3 W ya no llena
+  toda la altura como si fuera un desplome.
+
+### Fixed
+- **Consumo GPU "plano en 10 que se desploma"**: nvidia-smi `power.draw` es la
+  muestra instantánea y cae a ~1-3 W cuando la GPU duerme un instante. Ahora se
+  usa `power.draw.average` si el driver lo soporta (se detecta una vez con
+  `--help-query-gpu`, sin despertar la GPU).
+- **"RTX 4060" ya no está hardcodeada**: los tooltips de iGPU/HYBRID/dGPU y la
+  confirmación del modo MUX usan el nombre real detectado por nvidia-smi (se
+  recuerda para mostrarlo incluso con la dGPU apagada). En otro portátil dirá
+  el modelo de esa máquina.
+
 ## 8.3.0 — 2026-06-10
 
 ### Fixed

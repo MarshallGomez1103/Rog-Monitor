@@ -2,13 +2,17 @@
 
 ## Estado actual del proyecto
 
-**Versión actual:** v8.2 (junio 2026)
+**Versión actual:** v8.4 (junio 2026)
 
-> v8.2: cap de ventilador ahora persiste y limita de verdad (curvas en JSON de
-> usuario que el servicio root lee); % relativo al cap; perfiles bajan RPM.
-> Aura solo ofrece efectos soportados por el teclado (D-Bus SupportedBasicModes)
-> y reporta los fallos reales. Overlay de juegos siempre-encima. Undervolt/
-> overclock descartado por riesgo.
+> v8.4: identidad visual propia (esquinas cortadas, placas numeradas
+> inclinadas, 8 temas × claro/oscuro con modo claro tintado de verdad),
+> bloques renumerados 01-09 en orden visual y columnas sin hueco. Hover en las
+> 4 gráficas (valor + hace cuántos segundos). Consumo GPU estable
+> (power.draw.average) y gráficas de W desde 0. Nombre de GPU detectado (no
+> hardcodeado). Redragon K734 detectado (control bloqueado hasta tener
+> capturas USB — ver docs/redragon-protocol.md).
+> v8.3: cap real verificado con calibración PWM→RPM, Aura arreglado de raíz,
+> overlay AVG/FPS, export/import de config.
 
 ---
 
@@ -267,10 +271,14 @@ Referencias: asusctl https://gitlab.com/asus-linux/asusctl · OpenRGB https://op
       → guardar → tour de funciones. Nunca mostrar "medido" sin medir.
 * [ ] **UX de 4 estados por widget**: con datos / cargando / sin datos / error
       (RAM que no carga, ventilador dañado → mostrarlo parado explícito).
-* [ ] **Redragon K734WCG-RGB-PRO**: cable VID 0x258a PID 0x010c (Sinowealth/
-      BY Tech), dongle 0x3554:0xfa09 (CompX). Paso 1: OpenRGB flatpak y probar
-      detección; si 010c no está soportado, protocolo HID propio (hidapi)
-      usando el software BYCOMBO4 extraído del exe como referencia. Sin Wine.
+* [~] **Redragon K734WCG-RGB-PRO**: cable VID 0x258a PID 0x010c (Sinowealth/
+      BY Tech), dongle 0x3554:0xfa09 (CompX). **Hecho (v8.4):** OpenRGB 1.0rc2
+      probado → NO soporta 010c; detección propia por sysfs ya en la app;
+      protocolo parcialmente mapeado desde el software BYCOMBO4
+      (docs/redragon-protocol.md). **Falta:** captura USB en Windows (guía en
+      ese doc) y recién ahí `redragon.py` (hidraw + ioctl, sin deps). OJO: NO
+      mandar comandos adivinados — esta familia se ha brickeado (OpenRGB
+      deshabilitó su controlador Sinowealth por eso). Sin Wine.
 * [ ] **Música por zonas** (graves/medios/agudos): requiere teclado con zonas
       (el interno reporta 0; apunta al Redragon vía OpenRGB).
 * [ ] **Multi-distro / multi-marca**: probar en Mint/Fedora; detectar hwmon

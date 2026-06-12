@@ -1,6 +1,8 @@
 /* ROG Monitor desktop.
-   Theme system: 6 palettes × light/dark, set via data-theme / data-mode on <html>.
-   Semantic state colors (cold/normal/hot/critical) are shared by every theme. */
+   Theme system: 8 palettes × light/dark, set via data-theme / data-mode on <html>.
+   Semantic state colors (cold/normal/hot/critical) are shared by every theme.
+   Identidad visual: esquinas cortadas en diagonal (clip-path), chips numerados
+   inclinados y textura de fondo sutil — NO tarjetas redondeadas genéricas. */
 
 :root {
   --mono: "JetBrains Mono", "Fira Code", "Cascadia Mono", monospace;
@@ -49,42 +51,71 @@ html[data-mode="dark"][data-theme="grafito"] {
   --bg: #101113; --panel: #16181b; --hair: #26292e;
   --accent: #c8cdd4; --accent2: #9aa1aa; --chip: #1d2024;
 }
+/* Neón — cian y magenta de sala de arcade */
+html[data-mode="dark"][data-theme="neon"] {
+  --bg: #0c0a18; --panel: #131022; --hair: #2b2350;
+  --accent: #2de2e6; --accent2: #f637ec; --chip: #1b1635;
+}
+/* Atardecer — oro y rosa sobre púrpura profundo */
+html[data-mode="dark"][data-theme="atardecer"] {
+  --bg: #160f1e; --panel: #1f1528; --hair: #3d2a4a;
+  --accent: #ff9d4d; --accent2: #ff5e7e; --chip: #2a1c38;
+}
 
-/* ---------- palettes (light) ---------- */
+/* ---------- palettes (light) ----------
+   Paneles TINTADOS (no blanco plano): antes todas las paletas claras eran
+   "panel blanco + fondo pastel" y no se diferenciaban entre sí. */
 html[data-mode="light"] {
-  --ink: #23272e;
-  --dim: #6a7280;
+  --ink: #22262d;
+  --dim: #66707e;
   color-scheme: light;
 }
 html[data-mode="light"][data-theme="magma"] {
-  --bg: #fbf2ec; --panel: #ffffff; --hair: #ecd5c8;
-  --accent: #c44a26; --accent2: #93351a; --chip: #f7e3d8;
+  --bg: #f8e8de; --panel: #fffaf6; --hair: #e3bda9;
+  --accent: #c2401f; --accent2: #8a2b12; --chip: #f5dccb;
 }
 html[data-mode="light"][data-theme="nebula"] {
-  --bg: #f6f2fb; --panel: #ffffff; --hair: #e3d8f2;
-  --accent: #7b3fd4; --accent2: #5c2aa6; --chip: #efe6fa;
+  --bg: #efe9fa; --panel: #fcfaff; --hair: #d3c2ee;
+  --accent: #6f2fd0; --accent2: #4c1f96; --chip: #e7dcf8;
 }
 html[data-mode="light"][data-theme="oceano"] {
-  --bg: #eef7f6; --panel: #ffffff; --hair: #cfe7e4;
-  --accent: #0f8a7d; --accent2: #0a665d; --chip: #ddf0ed;
+  --bg: #ddf0ed; --panel: #f6fcfb; --hair: #aedcd4;
+  --accent: #0c7f72; --accent2: #07594f; --chip: #cdeae4;
 }
 html[data-mode="light"][data-theme="glaciar"] {
-  --bg: #f0f5fb; --panel: #ffffff; --hair: #d7e4f2;
-  --accent: #2670c2; --accent2: #1b5494; --chip: #e2edf8;
+  --bg: #e2ecf8; --panel: #f8fbff; --hair: #bcd4ec;
+  --accent: #1f66b8; --accent2: #154a88; --chip: #d2e3f5;
 }
 html[data-mode="light"][data-theme="reactor"] {
-  --bg: #f0f8f0; --panel: #ffffff; --hair: #cfe8cf;
-  --accent: #1c8a3f; --accent2: #14672f; --chip: #e2f3e2;
+  --bg: #e3f2e0; --panel: #f7fcf5; --hair: #b8dab0;
+  --accent: #18843a; --accent2: #0f5f28; --chip: #d3eccd;
 }
 html[data-mode="light"][data-theme="grafito"] {
-  --bg: #f5f6f7; --panel: #ffffff; --hair: #e1e4e8;
-  --accent: #3c4248; --accent2: #5a6169; --chip: #eceef0;
+  --bg: #eaecee; --panel: #fafbfc; --hair: #ccd1d7;
+  --accent: #2f353b; --accent2: #555c64; --chip: #dde1e5;
+}
+html[data-mode="light"][data-theme="neon"] {
+  --bg: #e2f2f4; --panel: #f7fdfe; --hair: #aedde2;
+  --accent: #067a8c; --accent2: #b81f9c; --chip: #d0ebee;
+}
+html[data-mode="light"][data-theme="atardecer"] {
+  --bg: #fdeede; --panel: #fffaf3; --hair: #eecfa9;
+  --accent: #c45f10; --accent2: #b32a52; --chip: #f9e3c6;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  background: var(--bg);
+  /* fondo con carácter: brillo del acento arriba a la derecha + rayado
+     diagonal casi imperceptible (textura tipo fibra de carbono) */
+  background:
+    radial-gradient(900px 420px at 88% -8%,
+      color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
+    repeating-linear-gradient(-45deg,
+      transparent 0 16px,
+      color-mix(in srgb, var(--ink) 2.5%, transparent) 16px 17px),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--sans);
   font-size: 15px;
@@ -105,7 +136,9 @@ b, .num { font-variant-numeric: tabular-nums; }
   flex-wrap: wrap;
   gap: 12px 18px;
   padding: 14px 22px;
-  border-bottom: 1px solid var(--hair);
+  /* línea inferior que arranca en acento y se funde con el hairline */
+  border-bottom: 2px solid var(--hair);
+  border-image: linear-gradient(90deg, var(--accent), var(--accent2) 160px, var(--hair) 380px) 1;
   background: var(--panel);
   position: sticky; top: 0; z-index: 5;
 }
@@ -150,9 +183,10 @@ b, .num { font-variant-numeric: tabular-nums; }
 .segment {
   display: flex;
   border: 1px solid var(--hair);
-  border-radius: 8px;
+  border-radius: 2px;
   overflow: hidden;
   background: var(--chip);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%);
 }
 .segment button {
   border: 0;
@@ -171,7 +205,7 @@ b, .num { font-variant-numeric: tabular-nums; }
 
 .ghost {
   border: 1px solid var(--hair);
-  border-radius: 8px;
+  border-radius: 2px;
   background: var(--chip);
   color: var(--dim);
   font-family: var(--sans);
@@ -179,6 +213,7 @@ b, .num { font-variant-numeric: tabular-nums; }
   font-weight: 600;
   padding: 7px 13px;
   cursor: pointer;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%);
 }
 .ghost:hover { color: var(--ink); border-color: var(--accent); }
 .ghost.attention { color: var(--accent); border-color: var(--accent); }
@@ -199,18 +234,32 @@ main {
   grid-template-columns: minmax(300px, 380px) 1fr;
   gap: 16px;
   padding: 16px 22px;
-  align-items: start;
+  /* sin align-items:start: las dos columnas miden lo mismo y el último bloque
+     de cada una crece para rellenar — adiós al hueco inferior izquierdo */
 }
 @media (max-width: 900px) {
   main { grid-template-columns: 1fr; }
 }
 .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.col > :last-child { flex: 1 0 auto; }
 
 .block {
+  position: relative;
   background: var(--panel);
   border: 1px solid var(--hair);
-  border-radius: 12px;
+  border-radius: 2px;
   padding: 16px 18px;
+  /* esquina superior derecha cortada en diagonal: la firma visual de la app */
+  clip-path: polygon(0 0, calc(100% - 17px) 0, 100% 17px, 100% 100%, 0 100%);
+}
+/* franja de acento siguiendo el corte de la esquina */
+.block::before {
+  content: '';
+  position: absolute; top: 0; right: 0;
+  width: 19px; height: 19px;
+  background: linear-gradient(to bottom left,
+    transparent 42%, var(--accent) 42%, var(--accent) 58%, transparent 58%);
+  pointer-events: none;
 }
 
 .block h2 {
@@ -221,15 +270,34 @@ main {
   color: var(--dim);
   margin-bottom: 12px;
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
   flex-wrap: wrap;
 }
-.block h2 i { font-style: normal; color: var(--accent); font-family: var(--mono); }
+/* número de bloque: placa inclinada con tinte del acento */
+.block h2 i {
+  font-style: normal;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  transform: skewX(-12deg);
+}
 .block h2 small {
   font-weight: 400; letter-spacing: 0; text-transform: none;
   color: var(--dim); font-size: 11.5px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px;
+}
+/* hairline que se desvanece tras el título */
+.block h2::after {
+  content: '';
+  flex: 1 1 14px;
+  min-width: 14px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--hair), transparent);
 }
 
 .bignum {
@@ -239,6 +307,8 @@ main {
   line-height: 1;
   margin: 4px 0 14px;
 }
+/* la temperatura grande brilla con su propio color de estado */
+.bignum span { text-shadow: 0 0 22px color-mix(in srgb, currentColor 45%, transparent); }
 .bignum em { font-style: normal; font-size: 20px; color: var(--dim); }
 .bignum .t-cold { color: var(--cold); }
 .bignum .t-normal { color: var(--okstate); }
@@ -409,7 +479,7 @@ input[type="color"] {
   gap: 8px;
   padding: 8px 10px;
   border: 1px solid var(--hair);
-  border-radius: 8px;
+  border-radius: 2px;
   background: var(--chip);
   cursor: pointer;
 }
@@ -499,6 +569,20 @@ input[type="color"] {
 .note.status-ok { color: var(--okstate); }
 .note.status-live { color: var(--accent2); }
 
+/* periféricos RGB detectados (Redragon, etc.) */
+.periph {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-top: 10px; padding: 8px 10px;
+  border: 1px solid var(--hair); border-radius: 2px;
+  border-left: 3px solid var(--accent2);
+  background: var(--chip); font-size: 12.5px;
+}
+.periph-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--okstate); }
+.periph.pending .periph-dot { background: var(--hot); }
+.periph-name { font-weight: 600; }
+.periph-link { color: var(--dim); font-family: var(--mono); font-size: 11px; }
+.periph-note { flex-basis: 100%; color: var(--dim); font-size: 11.5px; }
+
 /* ---------- charts ---------- */
 .chart-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
 .chart label { font-size: 11.5px; letter-spacing: 1px; color: var(--dim); text-transform: uppercase; }
@@ -520,7 +604,8 @@ input[type="color"] {
 }
 .bench-history li {
   border: 1px solid var(--hair);
-  border-radius: 10px;
+  border-radius: 2px;
+  border-left: 3px solid var(--accent);
   padding: 9px 10px;
   background: var(--chip);
   font-size: 12.5px;
@@ -601,11 +686,28 @@ input[type="color"] {
   position: fixed; bottom: 48px; left: 50%; transform: translateX(-50%);
   background: var(--panel); color: var(--ink);
   border: 1px solid var(--accent);
-  padding: 11px 20px; border-radius: 10px;
+  padding: 11px 20px; border-radius: 2px;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
   font-size: 13.5px; white-space: pre-line;
   box-shadow: 0 6px 24px rgba(0,0,0,.35);
   z-index: 20;
 }
+
+/* ---------- chart hover tip ---------- */
+#chart-tip {
+  position: fixed; z-index: 25;
+  pointer-events: none;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 4px 9px;
+  white-space: nowrap;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+  box-shadow: 0 4px 14px rgba(0,0,0,.3);
+}
+.chart canvas { cursor: crosshair; }
 
 /* ---------- modals (shared) ----------
    Every dialog needs this class: without position:fixed the div renders in
@@ -617,7 +719,8 @@ input[type="color"] {
 }
 .modal.hidden { display: none; }
 .modal-card {
-  background: var(--bg); border: 1px solid var(--hair); border-radius: 14px;
+  background: var(--bg); border: 1px solid var(--hair); border-radius: 2px;
+  clip-path: polygon(0 0, calc(100% - 17px) 0, 100% 17px, 100% 100%, 0 100%);
   padding: 22px; width: min(560px, 92vw); max-height: 86vh; overflow-y: auto;
 }
 .modal-card h3 { font-size: 15px; margin-bottom: 4px; }
@@ -628,7 +731,7 @@ input[type="color"] {
   user-select: text;
   background: var(--chip);
   border: 1px solid var(--hair);
-  border-radius: 10px;
+  border-radius: 2px;
   padding: 12px;
   font-family: var(--mono);
   font-size: 12.5px;
@@ -638,7 +741,8 @@ input[type="color"] {
 .theme-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 560px) { .theme-grid { grid-template-columns: 1fr; } }
 .theme-card {
-  border: 1px solid var(--hair); border-radius: 10px;
+  border: 1px solid var(--hair); border-radius: 2px;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
   background: var(--panel);
   padding: 0 0 10px; cursor: pointer; text-align: left; overflow: hidden;
   font-family: var(--sans); color: var(--ink);

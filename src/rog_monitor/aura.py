@@ -34,6 +34,15 @@ OPENRGB_CANDIDATES = [
     "/usr/bin/openrgb",
 ]
 
+# Periféricos RGB conocidos que OpenRGB NO soporta (detección por VID:PID en
+# /sys/class/hidraw — solo LECTURA de sysfs, jamás se le escribe al equipo:
+# los teclados Sinowealth/BY Tech se han brickeado con comandos adivinados,
+# por eso OpenRGB deshabilitó su controlador. Ver docs/redragon-protocol.md).
+KNOWN_PERIPHERALS = {
+    ("258A", "010C"): ("Redragon K734WCG-RGB-PRO", "cable"),
+    ("3554", "FA09"): ("Redragon K734WCG-RGB-PRO", "dongle 2.4G"),
+}
+
 DEFAULTS = {
     "apply_on_startup": False,
     "startup_profile": None,
@@ -248,6 +257,33 @@ class AuraManager:
         return None
 
     @staticmethod
+    def _detect_peripherals() -> list[dict]:
+        """Periféricos RGB conectados (solo lectura de sysfs, sin abrir nada)."""
+        found: dict[str, dict] = {}
+        for uevent in Path("/sys/class/hidraw").glob("hidraw*/device/uevent"):
+            try:
+                text = uevent.read_text()
+            except OSError:
+                continue
+            match = re.search(r"HID_ID=\w+:0000(\w{4}):0000(\w{4})", text)
+            if not match:
+                continue
+            key = (match.group(1).upper(), match.group(2).upper())
+            info = KNOWN_PERIPHERALS.get(key)
+            if not info:
+                continue
+            name, link = info
+            found[f"{name}|{link}"] = {
+                "name": name,
+                "link": link,
+                "vid_pid": f"{key[0].lower()}:{key[1].lower()}",
+                "hidraw": uevent.parent.parent.name,
+                "supported": False,
+                "note": "detectado — protocolo propio en análisis (sin control aún)",
+            }
+        return sorted(found.values(), key=lambda d: d["name"])
+
+    @staticmethod
     def _openrgb_sdk_available() -> bool:
         sock = None
         try:
@@ -312,6 +348,7 @@ class AuraManager:
                 "available": bool(self.music_source),
                 "source": os.path.basename(self.music_source) if self.music_source else None,
             },
+            "peripherals": self._detect_peripherals(),
             "profiles": store.get("profiles", []),
             "apply_on_startup": bool(store.get("apply_on_startup")),
             "startup_profile": store.get("startup_profile"),
