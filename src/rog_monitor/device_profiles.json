@@ -1,0 +1,188 @@
+{
+  "_comment": "ROG Monitor device profiles. Each entry describes the power/clock control surface for a specific laptop model.",
+  "_custom_override": "Create ~/.config/rog-monitor/device.json with the same structure to override the active profile. The 'id' field must match the auto-detected device or be 'custom'.",
+  "devices": [
+    {
+      "id": "asus-rog-strix-g16-g614jv",
+      "name": "ASUS ROG Strix G16 (G614JV)",
+      "friendly_name": "ROG Strix G16 2023",
+      "dmi_match": "G614JV",
+      "dmi_field": "/sys/class/dmi/id/product_name",
+      "calibrated": true,
+      "calibrated_date": "2026-06-12",
+      "controls": [
+        {
+          "key": "pl1",
+          "attr": "ppt_pl1_spl",
+          "label_es": "CPU PL1 (sostenida)",
+          "label_en": "CPU PL1 (sustained)",
+          "unit": "W",
+          "min": 28,
+          "max": 140,
+          "default": 140,
+          "writable": true,
+          "reason": null,
+          "description_es": "Potencia CPU sostenida (TDP largo plazo). Reducir protege batería/temperatura a costa de rendimiento base.",
+          "description_en": "Sustained CPU power limit (long-term TDP). Lowering saves battery/temperature at the cost of sustained performance."
+        },
+        {
+          "key": "pl2",
+          "attr": "ppt_pl2_sppt",
+          "label_es": "CPU PL2 (ráfaga)",
+          "label_en": "CPU PL2 (burst)",
+          "unit": "W",
+          "min": 28,
+          "max": 175,
+          "default": 175,
+          "writable": true,
+          "reason": null,
+          "description_es": "Potencia CPU en ráfaga (~2 min). Controla picos de carga cortos.",
+          "description_en": "CPU burst power limit (~2 min). Controls short load spikes."
+        },
+        {
+          "key": "dynamic_boost",
+          "attr": "nv_dynamic_boost",
+          "label_es": "GPU Dynamic Boost",
+          "label_en": "GPU Dynamic Boost",
+          "unit": "W",
+          "min": 5,
+          "max": 25,
+          "default": 25,
+          "writable": true,
+          "reason": null,
+          "description_es": "Vatios extra que la GPU puede tomar del presupuesto de la CPU cuando el CPU está subutilizado.",
+          "description_en": "Extra watts the GPU can take from CPU budget when CPU is underutilised."
+        },
+        {
+          "key": "thermal_target",
+          "attr": "nv_temp_target",
+          "label_es": "Techo térmico GPU",
+          "label_en": "GPU thermal ceiling",
+          "unit": "°C",
+          "min": 75,
+          "max": 87,
+          "default": 87,
+          "writable": true,
+          "reason": null,
+          "description_es": "Temperatura máxima permitida para la GPU. El firmware hace throttling al alcanzarla. 87 °C es el límite del firmware.",
+          "description_en": "Maximum allowed GPU temperature. Firmware throttles at this point. 87 °C is the firmware hard ceiling."
+        },
+        {
+          "key": "base_clock_offset",
+          "attr": null,
+          "label_es": "Offset clock base GPU",
+          "label_en": "GPU base clock offset",
+          "unit": "MHz",
+          "min": 0,
+          "max": 200,
+          "default": 50,
+          "writable": false,
+          "reason": "Requiere sesión X11 con Coolbits; no disponible en Wayland",
+          "reason_en": "Requires X11 session with Coolbits; not available on Wayland",
+          "description_es": "Offset de frecuencia del núcleo GPU vía nvidia-settings. Bloqueado en Wayland.",
+          "description_en": "GPU core clock offset via nvidia-settings. Blocked on Wayland."
+        },
+        {
+          "key": "mem_clock_offset",
+          "attr": null,
+          "label_es": "Offset clock memoria GPU",
+          "label_en": "GPU memory clock offset",
+          "unit": "MHz",
+          "min": 0,
+          "max": 300,
+          "default": 100,
+          "writable": false,
+          "reason": "Requiere sesión X11 con Coolbits; no disponible en Wayland",
+          "reason_en": "Requires X11 session with Coolbits; not available on Wayland",
+          "description_es": "Offset de frecuencia de memoria GPU vía nvidia-settings. Bloqueado en Wayland.",
+          "description_en": "GPU memory clock offset via nvidia-settings. Blocked on Wayland."
+        }
+      ]
+    },
+    {
+      "id": "auto",
+      "name": "Genérico (auto-detectado)",
+      "friendly_name": "Generic ASUS (auto)",
+      "dmi_match": null,
+      "dmi_field": null,
+      "calibrated": false,
+      "_comment": "Ranges are read live from sysfs at runtime; defaults below are placeholders overridden by live reads.",
+      "controls": [
+        {
+          "key": "pl1",
+          "attr": "ppt_pl1_spl",
+          "label_es": "CPU PL1 (sostenida)",
+          "label_en": "CPU PL1 (sustained)",
+          "unit": "W",
+          "min": null,
+          "max": null,
+          "default": null,
+          "writable": true,
+          "reason": null
+        },
+        {
+          "key": "pl2",
+          "attr": "ppt_pl2_sppt",
+          "label_es": "CPU PL2 (ráfaga)",
+          "label_en": "CPU PL2 (burst)",
+          "unit": "W",
+          "min": null,
+          "max": null,
+          "default": null,
+          "writable": true,
+          "reason": null
+        },
+        {
+          "key": "dynamic_boost",
+          "attr": "nv_dynamic_boost",
+          "label_es": "GPU Dynamic Boost",
+          "label_en": "GPU Dynamic Boost",
+          "unit": "W",
+          "min": null,
+          "max": null,
+          "default": null,
+          "writable": true,
+          "reason": null
+        },
+        {
+          "key": "thermal_target",
+          "attr": "nv_temp_target",
+          "label_es": "Techo térmico GPU",
+          "label_en": "GPU thermal ceiling",
+          "unit": "°C",
+          "min": null,
+          "max": null,
+          "default": null,
+          "writable": true,
+          "reason": null
+        },
+        {
+          "key": "base_clock_offset",
+          "attr": null,
+          "label_es": "Offset clock base GPU",
+          "label_en": "GPU base clock offset",
+          "unit": "MHz",
+          "min": 0,
+          "max": 200,
+          "default": 50,
+          "writable": false,
+          "reason": "Requiere sesión X11 con Coolbits; no disponible en Wayland",
+          "reason_en": "Requires X11 session with Coolbits; not available on Wayland"
+        },
+        {
+          "key": "mem_clock_offset",
+          "attr": null,
+          "label_es": "Offset clock memoria GPU",
+          "label_en": "GPU memory clock offset",
+          "unit": "MHz",
+          "min": 0,
+          "max": 300,
+          "default": 100,
+          "writable": false,
+          "reason": "Requiere sesión X11 con Coolbits; no disponible en Wayland",
+          "reason_en": "Requires X11 session with Coolbits; not available on Wayland"
+        }
+      ]
+    }
+  ]
+}
