@@ -368,11 +368,18 @@
     });
 
     const msg =
-      'CENTRO DE PODER — Confirmar cambios\n\n' +
+      '⚠ CENTRO DE PODER — Confirmar cambios\n\n' +
       lines.join('\n') +
       '\n\n' +
-      'Esto escribe límites de firmware en el hardware. ' +
-      'Los valores están acotados a los rangos seguros del equipo.\n\n' +
+      'Esto escribe límites de potencia y térmicos en el firmware. Leélo:\n\n' +
+      '• Subir clocks o potencia (overclock) puede causar cuelgues, artefactos y, ' +
+      'en casos extremos, DAÑAR tu equipo de forma permanente.\n' +
+      '• Bajar demasiado la potencia (estilo undervolt) puede volver el equipo ' +
+      'INESTABLE: puede congelarse, apagarse o reiniciarse solo.\n' +
+      '• Si algo sale mal, REINICIA el equipo y usa RESET A FÁBRICA para volver ' +
+      'a como vino. Estos cambios no sobreviven un apagón forzado.\n\n' +
+      'Los valores van acotados a los rangos seguros de tu firmware, pero la ' +
+      'decisión de aplicarlos es tuya.\n\n' +
       '¿Aplicar?';
 
     if (!window.confirm(msg)) return;
@@ -418,7 +425,9 @@
   ================================================================= */
   async function resetPower() {
     if (!window.confirm(
-      'RESET A FÁBRICA\n\nRestaurará todos los límites de potencia a los valores de stock del firmware.\n\n¿Continuar?'
+      'RESET A FÁBRICA\n\nRestaura los límites de potencia a los valores con los que ' +
+      'vino TU equipo — detectados y guardados la primera vez que abriste la app ' +
+      '(no los de las fotos).\n\n¿Continuar?'
     )) return;
 
     const resetBtn = $('power-reset');

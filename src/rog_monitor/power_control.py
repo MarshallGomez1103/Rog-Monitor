@@ -126,6 +126,46 @@ def _load_custom_profile() -> dict | None:
         return None
 
 
+# ---------------------------------------------------------------------------
+# Factory baseline ("como viene el equipo")
+# ---------------------------------------------------------------------------
+# RESET A FÁBRICA must restore how THIS machine shipped, not the photo/DB
+# values. We capture it ONCE on first run — from the firmware's own
+# `default_value` (the truest factory state; falls back to the current value at
+# first launch) — and save it locally. From then on, reset returns here.
+
+def _baseline_path() -> Path:
+    config_dir = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "rog-monitor"
+    return config_dir / "power-baseline.json"
+
+
+def _load_baseline() -> dict:
+    try:
+        with open(_baseline_path()) as fh:
+            data = json.load(fh)
+        vals = data.get("values", {}) if isinstance(data, dict) else {}
+        return {k: int(v) for k, v in vals.items() if isinstance(v, (int, float))}
+    except (OSError, json.JSONDecodeError, ValueError):
+        return {}
+
+
+def _save_baseline(values: dict) -> None:
+    if not values:
+        return
+    path = _baseline_path()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w") as fh:
+            json.dump({
+                "_comment": "Valores de fabrica detectados de ESTE equipo en el primer arranque. "
+                            "RESET A FABRICA vuelve aqui (no a los valores de las fotos/DB).",
+                "captured_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "values": values,
+            }, fh, indent=2)
+    except OSError:
+        pass
+
+
 def _controls_from_profile(entry: dict, wayland: bool) -> list[dict]:
     """Build the controls list from a device profile entry, merging live sysfs values."""
     controls = []
@@ -285,30 +325,15 @@ class PowerControl:
         return {"ok": True, "applied": self._parse_script_output(proc.stdout), "state": self.state()}
 
     def reset(self) -> dict:
-        """Write firmware defaults for all writable asus-armoury knobs."""
-        db = _load_db()
-        product = _dmi_product()
-        profile = _find_device_profile(product, db) or _auto_profile(db, _is_wayland())
-
-        defaults = {}
-        for ctrl in profile.get("controls", []):
-            key = ctrl["key"]
-            if key not in _ATTR_KEYS:
-                continue
-            attr = ctrl.get("attr")
-            if not attr:
-                continue
-            # Read live default.
-            live_default = _read_int_attr(attr, "default_value")
-            fallback_default = ctrl.get("default")
-            val = live_default if live_default is not None else fallback_default
-            if val is not None:
-                defaults[key] = val
-
-        if not defaults:
-            return {"ok": False, "err": "No se encontraron valores por defecto para este hardware."}
-
-        return self.apply(defaults)
+        """Restore the machine's OWN factory values — the baseline captured
+        locally on first run (firmware default_value) — never the photo/DB
+        values. state() ensures the baseline exists before we read it."""
+        st = self.state()  # captures + returns "baseline"
+        baseline = st.get("baseline") or {}
+        values = {k: int(v) for k, v in baseline.items() if k in _ATTR_KEYS}
+        if not values:
+            return {"ok": False, "err": "No encontré los valores de fábrica de este equipo."}
+        return self.apply(values)
 
     # ------------------------------------------------------------------
     # Internal
@@ -352,15 +377,49 @@ class PowerControl:
                     "source": "auto",
                 }
 
-        controls = _controls_from_profile(profile, wayland)
+        controls_list = _controls_from_profile(profile, wayland)
+
+        # Factory baseline: capture once (firmware default_value, else current),
+        # save locally; RESET A FÁBRICA restores it. `default` shown in the UI is
+        # this baseline, so "fábrica: N" reflects how THIS machine shipped.
+        baseline = _load_baseline()
+        if not baseline:
+            for c in controls_list:
+                if c["key"] in _ATTR_KEYS and c.get("attr"):
+                    fav = _read_int_attr(c["attr"], "default_value")
+                    if fav is None:
+                        fav = c.get("value")
+                    if fav is not None:
+                        baseline[c["key"]] = int(fav)
+            _save_baseline(baseline)
+
+        # Emit controls as an OBJECT keyed by control id (the UI contract) with a
+        # Spanish `label`; default = local factory baseline when known.
+        controls: dict[str, dict] = {}
+        for c in controls_list:
+            c["label"] = c.get("label_es", c["key"])
+            if c["key"] in baseline:
+                c["default"] = baseline[c["key"]]
+            controls[c["key"]] = c
+
+        # available = at least one knob is writable with a real value+range
+        # (i.e. asus-armoury is present and readable on this machine).
+        available = any(
+            c.get("writable") and c.get("value") is not None
+            and c.get("min") is not None and c.get("max") is not None
+            for c in controls.values()
+        )
 
         return {
+            "ok": True,
+            "available": available,
             "device": device_info,
             "session": {
                 "wayland": wayland,
                 "display": os.environ.get("WAYLAND_DISPLAY") or os.environ.get("DISPLAY"),
             },
             "controls": controls,
+            "baseline": baseline,
         }
 
     @staticmethod

@@ -350,7 +350,8 @@ def power_control_line(state, t, th) -> Text | None:
     if not pc:
         return None
 
-    controls = {c["key"]: c for c in pc.get("controls", [])}
+    raw = pc.get("controls", {})
+    controls = raw if isinstance(raw, dict) else {c["key"]: c for c in raw}
 
     def _fmt_ctrl(key: str, label_key: str) -> str | None:
         ctrl = controls.get(key)
