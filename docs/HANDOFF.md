@@ -49,6 +49,18 @@ A3 sí alcanzaron a commitear solas. Por eso las ramas worktree nacieron de
   power.js/widget-states.js resuelven contra ids reales del HTML; stream `--json`
   end-to-end OK. **NO se hizo click-through CDP completo** (límite de cuenta) —
   recomendado un repaso visual o una pasada CDP la próxima sesión.
+- **Fix 2026-06-13 (mismo turno, post-merge): Centro de Poder mostraba «no
+  disponible» → ARREGLADO y VERIFICADO EN VIVO POR CDP** (modal abre, 2 sliders
+  CPU + 4 GPU con los 2 offsets bloqueados en Wayland, sin «no disponible»,
+  «fábrica: 140 W»). Causa: 3 desajustes de contrato A1↔A2 — faltaba
+  `ok`/`available`; `controls` era LISTA pero la UI (y main.js reset) la indexan
+  por clave; `label_es` vs `label`. `power_control.py` ahora emite UNA forma
+  canónica (`controls` dict por clave + `ok`/`available` + `label`), `ui.py`
+  adaptado (defensivo a ambas formas). **RESET A FÁBRICA rehecho**: baseline
+  capturado la 1ª vez del `default_value` del firmware →
+  `~/.config/rog-monitor/power-baseline.json`; reset vuelve AHÍ (no a las
+  fotos/DB). Consentimiento con advertencias de daño (overclock) e
+  inestabilidad/reinicio (undervolt). Commit afd28f2.
 
 ### Pendiente para la siguiente sesión
 1. **Marshall**: el GUARDAR Y APLICAR pendiente (script de ventiladores
