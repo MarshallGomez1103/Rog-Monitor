@@ -5,3 +5,4 @@ __pycache__/
 .directory
 node_modules/
 package-lock.json
+.claude/
