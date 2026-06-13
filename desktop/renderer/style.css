@@ -18,89 +18,164 @@
 html[data-mode="dark"] {
   --ink: #e2e6ec;
   --dim: #8b94a1;
+  --glow: transparent;
   color-scheme: dark;
 }
 /* Magma — rojo volcánico sobre negro carbón (firma ROG) */
 html[data-mode="dark"][data-theme="magma"] {
   --bg: #140d0b; --panel: #1c1210; --hair: #3a201a;
   --accent: #f25c3d; --accent2: #ff9466; --chip: #2b1714;
+  --glow: #f25c3d66;
 }
 /* Nébula — violeta espacial con brillos magenta */
 html[data-mode="dark"][data-theme="nebula"] {
   --bg: #120c1c; --panel: #1a1228; --hair: #2f2147;
-  --accent: #b07af5; --accent2: #d9a8ff; --chip: #241740;
+  --accent: #b07af5; --accent2: #e060ff; --chip: #241740;
+  --glow: #b07af555;
 }
 /* Océano — teal profundo, calmado */
 html[data-mode="dark"][data-theme="oceano"] {
   --bg: #0a1416; --panel: #0f1c1f; --hair: #1d3a3f;
   --accent: #2fbfb0; --accent2: #7fe0d4; --chip: #142a2e;
+  --glow: #2fbfb044;
 }
 /* Glaciar — azul hielo sobre azul noche */
 html[data-mode="dark"][data-theme="glaciar"] {
   --bg: #0d1420; --panel: #131c2c; --hair: #243450;
   --accent: #6fb7ff; --accent2: #a8d4ff; --chip: #1a2740;
+  --glow: #6fb7ff44;
 }
 /* Reactor — verde fosforescente, sala de máquinas */
 html[data-mode="dark"][data-theme="reactor"] {
   --bg: #070d07; --panel: #0b140b; --hair: #1c3d1c;
   --accent: #46e873; --accent2: #97f7b3; --chip: #112211;
-  --ink: #d3f5da; --dim: #6aa877;
+  --ink: #d3f5da; --dim: #6aa877; --glow: #46e87355;
 }
 /* Grafito — escala de grises, sin distracción */
 html[data-mode="dark"][data-theme="grafito"] {
   --bg: #101113; --panel: #16181b; --hair: #26292e;
   --accent: #c8cdd4; --accent2: #9aa1aa; --chip: #1d2024;
+  --glow: #c8cdd433;
 }
 /* Neón — cian y magenta de sala de arcade */
 html[data-mode="dark"][data-theme="neon"] {
   --bg: #0c0a18; --panel: #131022; --hair: #2b2350;
   --accent: #2de2e6; --accent2: #f637ec; --chip: #1b1635;
+  --glow: #2de2e655;
 }
 /* Atardecer — oro y rosa sobre púrpura profundo */
 html[data-mode="dark"][data-theme="atardecer"] {
   --bg: #160f1e; --panel: #1f1528; --hair: #3d2a4a;
   --accent: #ff9d4d; --accent2: #ff5e7e; --chip: #2a1c38;
+  --glow: #ff9d4d55;
+}
+/* Neon Nights — synthwave Miami: magenta caliente + cian eléctrico sobre índigo */
+html[data-mode="dark"][data-theme="neon-nights"] {
+  --bg: #0d0619; --panel: #150b28; --hair: #32145a;
+  --accent: #f72585; --accent2: #4cc9f0; --chip: #200c3a;
+  --ink: #f0e6ff; --dim: #9a7fbf; --glow: #f7258566;
+}
+/* Cyberpunk — Night City: amarillo eléctrico + cian sobre casi negro */
+html[data-mode="dark"][data-theme="cyberpunk"] {
+  --bg: #080808; --panel: #0f0f0f; --hair: #2a2600;
+  --accent: #f7e02b; --accent2: #00e5ff; --chip: #1a1800;
+  --ink: #f5f5e8; --dim: #8c8a60; --glow: #f7e02b55;
+}
+/* Aurora — teal boreal virando a violeta puro premium */
+html[data-mode="dark"][data-theme="aurora"] {
+  --bg: #060d10; --panel: #0b1618; --hair: #153028;
+  --accent: #00d4aa; --accent2: #9b59e8; --chip: #0c2020;
+  --ink: #dff5ef; --dim: #66a894; --glow: #00d4aa55;
+}
+/* Alba — marfil cálido (modo oscuro base para el tema, con ámbar/oro) */
+html[data-mode="dark"][data-theme="alba"] {
+  --bg: #13100d; --panel: #1c1712; --hair: #3a2e1e;
+  --accent: #d4a017; --accent2: #e87d5a; --chip: #261f13;
+  --ink: #f5ede0; --dim: #8a7a60; --glow: #d4a01755;
 }
 
 /* ---------- palettes (light) ----------
-   Paneles TINTADOS (no blanco plano): antes todas las paletas claras eran
-   "panel blanco + fondo pastel" y no se diferenciaban entre sí. */
+   Paneles TINTADOS (no blanco plano): cada paleta usa su propia tinta.
+   Fondo = matiz saturado medio; panel = tono más claro pero SIEMPRE cromático;
+   hair = borde con carácter; chip = superficie de datos con tinte.
+   Ink/dim ajustados para contraste AAA en todo panel/bg de la paleta. */
 html[data-mode="light"] {
-  --ink: #22262d;
-  --dim: #66707e;
+  --ink: #1a1e25;
+  --dim: #5a636f;
+  --glow: transparent;
   color-scheme: light;
 }
+/* Magma claro — ladrillo quemado sobre crema volcánica */
 html[data-mode="light"][data-theme="magma"] {
-  --bg: #f8e8de; --panel: #fffaf6; --hair: #e3bda9;
-  --accent: #c2401f; --accent2: #8a2b12; --chip: #f5dccb;
+  --bg: #f5e0d6; --panel: #fceee6; --hair: #d4927a;
+  --accent: #b83318; --accent2: #7a1e08; --chip: #f0d0c0;
+  --ink: #250d06; --dim: #7a4030;
 }
+/* Nébula clara — porcelana violácea con acento púrpura intenso */
 html[data-mode="light"][data-theme="nebula"] {
-  --bg: #efe9fa; --panel: #fcfaff; --hair: #d3c2ee;
-  --accent: #6f2fd0; --accent2: #4c1f96; --chip: #e7dcf8;
+  --bg: #e8ddf7; --panel: #f4eefe; --hair: #b89ee0;
+  --accent: #5c1fb8; --accent2: #3d1490; --chip: #dcd0f5;
+  --ink: #1a0a30; --dim: #5a3a8a;
 }
+/* Océano claro — jade cristalino sobre espuma marina */
 html[data-mode="light"][data-theme="oceano"] {
-  --bg: #ddf0ed; --panel: #f6fcfb; --hair: #aedcd4;
-  --accent: #0c7f72; --accent2: #07594f; --chip: #cdeae4;
+  --bg: #cde8e4; --panel: #e0f5f2; --hair: #7dbdb4;
+  --accent: #0a6e63; --accent2: #054d44; --chip: #bbdcd7;
+  --ink: #041c1a; --dim: #3a7068;
 }
+/* Glaciar claro — acero celeste sobre hielo azulado */
 html[data-mode="light"][data-theme="glaciar"] {
-  --bg: #e2ecf8; --panel: #f8fbff; --hair: #bcd4ec;
-  --accent: #1f66b8; --accent2: #154a88; --chip: #d2e3f5;
+  --bg: #d4e6f5; --panel: #e8f3fc; --hair: #87b8e0;
+  --accent: #1656a0; --accent2: #0d3d78; --chip: #c2d8ef;
+  --ink: #060f1e; --dim: #305a80;
 }
+/* Reactor claro — verde hoja intensa sobre fondo esmeralda suave */
 html[data-mode="light"][data-theme="reactor"] {
-  --bg: #e3f2e0; --panel: #f7fcf5; --hair: #b8dab0;
-  --accent: #18843a; --accent2: #0f5f28; --chip: #d3eccd;
+  --bg: #d6edce; --panel: #ebf8e5; --hair: #7ec47a;
+  --accent: #126830; --accent2: #0a4820; --chip: #c2e4b8;
+  --ink: #041008; --dim: #3a6e38;
 }
+/* Grafito claro — acero frío con acento antracita, elegante y serio */
 html[data-mode="light"][data-theme="grafito"] {
-  --bg: #eaecee; --panel: #fafbfc; --hair: #ccd1d7;
-  --accent: #2f353b; --accent2: #555c64; --chip: #dde1e5;
+  --bg: #e2e5e9; --panel: #f0f2f4; --hair: #aab0ba;
+  --accent: #26303c; --accent2: #454e5a; --chip: #d4d8de;
+  --ink: #0c1018; --dim: #4a5260;
 }
+/* Neón claro — laguna profunda con destello magenta */
 html[data-mode="light"][data-theme="neon"] {
-  --bg: #e2f2f4; --panel: #f7fdfe; --hair: #aedde2;
-  --accent: #067a8c; --accent2: #b81f9c; --chip: #d0ebee;
+  --bg: #d4edf0; --panel: #e6f6f9; --hair: #7acad4;
+  --accent: #055e6e; --accent2: #9c0f88; --chip: #bee4ea;
+  --ink: #021620; --dim: #2e6a74;
 }
+/* Atardecer claro — naranja horneado sobre melocotón dorado */
 html[data-mode="light"][data-theme="atardecer"] {
-  --bg: #fdeede; --panel: #fffaf3; --hair: #eecfa9;
-  --accent: #c45f10; --accent2: #b32a52; --chip: #f9e3c6;
+  --bg: #f9e4cc; --panel: #fef3e4; --hair: #e0a870;
+  --accent: #aa4c08; --accent2: #90264a; --chip: #f4d4a8;
+  --ink: #200800; --dim: #7a4018;
+}
+/* Neon Nights claro — lila eléctrico sobre heliotropo suave */
+html[data-mode="light"][data-theme="neon-nights"] {
+  --bg: #f0d6f5; --panel: #faeeff; --hair: #cc88e8;
+  --accent: #8c0878; --accent2: #0868b0; --chip: #e4c2f0;
+  --ink: #1a0022; --dim: #6a1a60;
+}
+/* Cyberpunk claro — mostaza sobre cuarzo ahumado */
+html[data-mode="light"][data-theme="cyberpunk"] {
+  --bg: #e8e4c8; --panel: #f5f2dc; --hair: #c0b84a;
+  --accent: #6a5c00; --accent2: #005a6a; --chip: #dcd8a8;
+  --ink: #120e00; --dim: #5a5020;
+}
+/* Aurora clara — menta glacial con acento teal y violeta */
+html[data-mode="light"][data-theme="aurora"] {
+  --bg: #cce8e4; --panel: #dff5f2; --hair: #70c4b4;
+  --accent: #066858; --accent2: #5a30b0; --chip: #b8deda;
+  --ink: #031412; --dim: #2e6a5a;
+}
+/* Alba clara — marfil porcelana con oro cálido y rosa durazno (IMPONENTE) */
+html[data-mode="light"][data-theme="alba"] {
+  --bg: #f8f2e6; --panel: #fdf8ef; --hair: #d4b87a;
+  --accent: #8a5c00; --accent2: #9e3040; --chip: #f0e4c4;
+  --ink: #1c1000; --dim: #6a4a20;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -821,3 +896,48 @@ body::-webkit-scrollbar { width: 0; }
 .settings-grid label.f-fan { border-left-color: var(--cold); }
 .settings-grid label.f-time { border-left-color: var(--dim); }
 #events-help { margin-top: 8px; }
+
+/* ==== theme flourishes ==== */
+/* Glow sutil en los .bignum para los temas más dramáticos.
+   Solo usa variables del tema; no toca estructura ni layout. */
+html[data-mode="dark"] .bignum {
+  text-shadow: 0 0 18px var(--glow, transparent);
+}
+/* Neon Nights: glow doble para el efecto synthwave */
+html[data-mode="dark"][data-theme="neon-nights"] .bignum {
+  text-shadow: 0 0 16px #f72585aa, 0 0 32px #4cc9f055;
+}
+html[data-mode="dark"][data-theme="neon-nights"] .block::before {
+  opacity: 0.7;
+}
+/* Cyberpunk: destello amarillo eléctrico cortante */
+html[data-mode="dark"][data-theme="cyberpunk"] .bignum {
+  text-shadow: 0 0 14px #f7e02bbb, 0 0 28px #00e5ff44;
+}
+html[data-mode="dark"][data-theme="cyberpunk"] .brand-mark .slash {
+  text-shadow: 0 0 10px #f7e02bcc;
+}
+/* Aurora: glow teal-violeta tipo borealis */
+html[data-mode="dark"][data-theme="aurora"] .bignum {
+  text-shadow: 0 0 20px #00d4aa66, 0 0 40px #9b59e833;
+}
+/* Neon (arcade) — realzar el glow existente */
+html[data-mode="dark"][data-theme="neon"] .bignum {
+  text-shadow: 0 0 14px #2de2e677, 0 0 28px #f637ec44;
+}
+/* Magma — pulso de brasa */
+html[data-mode="dark"][data-theme="magma"] .bignum {
+  text-shadow: 0 0 16px #f25c3d66;
+}
+/* Reactor — fosforescencia verde */
+html[data-mode="dark"][data-theme="reactor"] .bignum {
+  text-shadow: 0 0 16px #46e87377;
+}
+/* Modo claro: los bignum no llevan glow pero sí sombra sutil de contraste */
+html[data-mode="light"] .bignum {
+  text-shadow: none;
+}
+/* Alba claro: el único light con un mínimo brillo dorado premium */
+html[data-mode="light"][data-theme="alba"] .bignum {
+  text-shadow: 0 1px 6px #d4a01722;
+}

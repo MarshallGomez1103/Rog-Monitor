@@ -26,14 +26,18 @@ const AURA_PRIMARY_EFFECTS = ['static', 'breathe', 'rainbow-cycle', 'rainbow-wav
 
 const THEMES = [
   // id, name, description, [dark bg, dark accent], [light bg, light accent]
-  ['magma',     'Magma',     'Rojo volcánico — firma ROG',     ['#140d0b', '#f25c3d'], ['#f8e8de', '#c2401f']],
-  ['nebula',    'Nébula',    'Violeta espacial con magenta',   ['#120c1c', '#b07af5'], ['#efe9fa', '#6f2fd0']],
-  ['oceano',    'Océano',    'Teal profundo, calmado',         ['#0a1416', '#2fbfb0'], ['#ddf0ed', '#0c7f72']],
-  ['glaciar',   'Glaciar',   'Azul hielo sobre azul noche',    ['#0d1420', '#6fb7ff'], ['#e2ecf8', '#1f66b8']],
-  ['reactor',   'Reactor',   'Verde fosforescente de máquina', ['#070d07', '#46e873'], ['#e3f2e0', '#18843a']],
-  ['grafito',   'Grafito',   'Escala de grises, sin ruido',    ['#101113', '#c8cdd4'], ['#eceef0', '#2f353b']],
-  ['neon',      'Neón',      'Cian y magenta de arcade',       ['#0c0a18', '#2de2e6'], ['#e2f2f4', '#067a8c']],
-  ['atardecer', 'Atardecer', 'Oro y rosa sobre púrpura',       ['#160f1e', '#ff9d4d'], ['#fdeede', '#c45f10']],
+  ['magma',      'Magma',       'Rojo volcánico — firma ROG',       ['#140d0b', '#f25c3d'], ['#f5e0d6', '#c2401f']],
+  ['nebula',     'Nébula',      'Violeta espacial con magenta',     ['#120c1c', '#b07af5'], ['#e8ddf7', '#6f2fd0']],
+  ['oceano',     'Océano',      'Teal profundo, calmado',           ['#0a1416', '#2fbfb0'], ['#cde8e4', '#0c7f72']],
+  ['glaciar',    'Glaciar',     'Azul hielo sobre azul noche',      ['#0d1420', '#6fb7ff'], ['#d4e6f5', '#1f66b8']],
+  ['reactor',    'Reactor',     'Verde fosforescente de máquina',   ['#070d07', '#46e873'], ['#d6edce', '#18843a']],
+  ['grafito',    'Grafito',     'Escala de grises, sin ruido',      ['#101113', '#c8cdd4'], ['#e2e5e9', '#2f353b']],
+  ['neon',       'Neón',        'Cian y magenta de arcade',         ['#0c0a18', '#2de2e6'], ['#d4edf0', '#067a8c']],
+  ['atardecer',  'Atardecer',   'Oro y rosa sobre púrpura',         ['#160f1e', '#ff9d4d'], ['#f9e4cc', '#c45f10']],
+  ['neon-nights','Neon Nights', 'Synthwave Miami: magenta y cian',  ['#0d0619', '#f72585'], ['#f0d6f5', '#9b1dbd']],
+  ['cyberpunk',  'Cyberpunk',   'Night City: amarillo y cian',      ['#080808', '#f7e02b'], ['#e8e4c8', '#8a7200']],
+  ['aurora',     'Aurora',      'Teal boreal virando a violeta',    ['#060d10', '#00d4aa'], ['#cce8e4', '#077a6b']],
+  ['alba',       'Alba',        'Marfil cálido con oro y rosa',     ['#13100d', '#d4a017'], ['#f8f2e6', '#9e6a00']],
 ];
 
 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
