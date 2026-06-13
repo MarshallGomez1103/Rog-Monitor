@@ -327,14 +327,6 @@ function fillSelect(el, items, selectedValue, placeholder = '') {
   el.value = current;
 }
 
-function renderEffectGrid(effects, selectedValue) {
-  const host = $('aura-effects');
-  host.innerHTML = effects.length
-    ? effects.map((fx) =>
-        `<button class="effect-chip${fx.value === selectedValue ? ' active' : ''}" data-effect="${fx.value}">${fx.label}</button>`).join('')
-    : '<span class="dim">sin efectos detectados</span>';
-}
-
 function auraEffects() {
   return auraState?.asus?.effects || [];
 }
@@ -350,12 +342,47 @@ function auraExtraEffects() {
   return auraEffects().filter((fx) => !AURA_PRIMARY_EFFECTS.includes(fx.id));
 }
 
+// Cuadrícula de 9 tiles estilo Armoury Crate.
+// Estados de un tile:
+//   active    — seleccionado actualmente
+//   supported — disponible, no seleccionado
+//   disabled  — modo no soportado por este hardware (con tooltip de razón)
+//   future    — próximamente (gris claro, sin interacción)
+function renderModeGrid(selectedValue) {
+  const host = $('aura-mode-grid');
+  const tiles = auraState?.mode_grid;
+  if (!tiles || !tiles.length) {
+    host.innerHTML = '<span class="dim">sin modos detectados</span>';
+    return;
+  }
+  host.innerHTML = tiles.map((tile) => {
+    const isActive = tile.id === selectedValue && tile.supported;
+    let stateClass;
+    if (tile.kind === 'future') {
+      stateClass = 'mode-future';
+    } else if (!tile.supported) {
+      stateClass = 'mode-disabled';
+    } else if (isActive) {
+      stateClass = 'mode-active';
+    } else {
+      stateClass = 'mode-idle';
+    }
+    const title = tile.reason ? escapeHtml(tile.reason) : escapeHtml(tile.label);
+    const ariaDisabled = (!tile.supported) ? ' aria-disabled="true"' : '';
+    return `<button class="mode-tile ${stateClass}" data-mode="${escapeHtml(tile.id)}" data-kind="${escapeHtml(tile.kind)}" title="${title}"${ariaDisabled}>
+      <span class="mode-icon">${escapeHtml(tile.icon)}</span>
+      <span class="mode-label">${escapeHtml(tile.label)}</span>
+      ${tile.reason && !tile.supported ? `<span class="mode-reason">${escapeHtml(tile.reason)}</span>` : ''}
+    </button>`;
+  }).join('');
+}
+
 function renderAuraEffectControls(selectedValue) {
   const selected = selectedValue || auraSelectedEffect || $('aura-effect').value || 'static';
-  const basic = auraBasicEffects().map((fx) => ({ value: fx.id, label: fx.label }));
-  const extra = auraExtraEffects().map((fx) => ({ value: fx.id, label: fx.label }));
-  renderEffectGrid(basic, selected);
+  renderModeGrid(selected);
 
+  // Selector oculto: mantenerlo sincronizado para compatibilidad con el flujo APLICAR.
+  const extra = auraExtraEffects().map((fx) => ({ value: fx.id, label: fx.label }));
   const wrap = $('aura-extra-wrap');
   const extraSel = $('aura-extra-effect');
   wrap.classList.toggle('hidden', !extra.length);
@@ -449,6 +476,7 @@ function auraSignature(aura) {
     openrgb: [aura?.openrgb?.available, aura?.openrgb?.sdk_reachable],
     music: aura?.music?.available,
     periph: (aura?.peripherals || []).map((p) => [p.name, p.link, p.supported]),
+    grid: (aura?.mode_grid || []).map((t) => [t.id, t.supported]),
   });
 }
 
@@ -1054,13 +1082,27 @@ refreshAuraState(true);
 renderBenchmarkHistory();
 
 $('aura-effect').addEventListener('change', syncAuraFields);
-$('aura-effects').addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-effect]');
+
+// Cuadrícula de 9 tiles Armoury-style.
+// Tiles con aria-disabled="true" son visuales (no interactivos).
+// El tile Music no cambia auraSelectedEffect: activa el botón MODO MÚSICA.
+$('aura-mode-grid').addEventListener('click', (e) => {
+  const btn = e.target.closest('.mode-tile');
   if (!btn) return;
-  auraSelectedEffect = btn.dataset.effect;
-  $('aura-effect').value = btn.dataset.effect;
+  if (btn.getAttribute('aria-disabled') === 'true') return;
+  const modeId = btn.dataset.mode;
+  const kind = btn.dataset.kind;
+
+  if (kind === 'software' && modeId === 'music') {
+    // El tile Music activa directamente el modo música (igual que el botón MODO MÚSICA).
+    $('aura-music').click();
+    return;
+  }
+
+  auraSelectedEffect = modeId;
+  $('aura-effect').value = modeId;
   $('aura-extra-effect').value = '';
-  renderAuraEffectControls(btn.dataset.effect);
+  renderAuraEffectControls(modeId);
   syncAuraFields();
   saveAuraDraft(currentAuraFormState());
   markAuraDirty(true, 'Efecto cambiado. Falta aplicar.');

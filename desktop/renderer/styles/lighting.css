@@ -1,0 +1,146 @@
+/* ROG Monitor — Lighting block styles (Agent 4 / v9).
+   Cuadrícula de 9 modos Aura estilo Armoury Crate.
+   Usa solo vars del sistema de temas: --accent --chip --hair --dim --ink --panel --bg.
+   NO tocar style.css desde aquí. */
+
+/* ---------- cuadrícula de modos ---------- */
+
+.aura-mode-grid {
+  display: grid;
+  /* 3 columnas fijas + fluye automáticamente a 3 filas → 9 tiles */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+/* Tile base */
+.mode-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 6px 10px;
+  background: var(--chip);
+  border: 1px solid var(--hair);
+  /* Esquina superior derecha cortada — identidad visual del proyecto */
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  text-align: center;
+  min-height: 74px;
+  /* sin border-radius: usa el clip-path propio */
+  border-radius: 0;
+  font-family: var(--sans);
+  outline: none;
+}
+
+.mode-tile:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* Icono */
+.mode-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--ink);
+  transition: color 0.15s;
+}
+
+/* Etiqueta */
+.mode-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dim);
+  transition: color 0.15s;
+  line-height: 1.2;
+}
+
+/* ---------- estados de los tiles ---------- */
+
+/* Tile disponible en reposo */
+.mode-tile.mode-idle:hover {
+  background: color-mix(in srgb, var(--chip) 60%, var(--accent) 40%);
+  border-color: var(--accent);
+}
+.mode-tile.mode-idle:hover .mode-icon,
+.mode-tile.mode-idle:hover .mode-label {
+  color: var(--ink);
+}
+
+/* Tile seleccionado/activo */
+.mode-tile.mode-active {
+  background: color-mix(in srgb, var(--chip) 30%, var(--accent) 70%);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px color-mix(in srgb, transparent 50%, var(--accent) 50%);
+}
+.mode-tile.mode-active .mode-icon,
+.mode-tile.mode-active .mode-label {
+  color: var(--bg);
+}
+/* Pseudo-element: franja diagonal de acento (identidad visual) */
+.mode-tile.mode-active::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, transparent 70%, var(--accent) 30%) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+  clip-path: inherit;
+}
+
+/* Tile deshabilitado (hardware no soportado) */
+.mode-tile.mode-disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  border-style: dashed;
+}
+.mode-tile.mode-disabled .mode-icon,
+.mode-tile.mode-disabled .mode-label {
+  color: var(--dim);
+}
+/* No hover en deshabilitado */
+.mode-tile.mode-disabled:hover {
+  background: var(--chip);
+  border-color: var(--hair);
+  box-shadow: none;
+}
+
+/* Tile "próximamente" (kind=future) */
+.mode-tile.mode-future {
+  cursor: default;
+  opacity: 0.3;
+  border-style: dashed;
+  border-color: var(--hair);
+}
+.mode-tile.mode-future .mode-icon,
+.mode-tile.mode-future .mode-label {
+  color: var(--dim);
+}
+.mode-tile.mode-future:hover {
+  background: var(--chip);
+  border-color: var(--hair);
+  box-shadow: none;
+}
+
+/* Razón corta debajo de la etiqueta (tiles deshabilitados) */
+.mode-reason {
+  font-size: 0.57rem;
+  color: var(--dim);
+  line-height: 1.3;
+  opacity: 0.8;
+  /* Oculto por defecto; visible en hover para no saturar la vista */
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease;
+}
+.mode-tile.mode-disabled:hover .mode-reason,
+.mode-tile.mode-future:hover .mode-reason {
+  max-height: 3rem;
+}
