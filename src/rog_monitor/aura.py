@@ -21,6 +21,85 @@ BRIGHTNESS_LEVELS = ["off", "low", "med", "high"]
 SPEED_LEVELS = ["low", "med", "high"]
 DIRECTIONS = ["up", "down", "left", "right"]
 PRIMARY_EFFECTS = ["static", "breathe", "rainbow-cycle", "rainbow-wave", "stars"]
+
+# Modos de la cuadrícula de 9 tiles estilo Armoury Crate.
+# 'hw_id': id del efecto en asusd/asusctl (None = sin mapeo directo).
+# 'kind': "hardware" (necesita hw_id en SupportedBasicModes), "software" (lógica app), "future".
+# Tiles con kind=="future" se muestran desactivados con reason.
+MODE_GRID_DEFINITION = [
+    {
+        "id": "static",
+        "label": "Static",
+        "icon": "■",
+        "hw_id": "static",
+        "kind": "hardware",
+        "reason": None,
+    },
+    {
+        "id": "breathe",
+        "label": "Breathing",
+        "icon": "◎",
+        "hw_id": "breathe",
+        "kind": "hardware",
+        "reason": None,
+    },
+    {
+        "id": "pulse",
+        "label": "Strobing",
+        "icon": "⚡",
+        "hw_id": "pulse",
+        "kind": "hardware",
+        "reason": None,
+    },
+    {
+        "id": "rainbow-cycle",
+        "label": "Color Cycle",
+        "icon": "◑",
+        "hw_id": "rainbow-cycle",
+        "kind": "hardware",
+        "reason": None,
+    },
+    {
+        "id": "rainbow-wave",
+        "label": "Rainbow",
+        "icon": "≋",
+        "hw_id": "rainbow-wave",
+        "kind": "hardware",
+        "reason": None,
+    },
+    {
+        "id": "music",
+        "label": "Music",
+        "icon": "♪",
+        "hw_id": None,
+        "kind": "software",
+        "reason": None,
+    },
+    {
+        "id": "stars",
+        "label": "Starry Night",
+        "icon": "★",
+        "hw_id": "stars",
+        "kind": "hardware",
+        "reason": "no soportado por el teclado interno (lo hará un teclado con zonas / Redragon)",
+    },
+    {
+        "id": "smart",
+        "label": "Smart",
+        "icon": "⊛",
+        "hw_id": None,
+        "kind": "future",
+        "reason": "próximamente (requiere Redragon vía OpenRGB)",
+    },
+    {
+        "id": "adaptive",
+        "label": "Adaptive",
+        "icon": "◈",
+        "hw_id": None,
+        "kind": "future",
+        "reason": "próximamente (requiere Redragon vía OpenRGB)",
+    },
+]
 ASUSCTL_CANDIDATES = [
     "asusctl",
     "/home/linuxbrew/.linuxbrew/bin/asusctl",
@@ -320,6 +399,46 @@ class AuraManager:
         basic_effects = [fx for fx in effects if fx["id"] in PRIMARY_EFFECTS]
         extra_effects = [fx for fx in effects if fx["id"] not in PRIMARY_EFFECTS]
 
+        # Cuadrícula de 9 tiles estilo Armoury Crate — honesta sobre el hardware.
+        # Un tile es "supported=True" cuando:
+        #   - kind=="hardware": su hw_id está en SupportedBasicModes y no en
+        #     unsupported_effects (aprendido al fallo en runtime).
+        #   - kind=="software": el tile música siempre disponible si hay fuente.
+        #   - kind=="future": siempre False.
+        hw_ids_available = (
+            {fx["id"] for fx in effects}  # ya filtramos por supported + unsupported
+        )
+        mode_grid = []
+        for tile in MODE_GRID_DEFINITION:
+            tile_id = tile["id"]
+            if tile["kind"] == "hardware":
+                hw = tile["hw_id"]
+                # supported si el hw_id aparece en los efectos disponibles del hardware
+                tile_supported = hw is not None and hw in hw_ids_available
+                reason = tile["reason"] if not tile_supported else None
+                # Si el hw_id NO está en SupportedBasicModes (supported no es None),
+                # refinar el mensaje
+                if not tile_supported and reason is None:
+                    if supported is not None:
+                        reason = "no soportado por el teclado interno (lo hará un teclado con zonas / Redragon)"
+                    else:
+                        reason = "estado desconocido — asusctl no responde"
+            elif tile["kind"] == "software":
+                tile_supported = bool(self.music_source)
+                reason = None if tile_supported else "PipeWire / pw-record no disponible"
+            else:  # future
+                tile_supported = False
+                reason = tile["reason"]
+
+            mode_grid.append({
+                "id": tile_id,
+                "label": tile["label"],
+                "icon": tile["icon"],
+                "kind": tile["kind"],
+                "supported": tile_supported,
+                "reason": reason,
+            })
+
         result = {
             "available": bool(self.asusctl or self.openrgb),
             "asus": {
@@ -354,6 +473,7 @@ class AuraManager:
             "startup_profile": store.get("startup_profile"),
             "current": current,
             "config_path": str(AURA_FILE),
+            "mode_grid": mode_grid,
         }
         self._cache = result
         self._cache_ts = now

@@ -5,6 +5,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
   <title>ROG Monitor</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="styles/lighting.css" />
 </head>
 <body>
   <header id="topbar">
@@ -88,13 +89,17 @@
 
       <article class="block" id="aura-block">
         <h2><i>04</i> Iluminación <small>Aura ASUS y modo música</small></h2>
+
+        <!-- Cuadrícula de 9 modos estilo Armoury Crate.
+             Nota: div, no <label> — ver .aura-effect-box en style.css (el label
+             reenvía clics al primer elemento labelable descendiente, lo que
+             hacía que todo clic volviera al primer chip). -->
+        <div id="aura-mode-grid" class="aura-mode-grid" aria-label="Modos de iluminación"></div>
+
+        <!-- Selector oculto: fuente de verdad para el flujo APLICAR y syncAuraFields. -->
+        <select id="aura-effect" class="hidden"></select>
+
         <div class="aura-grid">
-          <!-- div, no <label>: ver nota en style.css (.aura-effect-box) -->
-          <div class="aura-effect-box">
-            <span>Modos basicos</span>
-            <div id="aura-effects" class="effect-grid"></div>
-            <select id="aura-effect" class="hidden"></select>
-          </div>
           <label id="aura-extra-wrap">
             <span>Mas efectos ASUS</span>
             <select id="aura-extra-effect"></select>
