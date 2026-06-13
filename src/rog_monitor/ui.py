@@ -339,6 +339,52 @@ def events_panel(state, t, th, full: bool = False) -> Panel:
                  subtitle=subtitle, border_style=th["border"])
 
 
+def power_control_line(state, t, th) -> Text | None:
+    """Compact read-only one-liner showing live power/thermal knob values.
+
+    Returns None when no power_control data is available (so build() can skip it).
+    Format:  POTENCIA  PL1 140 W  ·  PL2 175 W  ·  Dynamic Boost 25 W  ·  Techo térmico 87 °C
+    GPU clock offsets are omitted (they are always locked on Wayland).
+    """
+    pc = state.get("power_control")
+    if not pc:
+        return None
+
+    controls = {c["key"]: c for c in pc.get("controls", [])}
+
+    def _fmt_ctrl(key: str, label_key: str) -> str | None:
+        ctrl = controls.get(key)
+        if ctrl is None:
+            return None
+        val = ctrl.get("value")
+        unit = ctrl.get("unit", "")
+        if val is None:
+            return f"{t(label_key)} {t('power_na')}"
+        return f"{t(label_key)} {val} {unit}".strip()
+
+    parts = []
+    for key, label_key in (
+        ("pl1", "power_pl1"),
+        ("pl2", "power_pl2"),
+        ("dynamic_boost", "power_dboost"),
+        ("thermal_target", "power_thermal"),
+    ):
+        s = _fmt_ctrl(key, label_key)
+        if s is not None:
+            parts.append(s)
+
+    if not parts:
+        return None
+
+    line = Text()
+    line.append(f" {t('power_control')} ", style=th["title"])
+    for i, part in enumerate(parts):
+        if i:
+            line.append("  ·  ", style="grey30")
+        line.append(part, style=th["dim"])
+    return line
+
+
 def thermal_state(avg: float | None, t, limits) -> Text:
     if avg is None:
         return Text("N/A", style="grey58")
@@ -381,12 +427,14 @@ def build(state, t, console_width: int):
     top.add_row(cpu_panel(state, t, th), gpu_panel(state, t, th))
     top.add_row(fans_panel(state, t, th), profile_panel(state, t, th))
 
-    return Group(
-        header,
-        bar_line,
-        top,
+    power_line = power_control_line(state, t, th)
+    bottom_rows = [
         history_panel(state, t, th, console_width),
         system_panel(state, t, th),
         events_panel(state, t, th),
         processes_panel(state, t, th),
-    )
+    ]
+    if power_line is not None:
+        bottom_rows.insert(0, power_line)
+
+    return Group(header, bar_line, top, *bottom_rows)

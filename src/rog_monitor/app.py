@@ -22,6 +22,7 @@ from .history import Series
 from .i18n import Translator
 from .keys import KeyReader
 from .power import BatteryReader, RaplReader, asus_profile, ppd_profile
+from .power_control import PowerControl
 from .procs import ProcReader
 from .sysinfo import SysReader
 
@@ -50,6 +51,7 @@ class App:
         self.procs = ProcReader()
         self.alerts = AlertEngine(self.config, self.t)
         self.aura = AuraManager()
+        self.power = PowerControl()
 
         secs = int(self.config["history_seconds"])
         self.series = {
@@ -110,6 +112,7 @@ class App:
             "procs": self.procs.read(),
             "procs_mem": self.procs.top_memory(),
             "aura": self.aura.snapshot(),
+            "power_control": self.power.snapshot(),
             "fps": read_fps(),
             "series": self.series,
             "events": self.alerts.events,

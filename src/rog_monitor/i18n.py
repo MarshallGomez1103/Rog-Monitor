@@ -95,6 +95,13 @@ STRINGS = {
         "on_battery": "batería",
         "alert_fan": "Ventilador {f} detenido con CPU a {v}°C",
         "alert_power": "Potencia CPU anómala: {v} W",
+        "power_control": "POTENCIA",
+        "power_pl1": "PL1 sostenida",
+        "power_pl2": "PL2 ráfaga",
+        "power_dboost": "Dynamic Boost",
+        "power_thermal": "Techo térmico",
+        "power_wayland_locked": "bloqueado (Wayland)",
+        "power_na": "N/D",
     },
     "en": {
         "profile": "PROFILE",
@@ -188,6 +195,13 @@ STRINGS = {
         "on_battery": "on battery",
         "alert_fan": "Fan {f} stopped while CPU at {v}°C",
         "alert_power": "Abnormal CPU power: {v} W",
+        "power_control": "POWER",
+        "power_pl1": "PL1 sustained",
+        "power_pl2": "PL2 burst",
+        "power_dboost": "Dynamic Boost",
+        "power_thermal": "Thermal ceiling",
+        "power_wayland_locked": "locked (Wayland)",
+        "power_na": "N/A",
     },
 }
 
