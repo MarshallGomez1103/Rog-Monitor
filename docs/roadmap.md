@@ -2,8 +2,12 @@
 
 ## Estado actual del proyecto
 
-**Versión actual:** v8.4 (junio 2026)
+**Versión actual:** v9.0.0 (junio 2026)
 
+> v9.0.0: Centro de Poder (PL1/PL2/Dynamic Boost/Thermal Target con
+> consentimiento + clamp de firmware), wizard de primera vez, UX de 4 estados
+> por widget, 12 temas × claro/oscuro, grid de 9 modos Aura (5 hardware + Música
+> funcional + 3 honestos sobre su soporte), docs abiertas al open source.
 > v8.4: identidad visual propia (esquinas cortadas, placas numeradas
 > inclinadas, 8 temas × claro/oscuro con modo claro tintado de verdad),
 > bloques renumerados 01-09 en orden visual y columnas sin hueco. Hover en las
@@ -231,19 +235,40 @@ Referencias: asusctl https://gitlab.com/asus-linux/asusctl · OpenRGB https://op
 
 ---
 
-# v9 - Compatibilidad Universal (propuesto)
+# v9 - Compatibilidad Universal + Centro de Poder (Implementado) ✅
 
 > La meta: que funcione en cualquier portátil Linux, priorizando la familia
 > ASUS ROG (Strix, Zephyrus, TUF) y degradando con elegancia en el resto.
+> v9.0.0 completa el Centro de Poder calibrado para el G614JV, el wizard de
+> primera vez, la UX de 4 estados por widget, 12 temas y el grid de Aura.
 
-* [ ] Autodetección de plataforma (ASUS / Lenovo Legion / HP Omen / genérico)
-* [ ] Soporte AMD completo (k10temp por CCD, RAPL amd_energy, amdgpu probado)
-* [ ] Perfiles vía `platform_profile` genérico cuando no haya asus-wmi
-* [ ] Historial persistente (SQLite en ~/.local/share/rog-monitor)
+* [x] **Centro de Poder** — control de PL1 (28–140 W), PL2 (28–175 W), GPU
+      Dynamic Boost (5–25 W) y Thermal Target (75–87 °C) vía `asus-armoury`
+      sysfs. Cada escritura está hard-clamped a los min/max del firmware;
+      requiere diálogo de consentimiento; tiene RESET A FÁBRICA; arranca con
+      los valores stock. GPU Clock Offsets mostrados pero bloqueados en Wayland.
+      Calibrado para el G614JV; otros modelos leen rangos de `asus-armoury` o
+      de `device_profiles.json` / `~/.config/rog-monitor/device.json`. (v9.0.0)
+* [x] **Wizard de primera vez**: detectar ventiladores → calibrar con
+      explicación de permisos → benchmark CPU/GPU → guardar → tour de
+      funciones. Nunca muestra "medido" sin medir. (v9.0.0)
+* [x] **UX de 4 estados por widget**: con datos / cargando / sin datos / error
+      (ventilador dañado → icono quieto, no spinner). (v9.0.0)
+* [x] **12 temas** × claro/oscuro: se suman Neon Nights, Cyberpunk, Aurora,
+      Alba a los 8 de v8.4; modos claros rehechos con tintado real. (v9.0.0)
+* [x] **Grid de 9 modos Aura**: 5 modos hardware (Estático, Respirar, Rainbow
+      Cycle, Rainbow Wave, Pulso) + Música funcional + 3 modos honestos sobre
+      su estado de soporte. (v9.0.0)
 * [x] Configuración visual desde la app: umbrales de alerta y colores de
       temperatura editables (botón ALERTAS → modal; `rog_monitor.settings`;
       reinicia el backend para recargar AlertEngine) (v8.1). Falta tema/idioma
       desde la app.
+* [x] **docs/supported-devices.md**, **CONTRIBUTING.md**, **plantillas de
+      issues**, **CI GitHub Actions** — repo preparado para open source. (v9.0.0)
+* [ ] Autodetección de plataforma (ASUS / Lenovo Legion / HP Omen / genérico)
+* [ ] Soporte AMD completo (k10temp por CCD, RAPL amd_energy, amdgpu probado)
+* [ ] Perfiles vía `platform_profile` genérico cuando no haya asus-wmi
+* [ ] Historial persistente (SQLite en ~/.local/share/rog-monitor)
 * [ ] Paquetes: PyPI (`pipx install rog-monitor`), Flatpak, AUR, COPR
 * [ ] Detección automática de máximos de ventilador por modelo (base de datos
       comunitaria en JSON)
@@ -252,10 +277,14 @@ Referencias: asusctl https://gitlab.com/asus-linux/asusctl · OpenRGB https://op
 
 # v10 - Power User (en progreso)
 
-* [~] ~~Undervolt/overclock de CPU/GPU~~ — **DESCARTADO por decisión de Marshall
-      (2026-06-10).** Riesgo real al equipo; no se hará. Si algún día se retoma
-      requeriría detección exacta del modelo, límites seguros y doble
-      consentimiento.
+* [~] ~~Undervolt/overclock de CPU/GPU~~ — Fue DESCARTADO por decisión de
+      Marshall el 2026-06-10 por riesgo real al equipo. **Decisión REVERTIDA
+      por Marshall el 2026-06-12**: con rangos exactos del modelo (firmware
+      min/max de `asus-armoury` leídos en tiempo real), clamp de hardware y
+      doble consentimiento (diálogo de aviso + confirmación explícita), el
+      riesgo queda acotado a lo que el firmware permite. El Centro de Poder de
+      v9.0.0 implementa exactamente esto. Si se amplía a offset de relojes GPU,
+      requerirá soporte Wayland que aún no está disponible en Bazzite/KDE.
 * [x] Benchmark térmico integrado (carga sintética + reporte comparable) —
       CPU (workers por subprocess) y GPU local (vkcube ×4 immediate / glmark2);
       modal BENCHMARK con exportación JSON. (v8.0–v8.1)
@@ -266,11 +295,11 @@ Referencias: asusctl https://gitlab.com/asus-linux/asusctl · OpenRGB https://op
       MangoHud (opt-in desde el modal OVERLAY). (v8.3)
 * [x] Calibración PWM→RPM real por ventilador + cap aplicado en runtime por el
       servicio root (curvas prístinas, QUITAR CAP libera al instante). (v8.3)
-* [ ] **Wizard de primera vez** (pedido de Marshall 2026-06-10): detectar
+* [x] **Wizard de primera vez** (pedido de Marshall 2026-06-10): detectar
       ventiladores → calibrar con explicación de permisos → benchmark CPU/GPU
-      → guardar → tour de funciones. Nunca mostrar "medido" sin medir.
-* [ ] **UX de 4 estados por widget**: con datos / cargando / sin datos / error
-      (RAM que no carga, ventilador dañado → mostrarlo parado explícito).
+      → guardar → tour de funciones. Nunca mostrar "medido" sin medir. (v9.0.0)
+* [x] **UX de 4 estados por widget**: con datos / cargando / sin datos / error
+      (RAM que no carga, ventilador dañado → mostrarlo parado explícito). (v9.0.0)
 * [~] **Redragon K734WCG-RGB-PRO**: cable VID 0x258a PID 0x010c (Sinowealth/
       BY Tech), dongle 0x3554:0xfa09 (CompX). **Hecho (v8.4):** OpenRGB 1.0rc2
       probado → NO soporta 010c; detección propia por sysfs ya en la app;
