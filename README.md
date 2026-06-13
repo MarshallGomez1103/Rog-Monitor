@@ -1,108 +1,174 @@
 # ROG Monitor
 
-Real-time hardware monitor for ASUS ROG laptops on Linux, in your terminal.
-
-Lightweight, flicker-free (built on [Rich](https://github.com/Textualize/rich)),
-reads sensors directly from sysfs — no root required for the core features.
+Monitor de hardware en tiempo real para portátiles ASUS ROG en Linux — terminal
+y app de escritorio. Sin telemetría, sin red, sin root para las funciones
+principales.
 
 ```
-                     ROG MONITOR v5.0.0   NORMAL
-╭──────── CPU ────────╮╭──────── GPU ─────────╮
-│ Average   58.4°C    ││ Mode   Hybrid        │
-│ Package   69°C      ││ Model  RTX 4060      │
-│ Power     28.4 W    ││ Temp   51°C  Use 12% │
-╰─────────────────────╯╰──────────────────────╯
-╭─────── FANS ────────╮╭────── PROFILE ───────╮
-│ CPU ████████░░ 3300 ││ ASUS    performance  │
-│ GPU ██████░░░░ 2600 ││ EPP     balance_perf │
-╰─────────────────────╯╰──────────────────────╯
+  ╔═ 01 CPU ══════════════════╗  ╔═ 05 Historial ════════════╗
+  ║  Avg 58.4 °C  Pkg 69 °C  ║  ║  CPU temp ▁▃▅▇█▇▅▃▁  ▲   ║
+  ║  Potencia  28.4 W         ║  ║  GPU temp ▂▄▆▇▇▇▆▄▂  │   ║
+  ╚═══════════════════════════╝  ╚═══════════════════════════╝
+  ╔═ 02 GPU ══════════════════╗  ╔═ 06 Benchmarks ═══════════╗
+  ║  Modo  Hybrid             ║  ║  [BENCHMARK]  [EXPORTAR]  ║
+  ║  RTX 4060  51 °C  Use 12% ║  ╚═══════════════════════════╝
+  ╚═══════════════════════════╝
+  ╔═ 03 Ventiladores ═════════╗
+  ║  CPU ████████░  3 300 RPM ║
+  ║  GPU ██████░░░  2 600 RPM ║
+  ╚═══════════════════════════╝
+  ╔═ 04 Iluminación ══════════╗
+  ║  [●] Rainbow  [○] Breathe ║
+  ║  Brillo ●●●○  [APLICAR]   ║
+  ╚═══════════════════════════╝
 ```
 
-## Features
+## Características principales
 
-- **CPU**: per-core temps (avg/max/min), package temp, frequency, cores >90°C,
-  package power (Intel RAPL), thermal-throttle counter.
-- **GPU**: NVIDIA (nvidia-smi) and AMD (hwmon) — temp, usage, power, VRAM.
-  Detects Hybrid / Integrated / Dedicated mode via supergfxctl and handles the
-  dGPU being powered off.
-- **Fans**: RPM + percentage bars with auto-calibrating maximums.
-- **Power profile**: ASUS platform profile, power-profiles-daemon / tuned-ppd
-  profile, EPP — and explains why the kernel governor reads `powersave` on
-  modern Intel/AMD P-state drivers.
-- **History**: scrolling graphs for CPU temp, GPU temp and CPU power with
-  1m / 5m / 15m averages.
-- **Alerts**: configurable thresholds (CPU/GPU temp, throttling, stopped fans,
-  abnormal power) with desktop notifications and an on-screen event log.
-- **System**: RAM, disk (NVMe temp), network rate, load, uptime, battery with
-  charge limit.
-- **System**: RAM, every real disk (with NVMe temp), network rate, load,
-  uptime, battery with charge limit, top processes by CPU.
-- **Interactive**: switch power profile (`p`), toggle iGPU/dGPU mode (`g`,
-  with pending-change display and cancel), themes (`t`), full event view
-  (`v`), export history to JSON/CSV (`e`).
-- **Desktop app**: Electron dashboard (`desktop/`) with animated fans, canvas
-  charts, profile/GPU buttons and a one-click updater — fed by the same
-  Python core over `--json-stream`. Six themes × light/dark mode, working
-  Ctrl+wheel zoom, click-to-kill processes, event-log export to .txt.
-- **Fan control center** (ASUS): click the Fans panel to cap RPM per power
-  profile, edit the full fan curves (with a consent dialog for risky values)
-  and benchmark the real maximum RPM of each fan.
-- **Semantic colors**: blue = cold, green = normal, orange = near your
-  configured limits, red = critical — consistent across app and terminal.
-- Spanish and English UI (auto-detected from `$LANG`).
-- **No telemetry, no network access**: everything is read locally from sysfs;
-  the only network use is the optional update button (git fetch on your own
-  clone).
+### Sensores (sin root)
+- **CPU**: temperatura por núcleo, promedio/máx/mín, temperatura de Package,
+  frecuencia, conteo de núcleos >90 °C, contador de thermal throttling.
+- **GPU**: NVIDIA (`nvidia-smi`) y AMD (`hwmon/amdgpu`) — temperatura, uso,
+  potencia, VRAM, frecuencias de núcleo y memoria. Detecta modo Hybrid /
+  Integrated / AsusMuxDgpu (MUX) vía `supergfxctl`; maneja la dGPU apagada.
+  Potencia con `power.draw.average` en NVIDIA (no la muestra instantánea que
+  cae a 1-3 W al dormir la GPU).
+- **Ventiladores**: RPM + barras proporcionales, calibración PWM→RPM real,
+  cap de RPM aplicado en runtime por el servicio root.
+- **Sistema**: RAM, todos los discos reales (con temperatura NVMe, ostree-aware),
+  red, carga, uptime, batería con charge limit.
+- **Procesos**: top por CPU (% del total del sistema) y top por memoria;
+  cierre con confirmación.
+- **Salud SMART**: `smartctl` vía pkexec (un solo clic en Sistema).
+- **FPS en overlay**: vía registro de MangoHud (opt-in).
 
-## Install
+### App de escritorio (Electron + Python)
+- 9 bloques numerados: 01 CPU, 02 GPU, 03 Ventiladores, 04 Iluminación,
+  05 Historial, 06 Benchmarks, 07 Sistema, 08 Eventos, 09 Procesos.
+- **Centro de Poder** (nuevo en v9): control calibrado de límites de potencia
+  para el G614JV — ver [sección más abajo](#centro-de-poder).
+- **12 temas** × claro/oscuro con identidad visual propia (Magma, Nébula,
+  Océano, Glaciar, Reactor, Grafito, Neón, Atardecer, Neon Nights, Cyberpunk,
+  Aurora, Alba). Sin tarjetas genéricas: esquinas cortadas, números en placas
+  inclinadas, fondos con brillo del acento.
+- **Historial** con gráficas canvas interactivas: hover muestra el valor
+  exacto y hace cuántos segundos fue. CPU temp y W arriba, GPU temp y W abajo.
+- **Overlay para juegos**: ventana sin marco, transparente, siempre encima,
+  click-through, para cualquier monitor y esquina.
+- **Wizard de primera vez** (v9): detecta ventiladores → calibra con pkexec →
+  benchmark CPU/GPU → tour de funciones. Nunca dice "medido" sin medir.
+- **UX de 4 estados por widget** (v9): con datos / cargando / sin datos /
+  error (ej.: ventilador dañado → icono quieto, no spinner de carga).
+- Modales arrastrables; exportar/importar toda la configuración en un JSON.
+- Tamaño de letra configurable (A−/Normal/A+/A++).
+
+### Iluminación RGB (Aura + periféricos)
+- Grid de 9 modos Aura: 5 modos hardware soportados por el G614JV
+  (Estático, Respirar, Rainbow Cycle, Rainbow Wave, Pulso) + Música funcional
+  + 3 modos visibles pero honestos sobre su estado de soporte.
+- **Modo Música**: captura el audio del sistema (PipeWire, `pw-record --target
+  <sink>`) y ajusta brillo/color de Aura en tiempo real.
+- Perfiles de Aura guardados en `~/.config/rog-monitor/aura.json`.
+- Periférico Redragon K734WCG-RGB-PRO detectado (cable 258a:010c, dongle
+  3554:fa09) — control pendiente de capturas USB (ver `docs/redragon-protocol.md`).
+
+### Centro de Poder
+
+> **Este módulo está calibrado para el ASUS ROG Strix G614JV (i7-13650HX +
+> RTX 4060 Mobile).** En otros modelos la app lee los rangos seguros
+> directamente desde `asus-armoury` en sysfs o desde un perfil de dispositivo
+> (`~/.config/rog-monitor/device.json`); nunca escribe un valor fuera de los
+> mínimos y máximos que el firmware del equipo declara.
+
+Parámetros controlables en el G614JV:
+
+| Parámetro            | Rango (G614JV)  | Sysfs (`asus-armoury`)        |
+|----------------------|-----------------|-------------------------------|
+| CPU PL1 (sostenido)  | 28–140 W        | `ppt_pl1_spl`                 |
+| CPU PL2 (ráfaga)     | 28–175 W        | `ppt_pl2_sppt`                |
+| GPU Dynamic Boost    | 5–25 W          | `nv_dynamic_boost`            |
+| Thermal Target       | 75–87 °C        | `nv_temp_target`              |
+
+**Garantías de seguridad:**
+1. Cada escritura se valida contra los `_max` / `_min` que el firmware declara
+   en sysfs; nunca se envía un valor fuera de ese rango.
+2. Al abrir el Centro de Poder, la app muestra los valores actuales (los que ya
+   estaban, no los que escribe) y requiere un diálogo de consentimiento antes
+   de cualquier cambio.
+3. El botón **RESET A FÁBRICA** restaura todos los valores al stock del firmware.
+4. Por defecto, la app no toca nada y arranca con los valores que el firmware
+   ya tiene.
+
+GPU Base Clock Offset y Memory Clock Offset se muestran pero están deshabilitados
+en Wayland (Wayland no permite sobreescribir los relojes de la GPU sin extensiones
+privativas aún no disponibles en Bazzite/KDE).
+
+Para agregar tu propio equipo o ajustar rangos, ver
+[docs/supported-devices.md](docs/supported-devices.md).
+
+### TUI (terminal)
+- Gráficas Rich sin parpadeos, actualización 1/s.
+- Colores semánticos consistentes con la app: azul = frío, verde = normal,
+  naranja = cerca del límite, rojo = crítico.
+- Mouse tracking correcto (la rueda no descuadra la pantalla).
+
+---
+
+## Instalación
 
 ```bash
-git clone https://github.com/<you>/Rog-Monitor
+git clone https://github.com/<tu-usuario>/Rog-Monitor
 cd Rog-Monitor
-bash scripts/install.sh   # venv + deps + `monitor` command in ~/.local/bin
+bash scripts/install.sh      # venv + dependencias + comando `monitor` en ~/.local/bin
 monitor
 ```
 
-CPU package power requires readable Intel RAPL counters (restricted to root by
-default since CVE-2020-8694):
+La potencia del CPU (Intel RAPL) requiere un cambio de permisos en `/proc`
+(restringido desde CVE-2020-8694):
 
 ```bash
 sudo bash scripts/enable-cpu-power.sh
 ```
 
-Desktop app (requires Node.js/npm):
+App de escritorio (requiere Node.js/npm):
 
 ```bash
-bash scripts/install-desktop.sh   # npm deps + "ROG Monitor" menu entry
-monitor --desktop                 # or launch from the app menu
+bash scripts/install-desktop.sh   # dependencias npm + entrada en el menú de apps
+monitor --desktop                 # o lanzar desde el menú
 ```
 
-## Keys
+---
 
-| Key | Action |
-|-----|--------|
-| `q` | quit |
-| `p` | cycle power profile (power-saver → balanced → performance) |
-| `g` | toggle GPU mode Hybrid ↔ Integrated; press again while pending to cancel (logout required to apply) |
-| `t` | cycle color theme (rog / ice / matrix) |
-| `v` | view full event log |
-| `e` | export history as JSON + CSV |
-| `h` | help |
+## Teclas (TUI)
+
+| Tecla | Acción |
+|-------|--------|
+| `q` | Salir |
+| `p` | Ciclar perfil de energía (power-saver → balanced → performance) |
+| `g` | Cambiar modo GPU (Hybrid ↔ Integrated); pulsar de nuevo durante cambio pendiente = cancelar |
+| `t` | Ciclar tema de color |
+| `v` | Ver log de eventos completo |
+| `e` | Exportar historial como JSON + CSV |
+| `h` | Ayuda |
+
+---
 
 ## CLI
 
 ```
 monitor [--once] [--json] [--json-stream] [--desktop] [--interval S]
-        [--no-gpu] [--theme rog|ice|matrix] [--lang es|en]
+        [--no-gpu] [--theme TEMA] [--lang es|en] [--version]
 ```
 
-`--json` / `--json-stream` emit machine-readable snapshots (NDJSON) — this is
-the API the desktop app consumes, and an easy integration point for widgets
-or scripts.
+`--json` / `--json-stream` emiten NDJSON con todos los sensores — es la API
+que consume la app de escritorio y el punto de integración para widgets o
+scripts externos.
 
-## Configuration
+---
 
-`~/.config/rog-monitor/config.json` (created on first save):
+## Configuración
+
+`~/.config/rog-monitor/config.json` (se crea al hacer el primer guardado):
 
 ```json
 {
@@ -126,24 +192,57 @@ or scripts.
 }
 ```
 
-`temp_colors` sets your personal color limits `[green_below, yellow_below,
-orange_below]` — above the last value everything shows red, in the terminal
-and in the desktop app.
+`temp_colors` define tus límites personales `[verde_antes, amarillo_antes,
+naranja_antes]` — por encima del último valor todo aparece en rojo.
 
-## Supported hardware
+Todos estos valores son editables directamente desde el modal **ALERTAS** de
+la app de escritorio.
 
-Developed on an ASUS ROG Strix G614JV (i7-13650HX + RTX 4060, Bazzite), but the
-sensor layer discovers hwmon chips generically: Intel `coretemp` and AMD
-`k10temp`/`zenpower` CPUs, NVIDIA and AMD GPUs, and any chip exposing
-`fan*_input` (the ASUS `asus` chip gives the three ROG fans labelled
-cpu/gpu/mid). Missing sensors degrade gracefully to `N/A` — no error spam.
+---
 
-## Roadmap
+## Hardware soportado
 
-See [docs/roadmap.md](docs/roadmap.md). v1–v7 are done; next up: universal
-laptop compatibility (v8), power-user tools like a gaming overlay (v9), and
-finally the public open-source release (v10).
+### Equipo de referencia calibrado
 
-## License
+| Modelo | CPU | GPU | Estado |
+|--------|-----|-----|--------|
+| ASUS ROG Strix G614JV | Intel Core i7-13650HX | RTX 4060 Mobile | Referencia calibrada (v9) |
+
+### Sensores genéricos
+
+La capa de sensores enumera hwmon directamente; cualquier equipo con los
+chips estándar funciona sin configuración extra:
+
+- **CPU**: `coretemp` (Intel), `k10temp` / `zenpower` (AMD)
+- **GPU**: NVIDIA vía `nvidia-smi`; AMD vía `amdgpu` hwmon
+- **Ventiladores**: cualquier chip que exponga `fan*_input` (el chip `asus`
+  da los tres ventiladores del ROG etiquetados cpu/gpu/mid)
+- **Perfiles de energía**: `asus-wmi` / `asus-armoury`, con fallback a
+  `platform_profile` genérico cuando no hay `asus-wmi`
+
+Los sensores que falten degradan a `N/A` en silencio, sin spam de errores.
+
+### Cómo agregar tu equipo
+
+Ver [docs/supported-devices.md](docs/supported-devices.md) para:
+- Cómo leer tus rangos seguros desde `asus-armoury` en sysfs (o desde
+  Armoury Crate en Windows).
+- El esquema del archivo `src/rog_monitor/device_profiles.json`.
+- Cómo crear un perfil personalizado en
+  `~/.config/rog-monitor/device.json`.
+- La lista de modelos con perfiles ya incluidos.
+
+---
+
+## Sin telemetría, sin red
+
+No se envía ningún dato a ningún servidor. El único uso de red permitido
+es el botón de actualización (un `git fetch` sobre tu propio clon) y el
+botón de reportar error (abre GitHub en el navegador con información del
+sistema prellenada). Nunca se hace `git push` automáticamente.
+
+---
+
+## Licencia
 
 MIT
