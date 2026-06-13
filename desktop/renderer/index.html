@@ -5,6 +5,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
   <title>ROG Monitor</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="styles/power.css" />
 </head>
 <body>
   <header id="topbar">
@@ -37,6 +38,7 @@
       <button id="alerts-btn" class="ghost" title="Editar los umbrales de temperatura, potencia y alertas">ALERTAS</button>
       <button id="overlay-btn" class="ghost" title="Overlay de stats siempre encima para jugar (elige el monitor)">OVERLAY</button>
       <button id="theme-btn" class="ghost" title="Apariencia: tema, modo claro/oscuro y tamaño">TEMA</button>
+      <button id="power-btn" class="ghost" title="Centro de Poder: limites de potencia CPU/GPU (requiere contraseña para aplicar)">PODER</button>
     </div>
   </header>
 
@@ -399,6 +401,42 @@
     </div>
   </div>
 
+  <!-- CENTRO DE PODER modal (Agent 2) -->
+  <div id="power-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3>CENTRO DE PODER</h3>
+      <p class="sub">Límites de potencia CPU y GPU. Cada cambio requiere tu contraseña (pkexec). Los valores están acotados a los rangos seguros del firmware.</p>
+
+      <!-- pestañas CPU / GPU -->
+      <div class="segment" id="power-tabs">
+        <button data-tab="cpu" class="active">CPU</button>
+        <button data-tab="gpu">GPU</button>
+      </div>
+
+      <!-- advertencia PL1 > PL2 -->
+      <p id="power-pl-warn">PL2 debe ser mayor o igual a PL1 para que la ráfaga funcione correctamente.</p>
+
+      <!-- panel CPU -->
+      <div id="power-cpu-panel" class="power-tab-panel active">
+        <p class="dim" style="padding:1rem">Cargando…</p>
+      </div>
+
+      <!-- panel GPU -->
+      <div id="power-gpu-panel" class="power-tab-panel"></div>
+
+      <!-- estado de error / no disponible -->
+      <div id="power-unavail" style="display:none"></div>
+
+      <!-- botones de acción -->
+      <div id="power-actions">
+        <button class="ghost" id="power-reset">RESET A FÁBRICA</button>
+        <button class="ghost" id="power-cancel">Cancelar</button>
+        <button class="ghost" id="power-apply" disabled>APLICAR</button>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
+  <script src="power.js"></script>
 </body>
 </html>

@@ -1,0 +1,260 @@
+/* ===================================================================
+   CENTRO DE PODER — power.css
+   Estilos para el modal #power-modal y sus controles.
+   Referencia visual: Armoury Crate Manual Mode, identidad de la casa.
+   =================================================================== */
+
+/* ---------- contenedor del modal (pantalla completa, semitransparente) ---------- */
+
+#power-modal.modal {
+  /* heredado de .modal en style.css: position fixed, z-index, etc. */
+}
+
+/* ---------- encabezado del modal ---------- */
+
+#power-modal .modal-card {
+  max-width: 620px;
+  width: 95vw;
+}
+
+#power-modal .modal-card h3 {
+  /* drag-handle ya lo agrega makeDraggable() */
+  letter-spacing: 0.12em;
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* ---------- pestañas CPU / GPU (segment control) ---------- */
+
+#power-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.2rem;
+}
+
+#power-tabs button {
+  flex: 1;
+  padding: 0.45rem 1rem;
+  border: 1px solid var(--hair);
+  border-right: none;
+  background: var(--chip);
+  color: var(--dim);
+  font: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background 0.15s, color 0.15s;
+}
+
+#power-tabs button:last-child {
+  border-right: 1px solid var(--hair);
+}
+
+#power-tabs button.active {
+  background: color-mix(in srgb, var(--accent) 18%, var(--panel));
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+#power-tabs button:hover:not(.active) {
+  background: color-mix(in srgb, var(--accent) 8%, var(--chip));
+  color: var(--ink);
+}
+
+/* ---------- paneles de pestaña ---------- */
+
+.power-tab-panel {
+  display: none;
+}
+
+.power-tab-panel.active {
+  display: block;
+}
+
+/* ---------- fila de control (slider + número) ---------- */
+
+.power-control {
+  margin-bottom: 1.1rem;
+}
+
+.power-control-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+}
+
+.power-control-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.power-control-unit {
+  font-size: 0.7rem;
+  color: var(--dim);
+  margin-left: 0.3rem;
+}
+
+.power-control-default {
+  font-size: 0.68rem;
+  color: var(--dim);
+}
+
+.power-control-tooltip {
+  display: block;
+  font-size: 0.69rem;
+  color: var(--dim);
+  margin-bottom: 0.35rem;
+  font-style: italic;
+}
+
+.power-control-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.power-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--hair);
+  outline: none;
+  cursor: pointer;
+  position: relative;
+}
+
+.power-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 0;
+  clip-path: polygon(0 25%, 75% 0, 100% 25%, 100% 75%, 25% 100%, 0 75%);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.power-slider:hover::-webkit-slider-thumb {
+  background: color-mix(in srgb, var(--accent) 80%, #fff);
+}
+
+.power-slider:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.power-slider:disabled::-webkit-slider-thumb {
+  cursor: not-allowed;
+  background: var(--dim);
+}
+
+/* tick de fábrica: una marca visual bajo el slider */
+
+.power-slider-wrap {
+  flex: 1;
+  position: relative;
+}
+
+.power-default-tick {
+  position: absolute;
+  bottom: -14px;
+  font-size: 0.6rem;
+  color: var(--accent2, var(--dim));
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.power-numbox {
+  width: 64px;
+  padding: 0.3rem 0.4rem;
+  background: var(--chip);
+  border: 1px solid var(--hair);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: right;
+}
+
+.power-numbox:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.power-numbox:focus {
+  outline: 1px solid var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---------- estado BLOQUEADO (writable:false) ---------- */
+
+.power-control.locked .power-control-label {
+  color: var(--dim);
+}
+
+.power-control.locked .power-control-reason {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--dim);
+  margin-top: 0.25rem;
+  padding: 0.2rem 0.4rem;
+  border-left: 2px solid var(--hair);
+  background: color-mix(in srgb, var(--panel) 60%, var(--chip));
+}
+
+/* ---------- separador entre grupos ---------- */
+
+.power-divider {
+  border: none;
+  border-top: 1px solid var(--hair);
+  margin: 1rem 0 1.1rem;
+}
+
+/* ---------- advertencia PL1 > PL2 ---------- */
+
+#power-pl-warn {
+  font-size: 0.72rem;
+  color: var(--hot);
+  margin-bottom: 0.6rem;
+  display: none;
+}
+
+#power-pl-warn.visible {
+  display: block;
+}
+
+/* ---------- fila de botones de acción ---------- */
+
+#power-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1.2rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* ---------- estado "sin datos" ---------- */
+
+#power-unavail {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--dim);
+  font-size: 0.85rem;
+}
+
+/* ---------- nota de live (valores actuales en tiempo real) ---------- */
+
+.power-live-note {
+  font-size: 0.67rem;
+  color: var(--dim);
+  text-align: right;
+  margin-top: -0.5rem;
+  margin-bottom: 0.7rem;
+}

@@ -931,6 +931,66 @@ function createWindow() {
   });
 }
 
+/* ---------- power control (Agent 2) ----------
+   Lectura vía rog_monitor.power_control CLI; escritura vía pkexec
+   scripts/apply-power-control.sh (ver §2.2 de build-spec-v9.md).
+   Los canales IPC se exponen como get-power-control / set-power-control /
+   reset-power-control. */
+
+const APPLY_POWER_SCRIPT = path.join(REPO, 'scripts', 'apply-power-control.sh');
+
+ipcMain.handle('get-power-control', async () =>
+  runJsonModule('rog_monitor.power_control', ['state'], 8000));
+
+ipcMain.handle('set-power-control', async (_e, payload) => {
+  // Solo claves en la lista blanca, convertidas a args bash: pl1=120 pl2=160 …
+  const ALLOWED = ['pl1', 'pl2', 'dynamic_boost', 'thermal_target'];
+  const args = [];
+  for (const key of ALLOWED) {
+    if (payload && payload[key] !== undefined && Number.isFinite(+payload[key])) {
+      args.push(`${key}=${Math.round(+payload[key])}`);
+    }
+  }
+  if (!args.length) {
+    return { ok: false, err: 'No hay valores válidos para aplicar.' };
+  }
+  if (!fs.existsSync(APPLY_POWER_SCRIPT)) {
+    return {
+      ok: false,
+      err: `Script no encontrado: ${APPLY_POWER_SCRIPT} — ¿ya entregó Agent 1?`,
+    };
+  }
+  const res = await run('pkexec', ['bash', APPLY_POWER_SCRIPT, ...args], 20000);
+  if (!res.ok) return res;
+  // devolver estado fresco para que la UI actualice los sliders
+  return runJsonModule('rog_monitor.power_control', ['state'], 8000);
+});
+
+ipcMain.handle('reset-power-control', async () => {
+  // Lee los defaults del módulo y los aplica todos
+  const state = await runJsonModule('rog_monitor.power_control', ['state'], 8000);
+  if (!state || state.ok === false) return state;
+  const controls = (state.controls) || {};
+  const ALLOWED = ['pl1', 'pl2', 'dynamic_boost', 'thermal_target'];
+  const args = [];
+  for (const key of ALLOWED) {
+    const ctrl = controls[key];
+    if (ctrl && ctrl.writable && ctrl.default !== undefined) {
+      args.push(`${key}=${Math.round(ctrl.default)}`);
+    }
+  }
+  if (!args.length) return { ok: false, err: 'No hay defaults que restaurar.' };
+  if (!fs.existsSync(APPLY_POWER_SCRIPT)) {
+    return {
+      ok: false,
+      err: `Script no encontrado: ${APPLY_POWER_SCRIPT} — ¿ya entregó Agent 1?`,
+    };
+  }
+  const res = await run('pkexec', ['bash', APPLY_POWER_SCRIPT, ...args], 20000);
+  if (!res.ok) return res;
+  return runJsonModule('rog_monitor.power_control', ['state'], 8000);
+});
+
 app.whenReady().then(() => {
   createWindow();
   startBackend();
