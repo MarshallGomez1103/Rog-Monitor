@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint-and-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Compile Python package
+        run: python -m py_compile src/rog_monitor/*.py
+
+      - name: Validate device_profiles.json
+        run: python -c "import json; json.load(open('src/rog_monitor/device_profiles.json')); print('device_profiles.json OK')"
+
+      - name: JSON snapshot smoke (graceful degradation without ASUS hardware)
+        env:
+          PYTHONPATH: src
+        run: |
+          python - <<'PY'
+          import json, os, subprocess
+          out = subprocess.check_output(["python", "-m", "rog_monitor", "--json"], timeout=30)
+          data = json.loads(out)
+          assert "power_control" in data, "missing power_control in snapshot"
+          assert "version" in data, "missing version"
+          print("snapshot OK — version", data["version"])
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: node --check desktop JS
+        run: |
+          for f in desktop/main.js desktop/preload.js desktop/renderer/*.js; do
+            echo "checking $f"; node --check "$f"
+          done
+
+      - name: apply-power-control.sh syntax
+        run: bash -n scripts/apply-power-control.sh
