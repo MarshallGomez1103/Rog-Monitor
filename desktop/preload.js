@@ -45,4 +45,8 @@ contextBridge.exposeInMainWorld('rog', {
     webFrame.setZoomLevel(level);
     try { localStorage.setItem('zoomLevel', String(level)); } catch (_) {}
   },
+  // --- power control (Agent 2) ---
+  getPowerControl: () => ipcRenderer.invoke('get-power-control'),
+  setPowerControl: (payload) => ipcRenderer.invoke('set-power-control', payload),
+  resetPowerControl: () => ipcRenderer.invoke('reset-power-control'),
 });
