@@ -5,6 +5,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
   <title>ROG Monitor</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="styles/onboarding.css" />
 </head>
 <body>
   <header id="topbar">
@@ -37,6 +38,7 @@
       <button id="alerts-btn" class="ghost" title="Editar los umbrales de temperatura, potencia y alertas">ALERTAS</button>
       <button id="overlay-btn" class="ghost" title="Overlay de stats siempre encima para jugar (elige el monitor)">OVERLAY</button>
       <button id="theme-btn" class="ghost" title="Apariencia: tema, modo claro/oscuro y tamaño">TEMA</button>
+      <button id="wizard-btn" title="Volver a ver el asistente de primera vez">VER TUTORIAL</button>
     </div>
   </header>
 
@@ -47,6 +49,24 @@
   <main>
     <section class="col col-left">
       <article class="block" id="cpu-block">
+        <!-- widget-states: skeleton / empty / error overlays -->
+        <div class="skeleton-overlay" aria-hidden="true">
+          <div class="skel-line short"></div>
+          <div class="skel-bignum"></div>
+          <div class="skel-grid">
+            <div class="skel-line"></div><div class="skel-line"></div>
+            <div class="skel-line"></div><div class="skel-line"></div>
+            <div class="skel-line xshort"></div><div class="skel-line"></div>
+          </div>
+        </div>
+        <div class="widget-empty-msg" aria-hidden="true">
+          <span class="empty-icon">&#x1F321;</span>
+          <span>Sin datos de CPU</span>
+        </div>
+        <div class="widget-error-chip" aria-hidden="true">
+          <div class="error-badge">&#x26A0; BACKEND CAIDO</div>
+          <div class="error-detail">Reconectando con los sensores…</div>
+        </div>
         <h2><i>01</i> CPU <small id="cpu-model"></small></h2>
         <div class="bignum"><span id="cpu-temp">--</span><em>°C</em></div>
         <div class="statgrid">
@@ -68,6 +88,24 @@
       </article>
 
       <article class="block" id="gpu-block">
+        <!-- widget-states: skeleton / empty / error overlays -->
+        <div class="skeleton-overlay" aria-hidden="true">
+          <div class="skel-line short"></div>
+          <div class="skel-bignum"></div>
+          <div class="skel-grid">
+            <div class="skel-line"></div><div class="skel-line"></div>
+            <div class="skel-line xshort"></div><div class="skel-line"></div>
+          </div>
+        </div>
+        <div class="widget-empty-msg" aria-hidden="true">
+          <span class="empty-icon">&#x1F4A4;</span>
+          <span>dGPU apagada (modo Integrated)</span>
+          <span style="font-size:11px;color:var(--dim)">Cambia a Hybrid o dGPU para ver datos</span>
+        </div>
+        <div class="widget-error-chip" aria-hidden="true">
+          <div class="error-badge">&#x26A0; BACKEND CAIDO</div>
+          <div class="error-detail">Reconectando con los sensores…</div>
+        </div>
         <h2><i>02</i> GPU <small id="gpu-name"></small></h2>
         <div class="bignum"><span id="gpu-temp">--</span><em>°C</em></div>
         <div class="statgrid">
