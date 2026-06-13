@@ -2,6 +2,63 @@
 
 > Cada agente actualiza esta sección al terminar. El siguiente la lee primero.
 
+## Última sesión: Claude (Opus 4.8, orquestador) — 2026-06-13 (v9.0.0)
+
+### Estado: v9.0.0 — Centro de Poder + 12 temas + rejilla Aura + wizard + 4 estados. Commit local, SIN push.
+
+**Workflow multiagente (lo pidió Marshall):** Opus orquestó, **6 instancias
+Sonnet en paralelo** programaron, cada una en su propio git worktree. Yo escribí
+el spec/contrato (`docs/build-spec-v9.md`), repartí por dueño-de-archivo +
+anclas + contratos (IPC, `onStats` multi-suscriptor, CSS por feature), fusioné
+las 6 ramas y sinteticé. Reparto: A1 backend poder, A2 UI poder+IPC, A3 temas,
+A4 iluminación, A5 wizard+estados, A6 docs.
+
+**OJO — límite de sesión de la cuenta:** a mitad del run, 4 instancias (A1, A4,
+A5, A6) fueron cortadas por el límite de la cuenta (reset 2am Bogotá) y su
+*reporte* final se perdió, pero su **trabajo en disco quedó intacto** (sin
+commit). Lo rescaté con `git -C <worktree> add -A && commit` y lo fusioné. A2 y
+A3 sí alcanzaron a commitear solas. Por eso las ramas worktree nacieron de
+737d6fc (pre-spec) — el merge preserva `build-spec-v9.md` igual.
+
+#### Hecho y verificado
+- **Backend poder (A1)**: `power_control.py` + `device_profiles.json` +
+  `scripts/apply-power-control.sh`. Lee mín/máx EN VIVO de
+  `/sys/class/firmware-attributes/asus-armoury/attributes/` (PL1 28-140, PL2
+  28-175, boost 5-25, temp 75-87 — calzan con las capturas). Allowlist de 4
+  attrs, doble recorte (python + script), `ROG_FW_ATTRS_DIR` para test con
+  sysfs falso. **Verificado**: `power_control state` y el stream `--json` traen
+  `power_control` correcto (device G614JV, 4 writable, los 2 offsets NVIDIA
+  `writable:false` por Wayland). Línea read-only en `ui.py` (paridad TUI).
+- **UI poder (A2)**: botón `PODER` → `#power-modal` (tabs CPU/GPU, sliders
+  topados, marca de fábrica, consentimiento, RESET). IPC `get/set/reset-power-
+  control` en main.js (set = pkexec al script + relee `state`), preload listo.
+- **Temas (A3)**: 12 paletas (8 rehechas + Neon Nights/Cyberpunk/Aurora/Alba),
+  modos claros con contraste real (AA verificado por el agente).
+- **Iluminación (A4)**: `aura.py` devuelve lista de 9 modos con `supported`/
+  `reason`; rejilla honesta (5 HW + Música funcionan, resto inertes con motivo).
+- **Wizard + 4 estados (A5)**: `wizard.js` (5 pasos, repetible) + `widget-
+  states.js` (suscriptor propio de onStats/onBackendDown, `data-state` por
+  bloque). **El orquestador completó el cableado** que A5 no alcanzó: agregó el
+  shell `#wizard-modal` (clases que esperan wizard.js y onboarding.css) y los
+  `<script>` de wizard.js/widget-states.js.
+- **Docs (A6)**: README + roadmap actualizados (la sesión los rescató). El
+  orquestador escribió CHANGELOG 9.0.0, este HANDOFF, y `supported-devices.md` /
+  `CONTRIBUTING.md` / `.github/` (templates + ci.yml).
+- **Verificación**: `py_compile` todo OK; `node --check` los 6 JS OK; HTML
+  parsea; los 8 assets referenciados existen; todos los `getElementById` de
+  power.js/widget-states.js resuelven contra ids reales del HTML; stream `--json`
+  end-to-end OK. **NO se hizo click-through CDP completo** (límite de cuenta) —
+  recomendado un repaso visual o una pasada CDP la próxima sesión.
+
+### Pendiente para la siguiente sesión
+1. **Marshall**: el GUARDAR Y APLICAR pendiente (script de ventiladores
+   blindado); el **primer APLICAR real** del Centro de Poder cuando quiera
+   probarlo en vivo; la **captura USB del Redragon** (docs/redragon-protocol.md).
+2. **CDP click-through** de las superficies nuevas (modal poder ambas pestañas,
+   12 temas claro+oscuro, rejilla de luces, wizard, 4 estados).
+3. **Offsets GPU base/mem**: hoy bloqueados en Wayland; explorar ruta NVML/X11.
+4. v9 grande aún sin tocar: AMD, historial SQLite, empaquetado, DB comunitaria.
+
 ## Última sesión: Claude (Fable 5) — 2026-06-12 (v8.4.0)
 
 ### Estado: rediseño visual + hover en gráficas + GPU power estable + Redragon detectado. Commit local, SIN push.

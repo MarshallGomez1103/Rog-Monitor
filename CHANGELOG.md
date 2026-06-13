@@ -1,5 +1,57 @@
 # Changelog
 
+## 9.0.0 — 2026-06-13
+
+> Construido por **6 instancias Sonnet en paralelo** (cada una en su propio
+> git worktree) orquestadas por Claude Opus 4.8. La síntesis final fusionó las
+> seis ramas y completó el cableado del asistente. Algunas instancias fueron
+> cortadas por el límite de sesión de la cuenta a mitad del reporte; su trabajo
+> en disco se rescató, se commiteó y se integró.
+
+### Added
+- **Centro de Poder** (botón `PODER`): control de límites de potencia y clocks
+  CPU/GPU al estilo Armoury Crate (pestañas CPU/GPU), **calibrado para la ASUS
+  ROG Strix G16 (G614JV)**. Controles: CPU **PL1** (28–140 W), CPU **PL2**
+  (28–175 W), GPU **Dynamic Boost** (5–25 W), GPU **Thermal Target** (75–87 °C)
+  vía `asus-armoury` (firmware); GPU **Base/Memory Clock Offset** se muestran
+  pero quedan **bloqueados en Wayland** (requieren X11/Coolbits) — nunca se
+  fingen. **Seguridad:** cada escritura se recorta dos veces al mín/máx del
+  firmware (Python + script con permisos), parte de los valores de fábrica,
+  exige diálogo de consentimiento y tiene **RESET A FÁBRICA**. Nada se escribe
+  al hardware sin un clic explícito.
+- **Base de datos de dispositivos** (`device_profiles.json`) + lectura de rangos
+  en vivo desde sysfs → funciona en cualquier portátil con `asus-armoury`; con
+  override de usuario en `~/.config/rog-monitor/device.json`. Lista de
+  dispositivos soportados para la publicación pública (ver
+  `docs/supported-devices.md`).
+- **Cuatro temas nuevos** (12 en total): **Neon Nights** (synthwave Miami),
+  **Cyberpunk** (Night City), **Aurora** (boreal teal→violeta) y **Alba** (tema
+  CLARO premium). Todos los modos claros rehechos para verse imponentes.
+- **Cuadrícula de 9 modos de iluminación** estilo Aura Sync: los 5 que soporta
+  el teclado interno (Static, Breathing, Color Cycle, Rainbow, Strobing/Pulse) +
+  Música funcionan; el resto (Starry Night, Smart, Adaptive) se muestran pero
+  honestamente marcados como no soportados — **cero comandos adivinados** al
+  hardware (regla anti-brickeo, ver `docs/redragon-protocol.md`).
+- **Asistente de primera vez** (wizard de 5 pasos, repetible con `VER TUTORIAL`):
+  bienvenida → ventiladores detectados → permisos/calibración → benchmarks →
+  tour de bloques.
+- **Cuatro estados por widget** (con datos / cargando / sin datos / error):
+  skeleton al cargar, placeholder "sin datos" (p. ej. dGPU apagada), chip de
+  error si el backend se cae, y un ventilador detenido se muestra **PARADO**
+  explícito en vez de en blanco.
+- **Paridad TUI**: línea de solo-lectura con PL1/PL2/Boost/Térmico actuales.
+
+### Changed
+- `power_control` viaja en el stream `--json` (lo consumen la app y la TUI).
+- Modo claro de las 8 paletas existentes rehecho (paneles tintados, contraste
+  real, sin blancos planos).
+
+### Notas de seguridad
+- Se **revierte** la decisión "undervolt/overclock DESCARTADO" (10 jun) ahora
+  que se cumplen sus tres condiciones: modelo exacto, límites seguros (los
+  mín/máx del firmware, verificados contra las capturas de Armoury Crate y
+  `asus-armoury` en vivo) y doble consentimiento. Decisión del dueño, 12 jun.
+
 ## 8.4.0 — 2026-06-12
 
 ### Added
