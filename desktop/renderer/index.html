@@ -479,7 +479,41 @@
     </div>
   </div>
 
+  <!-- Asistente de primera vez (lo llena wizard.js; shell estable para sus refs) -->
+  <div id="wizard-modal" class="hidden">
+    <div class="wizard-card">
+      <div class="wizard-header">
+        <h2>Asistente de ROG Monitor</h2>
+        <span class="wizard-subtitle">Conoce tu equipo en 5 pasos rápidos</span>
+        <div class="wizard-steps-bar">
+          <span class="wizard-step-pip"></span>
+          <span class="wizard-step-pip"></span>
+          <span class="wizard-step-pip"></span>
+          <span class="wizard-step-pip"></span>
+          <span class="wizard-step-pip"></span>
+          <span class="wizard-step-count">1 / 5</span>
+        </div>
+      </div>
+      <div class="wizard-body">
+        <div class="wizard-step"></div>
+        <div class="wizard-step"></div>
+        <div class="wizard-step"></div>
+        <div class="wizard-step"></div>
+        <div class="wizard-step"></div>
+      </div>
+      <div class="wizard-footer">
+        <button class="wiz-skip" id="wiz-skip">SALTAR</button>
+        <div class="wizard-nav">
+          <button class="wiz-btn" id="wiz-prev">ATRÁS</button>
+          <button class="wiz-btn" id="wiz-next">SIGUIENTE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
   <script src="power.js"></script>
+  <script src="widget-states.js"></script>
+  <script src="wizard.js"></script>
 </body>
 </html>
