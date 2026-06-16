@@ -9,11 +9,73 @@
 
   /* ---- helpers locales ---- */
   const $ = (id) => document.getElementById(id);
+  // window.t/window.i18n SIEMPRE existen (stub seguro de A1 si aún no implementa).
+  const t = (key, vars) => (typeof window.t === 'function' ? window.t(key, vars) : key);
+
+  /* ---- i18n: registra las claves propias (namespace power.*) ---- */
+  if (window.i18n && typeof window.i18n.register === 'function') {
+    window.i18n.register({
+      es: {
+        'power.clockOffsets': 'OFFSETS DE RELOJ GPU (NVML)',
+        'power.offsetCore': 'Offset clock núcleo GPU',
+        'power.offsetMem': 'Offset clock memoria GPU',
+        'power.factoryZero': 'fábrica: 0 MHz',
+        'power.safeRange': 'rango seguro',
+        'power.advancedRange': 'avanzado (mayor riesgo)',
+        'power.nvmlUnavailable': 'NVML no disponible: no se pueden leer/aplicar offsets de GPU en este equipo.',
+        'power.consentTitle': 'OFFSETS DE RELOJ GPU — Confirmar',
+        'power.consentOverclock': 'Subir el offset (overclock) puede causar artefactos visuales, cuelgues y, en casos extremos, DAÑAR tu GPU de forma permanente.',
+        'power.consentUndervolt': 'Bajar demasiado el offset (undervolt agresivo) puede volver el sistema INESTABLE: pantallazo, cuelgue o reinicio. Es recuperable reiniciando el equipo.',
+        'power.consentRecover': 'Si el sistema se cuelga tras aplicar, reinicia: los offsets NO persisten tras apagar — vuelven a 0 (fábrica) en el siguiente arranque salvo que los reaplique la app.',
+        'power.consentAdvanced': 'Estás fuera del rango seguro recomendado. El riesgo de daño/inestabilidad es MAYOR a estos valores.',
+        'power.consentQuestion': '¿Aplicar offsets de GPU?',
+        'power.thermalGuardian': 'GUARDIÁN TÉRMICO GPU',
+        'power.thermalGuardianDesc': 'Mantengo la GPU bajo el techo elegido: primero subo ventiladores y, si no basta, bajo potencia (Dynamic Boost y, si toca, PL2). Al enfriar, devuelvo todo a la normalidad.',
+        'power.thermalCeiling': 'Techo de temperatura',
+        'power.thermalEnable': 'ACTIVAR GUARDIÁN',
+        'power.thermalDisable': 'DESACTIVAR GUARDIÁN',
+        'power.thermalActive': 'Activo',
+        'power.thermalInactive': 'Inactivo',
+        'power.thermalNotInstalled': 'El servicio del guardián aún no está instalado. Pide a Marshall que corra el comando en docs/SUDO-PENDIENTE-v10.md.',
+        'power.thermalLoading': 'Consultando estado del guardián…',
+        'power.thermalError': 'No se pudo consultar el guardián térmico.',
+        'power.thermalApplying': 'Aplicando…',
+      },
+      en: {
+        'power.clockOffsets': 'GPU CLOCK OFFSETS (NVML)',
+        'power.offsetCore': 'GPU core clock offset',
+        'power.offsetMem': 'GPU memory clock offset',
+        'power.factoryZero': 'factory: 0 MHz',
+        'power.safeRange': 'safe range',
+        'power.advancedRange': 'advanced (higher risk)',
+        'power.nvmlUnavailable': 'NVML unavailable: cannot read/apply GPU clock offsets on this machine.',
+        'power.consentTitle': 'GPU CLOCK OFFSETS — Confirm',
+        'power.consentOverclock': 'Raising the offset (overclock) can cause visual artifacts, hangs, and in extreme cases PERMANENTLY DAMAGE your GPU.',
+        'power.consentUndervolt': 'Lowering the offset too much (aggressive undervolt) can make the system UNSTABLE: black screen, hang or reboot. Recoverable by restarting.',
+        'power.consentRecover': 'If the system hangs after applying, restart: offsets do NOT persist across power-off — they return to 0 (factory) on next boot unless the app reapplies them.',
+        'power.consentAdvanced': 'You are outside the recommended safe range. Risk of damage/instability is HIGHER at these values.',
+        'power.consentQuestion': 'Apply GPU offsets?',
+        'power.thermalGuardian': 'GPU THERMAL GUARDIAN',
+        'power.thermalGuardianDesc': 'I keep the GPU under the chosen ceiling: first I raise fans, and if that is not enough, I lower power (Dynamic Boost and, if needed, PL2). When it cools down, everything returns to normal.',
+        'power.thermalCeiling': 'Temperature ceiling',
+        'power.thermalEnable': 'ENABLE GUARDIAN',
+        'power.thermalDisable': 'DISABLE GUARDIAN',
+        'power.thermalActive': 'Active',
+        'power.thermalInactive': 'Inactive',
+        'power.thermalNotInstalled': 'The guardian service is not installed yet. Ask Marshall to run the command in docs/SUDO-PENDIENTE-v10.md.',
+        'power.thermalLoading': 'Checking guardian status…',
+        'power.thermalError': 'Could not check the thermal guardian.',
+        'power.thermalApplying': 'Applying…',
+      },
+    });
+  }
 
   /* ---- estado del módulo ---- */
   let powerState = null;       // última respuesta de getPowerControl()
   let pendingChanges = {};     // { pl1: 120, pl2: 160, … }
   let activeTab = 'cpu';       // 'cpu' | 'gpu'
+  let advancedConsent = {};    // { base_clock_offset: true, … } — consentimiento avanzado por clave
+  let thermalState = null;     // última respuesta de getThermalGuardian()
 
   /* ================================================================
      SUSCRIPTOR LIVE: se registra UNA sola vez y actualiza las cabeceras
@@ -49,6 +111,8 @@
      buildSliders — construye los controles de un tab dado la respuesta
      de getPowerControl(). Devuelve un <div> listo para insertar.
   ================================================================= */
+  const CLOCK_OFFSET_KEYS = ['base_clock_offset', 'mem_clock_offset'];
+
   function buildSliders(controls, tabKeys) {
     const wrap = document.createElement('div');
 
@@ -56,9 +120,10 @@
       const ctrl = controls[key];
       if (!ctrl) return;
 
+      const isOffset = CLOCK_OFFSET_KEYS.includes(key);
       const isLocked = !ctrl.writable;
       const block = document.createElement('div');
-      block.className = 'power-control' + (isLocked ? ' locked' : '');
+      block.className = 'power-control' + (isLocked ? ' locked' : '') + (isOffset ? ' power-offset' : '');
       block.dataset.key = key;
 
       // cabecera
@@ -75,7 +140,9 @@
 
       const defaultSpan = document.createElement('span');
       defaultSpan.className = 'power-control-default';
-      defaultSpan.textContent = `fábrica: ${ctrl.default} ${ctrl.unit || ''}`;
+      defaultSpan.textContent = isOffset
+        ? t('power.factoryZero')
+        : `fábrica: ${ctrl.default} ${ctrl.unit || ''}`;
 
       header.appendChild(labelSpan);
       header.appendChild(unitSpan);
@@ -99,7 +166,7 @@
         // modo bloqueado: solo mostrar el valor y el motivo, sin slider
         const reasonEl = document.createElement('span');
         reasonEl.className = 'power-control-reason';
-        reasonEl.textContent = ctrl.reason || 'No disponible en esta configuración';
+        reasonEl.textContent = ctrl.reason || (isOffset ? t('power.nvmlUnavailable') : 'No disponible en esta configuración');
         block.appendChild(reasonEl);
 
         // slider y numbox deshabilitados para consistencia visual
@@ -129,6 +196,9 @@
         rowEl.appendChild(numbox);
 
         block.appendChild(rowEl);
+      } else if (isOffset) {
+        // ---- offsets de reloj GPU: slider con rango SEGURO + opción avanzada ----
+        buildOffsetControl(block, key, ctrl);
       } else {
         // modo editable: slider + numbox enlazados
         const rowEl = document.createElement('div');
@@ -204,6 +274,130 @@
   }
 
   /* ================================================================
+     buildOffsetControl — slider de offset de reloj GPU (núcleo/memoria).
+     Rango SEGURO por defecto (device_profiles.json min/max); un checkbox
+     "modo avanzado" desbloquea el rango absoluto del driver (abs_min/abs_max,
+     vía NVML) con una advertencia adicional. Fábrica = 0 MHz siempre.
+  ================================================================= */
+  function buildOffsetControl(block, key, ctrl) {
+    const safeMin = ctrl.min;
+    const safeMax = ctrl.max;
+    const absMin = ctrl.abs_min !== undefined && ctrl.abs_min !== null ? ctrl.abs_min : safeMin;
+    const absMax = ctrl.abs_max !== undefined && ctrl.abs_max !== null ? ctrl.abs_max : safeMax;
+    const hasAdvanced = absMin < safeMin || absMax > safeMax;
+
+    let useAdvanced = !!advancedConsent[key];
+    const effMin = () => (useAdvanced ? absMin : safeMin);
+    const effMax = () => (useAdvanced ? absMax : safeMax);
+
+    const rowEl = document.createElement('div');
+    rowEl.className = 'power-control-row';
+
+    const sliderWrap = document.createElement('div');
+    sliderWrap.className = 'power-slider-wrap';
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.className = 'power-slider power-slider-offset';
+    slider.min = effMin();
+    slider.max = effMax();
+    slider.step = 1;
+    slider.value = ctrl.value !== undefined ? ctrl.value : 0;
+    slider.dataset.key = key;
+
+    // tick de fábrica SIEMPRE en 0 MHz
+    const tick = document.createElement('span');
+    tick.className = 'power-default-tick power-zero-tick';
+    const zeroPct = ((0 - effMin()) / (effMax() - effMin())) * 100;
+    tick.style.left = `${Math.max(0, Math.min(100, zeroPct))}%`;
+    tick.title = t('power.factoryZero');
+    tick.textContent = '▲0';
+    sliderWrap.appendChild(slider);
+    sliderWrap.appendChild(tick);
+    rowEl.appendChild(sliderWrap);
+
+    const numbox = document.createElement('input');
+    numbox.type = 'number';
+    numbox.className = 'power-numbox';
+    numbox.min = effMin();
+    numbox.max = effMax();
+    numbox.step = 1;
+    numbox.value = slider.value;
+    numbox.dataset.key = key;
+    rowEl.appendChild(numbox);
+
+    block.appendChild(rowEl);
+
+    // rango visible (seguro/avanzado) bajo el slider
+    const rangeNote = document.createElement('span');
+    rangeNote.className = 'power-range-note';
+    function renderRangeNote() {
+      rangeNote.textContent = useAdvanced
+        ? `${t('power.advancedRange')}: ${absMin}..${absMax} MHz`
+        : `${t('power.safeRange')}: ${safeMin}..${safeMax} MHz`;
+      rangeNote.classList.toggle('advanced', useAdvanced);
+    }
+    renderRangeNote();
+    block.appendChild(rangeNote);
+
+    function applyClamp(val) {
+      const clamped = Math.max(effMin(), Math.min(effMax(), val));
+      slider.value = clamped;
+      numbox.value = clamped;
+      recordChange(key, clamped);
+    }
+
+    slider.addEventListener('input', () => applyClamp(Number(slider.value)));
+    numbox.addEventListener('input', () => applyClamp(Number(numbox.value) || 0));
+    numbox.addEventListener('change', () => applyClamp(Number(numbox.value) || 0));
+
+    // checkbox "modo avanzado" — solo si el rango absoluto excede el seguro
+    if (hasAdvanced) {
+      const advWrap = document.createElement('label');
+      advWrap.className = 'power-advanced-toggle';
+
+      const advCheck = document.createElement('input');
+      advCheck.type = 'checkbox';
+      advCheck.checked = useAdvanced;
+
+      const advText = document.createElement('span');
+      advText.textContent = ` ${t('power.advancedRange')}`;
+
+      advWrap.appendChild(advCheck);
+      advWrap.appendChild(advText);
+      block.appendChild(advWrap);
+
+      advCheck.addEventListener('change', () => {
+        if (advCheck.checked) {
+          const ok = window.confirm(
+            `${t('power.consentTitle')}\n\n${t('power.consentAdvanced')}\n\n` +
+            `${t('power.consentOverclock')}\n\n${t('power.consentUndervolt')}\n\n` +
+            `${t('power.consentRecover')}`
+          );
+          if (!ok) {
+            advCheck.checked = false;
+            return;
+          }
+          advancedConsent[key] = true;
+          useAdvanced = true;
+        } else {
+          advancedConsent[key] = false;
+          useAdvanced = false;
+        }
+        // reclamp valor actual al nuevo rango efectivo y refrescar UI
+        slider.min = effMin();
+        slider.max = effMax();
+        numbox.min = effMin();
+        numbox.max = effMax();
+        applyClamp(Number(slider.value));
+        renderRangeNote();
+        const zPct = ((0 - effMin()) / (effMax() - effMin())) * 100;
+        tick.style.left = `${Math.max(0, Math.min(100, zPct))}%`;
+      });
+    }
+  }
+
+  /* ================================================================
      powerTooltip — descripción Armoury Crate traducida al español.
   ================================================================= */
   function powerTooltip(key) {
@@ -212,8 +406,8 @@
       pl2: 'Límite de potencia CPU en ráfaga (máx. 2 min): permite picos de rendimiento cortos antes de caer al PL1.',
       dynamic_boost: 'Pasa vatios de CPU a la GPU cuando la carga gráfica lo demanda, hasta este máximo.',
       thermal_target: 'La GPU se mantiene en o por debajo de esta temperatura ajustando su potencia automáticamente.',
-      base_clock_offset: 'Desplazamiento de frecuencia base del núcleo gráfico. Requiere sesión X11 con Coolbits.',
-      mem_clock_offset: 'Desplazamiento de frecuencia de la memoria de video. Requiere sesión X11 con Coolbits.',
+      base_clock_offset: 'Desplazamiento de frecuencia del núcleo gráfico vía NVML (funciona en Wayland). Subir = overclock; bajar = undervolt. Requiere tu contraseña al aplicar.',
+      mem_clock_offset: 'Desplazamiento de frecuencia de la memoria de video vía NVML (funciona en Wayland). Requiere tu contraseña al aplicar.',
     }[key] || '';
   }
 
@@ -310,6 +504,18 @@
       const gpuContent = buildSliders(controls,
         ['dynamic_boost', 'thermal_target', 'base_clock_offset', 'mem_clock_offset']);
       gpuPanel.appendChild(gpuContent);
+
+      // separador + sección del guardián térmico (debajo de los sliders GPU)
+      const hr = document.createElement('hr');
+      hr.className = 'power-divider';
+      gpuPanel.appendChild(hr);
+
+      const guardianSection = document.createElement('div');
+      guardianSection.id = 'power-thermal-guardian';
+      guardianSection.className = 'power-thermal-guardian';
+      guardianSection.innerHTML = `<p class="dim" style="padding:0.5rem 0">${t('power.thermalLoading')}</p>`;
+      gpuPanel.appendChild(guardianSection);
+      renderThermalGuardian(); // async, pinta cuando llegue la respuesta
     }
 
     // resetear advertencia PL y botón aplicar
@@ -319,6 +525,133 @@
 
     // activar la pestaña que estaba activa
     switchTab(activeTab);
+  }
+
+  /* ================================================================
+     renderThermalGuardian — pinta la sección del guardián térmico GPU
+     dentro del tab GPU (4 estados: cargando / activo / inactivo / error).
+  ================================================================= */
+  async function renderThermalGuardian() {
+    const section = $('power-thermal-guardian');
+    if (!section) return;
+
+    let result;
+    try {
+      result = await window.rog.getThermalGuardian();
+    } catch (err) {
+      section.innerHTML = `<p class="power-control-reason">${t('power.thermalError')}: ${escapeHtmlLocal(err.message)}</p>`;
+      return;
+    }
+
+    if (!result || result.ok === false) {
+      section.innerHTML = `<p class="power-control-reason">${t('power.thermalError')}</p>`;
+      return;
+    }
+
+    thermalState = result;
+    section.innerHTML = '';
+
+    const header = document.createElement('div');
+    header.className = 'power-control-header';
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'power-control-label';
+    labelSpan.textContent = t('power.thermalGuardian');
+    const statusBadge = document.createElement('span');
+    statusBadge.className = 'power-thermal-status' + (result.active ? ' active' : '');
+    statusBadge.textContent = result.active ? t('power.thermalActive') : t('power.thermalInactive');
+    header.appendChild(labelSpan);
+    header.appendChild(statusBadge);
+    section.appendChild(header);
+
+    const desc = document.createElement('span');
+    desc.className = 'power-control-tooltip';
+    desc.textContent = t('power.thermalGuardianDesc');
+    section.appendChild(desc);
+
+    if (!result.scriptExists) {
+      const warn = document.createElement('p');
+      warn.className = 'power-control-reason';
+      warn.textContent = t('power.thermalNotInstalled');
+      section.appendChild(warn);
+      return;
+    }
+
+    // fila: techo (slider) + botón activar/desactivar
+    const rowEl = document.createElement('div');
+    rowEl.className = 'power-control-row power-thermal-row';
+
+    const ceilLabel = document.createElement('span');
+    ceilLabel.className = 'power-control-unit';
+    ceilLabel.textContent = t('power.thermalCeiling') + ':';
+    rowEl.appendChild(ceilLabel);
+
+    const ceilSlider = document.createElement('input');
+    ceilSlider.type = 'range';
+    ceilSlider.className = 'power-slider';
+    ceilSlider.min = 75;
+    ceilSlider.max = 87;
+    ceilSlider.step = 1;
+    ceilSlider.value = result.ceiling || 83;
+    rowEl.appendChild(ceilSlider);
+
+    const ceilNum = document.createElement('input');
+    ceilNum.type = 'number';
+    ceilNum.className = 'power-numbox';
+    ceilNum.min = 75;
+    ceilNum.max = 87;
+    ceilNum.value = ceilSlider.value;
+    rowEl.appendChild(ceilNum);
+
+    const ceilUnit = document.createElement('span');
+    ceilUnit.className = 'power-control-unit';
+    ceilUnit.textContent = '°C';
+    rowEl.appendChild(ceilUnit);
+
+    ceilSlider.addEventListener('input', () => { ceilNum.value = ceilSlider.value; });
+    ceilNum.addEventListener('input', () => {
+      const clamped = Math.max(75, Math.min(87, Number(ceilNum.value) || 83));
+      ceilNum.value = clamped;
+      ceilSlider.value = clamped;
+    });
+
+    section.appendChild(rowEl);
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'ghost power-thermal-toggle';
+    toggleBtn.textContent = result.active ? t('power.thermalDisable') : t('power.thermalEnable');
+    toggleBtn.addEventListener('click', async () => {
+      const enabling = !result.active;
+      toggleBtn.disabled = true;
+      toggleBtn.textContent = t('power.thermalApplying');
+      let res;
+      try {
+        res = await window.rog.setThermalGuardian({
+          enabled: enabling,
+          ceiling: Number(ceilSlider.value),
+        });
+      } catch (err) {
+        powerToast(`${t('power.thermalError')}: ${err.message}`);
+        toggleBtn.disabled = false;
+        toggleBtn.textContent = result.active ? t('power.thermalDisable') : t('power.thermalEnable');
+        return;
+      }
+      if (!res || res.ok === false) {
+        powerToast(`${t('power.thermalError')}: ${(res && res.err) || 'error desconocido'}`);
+        toggleBtn.disabled = false;
+        toggleBtn.textContent = result.active ? t('power.thermalDisable') : t('power.thermalEnable');
+        return;
+      }
+      powerToast(enabling ? `${t('power.thermalGuardian')}: ${t('power.thermalActive')} ✓` : `${t('power.thermalGuardian')}: ${t('power.thermalInactive')} ✓`);
+      await renderThermalGuardian(); // refresca con el estado real
+    });
+    section.appendChild(toggleBtn);
+  }
+
+  function escapeHtmlLocal(s) {
+    if (typeof escapeHtml === 'function') return escapeHtml(s);
+    return String(s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
   }
 
   function showPowerError(msg) {

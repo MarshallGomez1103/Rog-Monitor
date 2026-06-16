@@ -931,64 +931,148 @@ function createWindow() {
   });
 }
 
-/* ---------- power control (Agent 2) ----------
-   Lectura vía rog_monitor.power_control CLI; escritura vía pkexec
-   scripts/apply-power-control.sh (ver §2.2 de build-spec-v9.md).
-   Los canales IPC se exponen como get-power-control / set-power-control /
-   reset-power-control. */
+/* ---------- power control (A6) ----------
+   Lectura vía rog_monitor.power_control CLI; escritura:
+   - pl1/pl2/dynamic_boost/thermal_target → pkexec apply-power-control.sh
+   - base_clock_offset/mem_clock_offset   → pkexec apply-gpu-clocks.sh (NVML, Wayland OK)
+   power_control.py ya hace el dispatch correcto al recibir changes con cualquier mezcla.
+   Canales IPC: get-power-control / set-power-control / reset-power-control. */
 
 const APPLY_POWER_SCRIPT = path.join(REPO, 'scripts', 'apply-power-control.sh');
+const APPLY_GPU_CLOCKS_SCRIPT = path.join(REPO, 'scripts', 'apply-gpu-clocks.sh');
 
 ipcMain.handle('get-power-control', async () =>
   runJsonModule('rog_monitor.power_control', ['state'], 8000));
 
 ipcMain.handle('set-power-control', async (_e, payload) => {
-  // Solo claves en la lista blanca, convertidas a args bash: pl1=120 pl2=160 …
-  const ALLOWED = ['pl1', 'pl2', 'dynamic_boost', 'thermal_target'];
-  const args = [];
-  for (const key of ALLOWED) {
+  // Allowlist de claves: las 4 de asus-armoury + 2 de GPU clocks (NVML).
+  // power_control.py se encarga del dispatch al script correcto.
+  const ALLOWED_ATTRS = ['pl1', 'pl2', 'dynamic_boost', 'thermal_target'];
+  const ALLOWED_CLOCKS = ['base_clock_offset', 'mem_clock_offset'];
+  const ALL_ALLOWED = [...ALLOWED_ATTRS, ...ALLOWED_CLOCKS];
+
+  const changes = {};
+  for (const key of ALL_ALLOWED) {
     if (payload && payload[key] !== undefined && Number.isFinite(+payload[key])) {
-      args.push(`${key}=${Math.round(+payload[key])}`);
+      changes[key] = Math.round(+payload[key]);
     }
   }
-  if (!args.length) {
+  if (!Object.keys(changes).length) {
     return { ok: false, err: 'No hay valores válidos para aplicar.' };
   }
-  if (!fs.existsSync(APPLY_POWER_SCRIPT)) {
-    return {
-      ok: false,
-      err: `Script no encontrado: ${APPLY_POWER_SCRIPT} — ¿ya entregó Agent 1?`,
-    };
+
+  // Verificar que los scripts existan antes de llamar al módulo Python.
+  const hasAttrs = ALLOWED_ATTRS.some((k) => k in changes);
+  const hasClocks = ALLOWED_CLOCKS.some((k) => k in changes);
+
+  if (hasAttrs && !fs.existsSync(APPLY_POWER_SCRIPT)) {
+    return { ok: false, err: `Script no encontrado: ${APPLY_POWER_SCRIPT}` };
   }
-  const res = await run('pkexec', ['bash', APPLY_POWER_SCRIPT, ...args], 20000);
-  if (!res.ok) return res;
-  // devolver estado fresco para que la UI actualice los sliders
-  return runJsonModule('rog_monitor.power_control', ['state'], 8000);
+  if (hasClocks && !fs.existsSync(APPLY_GPU_CLOCKS_SCRIPT)) {
+    return { ok: false, err: `Script no encontrado: ${APPLY_GPU_CLOCKS_SCRIPT}` };
+  }
+
+  // Delegar todo a power_control.py (que internamente hace pkexec a cada script).
+  // apply() devuelve {ok, applied, state:{...snapshot...}} — lo aplanamos para
+  // que el renderer vea la MISMA forma que get-power-control (controls/available
+  // a nivel raíz), consistente con el contrato canónico.
+  const res = await runJsonModule('rog_monitor.power_control',
+    ['apply', '--json', JSON.stringify(changes)], 25000);
+  if (!res || res.ok === false) return res;
+  const flat = res.state && typeof res.state === 'object' ? res.state : res;
+  return { ...flat, ok: true, applied: res.applied };
 });
 
 ipcMain.handle('reset-power-control', async () => {
-  // Lee los defaults del módulo y los aplica todos
+  // Lee los defaults y aplica solo los attrs de asus-armoury (no se resetean offsets GPU).
   const state = await runJsonModule('rog_monitor.power_control', ['state'], 8000);
   if (!state || state.ok === false) return state;
-  const controls = (state.controls) || {};
+  const controls = state.controls || {};
   const ALLOWED = ['pl1', 'pl2', 'dynamic_boost', 'thermal_target'];
   const args = [];
   for (const key of ALLOWED) {
     const ctrl = controls[key];
-    if (ctrl && ctrl.writable && ctrl.default !== undefined) {
+    if (ctrl && ctrl.writable && ctrl.default !== null && ctrl.default !== undefined) {
       args.push(`${key}=${Math.round(ctrl.default)}`);
     }
   }
   if (!args.length) return { ok: false, err: 'No hay defaults que restaurar.' };
   if (!fs.existsSync(APPLY_POWER_SCRIPT)) {
-    return {
-      ok: false,
-      err: `Script no encontrado: ${APPLY_POWER_SCRIPT} — ¿ya entregó Agent 1?`,
-    };
+    return { ok: false, err: `Script no encontrado: ${APPLY_POWER_SCRIPT}` };
   }
   const res = await run('pkexec', ['bash', APPLY_POWER_SCRIPT, ...args], 20000);
   if (!res.ok) return res;
   return runJsonModule('rog_monitor.power_control', ['state'], 8000);
+});
+
+/* ---------- guardián térmico GPU (A6) ----------
+   rog-thermal-guardian.sh: loop que sube ventiladores primero y, si el techo
+   se supera, recorta dynamic_boost / PL2 suavemente. Se instala como servicio
+   systemd (ver docs/SUDO-PENDIENTE-v10.md). En runtime: start/stop vía systemctl
+   + pkexec; estado vía is-active. */
+
+const THERMAL_GUARDIAN_SERVICE = 'rog-thermal-guardian.service';
+const THERMAL_GUARDIAN_SCRIPT = path.join(REPO, 'scripts', 'rog-thermal-guardian.sh');
+
+ipcMain.handle('get-thermal-guardian', async () => {
+  const active = await run('systemctl', ['is-active', THERMAL_GUARDIAN_SERVICE], 4000);
+  const enabled = await run('systemctl', ['is-enabled', THERMAL_GUARDIAN_SERVICE], 4000);
+  const scriptExists = fs.existsSync(THERMAL_GUARDIAN_SCRIPT);
+  // Leer el techo configurado: mirar el override de systemd si existe.
+  const overridePath = `/etc/systemd/system/${THERMAL_GUARDIAN_SERVICE}.d/override.conf`;
+  let ceiling = 83;
+  try {
+    const overrideText = fs.readFileSync(overridePath, 'utf-8');
+    const m = overrideText.match(/--ceiling\s+(\d+)/);
+    if (m) ceiling = parseInt(m[1], 10);
+  } catch (_) { /* no override → default */ }
+
+  return {
+    ok: true,
+    active: active.out === 'active',
+    enabled: enabled.out === 'enabled',
+    scriptExists,
+    ceiling,
+    serviceUnit: THERMAL_GUARDIAN_SERVICE,
+    status: active.out || 'unknown',
+  };
+});
+
+ipcMain.handle('set-thermal-guardian', async (_e, { enabled, ceiling }) => {
+  // enabled: true → start+enable; false → stop+disable.
+  // ceiling: número en °C (se pasa como argumento al servicio via override).
+  const acts = enabled
+    ? ['start', 'enable']
+    : ['stop', 'disable'];
+
+  // Si se pide cambiar el techo, crear un override de systemd con el valor.
+  if (enabled && ceiling !== undefined && Number.isFinite(+ceiling)) {
+    const c = Math.max(75, Math.min(87, Math.round(+ceiling)));
+    const overrideDir = `/etc/systemd/system/${THERMAL_GUARDIAN_SERVICE}.d`;
+    const overrideContent =
+      `[Service]\nEnvironment="ROG_THERMAL_CEILING=${c}"\n`;
+    // Escribir el override (necesita root).
+    const mkdirCmd = `mkdir -p ${overrideDir}`;
+    const writeCmd = `printf '%s' '${overrideContent.replace(/'/g, "'\\''")}' > ${overrideDir}/override.conf`;
+    const daemonReload = 'systemctl daemon-reload';
+    const fullCmd = `${mkdirCmd} && ${writeCmd} && ${daemonReload}`;
+    const res = await run('pkexec', ['sh', '-c', fullCmd], 15000);
+    if (!res.ok) return { ok: false, err: `No se pudo configurar el techo: ${res.err}` };
+  }
+
+  // start/stop + enable/disable en un solo pkexec.
+  const svcActs = acts.map((a) => `systemctl ${a} ${THERMAL_GUARDIAN_SERVICE}`).join(' && ');
+  const res = await run('pkexec', ['sh', '-c', svcActs], 15000);
+  if (!res.ok) return { ok: false, err: res.err };
+
+  // Releer estado después de la acción.
+  const active = await run('systemctl', ['is-active', THERMAL_GUARDIAN_SERVICE], 4000);
+  return {
+    ok: true,
+    active: active.out === 'active',
+    enabled,
+    ceiling: (enabled && ceiling) ? Math.max(75, Math.min(87, Math.round(+ceiling))) : undefined,
+  };
 });
 
 app.whenReady().then(() => {

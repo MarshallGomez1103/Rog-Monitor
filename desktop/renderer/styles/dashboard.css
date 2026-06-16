@@ -1,0 +1,224 @@
+/* ROG Monitor — estilos del tablero arrastrable (v10, dueño: Agente A3).
+ * Grid por bloques, handles de arrastre, estado oculto, numeración.
+ * Contrato en docs/build-spec-v10.md §A3.
+ *
+ * Usa tokens de tema: --accent, --accent2, --panel, --hair, --ink, --dim, --glow
+ * Usa tokens de neón de A4: --neon-box, --neon-line (si están disponibles)
+ */
+
+/* ============================================================
+   NÚMERO DE BLOQUE — inyectado dinámicamente por dashboard.js
+   ============================================================ */
+h2 > i.dash-num {
+  display: inline-block;
+  font-style: normal;
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  min-width: 1.8ch;
+  margin-right: 0.35em;
+  color: var(--accent);
+  /* Placa skew heredada del estilo visual del proyecto */
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 2px;
+  padding: 0 4px;
+  transform: skewX(-10deg);
+  transition: color 0.15s, background 0.15s;
+}
+
+/* ============================================================
+   CONTROLES DE BLOQUE (handle + botón ocultar)
+   ============================================================ */
+.dash-block-ctrl {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  z-index: 10;
+  /* Sin pointer-events hasta que el bloque tenga hover */
+  pointer-events: none;
+}
+
+.block {
+  position: relative; /* necesario para el posicionamiento de .dash-block-ctrl */
+}
+
+.block:hover .dash-block-ctrl,
+.block:focus-within .dash-block-ctrl {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Handle ≡ */
+.dash-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 3px;
+  cursor: grab;
+  font-size: 15px;
+  color: var(--dim);
+  background: color-mix(in srgb, var(--panel) 80%, var(--accent) 10%);
+  border: 1px solid var(--hair);
+  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.dash-handle:hover {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--panel));
+  box-shadow: var(--neon-box, 0 0 6px color-mix(in srgb, var(--accent) 40%, transparent));
+  cursor: grab;
+}
+
+.dash-handle:active {
+  cursor: grabbing;
+}
+
+/* Botón ocultar × */
+.dash-hide-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--dim);
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  border: 1px solid var(--hair);
+  transition: color 0.15s, background 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+
+.dash-hide-btn:hover {
+  color: var(--accent2, #ff4466);
+  background: color-mix(in srgb, var(--accent2, #ff4466) 15%, var(--panel));
+  border-color: var(--accent2, #ff4466);
+}
+
+/* ============================================================
+   ESTADO OCULTO
+   ============================================================ */
+.block.dash-hidden {
+  display: none !important;
+}
+
+/* ============================================================
+   ARRASTRE — bloque fuente
+   ============================================================ */
+.block.dash-dragging {
+  opacity: 0.38;
+  box-shadow: 0 0 0 2px var(--accent),
+              var(--neon-box, 0 0 14px color-mix(in srgb, var(--accent) 50%, transparent));
+  transition: opacity 0.12s, box-shadow 0.12s;
+  pointer-events: none;
+}
+
+/* ============================================================
+   INDICADOR DE INSERCIÓN (línea neón al soltar)
+   ============================================================ */
+.dash-drop-indicator {
+  position: fixed;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: var(--neon-line,
+    0 0 6px  color-mix(in srgb, var(--accent) 80%, transparent),
+    0 0 14px color-mix(in srgb, var(--accent) 50%, transparent));
+  pointer-events: none;
+  z-index: 9999;
+  transition: top 0.06s, left 0.06s, width 0.06s;
+}
+
+/* ============================================================
+   COLUMNAS — zona de drop activa
+   ============================================================ */
+.col-left[data-drop-target],
+.col-right[data-drop-target] {
+  outline: 2px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ============================================================
+   PANEL DE CONFIGURACIÓN DEL TABLERO
+   ============================================================ */
+#dashboard-modal .modal-card {
+  min-width: 320px;
+  max-width: 500px;
+}
+
+#dash-config-body {
+  margin: 0.75rem 0;
+}
+
+/* Lista de bloques ocultos */
+.dash-hidden-list {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dash-hidden-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.dash-hidden-list li span {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.dash-show-btn {
+  font-size: 12px;
+  padding: 3px 10px;
+  height: auto;
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  color: var(--accent);
+}
+
+.dash-show-btn:hover {
+  background: color-mix(in srgb, var(--accent) 18%, var(--panel));
+  box-shadow: var(--neon-box, 0 0 8px color-mix(in srgb, var(--accent) 40%, transparent));
+}
+
+/* ============================================================
+   BOTÓN TABLERO en la barra superior
+   ============================================================ */
+#dash-btn {
+  /* hereda .ghost — solo ajustamos el orden visual */
+  order: -1;
+}
+
+/* ============================================================
+   ACCESIBILIDAD — reducir movimiento
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .dash-block-ctrl,
+  .dash-handle,
+  .dash-hide-btn,
+  .dash-drop-indicator {
+    transition: none;
+  }
+}

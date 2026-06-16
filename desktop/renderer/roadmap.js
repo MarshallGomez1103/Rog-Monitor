@@ -1,0 +1,447 @@
+/* ROG Monitor — Roadmap (v10, dueño: Agente A5).
+ * Botón #roadmap-btn -> #roadmap-modal con "Hecho" (por fechas) y "Por hacer".
+ * Se carga DESPUÉS de app.js. Contrato en docs/build-spec-v10.md §A5. */
+
+/* ============================================================
+   DATOS DEL ROADMAP
+   Fuente de verdad para el contenido de la timeline.
+   Para actualizar: edita estos objetos; el render es automático.
+   ============================================================ */
+
+const ROADMAP_CURRENT = {
+  version: 'v10',
+  label: 'Power User (en progreso)',
+  // Descripción de lo que hay HOY en la app:
+  features: [
+    'Centro de Poder: PL1/PL2/Dynamic Boost/Thermal Target vía asus-armoury, calibrado G614JV, doble consentimiento, reset a fábrica',
+    'Grid de 9 modos Aura: 5 hardware + Música + 3 honestos; perfiles con color, guardar/cargar, inicio automático',
+    'Overlay para juegos: ventana siempre encima, click-through, temp/W/RPM/FPS (MangoHud opt-in)',
+    'Wizard de primera vez: 5 pasos repetibles (ventiladores → calibración → benchmark → tour)',
+    '4 estados por widget: con datos / cargando / sin datos / error',
+    '12 temas × claro/oscuro: Magma, Nébula, Océano, Glaciar, Reactor, Grafito, Neón, Atardecer, Neon Nights, Cyberpunk, Aurora, Alba',
+    'Benchmarks CPU y GPU (modal con exportación JSON, historial persistente clickable)',
+    'Cap de RPM verificado (calibración PWM→RPM real, curva prístina, servicio reaplica si el firmware la pisa)',
+  ],
+};
+
+// Hitos completados — orden cronológico ascendente
+const ROADMAP_DONE = [
+  {
+    date: '2026-06-08',
+    version: 'v2',
+    title: 'Migración Bash → Python, TUI con Rich',
+    points: [
+      'Interfaz Rich con historial térmico, colores dinámicos y barras de progreso',
+      'Detección de GPU (Hybrid / Integrated / Dedicated) y soporte AMD',
+      'Configuración persistente en ~/.config/rog-monitor/config.json',
+    ],
+  },
+  {
+    date: '2026-06-10',
+    version: 'v5',
+    title: 'Dashboard profesional (reescritura modular)',
+    points: [
+      'Paquete Python modular en src/rog_monitor/ — sin script monolítico',
+      'Sistema de alertas con umbrales, notificaciones de escritorio y log de eventos',
+      'Detección de thermal throttling, promedios 1m/5m/15m, gráficas multihistorial',
+      'Potencia CPU por Intel RAPL con acceso no-root (scripts/enable-cpu-power.sh)',
+      'Panel de sistema: RAM, disco, NVMe, red, batería, carga',
+    ],
+  },
+  {
+    date: '2026-06-10',
+    version: 'v6',
+    title: 'App Electron — primera interfaz gráfica',
+    points: [
+      'Dashboard gráfico con gauges canvas, ventiladores animados y gráficas de historial',
+      'Botones de perfil de energía y modo GPU desde la app',
+      'Botón ACTUALIZAR (git pull + reinicio del backend)',
+      'Sistema de 6 paletas × claro/oscuro (Magma, Nébula, Océano, Glaciar, Reactor, Grafito)',
+      'Panel de procesos, todos los discos, log de eventos, exportación JSON/CSV',
+    ],
+  },
+  {
+    date: '2026-06-10',
+    version: 'v7',
+    title: 'Centro de Control (ventiladores, clocks, procesos)',
+    points: [
+      'Editor de curvas de ventilación: 8 puntos × 3 ventiladores, por perfil, en % del máximo',
+      'Cap de RPM editable y benchmark de máximos por ventilador (pkexec + medición real)',
+      'Frecuencias en vivo: GPU núcleo/VRAM en MHz, CPU en GHz',
+      'Clic en RAM → qué procesos consumen la memoria, con cierre desde la app',
+      'Salud de discos SMART (botón en Sistema, pkexec + smartctl)',
+      'Botón REPORTAR ERROR → abre issue en GitHub con info del sistema',
+      'Eje de tiempo en las 4 gráficas ("hace N min" / "ahora")',
+      'Tamaño de letra configurable (A−/Normal/A+/A++) y scrollbars temáticas',
+      'AGENTS.md + docs/HANDOFF.md: memoria compartida para agentes IA',
+    ],
+  },
+  {
+    date: '2026-06-10',
+    version: 'v8.0–8.1',
+    title: 'Iluminación Aura: backend + UI + modo música',
+    points: [
+      'Backend aura.py: detecta asusctl, lista efectos reales del hardware, guarda perfiles en aura.json',
+      'Bloque 08 Iluminación con selector de efecto, color, velocidad, dirección, brillo, perfiles guardados',
+      'Modo música: captura audio del sistema vía PipeWire y ajusta brillo/color en tiempo real',
+      'Benchmark GPU local mejorado (4× vkcube immediate = ~99% de carga real)',
+      'Umbrales y colores de alerta editables desde la app (botón ALERTAS → backend settings.py)',
+    ],
+  },
+  {
+    date: '2026-06-10',
+    version: 'v8.2',
+    title: 'Overlay para juegos + Aura honesto',
+    points: [
+      'Overlay siempre encima, transparente, click-through y sin robar foco (KDE/Wayland)',
+      'Aura: detecta SupportedBasicModes por D-Bus → solo ofrece los efectos que el teclado soporta de verdad',
+      'Perfiles Aura como lista interactiva (color, etiqueta, inicio, APLICAR, borrar con confirmación)',
+      'Cap de RPM real: curvas en JSON del usuario, servicio root las lee en cada cambio de perfil',
+    ],
+  },
+  {
+    date: '2026-06-10',
+    version: 'v8.3',
+    title: 'Cap verificado + Aura arreglado de raíz + overlay AVG/FPS',
+    points: [
+      'Cap ya no se "hornea" en la curva; subir o quitar el cap libera RPM al instante',
+      'Calibración PWM→RPM real (7 escalones, espera estabilización < 75 RPM delta)',
+      'Aura: label asesino corregido (los chips estaban dentro de <label> que reenviaba al Static)',
+      'Aura: ya no reconstruye los chips cada segundo (firma de estado)',
+      'Overlay: CPU muestra promedio AVG; FPS reales vía MangoHud (opt-in)',
+      'Modales arrastrables, ALERTAS con iconos/colores, EXPORTAR/IMPORTAR CONFIG',
+      'Modo música: captura el monitor del sink, no el micrófono; brillo por D-Bus directo (~20 ms)',
+    ],
+  },
+  {
+    date: '2026-06-12',
+    version: 'v8.4',
+    title: 'Identidad visual propia + hover en gráficas + nombre GPU real',
+    points: [
+      'Identidad visual que no parezca "hecha por IA": esquinas cortadas, placas numeradas inclinadas, rayado diagonal',
+      'Bloques renumerados en orden visual: 01 CPU → 04 Iluminación; 05 Historial → 09 Procesos',
+      'Hover en las 4 gráficas: crosshair punteado, valor exacto y hace cuántos segundos fue',
+      '+2 temas: Neón (cian/magenta) y Atardecer (oro/rosa) → ya son 8 paletas × claro/oscuro',
+      'Modo claro con identidad real: paneles tintados por paleta (antes todos "blanco plano")',
+      'Nombre de GPU detectado (nvidia-smi), ya no hardcodeado como "RTX 4060"',
+      'Consumo GPU por power.draw.average → no se desploma a 1 W en micro-sueños',
+      'Redragon K734WCG-RGB-PRO detectado por sysfs; control bloqueado hasta capturas USB',
+    ],
+  },
+  {
+    date: '2026-06-13',
+    version: 'v9.0.0',
+    title: 'Centro de Poder + wizard + 4 estados + 12 temas + grid Aura',
+    points: [
+      'Centro de Poder: PL1 (28–140 W), PL2 (28–175 W), GPU Dynamic Boost (5–25 W), Thermal Target (75–87 °C)',
+      'Cada escritura recortada dos veces al mín/máx del firmware; diálogo de consentimiento; RESET A FÁBRICA',
+      'device_profiles.json + rangos en vivo de sysfs → funciona en cualquier portátil con asus-armoury',
+      '+4 temas (12 total): Neon Nights, Cyberpunk, Aurora, Alba; modos claros completamente rehechos',
+      'Grid de 9 modos Aura con honestidad: 5 HW reales + Música + 3 marcados explícitamente',
+      'Wizard de primera vez: 5 pasos repetibles (bienvenida → fans → calibración → benchmark → tour)',
+      '4 estados por widget: skeleton / sin datos / error por widget, ventilador dañado mostrado PARADO',
+      'docs/supported-devices.md, CONTRIBUTING.md, plantillas de issues, CI GitHub Actions (preparado para open source)',
+    ],
+  },
+];
+
+// Pendientes (por hacer) — de docs/roadmap.md y HANDOFF.md
+const ROADMAP_TODO = [
+  {
+    title: 'Dashboard reordenable y por-widget configurable',
+    points: [
+      'Arrastrar y reordenar los 9 bloques con handle (≡) al hover',
+      'Activar/desactivar cada widget individualmente; panel para re-activar ocultos',
+      'Numeración dinámica sin huecos, persistida en localStorage',
+    ],
+  },
+  {
+    title: 'Neón de verdad en los 12 temas',
+    points: [
+      'Glow multicapa (Cyberpunk 2077 / Liam Wong) en oscuro: los acentos irradian',
+      '"Neón de día" en modo claro: halos saturados sobre fondo claro, contraste AA mínimo',
+      'Tokens --neon-glow / --neon-box / --neon-line compartidos por todos los módulos',
+    ],
+  },
+  {
+    title: 'Internacionalización (8 idiomas) + selector de idioma',
+    points: [
+      'window.t(key) / window.i18n.register(dict) disponibles antes de app.js',
+      'Selector de idioma en topbar (botón A文) + modal con bandera/nombre nativo',
+      'Paso 0 del wizard: "Elige tu idioma", persiste en localStorage',
+      'Idiomas: es (base), en, fr, it, pt, zh, ja, ko',
+    ],
+  },
+  {
+    title: 'Redragon K734WCG-RGB-PRO — control completo',
+    points: [
+      'Pendiente: captura USB en Windows con el software BYCOMBO4 (guía en docs/redragon-protocol.md)',
+      'Con capturas: escribir redragon.py (hidraw + ioctl, sin dependencias externas)',
+      'NO mandar comandos adivinados — familia Sinowealth se ha brickeado con comandos sin verificar',
+    ],
+  },
+  {
+    title: 'GPU Clock Offsets (base/memoria)',
+    points: [
+      'Bloqueados en Wayland por limitación del driver NVIDIA; require X11/Coolbits',
+      'Pendiente explorar ruta NVML o sesión X11 opcional',
+    ],
+  },
+  {
+    title: 'Guardar y Aplicar (ventiladores) — un paso de Marshall',
+    points: [
+      'El script blindado con check-only y FALLBACK_MAX está listo en el repo',
+      'Un GUARDAR Y APLICAR instala la versión nueva en /usr/local/sbin (pkexec)',
+      'El cap ya funciona porque max_rpm/calibration están en fan-curves.json',
+    ],
+  },
+  {
+    title: 'Soporte AMD completo',
+    points: [
+      'k10temp por CCD, RAPL amd_energy, amdgpu probado en hardware AMD',
+      'Perfiles vía platform_profile genérico (no solo asus-wmi)',
+    ],
+  },
+  {
+    title: 'Historial persistente (SQLite)',
+    points: [
+      'Base de datos en ~/.local/share/rog-monitor/ para consultar semanas de datos',
+      'Gráficas de tendencia a largo plazo',
+    ],
+  },
+  {
+    title: 'Música por zonas',
+    points: [
+      'Graves/medios/agudos en distintas zonas del teclado',
+      'El teclado interno reporta 0 zonas; apunta al Redragon vía OpenRGB cuando esté',
+    ],
+  },
+  {
+    title: 'Widget KDE Plasma 6 + Prometheus + Alertas inteligentes',
+    points: [
+      'Plasmoid que lee --json sin necesitar la app Electron abierta',
+      'Exportación Prometheus (--serve :9871/metrics) + dashboard Grafana',
+      'Alertas con acciones: bajar perfil automáticamente al throttlear',
+    ],
+  },
+  {
+    title: 'Multi-distro / multi-marca + paquetes',
+    points: [
+      'Probar en Mint/Fedora; detectar hwmon genérico para no-ROG',
+      'Meta: "Armoury Crate de Linux" para Legion y otros',
+      'Paquetes: PyPI (pipx install rog-monitor), Flatpak, AUR, COPR',
+    ],
+  },
+  {
+    title: 'v11 — Open Source (lo último, cuando Marshall dé el visto bueno)',
+    points: [
+      'GitHub Actions: lint + prueba --json en runner Ubuntu',
+      'Releases con tag semver y notas de cambio',
+      'Capturas de pantalla en el README',
+      'Wiki: sensores soportados, troubleshooting por modelo',
+      'Publicación pública + post en r/linuxhardware y foros ROG',
+    ],
+  },
+];
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+
+function _t(key, fallback) {
+  // Usa window.t si ya está implementado; sino el fallback literal
+  try { const r = window.t(key); if (r !== key) return r; } catch (e) { /* noop */ }
+  return fallback;
+}
+
+function _escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function _buildCurrentStatus() {
+  const features = ROADMAP_CURRENT.features
+    .map((f) => `<li>${_escHtml(f)}</li>`)
+    .join('');
+  return `
+    <div class="roadmap-status-pill">${_escHtml(ROADMAP_CURRENT.version)} — ${_escHtml(ROADMAP_CURRENT.label)}</div>
+    <ul class="roadmap-current-list">${features}</ul>
+  `;
+}
+
+function _buildTimelineItem(item, isDone, idx) {
+  const cls = isDone ? 'done' : 'todo';
+  const idPrefix = isDone ? 'rdone' : 'rtodo';
+  const arrowId = `${idPrefix}-arrow-${idx}`;
+  const bodyId = `${idPrefix}-body-${idx}`;
+
+  const dateHtml = isDone && item.date
+    ? `<span class="roadmap-item-date">${_escHtml(item.date)}${item.version ? ' · ' + _escHtml(item.version) : ''}</span>`
+    : (item.version ? `<span class="roadmap-item-date">${_escHtml(item.version)}</span>` : '');
+
+  const pointsHtml = item.points && item.points.length
+    ? `<ul>${item.points.map((p) => `<li>${_escHtml(p)}</li>`).join('')}</ul>`
+    : '';
+
+  return `
+    <div class="roadmap-item ${cls}" data-rdx="${idPrefix}-${idx}">
+      <div class="roadmap-item-head" role="button" tabindex="0" aria-expanded="false" aria-controls="${bodyId}">
+        ${dateHtml}
+        <span class="roadmap-item-title">${_escHtml(item.title)}</span>
+        <span class="roadmap-item-arrow" id="${arrowId}" aria-hidden="true">▼</span>
+      </div>
+      <div class="roadmap-item-body" id="${bodyId}">
+        ${pointsHtml}
+      </div>
+    </div>
+  `;
+}
+
+function _buildRoadmapContent() {
+  const doneItems = [...ROADMAP_DONE].reverse(); // más reciente primero
+
+  const doneHtml = doneItems
+    .map((item, i) => _buildTimelineItem(item, true, i))
+    .join('');
+
+  const todoHtml = ROADMAP_TODO
+    .map((item, i) => _buildTimelineItem(item, false, i))
+    .join('');
+
+  return `
+    <h3 data-i18n="roadmap.title">${_t('roadmap.title', 'Roadmap')}</h3>
+    ${_buildCurrentStatus()}
+
+    <div class="roadmap-sep" data-i18n="roadmap.done">${_t('roadmap.done', 'HECHO ▲')}</div>
+    <div class="roadmap-timeline" id="roadmap-done-list">
+      ${doneHtml}
+    </div>
+
+    <div class="roadmap-sep" data-i18n="roadmap.todo">${_t('roadmap.todo', 'POR HACER ▼')}</div>
+    <div class="roadmap-timeline" id="roadmap-todo-list">
+      ${todoHtml}
+    </div>
+
+    <div class="roadmap-close-row">
+      <button class="ghost modal-close" id="roadmap-close" data-i18n="common.close">${_t('common.close', 'Cerrar')}</button>
+    </div>
+  `;
+}
+
+function _fillModal() {
+  const modal = document.getElementById('roadmap-modal');
+  if (!modal) return;
+
+  // Solo poner el contenido si el modal-card no existe aún
+  if (!modal.querySelector('.modal-card')) {
+    const card = document.createElement('div');
+    card.className = 'modal-card roadmap-card';
+    modal.appendChild(card);
+  }
+
+  const card = modal.querySelector('.modal-card');
+  card.innerHTML = `<div class="roadmap-scroll">${_buildRoadmapContent()}</div>`;
+
+  // Botón cerrar
+  const closeBtn = card.querySelector('#roadmap-close');
+  if (closeBtn) closeBtn.addEventListener('click', closeRoadmapModal);
+}
+
+function _wireExpandToggle(container) {
+  if (!container) return;
+  container.querySelectorAll('.roadmap-item-head').forEach((head) => {
+    head.addEventListener('click', () => {
+      const item = head.closest('.roadmap-item');
+      if (!item) return;
+      const isOpen = item.classList.toggle('open');
+      head.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    head.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); head.click(); }
+    });
+  });
+}
+
+/* ============================================================
+   OPEN / CLOSE
+   ============================================================ */
+
+function openRoadmapModal() {
+  const modal = document.getElementById('roadmap-modal');
+  if (!modal) return;
+
+  // Rellenar y cablear la primera vez (o si se vacía)
+  if (!modal.querySelector('.modal-card')) {
+    _fillModal();
+    _wireExpandToggle(modal);
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function closeRoadmapModal() {
+  const modal = document.getElementById('roadmap-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+/* ============================================================
+   INICIALIZACIÓN
+   ============================================================ */
+
+(function initRoadmap() {
+  // Rellenar el modal inmediatamente para que el HTML sea válido desde el primer instante
+  _fillModal();
+
+  // Botón del topbar
+  const btn = document.getElementById('roadmap-btn');
+  if (btn) {
+    btn.addEventListener('click', openRoadmapModal);
+  }
+
+  // Cerrar con clic en el overlay (fuera del modal-card)
+  const modal = document.getElementById('roadmap-modal');
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeRoadmapModal();
+    });
+    // Cablear expanders tras llenar
+    _wireExpandToggle(modal);
+  }
+
+  // Re-render si cambia el idioma
+  if (window.i18n && typeof window.i18n.onChange === 'function') {
+    window.i18n.onChange(() => {
+      const m = document.getElementById('roadmap-modal');
+      if (m) {
+        const card = m.querySelector('.modal-card');
+        if (card) {
+          card.innerHTML = `<div class="roadmap-scroll">${_buildRoadmapContent()}</div>`;
+          const closeBtn = card.querySelector('#roadmap-close');
+          if (closeBtn) closeBtn.addEventListener('click', closeRoadmapModal);
+          _wireExpandToggle(m);
+        }
+      }
+    });
+  }
+
+  // Registrar traducciones propias (es + en mínimo; A1 completa los 8 idiomas)
+  if (window.i18n && typeof window.i18n.register === 'function') {
+    window.i18n.register({
+      es: {
+        'roadmap.title': 'Roadmap',
+        'roadmap.done': 'HECHO ▲',
+        'roadmap.todo': 'POR HACER ▼',
+        'roadmap.current': 'Estado actual',
+      },
+      en: {
+        'roadmap.title': 'Roadmap',
+        'roadmap.done': 'DONE ▲',
+        'roadmap.todo': 'TO DO ▼',
+        'roadmap.current': 'Current status',
+      },
+    });
+  }
+})();

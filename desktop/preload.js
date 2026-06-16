@@ -45,8 +45,11 @@ contextBridge.exposeInMainWorld('rog', {
     webFrame.setZoomLevel(level);
     try { localStorage.setItem('zoomLevel', String(level)); } catch (_) {}
   },
-  // --- power control (Agent 2) ---
+  // --- power control (A6: pl1/pl2/boost/thermal + offsets GPU NVML) ---
   getPowerControl: () => ipcRenderer.invoke('get-power-control'),
   setPowerControl: (payload) => ipcRenderer.invoke('set-power-control', payload),
   resetPowerControl: () => ipcRenderer.invoke('reset-power-control'),
+  // --- guardián térmico GPU (A6) ---
+  getThermalGuardian: () => ipcRenderer.invoke('get-thermal-guardian'),
+  setThermalGuardian: (payload) => ipcRenderer.invoke('set-thermal-guardian', payload),
 });

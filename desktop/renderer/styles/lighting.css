@@ -1,6 +1,8 @@
-/* ROG Monitor — Lighting block styles (Agent 4 / v9).
+/* ROG Monitor — Lighting block styles (v10, dueño: Agente A2).
    Cuadrícula de 9 modos Aura estilo Armoury Crate.
-   Usa solo vars del sistema de temas: --accent --chip --hair --dim --ink --panel --bg.
+   Usa tokens del sistema de temas: --accent --chip --hair --dim --ink --panel --bg
+   y los tokens neón de A4: --neon-box, --neon-line, --neon-glow, --neon-glow-soft.
+   Fallbacks seguros cuando A4 aún no pobló neon.css.
    NO tocar style.css desde aquí. */
 
 /* ---------- cuadrícula de modos ---------- */
@@ -23,11 +25,12 @@
   gap: 6px;
   padding: 12px 6px 10px;
   background: var(--chip);
-  border: 1px solid var(--hair);
+  /* Neón: borde que brilla sutilmente — token de A4, fallback hair */
+  border: 1px solid var(--neon-line, var(--hair));
   /* Esquina superior derecha cortada — identidad visual del proyecto */
   clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.18s;
   text-align: center;
   min-height: 74px;
   /* sin border-radius: usa el clip-path propio */
@@ -37,7 +40,9 @@
 }
 
 .mode-tile:focus-visible {
-  box-shadow: 0 0 0 2px var(--accent);
+  /* Halo neón en foco de teclado */
+  box-shadow: 0 0 0 2px var(--accent),
+              var(--neon-box, 0 0 8px color-mix(in srgb, transparent 50%, var(--accent) 50%));
 }
 
 /* Icono */
@@ -45,7 +50,7 @@
   font-size: 1.4rem;
   line-height: 1;
   color: var(--ink);
-  transition: color 0.15s;
+  transition: color 0.15s, text-shadow 0.15s;
 }
 
 /* Etiqueta */
@@ -61,25 +66,37 @@
 
 /* ---------- estados de los tiles ---------- */
 
-/* Tile disponible en reposo */
+/* Tile disponible en reposo — hover: borde acento + glow suave */
 .mode-tile.mode-idle:hover {
-  background: color-mix(in srgb, var(--chip) 60%, var(--accent) 40%);
+  background: color-mix(in srgb, var(--chip) 55%, var(--accent) 45%);
   border-color: var(--accent);
+  /* Neón suave: token de A4 con fallback inline */
+  box-shadow: var(--neon-box, 0 0 8px color-mix(in srgb, transparent 55%, var(--accent) 45%));
 }
 .mode-tile.mode-idle:hover .mode-icon,
 .mode-tile.mode-idle:hover .mode-label {
   color: var(--ink);
+  /* Glow suave en el ícono al hover */
+  text-shadow: var(--neon-glow-soft, 0 0 6px var(--accent));
 }
 
-/* Tile seleccionado/activo */
+/* Tile seleccionado/activo — neón fuerte */
 .mode-tile.mode-active {
-  background: color-mix(in srgb, var(--chip) 30%, var(--accent) 70%);
+  background: color-mix(in srgb, var(--chip) 25%, var(--accent) 75%);
   border-color: var(--accent);
-  box-shadow: 0 0 10px color-mix(in srgb, transparent 50%, var(--accent) 50%);
+  /* Neón: halo multicapa alrededor del tile activo */
+  box-shadow:
+    var(--neon-box,
+      0 0 6px  color-mix(in srgb, transparent 30%, var(--accent) 70%),
+      0 0 18px color-mix(in srgb, transparent 60%, var(--accent) 40%),
+      0 0 32px color-mix(in srgb, transparent 80%, var(--accent) 20%)
+    );
 }
 .mode-tile.mode-active .mode-icon,
 .mode-tile.mode-active .mode-label {
   color: var(--bg);
+  /* Glow en el ícono del tile activo */
+  text-shadow: var(--neon-glow, 0 0 8px var(--accent), 0 0 18px var(--accent));
 }
 /* Pseudo-element: franja diagonal de acento (identidad visual) */
 .mode-tile.mode-active::before {
@@ -88,8 +105,8 @@
   inset: 0;
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, transparent 70%, var(--accent) 30%) 0%,
-    transparent 60%
+    color-mix(in srgb, transparent 65%, var(--accent) 35%) 0%,
+    transparent 55%
   );
   pointer-events: none;
   clip-path: inherit;
@@ -100,6 +117,7 @@
   cursor: not-allowed;
   opacity: 0.45;
   border-style: dashed;
+  /* Sin glow en deshabilitado — no confunde con estado activo */
 }
 .mode-tile.mode-disabled .mode-icon,
 .mode-tile.mode-disabled .mode-label {
@@ -129,7 +147,7 @@
   box-shadow: none;
 }
 
-/* Razón corta debajo de la etiqueta (tiles deshabilitados) */
+/* Razón corta debajo de la etiqueta (tiles deshabilitados/future) */
 .mode-reason {
   font-size: 0.57rem;
   color: var(--dim);

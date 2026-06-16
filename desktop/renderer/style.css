@@ -253,6 +253,130 @@ b, .num { font-variant-numeric: tabular-nums; }
 .power-source.ac { color: var(--okstate); border-color: var(--okstate); }
 .power-source.bat { color: var(--hot); border-color: var(--hot); }
 
+/* ---------- status pill (A1 v10) ----------
+   Cluster premium: lámpara térmica + label + divisor + fuente de energía.
+   Usa tokens de neón de A4 cuando estén disponibles, con fallback a --glow.
+   NO parece hecho por IA: bordes nítidos, sin gradientes morados genéricos.  */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border: 1px solid var(--hair);
+  border-radius: 3px;
+  background: var(--chip);
+  /* Usa --neon-box de A4 si existe, si no usa --glow como fallback */
+  box-shadow: 0 0 0 1px transparent,
+              var(--neon-box, 0 0 8px var(--glow, transparent));
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+}
+/* Cuando la lámpara es crítica, el pill pulsa con el acento */
+.status-pill:has(.lamp.critical) {
+  border-color: var(--crit);
+  box-shadow: 0 0 0 1px var(--crit), 0 0 12px var(--crit);
+}
+.status-pill:has(.lamp.hot) {
+  border-color: var(--hot);
+  box-shadow: 0 0 0 1px var(--hot), 0 0 8px color-mix(in srgb, var(--hot) 50%, transparent);
+}
+.status-pill:has(.lamp.normal) {
+  border-color: var(--okstate);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--okstate) 40%, transparent),
+              var(--neon-box, 0 0 6px color-mix(in srgb, var(--okstate) 30%, transparent));
+}
+
+/* divisor vertical delgado entre térmica y fuente */
+.status-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--hair);
+  flex-shrink: 0;
+}
+
+/* La .power-source dentro de la píldora no tiene borde propio — hereda del pill */
+.status-pill .power-source {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  clip-path: none;
+  box-shadow: none;
+  transition: color 0.2s ease;
+}
+.status-pill .power-source.ac  { color: var(--okstate); }
+.status-pill .power-source.bat { color: var(--hot); }
+
+/* ---- modal de idioma (A1) ---- */
+.lang-card { max-width: 420px; }
+.lang-card h3 { margin-bottom: 1rem; }
+.lang-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 1.2rem;
+}
+.lang-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  background: var(--chip);
+  color: var(--dim);
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  transition: color .15s, border-color .15s, background .15s;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%);
+}
+.lang-option:hover { color: var(--ink); border-color: var(--accent); }
+.lang-option.active {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: var(--neon-box, 0 0 8px var(--glow, transparent));
+}
+.lang-flag { font-size: 22px; line-height: 1; }
+.lang-name { font-size: 12px; letter-spacing: .3px; }
+
+/* ---- grilla de idiomas en el wizard (paso 0) ---- */
+.wizard-lang-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 1rem 0;
+}
+.wiz-lang-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 8px;
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  background: var(--chip);
+  color: var(--dim);
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  transition: color .15s, border-color .15s, background .15s;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%);
+}
+.wiz-lang-btn:hover { color: var(--ink); border-color: var(--accent); }
+.wiz-lang-btn.active {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: var(--neon-box, 0 0 10px var(--glow, transparent));
+}
+.wiz-lang-flag { font-size: 24px; line-height: 1; }
+.wiz-lang-name { font-size: 12px; letter-spacing: .3px; }
+
 .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 .segment {
@@ -898,46 +1022,15 @@ body::-webkit-scrollbar { width: 0; }
 #events-help { margin-top: 8px; }
 
 /* ==== theme flourishes ==== */
-/* Glow sutil en los .bignum para los temas más dramáticos.
-   Solo usa variables del tema; no toca estructura ni layout. */
-html[data-mode="dark"] .bignum {
-  text-shadow: 0 0 18px var(--glow, transparent);
-}
-/* Neon Nights: glow doble para el efecto synthwave */
-html[data-mode="dark"][data-theme="neon-nights"] .bignum {
-  text-shadow: 0 0 16px #f72585aa, 0 0 32px #4cc9f055;
-}
+/* El glow de .bignum, bordes, chips y lámparas se define en styles/neon.css
+   (dueño: A4). Las siguientes reglas son detalles estructurales de identidad
+   visual que pertenecen a este archivo (clip-path, opacidades, etc.). */
+
+/* Neon Nights: la franja de acento de la esquina es muy intensa — bajar
+   un poco para no quemar la diagonal; el glow en neon.css ya lo compensa. */
 html[data-mode="dark"][data-theme="neon-nights"] .block::before {
   opacity: 0.7;
 }
-/* Cyberpunk: destello amarillo eléctrico cortante */
-html[data-mode="dark"][data-theme="cyberpunk"] .bignum {
-  text-shadow: 0 0 14px #f7e02bbb, 0 0 28px #00e5ff44;
-}
-html[data-mode="dark"][data-theme="cyberpunk"] .brand-mark .slash {
-  text-shadow: 0 0 10px #f7e02bcc;
-}
-/* Aurora: glow teal-violeta tipo borealis */
-html[data-mode="dark"][data-theme="aurora"] .bignum {
-  text-shadow: 0 0 20px #00d4aa66, 0 0 40px #9b59e833;
-}
-/* Neon (arcade) — realzar el glow existente */
-html[data-mode="dark"][data-theme="neon"] .bignum {
-  text-shadow: 0 0 14px #2de2e677, 0 0 28px #f637ec44;
-}
-/* Magma — pulso de brasa */
-html[data-mode="dark"][data-theme="magma"] .bignum {
-  text-shadow: 0 0 16px #f25c3d66;
-}
-/* Reactor — fosforescencia verde */
-html[data-mode="dark"][data-theme="reactor"] .bignum {
-  text-shadow: 0 0 16px #46e87377;
-}
-/* Modo claro: los bignum no llevan glow pero sí sombra sutil de contraste */
-html[data-mode="light"] .bignum {
-  text-shadow: none;
-}
-/* Alba claro: el único light con un mínimo brillo dorado premium */
-html[data-mode="light"][data-theme="alba"] .bignum {
-  text-shadow: 0 1px 6px #d4a01722;
-}
+
+/* .bignum base: tamaño de fuente y layout. El text-shadow viene de neon.css. */
+/* (sin reglas de text-shadow aquí — delegar a neon.css evita conflictos) */

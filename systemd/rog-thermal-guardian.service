@@ -1,0 +1,33 @@
+[Unit]
+Description=ROG Monitor — Guardian Termico GPU (fans primero, potencia despues)
+Documentation=https://github.com/marshall/rog-monitor
+After=multi-user.target nvidia-persistenced.service
+Wants=nvidia-persistenced.service
+
+[Service]
+Type=simple
+# Ruta absoluta al script: ajustar si el repo vive en otra ubicacion.
+# El instalador (ver docs/SUDO-PENDIENTE-v10.md) sustituye __ROG_MONITOR_REPO__
+# por la ruta real antes de copiar esta unidad a /etc/systemd/system/.
+ExecStart=/usr/bin/env bash __ROG_MONITOR_REPO__/scripts/rog-thermal-guardian.sh
+# Techo configurable sin editar esta unidad: usar un override.conf
+# en /etc/systemd/system/rog-thermal-guardian.service.d/override.conf
+# con Environment="ROG_THERMAL_CEILING=83" (75..87). La app (main.js)
+# escribe ese override.conf via pkexec cuando el usuario cambia el techo
+# desde el modal de Centro de Poder.
+Environment="ROG_THERMAL_CEILING=83"
+Environment="ROG_THERMAL_INTERVAL=2"
+Restart=on-failure
+RestartSec=5
+# Necesita escribir en sysfs (asus-armoury, platform_profile, throttle_thermal_policy)
+# y leer temperatura via nvidia-smi: requiere root. NO ejecutar como usuario.
+User=root
+Group=root
+# Endurecimiento conservador: no aislamos /sys porque el script necesita
+# escribir varias rutas sysfs reales del firmware ASUS y NVIDIA.
+NoNewPrivileges=true
+ProtectHome=true
+ProtectSystem=false
+
+[Install]
+WantedBy=multi-user.target

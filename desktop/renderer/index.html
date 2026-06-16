@@ -5,43 +5,55 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
   <title>ROG Monitor</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="styles/neon.css" />
   <link rel="stylesheet" href="styles/power.css" />
   <link rel="stylesheet" href="styles/lighting.css" />
   <link rel="stylesheet" href="styles/onboarding.css" />
+  <link rel="stylesheet" href="styles/dashboard.css" />
+  <link rel="stylesheet" href="styles/extras.css" />
 </head>
 <body>
   <header id="topbar">
     <div class="brand">
       <span class="brand-mark">ROG<span class="slash">//</span>MONITOR</span>
-      <span id="thermal-lamp" class="lamp"></span>
-      <span id="thermal-label" class="lamp-label">—</span>
-      <span id="power-source" class="power-source" title="Fuente de energía">—</span>
+
+      <!-- Píldora de estado del sistema: lámpara térmica + etiqueta + fuente de energía
+           Rediseñada en v10 como cluster premium con borde de neón del tema.
+           Los IDs y el comportamiento de update() en app.js se preservan íntegros. -->
+      <div class="status-pill" id="status-pill">
+        <span id="thermal-lamp" class="lamp"></span>
+        <span id="thermal-label" class="lamp-label">—</span>
+        <span class="status-divider"></span>
+        <span id="power-source" class="power-source" title="Fuente de energía" data-i18n-attr="title:topbar.lang">—</span>
+      </div>
     </div>
 
     <div class="controls">
-      <div class="segment" id="profile-seg" title="Perfil de energía">
-        <button data-profile="power-saver">AHORRO</button>
-        <button data-profile="balanced">BALANCED</button>
-        <button data-profile="performance">PERFORMANCE</button>
+      <div class="segment" id="profile-seg" data-i18n-attr="title:topbar.profiles">
+        <button data-profile="power-saver" data-i18n="profile.power_saver">AHORRO</button>
+        <button data-profile="balanced" data-i18n="profile.balanced">BALANCED</button>
+        <button data-profile="performance" data-i18n="profile.performance">PERFORMANCE</button>
       </div>
 
       <!-- Los títulos se completan en JS con el nombre real de la dGPU detectada -->
-      <div class="segment" id="gpu-seg" title="Modo de GPU (requiere cerrar sesión)">
+      <div class="segment" id="gpu-seg" data-i18n-attr="title:topbar.gpu_seg">
         <button data-gpu="Integrated">iGPU</button>
         <button data-gpu="Hybrid">HYBRID</button>
         <button data-gpu="AsusMuxDgpu">dGPU</button>
       </div>
 
       <button id="update-btn" class="ghost" title="Buscar actualizaciones del repositorio">
-        <span id="update-label">ACTUALIZAR</span>
+        <span id="update-label" data-i18n="topbar.update">ACTUALIZAR</span>
       </button>
 
-      <button id="report-btn" class="ghost" title="Abre un issue en el repositorio de GitHub con la información del sistema ya escrita">REPORTAR ERROR</button>
-      <button id="alerts-btn" class="ghost" title="Editar los umbrales de temperatura, potencia y alertas">ALERTAS</button>
-      <button id="overlay-btn" class="ghost" title="Overlay de stats siempre encima para jugar (elige el monitor)">OVERLAY</button>
-      <button id="theme-btn" class="ghost" title="Apariencia: tema, modo claro/oscuro y tamaño">TEMA</button>
-      <button id="power-btn" class="ghost" title="Centro de Poder: limites de potencia CPU/GPU (requiere contraseña para aplicar)">PODER</button>
-      <button id="wizard-btn" class="ghost" title="Volver a ver el asistente de primera vez">VER TUTORIAL</button>
+      <button id="report-btn" class="ghost" data-i18n="topbar.report" title="Abre un issue en el repositorio de GitHub con la información del sistema ya escrita">REPORTAR ERROR</button>
+      <button id="alerts-btn" class="ghost" data-i18n="topbar.alerts" title="Editar los umbrales de temperatura, potencia y alertas">ALERTAS</button>
+      <button id="overlay-btn" class="ghost" data-i18n="topbar.overlay" title="Overlay de stats siempre encima para jugar (elige el monitor)">OVERLAY</button>
+      <button id="theme-btn" class="ghost" data-i18n="topbar.theme" title="Apariencia: tema, modo claro/oscuro y tamaño">TEMA</button>
+      <button id="power-btn" class="ghost" data-i18n="topbar.power" title="Centro de Poder: limites de potencia CPU/GPU (requiere contraseña para aplicar)">PODER</button>
+      <button id="wizard-btn" class="ghost" data-i18n="topbar.wizard" title="Volver a ver el asistente de primera vez">VER TUTORIAL</button>
+      <button id="roadmap-btn" class="ghost" data-i18n="topbar.roadmap" title="Roadmap: lo hecho y lo que viene">ROADMAP</button>
+      <button id="lang-btn" class="ghost" data-i18n-attr="title:topbar.lang,aria-label:topbar.lang" title="Idioma / Language" aria-label="Idioma / Language">A文</button>
     </div>
   </header>
 
@@ -51,7 +63,7 @@
 
   <main>
     <section class="col col-left">
-      <article class="block" id="cpu-block">
+      <article class="block" id="cpu-block" data-block="cpu">
         <!-- widget-states: skeleton / empty / error overlays -->
         <div class="skeleton-overlay" aria-hidden="true">
           <div class="skel-line short"></div>
@@ -70,7 +82,7 @@
           <div class="error-badge">&#x26A0; BACKEND CAIDO</div>
           <div class="error-detail">Reconectando con los sensores…</div>
         </div>
-        <h2><i>01</i> CPU <small id="cpu-model"></small></h2>
+        <h2><i class="dash-num"></i> CPU <small id="cpu-model"></small></h2>
         <div class="bignum"><span id="cpu-temp">--</span><em>°C</em></div>
         <div class="statgrid">
           <div><label>Máx</label><b id="cpu-max">--</b></div>
@@ -90,7 +102,7 @@
         </p>
       </article>
 
-      <article class="block" id="gpu-block">
+      <article class="block" id="gpu-block" data-block="gpu">
         <!-- widget-states: skeleton / empty / error overlays -->
         <div class="skeleton-overlay" aria-hidden="true">
           <div class="skel-line short"></div>
@@ -109,7 +121,7 @@
           <div class="error-badge">&#x26A0; BACKEND CAIDO</div>
           <div class="error-detail">Reconectando con los sensores…</div>
         </div>
-        <h2><i>02</i> GPU <small id="gpu-name"></small></h2>
+        <h2><i class="dash-num"></i> GPU <small id="gpu-name"></small></h2>
         <div class="bignum"><span id="gpu-temp">--</span><em>°C</em></div>
         <div class="statgrid">
           <div><label>Uso</label><b id="gpu-util">--</b></div>
@@ -122,13 +134,13 @@
         <p id="gpu-off-note" class="note hidden">dGPU apagada (modo Integrated)</p>
       </article>
 
-      <article class="block clickable" id="fans-block" title="Clic para configurar caps y curvas de ventilación">
-        <h2><i>03</i> Ventiladores <small>clic para configurar</small></h2>
+      <article class="block clickable" id="fans-block" data-block="fans" title="Clic para configurar caps y curvas de ventilación">
+        <h2><i class="dash-num"></i> Ventiladores <small>clic para configurar</small></h2>
         <div class="fans" id="fans"></div>
       </article>
 
-      <article class="block" id="aura-block">
-        <h2><i>04</i> Iluminación <small>Aura ASUS y modo música</small></h2>
+      <article class="block" id="aura-block" data-block="aura">
+        <h2><i class="dash-num"></i> Iluminación <small>Aura ASUS y modo música</small></h2>
 
         <!-- Cuadrícula de 9 modos estilo Armoury Crate.
              Nota: div, no <label> — ver .aura-effect-box en style.css (el label
@@ -140,10 +152,6 @@
         <select id="aura-effect" class="hidden"></select>
 
         <div class="aura-grid">
-          <label id="aura-extra-wrap">
-            <span>Mas efectos ASUS</span>
-            <select id="aura-extra-effect"></select>
-          </label>
           <label><span>Color</span><input type="color" id="aura-colour" value="#ff5500"></label>
           <label id="aura-colour2-wrap" class="hidden"><span>Color 2</span><input type="color" id="aura-colour2" value="#000000"></label>
           <label id="aura-speed-wrap"><span>Velocidad</span><select id="aura-speed">
@@ -194,8 +202,8 @@
     </section>
 
     <section class="col col-right">
-      <article class="block charts">
-        <h2><i>05</i> Historial <small>pasa el cursor por una gráfica para ver cada punto</small></h2>
+      <article class="block charts" id="history-block" data-block="history">
+        <h2><i class="dash-num"></i> Historial <small>pasa el cursor por una gráfica para ver cada punto</small></h2>
         <div class="chart-row grid2">
           <div class="chart"><label>CPU · Temperatura °C</label><canvas id="chart-cpu"></canvas></div>
           <div class="chart"><label>CPU · Consumo W</label><canvas id="chart-power"></canvas></div>
@@ -204,8 +212,8 @@
         </div>
       </article>
 
-      <article class="block" id="bench-block">
-        <h2><i>06</i> Benchmarks <small>carga térmica y resultados</small></h2>
+      <article class="block" id="bench-block" data-block="bench">
+        <h2><i class="dash-num"></i> Benchmarks <small>carga térmica y resultados</small></h2>
         <div class="bench-actions">
           <button class="ghost" id="benchmark-btn">ABRIR BENCHMARKS</button>
           <button class="ghost" id="bench-run-cpu-quick">CPU 45 s</button>
@@ -217,8 +225,8 @@
         </ul>
       </article>
 
-      <article class="block" id="system-block">
-        <h2><i>07</i> Sistema</h2>
+      <article class="block" id="system-block" data-block="system">
+        <h2><i class="dash-num"></i> Sistema</h2>
         <div class="sysrow">
           <div class="meter clickable" id="ram-meter" title="Clic para ver qué está consumiendo la RAM"><label>RAM <span id="ram-label"></span></label><div class="track"><div id="ram-bar"></div></div></div>
           <div id="disks"></div>
@@ -234,8 +242,8 @@
       </article>
 
       <div class="split">
-        <article class="block" id="events-block">
-          <h2><i>08</i> Eventos
+        <article class="block" id="events-block" data-block="events">
+          <h2><i class="dash-num"></i> Eventos
             <button id="export-events" class="ghost" title="Guardar el registro de eventos como .txt">EXPORTAR</button>
           </h2>
           <ul id="events"><li class="dim">sin eventos</li></ul>
@@ -246,8 +254,8 @@
             sube el tope de ventiladores, mejora la ventilación o baja el perfil.</p>
         </article>
 
-        <article class="block" id="procs-block">
-          <h2><i>09</i> Procesos <small>top 5 por uso de CPU · clic para cerrar uno</small></h2>
+        <article class="block" id="procs-block" data-block="procs">
+          <h2><i class="dash-num"></i> Procesos <small>top 5 por uso de CPU · clic para cerrar uno</small></h2>
           <table id="procs">
             <thead>
               <tr><th>PID</th><th>proceso</th>
@@ -268,6 +276,26 @@
 
   <div id="toast" class="hidden"></div>
   <div id="chart-tip" class="hidden"></div>
+
+  <!-- v10 shells (los llenan los agentes: A1 idioma, A5 roadmap) -->
+  <div id="lang-modal" class="modal hidden">
+    <div class="modal-card lang-card">
+      <h3 data-i18n="lang.modal_title">Elige tu idioma</h3>
+      <div class="lang-grid" id="lang-grid">
+        <!-- Llenado por i18n.js al arrancar -->
+      </div>
+      <button class="ghost modal-close" id="lang-close" data-i18n="common.close">Cerrar</button>
+    </div>
+  </div>
+  <div id="roadmap-modal" class="modal hidden">
+    <div class="modal-card roadmap-card">
+      <!-- Contenido inyectado por roadmap.js en tiempo de carga -->
+      <div class="roadmap-scroll">
+        <h3>Roadmap</h3>
+        <p class="sub">Cargando…</p>
+      </div>
+    </div>
+  </div>
 
   <div id="ram-modal" class="modal hidden">
     <div class="modal-card">
@@ -480,18 +508,20 @@
   </div>
 
   <!-- Asistente de primera vez (lo llena wizard.js; shell estable para sus refs) -->
+  <!-- v10: 6 pasos (paso 0 = idioma + pasos 1-5 originales). wizard.js gestiona todo. -->
   <div id="wizard-modal" class="hidden">
     <div class="wizard-card">
       <div class="wizard-header">
-        <h2>Asistente de ROG Monitor</h2>
-        <span class="wizard-subtitle">Conoce tu equipo en 5 pasos rápidos</span>
+        <h2 data-i18n="wizard.title">Asistente de ROG Monitor</h2>
+        <span class="wizard-subtitle">Conoce tu equipo en 6 pasos rápidos</span>
         <div class="wizard-steps-bar">
           <span class="wizard-step-pip"></span>
           <span class="wizard-step-pip"></span>
           <span class="wizard-step-pip"></span>
           <span class="wizard-step-pip"></span>
           <span class="wizard-step-pip"></span>
-          <span class="wizard-step-count">1 / 5</span>
+          <span class="wizard-step-pip"></span>
+          <span class="wizard-step-count">1 / 6</span>
         </div>
       </div>
       <div class="wizard-body">
@@ -500,20 +530,24 @@
         <div class="wizard-step"></div>
         <div class="wizard-step"></div>
         <div class="wizard-step"></div>
+        <div class="wizard-step"></div>
       </div>
       <div class="wizard-footer">
-        <button class="wiz-skip" id="wiz-skip">SALTAR</button>
+        <button class="wiz-skip" id="wiz-skip" data-i18n="wizard.skip">SALTAR</button>
         <div class="wizard-nav">
-          <button class="wiz-btn" id="wiz-prev">ATRÁS</button>
-          <button class="wiz-btn" id="wiz-next">SIGUIENTE</button>
+          <button class="wiz-btn" id="wiz-prev" data-i18n="wizard.prev">ATRÁS</button>
+          <button class="wiz-btn" id="wiz-next" data-i18n="wizard.next">SIGUIENTE</button>
         </div>
       </div>
     </div>
   </div>
 
+  <script src="i18n.js"></script>
   <script src="app.js"></script>
   <script src="power.js"></script>
   <script src="widget-states.js"></script>
   <script src="wizard.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="roadmap.js"></script>
 </body>
 </html>

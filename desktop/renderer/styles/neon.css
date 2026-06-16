@@ -1,0 +1,372 @@
+/* ROG Monitor — sistema de glow neón (v10, dueño: Agente A4).
+ * Tokens --neon-glow / --neon-glow-soft / --neon-box / --neon-line por tema y
+ * modo (oscuro fuerte + "neón de día" en claro). Otros features los consumen.
+ * Contrato en docs/build-spec-v10.md §A4.
+ *
+ * OSCURO: bloom multicapa (letrero de neón de noche): núcleo brillante + halo
+ * difuso + aureola exterior — alpha decrece a distancia = "bloom real".
+ * CLARO ("neón de día"): halo saturado de acento alrededor del elemento, visible
+ * sobre fondo tintado. Texto oscuro (--ink) mantiene contraste AA ≥ 4.5:1.
+ *
+ * Todos los glow son ESTÁTICOS (sin animación en las sombras) para no castigar
+ * rendimiento. Solo se animan elementos muy puntuales (la lámpara ya usaba blink).
+ *
+ * CONSUMO: usen text-shadow: var(--neon-glow) / box-shadow: var(--neon-box).
+ * NO redefinir --accent / --bg / --panel / --hair / --dim / --ink / --glow aquí.
+ */
+
+/* ========================================================================
+   TOKENS POR TEMA — MODO OSCURO
+   Tres capas de bloom (radio pequeño alto alpha → radio grande bajo alpha).
+   La variable --neon-line es un string "0 0 Xpx color, 0 0 Ypx color" listo
+   para usarse como box-shadow junto con el borde base.
+   ======================================================================== */
+
+/* --- Magma dark (brasa volcánica roja) --- */
+html[data-mode="dark"][data-theme="magma"] {
+  --neon-glow:      0 0 6px #f25c3dff,  0 0 18px #f25c3dcc, 0 0 44px #f25c3d66, 0 0 80px #f25c3d22;
+  --neon-glow-soft: 0 0 5px #f25c3dcc,  0 0 14px #f25c3d77;
+  --neon-box:       0 0 0 1px #f25c3d,   0 0 8px  #f25c3dcc, 0 0 20px #f25c3d66;
+  --neon-line:      0 0 6px #f25c3dcc,  0 0 16px #f25c3d66;
+}
+
+/* --- Nébula dark (púrpura espacial irradiante) --- */
+html[data-mode="dark"][data-theme="nebula"] {
+  --neon-glow:      0 0 6px #c48fffff,  0 0 18px #b07af5cc, 0 0 44px #b07af566, 0 0 80px #e060ff22;
+  --neon-glow-soft: 0 0 5px #b07af5cc,  0 0 14px #b07af577;
+  --neon-box:       0 0 0 1px #b07af5,   0 0 8px  #b07af5cc, 0 0 20px #e060ff55;
+  --neon-line:      0 0 6px #b07af5cc,  0 0 18px #e060ff55;
+}
+
+/* --- Océano dark (teal eléctrico de mar profundo) --- */
+html[data-mode="dark"][data-theme="oceano"] {
+  --neon-glow:      0 0 6px #5afffaff,  0 0 18px #2fbfb0cc, 0 0 44px #2fbfb055, 0 0 80px #7fe0d422;
+  --neon-glow-soft: 0 0 5px #2fbfb0cc,  0 0 14px #2fbfb077;
+  --neon-box:       0 0 0 1px #2fbfb0,   0 0 8px  #2fbfb0cc, 0 0 20px #7fe0d455;
+  --neon-line:      0 0 6px #2fbfb0cc,  0 0 18px #7fe0d444;
+}
+
+/* --- Glaciar dark (azul hielo brillante) --- */
+html[data-mode="dark"][data-theme="glaciar"] {
+  --neon-glow:      0 0 6px #aad8ffff,  0 0 18px #6fb7ffcc, 0 0 44px #6fb7ff55, 0 0 80px #a8d4ff22;
+  --neon-glow-soft: 0 0 5px #6fb7ffcc,  0 0 14px #6fb7ff77;
+  --neon-box:       0 0 0 1px #6fb7ff,   0 0 8px  #6fb7ffcc, 0 0 20px #a8d4ff55;
+  --neon-line:      0 0 6px #6fb7ffcc,  0 0 18px #a8d4ff44;
+}
+
+/* --- Reactor dark (verde fosforescente tubo CRT) --- */
+html[data-mode="dark"][data-theme="reactor"] {
+  --neon-glow:      0 0 6px #88ffaaff,  0 0 18px #46e873dd, 0 0 44px #46e87366, 0 0 80px #97f7b322;
+  --neon-glow-soft: 0 0 5px #46e873cc,  0 0 14px #46e87388;
+  --neon-box:       0 0 0 1px #46e873,   0 0 8px  #46e873dd, 0 0 22px #97f7b355;
+  --neon-line:      0 0 6px #46e873cc,  0 0 18px #97f7b344;
+}
+
+/* --- Grafito dark (acero frío, glow sutil plateado) --- */
+html[data-mode="dark"][data-theme="grafito"] {
+  --neon-glow:      0 0 4px #e8ecf0ee,  0 0 12px #c8cdd499, 0 0 28px #c8cdd444;
+  --neon-glow-soft: 0 0 4px #c8cdd4aa,  0 0 10px #c8cdd455;
+  --neon-box:       0 0 0 1px #c8cdd4,   0 0 6px  #c8cdd4aa, 0 0 16px #c8cdd433;
+  --neon-line:      0 0 5px #c8cdd4aa,  0 0 12px #c8cdd433;
+}
+
+/* --- Neón dark (arcade: cian/magenta, máxima intensidad) --- */
+html[data-mode="dark"][data-theme="neon"] {
+  --neon-glow:      0 0 6px #5afffeff,  0 0 18px #2de2e6ee, 0 0 44px #2de2e677, 0 0 80px #f637ec33;
+  --neon-glow-soft: 0 0 5px #2de2e6dd,  0 0 14px #2de2e666, 0 0 28px #f637ec33;
+  --neon-box:       0 0 0 1px #2de2e6,   0 0 8px  #2de2e6cc, 0 0 22px #f637ec55;
+  --neon-line:      0 0 7px #2de2e6cc,  0 0 20px #f637ec44;
+}
+
+/* --- Atardecer dark (ámbar y rosa incandescente) --- */
+html[data-mode="dark"][data-theme="atardecer"] {
+  --neon-glow:      0 0 6px #ffbe7aff,  0 0 18px #ff9d4dcc, 0 0 44px #ff9d4d66, 0 0 80px #ff5e7e33;
+  --neon-glow-soft: 0 0 5px #ff9d4dcc,  0 0 14px #ff9d4d77;
+  --neon-box:       0 0 0 1px #ff9d4d,   0 0 8px  #ff9d4dcc, 0 0 20px #ff5e7e55;
+  --neon-line:      0 0 6px #ff9d4dcc,  0 0 18px #ff5e7e44;
+}
+
+/* --- Neon Nights dark (synthwave: magenta caliente + cian) --- */
+html[data-mode="dark"][data-theme="neon-nights"] {
+  --neon-glow:      0 0 6px #ff5ab0ff,  0 0 18px #f72585ee, 0 0 44px #f72585aa, 0 0 80px #4cc9f044;
+  --neon-glow-soft: 0 0 5px #f72585dd,  0 0 16px #f72585aa, 0 0 32px #4cc9f033;
+  --neon-box:       0 0 0 1px #f72585,   0 0 8px  #f72585dd, 0 0 24px #4cc9f066;
+  --neon-line:      0 0 7px #f72585dd,  0 0 22px #4cc9f055;
+}
+
+/* --- Cyberpunk dark (Night City: amarillo cortante + cian) --- */
+html[data-mode="dark"][data-theme="cyberpunk"] {
+  --neon-glow:      0 0 4px #fff176ff,  0 0 16px #f7e02bff, 0 0 36px #f7e02baa, 0 0 70px #00e5ff44;
+  --neon-glow-soft: 0 0 5px #f7e02bee,  0 0 14px #f7e02b88, 0 0 28px #00e5ff33;
+  --neon-box:       0 0 0 1px #f7e02b,   0 0 8px  #f7e02bee, 0 0 20px #00e5ff55;
+  --neon-line:      0 0 6px #f7e02bee,  0 0 20px #00e5ff44;
+}
+
+/* --- Aurora dark (boreal: teal + violeta) --- */
+html[data-mode="dark"][data-theme="aurora"] {
+  --neon-glow:      0 0 6px #44ffd8ff,  0 0 18px #00d4aadd, 0 0 44px #00d4aa77, 0 0 80px #9b59e844;
+  --neon-glow-soft: 0 0 5px #00d4aacc,  0 0 14px #00d4aa66, 0 0 30px #9b59e833;
+  --neon-box:       0 0 0 1px #00d4aa,   0 0 8px  #00d4aacc, 0 0 22px #9b59e866;
+  --neon-line:      0 0 6px #00d4aacc,  0 0 20px #9b59e844;
+}
+
+/* --- Alba dark (ámbar cálido dorado) --- */
+html[data-mode="dark"][data-theme="alba"] {
+  --neon-glow:      0 0 6px #ffe080ff,  0 0 18px #d4a017dd, 0 0 44px #d4a01766, 0 0 80px #e87d5a33;
+  --neon-glow-soft: 0 0 5px #d4a017cc,  0 0 14px #d4a01777;
+  --neon-box:       0 0 0 1px #d4a017,   0 0 8px  #d4a017cc, 0 0 20px #e87d5a55;
+  --neon-line:      0 0 6px #d4a017cc,  0 0 18px #e87d5a44;
+}
+
+/* ========================================================================
+   TOKENS POR TEMA — MODO CLARO ("NEÓN DE DÍA")
+   Fondo ya tintado por tema (no blanco plano). Texto --ink permanece oscuro
+   para contraste AA. Los acentos de números/bordes usan el accent del tema
+   (que ya tiene relación de contraste ≥ 4.5:1 con --panel/--bg).
+   Glow "de día": halo de color + sombra exterior que hace el elemento
+   "salir" del fondo, con un brillo saturado visible incluso en ambiente claro.
+   ======================================================================== */
+
+/* --- Magma claro (brasa sobre crema volcánica) --- */
+html[data-mode="light"][data-theme="magma"] {
+  --neon-glow:      0 0 0 2px #fff,       0 0 8px  #b83318cc, 0 0 20px #b8331866, 0 2px 0 #fff;
+  --neon-glow-soft: 0 0 5px #b83318aa,    0 0 12px #b8331855;
+  --neon-box:       0 0 0 2px #b83318,    0 0 10px #b8331888, 0 0 22px #b8331844;
+  --neon-line:      0 0 5px #b83318aa,    0 0 14px #b8331866;
+}
+
+/* --- Nébula clara (púrpura sobre porcelana violácea) --- */
+html[data-mode="light"][data-theme="nebula"] {
+  --neon-glow:      0 0 0 2px #f4eefe,    0 0 8px  #5c1fb8cc, 0 0 20px #5c1fb866;
+  --neon-glow-soft: 0 0 5px #5c1fb8aa,    0 0 12px #5c1fb855;
+  --neon-box:       0 0 0 2px #5c1fb8,    0 0 10px #5c1fb888, 0 0 22px #5c1fb844;
+  --neon-line:      0 0 5px #5c1fb8aa,    0 0 14px #5c1fb866;
+}
+
+/* --- Océano claro (jade sobre espuma marina) --- */
+html[data-mode="light"][data-theme="oceano"] {
+  --neon-glow:      0 0 0 2px #e0f5f2,    0 0 8px  #0a6e63cc, 0 0 20px #0a6e6366;
+  --neon-glow-soft: 0 0 5px #0a6e63aa,    0 0 12px #0a6e6355;
+  --neon-box:       0 0 0 2px #0a6e63,    0 0 10px #0a6e6388, 0 0 22px #0a6e6344;
+  --neon-line:      0 0 5px #0a6e63aa,    0 0 14px #0a6e6366;
+}
+
+/* --- Glaciar claro (acero celeste sobre hielo) --- */
+html[data-mode="light"][data-theme="glaciar"] {
+  --neon-glow:      0 0 0 2px #e8f3fc,    0 0 8px  #1656a0cc, 0 0 20px #1656a066;
+  --neon-glow-soft: 0 0 5px #1656a0aa,    0 0 12px #1656a055;
+  --neon-box:       0 0 0 2px #1656a0,    0 0 10px #1656a088, 0 0 22px #1656a044;
+  --neon-line:      0 0 5px #1656a0aa,    0 0 14px #1656a066;
+}
+
+/* --- Reactor claro (verde hoja sobre esmeralda suave) --- */
+html[data-mode="light"][data-theme="reactor"] {
+  --neon-glow:      0 0 0 2px #ebf8e5,    0 0 8px  #126830cc, 0 0 20px #12683066;
+  --neon-glow-soft: 0 0 5px #126830aa,    0 0 12px #12683055;
+  --neon-box:       0 0 0 2px #126830,    0 0 10px #12683088, 0 0 22px #12683044;
+  --neon-line:      0 0 5px #126830aa,    0 0 14px #12683066;
+}
+
+/* --- Grafito claro (antracita sobre acero frío) --- */
+html[data-mode="light"][data-theme="grafito"] {
+  --neon-glow:      0 0 0 2px #f0f2f4,    0 0 6px  #26303ccc, 0 0 16px #26303c66;
+  --neon-glow-soft: 0 0 4px #26303caa,    0 0 10px #26303c55;
+  --neon-box:       0 0 0 2px #26303c,    0 0 8px  #26303c88, 0 0 18px #26303c44;
+  --neon-line:      0 0 4px #26303caa,    0 0 12px #26303c66;
+}
+
+/* --- Neón claro (laguna con destellos magenta) --- */
+html[data-mode="light"][data-theme="neon"] {
+  --neon-glow:      0 0 0 2px #e6f6f9,    0 0 8px  #055e6ecc, 0 0 20px #055e6e55, 0 0 28px #9c0f8833;
+  --neon-glow-soft: 0 0 5px #055e6eaa,    0 0 12px #055e6e55;
+  --neon-box:       0 0 0 2px #055e6e,    0 0 10px #055e6e88, 0 0 22px #9c0f8844;
+  --neon-line:      0 0 5px #055e6eaa,    0 0 14px #9c0f8844;
+}
+
+/* --- Atardecer claro (naranja horneado sobre melocotón) --- */
+html[data-mode="light"][data-theme="atardecer"] {
+  --neon-glow:      0 0 0 2px #fef3e4,    0 0 8px  #aa4c08cc, 0 0 20px #aa4c0855, 0 0 28px #90264a33;
+  --neon-glow-soft: 0 0 5px #aa4c08aa,    0 0 12px #aa4c0855;
+  --neon-box:       0 0 0 2px #aa4c08,    0 0 10px #aa4c0888, 0 0 22px #90264a44;
+  --neon-line:      0 0 5px #aa4c08aa,    0 0 14px #90264a44;
+}
+
+/* --- Neon Nights claro (lila eléctrico sobre heliotropo) --- */
+html[data-mode="light"][data-theme="neon-nights"] {
+  --neon-glow:      0 0 0 2px #faeeff,    0 0 8px  #8c0878cc, 0 0 20px #8c087855, 0 0 28px #0868b033;
+  --neon-glow-soft: 0 0 5px #8c0878aa,    0 0 12px #8c087855;
+  --neon-box:       0 0 0 2px #8c0878,    0 0 10px #8c087888, 0 0 22px #0868b044;
+  --neon-line:      0 0 5px #8c0878aa,    0 0 14px #0868b044;
+}
+
+/* --- Cyberpunk claro (mostaza sobre cuarzo ahumado) --- */
+html[data-mode="light"][data-theme="cyberpunk"] {
+  --neon-glow:      0 0 0 2px #f5f2dc,    0 0 8px  #6a5c00cc, 0 0 20px #6a5c0055, 0 0 28px #005a6a33;
+  --neon-glow-soft: 0 0 5px #6a5c00aa,    0 0 12px #6a5c0055;
+  --neon-box:       0 0 0 2px #6a5c00,    0 0 10px #6a5c0088, 0 0 22px #005a6a44;
+  --neon-line:      0 0 5px #6a5c00aa,    0 0 14px #005a6a44;
+}
+
+/* --- Aurora clara (menta glacial con teal y violeta) --- */
+html[data-mode="light"][data-theme="aurora"] {
+  --neon-glow:      0 0 0 2px #dff5f2,    0 0 8px  #066858cc, 0 0 20px #06685866, 0 0 28px #5a30b033;
+  --neon-glow-soft: 0 0 5px #066858aa,    0 0 12px #06685855;
+  --neon-box:       0 0 0 2px #066858,    0 0 10px #06685888, 0 0 22px #5a30b044;
+  --neon-line:      0 0 5px #066858aa,    0 0 14px #5a30b044;
+}
+
+/* --- Alba clara (oro cálido sobre marfil porcelana) --- */
+html[data-mode="light"][data-theme="alba"] {
+  --neon-glow:      0 0 0 2px #fdf8ef,    0 0 8px  #8a5c00cc, 0 0 20px #8a5c0066, 0 0 28px #9e304033;
+  --neon-glow-soft: 0 0 5px #8a5c00aa,    0 0 12px #8a5c0055;
+  --neon-box:       0 0 0 2px #8a5c00,    0 0 10px #8a5c0088, 0 0 22px #9e304044;
+  --neon-line:      0 0 5px #8a5c00aa,    0 0 14px #9e304044;
+}
+
+/* ========================================================================
+   APLICACIÓN DEL GLOW A ELEMENTOS
+   Estas reglas consumen los tokens definidos arriba.
+   Layout, estructura (.block/.col/main) = propiedad de A3, no se tocan aquí.
+   ======================================================================== */
+
+/* ---- .bignum — cifras grandes (temperatura, uso %, watts) ---- */
+/* Modo oscuro: bloom potente multicapa sobre el span coloreado */
+html[data-mode="dark"] .bignum span {
+  text-shadow: var(--neon-glow);
+}
+/* Cifras sin color de estado (e.g. porcentajes sin clase t-*) también brillan */
+html[data-mode="dark"] .bignum {
+  text-shadow: var(--neon-glow-soft);
+}
+
+/* Modo claro: halo saturado visible sobre fondo tintado */
+html[data-mode="light"] .bignum span {
+  text-shadow: var(--neon-glow);
+}
+html[data-mode="light"] .bignum {
+  /* el texto principal sigue siendo --ink (contraste AA), pero el span
+     coloreado (t-hot, t-cold…) recibe el halo del tema */
+  text-shadow: none;
+}
+
+/* ---- Número de bloque (.block h2 i) — placa inclinada con chip de acento ---- */
+html[data-mode="dark"] .block h2 i {
+  text-shadow: var(--neon-glow-soft);
+  /* el box-shadow no interactúa bien con skewX, usamos filter drop-shadow */
+  filter: drop-shadow(0 0 4px var(--accent));
+}
+html[data-mode="light"] .block h2 i {
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 70%, transparent));
+}
+
+/* ---- .brand-mark .slash — el "/" de la marca en la barra de título ---- */
+html[data-mode="dark"] .brand-mark .slash {
+  text-shadow: var(--neon-glow-soft);
+}
+html[data-mode="light"] .brand-mark .slash {
+  text-shadow: var(--neon-glow-soft);
+}
+
+/* ---- Borde del .block — línea que irradia ---- */
+/* Usamos outline + box-shadow en lugar de border-image para no interferir con clip-path */
+html[data-mode="dark"] .block {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent),
+              var(--neon-line);
+}
+html[data-mode="light"] .block {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent),
+              var(--neon-line);
+}
+
+/* ---- Effect-chip activo (Aura) ---- */
+html[data-mode="dark"] .effect-chip.active {
+  box-shadow: var(--neon-box);
+}
+html[data-mode="light"] .effect-chip.active {
+  box-shadow: var(--neon-box);
+}
+
+/* ---- Botón activo de segment (selector modo CPU, GPU, etc.) ---- */
+html[data-mode="dark"] .segment button.active {
+  box-shadow: var(--neon-box);
+}
+html[data-mode="light"] .segment button.active {
+  box-shadow: var(--neon-box);
+}
+
+/* ---- Profile item activo (perfiles Aura guardados) ---- */
+html[data-mode="dark"] .profile-item.active {
+  box-shadow: var(--neon-box);
+}
+html[data-mode="light"] .profile-item.active {
+  box-shadow: var(--neon-box);
+}
+
+/* ---- Lámpara térmica — ya tiene box-shadow; reforzamos en oscuro ---- */
+html[data-mode="dark"] .lamp.normal {
+  box-shadow: 0 0 7px var(--okstate), 0 0 18px color-mix(in srgb, var(--okstate) 55%, transparent);
+}
+html[data-mode="dark"] .lamp.hot {
+  box-shadow: 0 0 7px var(--hot), 0 0 18px color-mix(in srgb, var(--hot) 55%, transparent);
+}
+html[data-mode="dark"] .lamp.critical {
+  box-shadow: 0 0 9px var(--crit), 0 0 22px color-mix(in srgb, var(--crit) 65%, transparent);
+  animation: blink .5s steps(2) infinite;
+}
+html[data-mode="dark"] .lamp.cold {
+  box-shadow: 0 0 7px var(--cold), 0 0 18px color-mix(in srgb, var(--cold) 55%, transparent);
+}
+
+/* Claro: lámparas con halo coloreado visible en luz del día */
+html[data-mode="light"] .lamp.normal {
+  box-shadow: 0 0 5px var(--okstate), 0 0 12px color-mix(in srgb, var(--okstate) 60%, transparent);
+}
+html[data-mode="light"] .lamp.hot {
+  box-shadow: 0 0 5px var(--hot), 0 0 12px color-mix(in srgb, var(--hot) 60%, transparent);
+}
+html[data-mode="light"] .lamp.critical {
+  box-shadow: 0 0 7px var(--crit), 0 0 16px color-mix(in srgb, var(--crit) 70%, transparent);
+  animation: blink .5s steps(2) infinite;
+}
+html[data-mode="light"] .lamp.cold {
+  box-shadow: 0 0 5px var(--cold), 0 0 12px color-mix(in srgb, var(--cold) 60%, transparent);
+}
+
+/* ---- .ghost button al hover / attention — borde que pulsa ---- */
+html[data-mode="dark"] .ghost.attention {
+  box-shadow: var(--neon-line);
+}
+html[data-mode="light"] .ghost.attention {
+  box-shadow: var(--neon-line);
+}
+
+/* ---- Topbar border-image (el acento bajo el topbar ya existe, reforzar glow) ---- */
+html[data-mode="dark"] #topbar {
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+html[data-mode="light"] #topbar {
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* ---- bench-history item activo (borde izquierdo acento) ---- */
+html[data-mode="dark"] .bench-history li {
+  box-shadow: -2px 0 8px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+html[data-mode="light"] .bench-history li {
+  box-shadow: -2px 0 6px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* ---- .aura-actions .aura-primary (botón APLICAR Aura) ---- */
+html[data-mode="dark"] .aura-actions .aura-primary {
+  box-shadow: var(--neon-line);
+}
+html[data-mode="light"] .aura-actions .aura-primary {
+  box-shadow: var(--neon-line);
+}
+
+/* ----  Transiciones puntuales (NO en las sombras que se animan siempre) ---- */
+.effect-chip { transition: box-shadow .15s ease, border-color .15s ease; }
+.segment button { transition: box-shadow .15s ease; }
+.profile-item { transition: box-shadow .15s ease, border-color .15s ease; }
+.ghost { transition: box-shadow .15s ease, border-color .15s ease, color .15s ease; }
+.block { transition: box-shadow .2s ease; }

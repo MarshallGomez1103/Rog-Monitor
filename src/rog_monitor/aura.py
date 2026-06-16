@@ -144,20 +144,61 @@ MODE_NUM_TO_ID = {
     10: "pulse", 11: "comet", 12: "flash",
 }
 
+# Static capability table (labels + conservative fallback args).
+# Used when `asusctl aura effect <id> --help` cannot be parsed.
+# CONSERVATIVE RULE: if we can't discover, omit args rather than send invalid ones.
+# The real discovered capabilities live in AuraManager._effect_caps (per instance).
 EFFECT_META = {
-    "static": {"label": "Static", "colours": 1},
-    "breathe": {"label": "Respiracion", "colours": 2, "speed": True},
-    "rainbow-cycle": {"label": "Color Cycle", "speed": True},
-    "rainbow-wave": {"label": "Rainbow", "speed": True, "direction": True},
-    "stars": {"label": "Starry Night", "colours": 2, "speed": True},
-    "rain": {"label": "Lluvia", "speed": True},
-    "highlight": {"label": "Highlight", "colours": 1, "speed": True},
-    "laser": {"label": "Laser", "colours": 1, "speed": True},
-    "ripple": {"label": "Ripple", "colours": 1, "speed": True},
-    "pulse": {"label": "Pulse", "colours": 1, "speed": True},
-    "comet": {"label": "Comet", "colours": 1, "speed": True},
-    "flash": {"label": "Flash", "colours": 1, "speed": True},
+    "static":        {"label": "Static",       "colours": 1},
+    "breathe":       {"label": "Respiracion",  "colours": 2, "speed": True},
+    "rainbow-cycle": {"label": "Color Cycle",  "speed": True},
+    "rainbow-wave":  {"label": "Rainbow",      "speed": True, "direction": True},
+    "stars":         {"label": "Starry Night", "colours": 2, "speed": True},
+    "rain":          {"label": "Lluvia",        "speed": True},
+    "highlight":     {"label": "Highlight",    "colours": 1, "speed": True},
+    "laser":         {"label": "Laser",         "colours": 1, "speed": True},
+    "ripple":        {"label": "Ripple",        "colours": 1, "speed": True},
+    # pulse (Strobing): asusctl ONLY accepts --colour (no --speed, no --colour2)
+    "pulse":         {"label": "Pulse",         "colours": 1},
+    # comet/flash: asusctl ONLY accepts --colour (no --speed)
+    "comet":         {"label": "Comet",         "colours": 1},
+    "flash":         {"label": "Flash",         "colours": 1},
 }
+
+
+# Overrides de realidad-hardware para el teclado de ESTE equipo (G614JV,
+# placa interna de 4 zonas). `asusctl aura effect breathe --help` anuncia
+# --colour2, pero el firmware IGNORA el segundo color (respira un solo color).
+# Marshall vio que el color secundario no hacía nada y pidió quitarlo. Forzar
+# colours=1 aquí elimina el selector de color2 (UI) y el arg --colour2
+# (apply_state) para breathe. NO subir esto a 2 sin reprobar en el teclado real.
+HARDWARE_CAP_OVERRIDE = {
+    "breathe": {"colours": 1},
+}
+
+
+def _parse_effect_caps(help_text: str) -> dict:
+    """Parse `asusctl aura effect <id> --help` output into capability flags.
+
+    Returns a dict with keys: colours (int), speed (bool), direction (bool).
+    Conservative: only sets a flag when the flag name is explicitly found.
+    """
+    caps: dict = {"colours": 0, "speed": False, "direction": False}
+    lower = help_text.lower()
+    if "--colour2" in lower:
+        caps["colours"] = 2
+    elif "--colour" in lower or "-c," in lower:
+        caps["colours"] = 1
+    if "--speed" in lower:
+        caps["speed"] = True
+    if "--direction" in lower:
+        caps["direction"] = True
+    return caps
+
+
+# Module-level cache: effect_id -> caps dict, populated by the first
+# AuraManager instance and reused by module-level apply_state().
+_CAPS_CACHE: dict[str, dict] = {}
 
 
 def _merge(base: dict, extra: dict) -> dict:
@@ -245,11 +286,14 @@ def _normalize_state(raw: dict) -> dict:
     if state["direction"] not in DIRECTIONS:
         raise ValueError(f"dirección inválida: {state['direction']}")
 
-    if meta.get("colours", 1) < 2:
+    # Use discovered runtime caps if available; fall back to static EFFECT_META.
+    # This ensures colour2/speed/direction are stripped before they reach apply_state.
+    caps = _CAPS_CACHE.get(effect) or meta
+    if caps.get("colours", meta.get("colours", 1)) < 2:
         state["colour2"] = None
-    if not meta.get("speed"):
+    if not caps.get("speed", meta.get("speed", False)):
         state["speed"] = None
-    if not meta.get("direction"):
+    if not caps.get("direction", meta.get("direction", False)):
         state["direction"] = None
     return state
 
@@ -270,28 +314,86 @@ class AuraManager:
         self._cache_ts = 0.0
 
     def _discover_effects(self) -> list[dict]:
+        """Enumerate asusctl effects AND discover real per-effect arg capabilities.
+
+        For each effect the CLI lists, we run `asusctl aura effect <id> --help`
+        once and parse which args it actually accepts (--colour, --colour2,
+        --speed, --direction).  The results are cached in _CAPS_CACHE (module
+        level) so subsequent apply_state() calls don't re-parse.
+
+        Fall-back hierarchy (most to least trusted):
+          1. Parsed --help output  →  exact capabilities
+          2. EFFECT_META conservative table  →  safe subset (no args that
+             historically produced "unrecognised argument" errors)
+        """
+        global _CAPS_CACHE
         if not self.asusctl:
             return []
+
+        # Step 1: enumerate effect sub-commands from `asusctl aura effect --help`
         ok, out = _run([self.asusctl, "aura", "effect", "--help"], timeout=2.0)
         if not ok:
-            return [dict({"id": key}, **meta) for key, meta in EFFECT_META.items()]
-        effect_ids = []
-        commands = False
-        for raw in out.splitlines():
-            line = raw.strip()
-            if not line:
-                continue
-            if line.startswith("Commands:"):
-                commands = True
-                continue
-            if not commands:
-                continue
-            effect = line.split()[0]
-            if effect in EFFECT_META:
-                effect_ids.append(effect)
-        if not effect_ids:
+            # Can't even list effects; return EFFECT_META conservative set
             effect_ids = list(EFFECT_META)
-        return [dict({"id": key}, **EFFECT_META.get(key, {"label": key, "colours": 1})) for key in effect_ids]
+        else:
+            effect_ids = []
+            in_commands = False
+            for raw in out.splitlines():
+                line = raw.strip()
+                if not line:
+                    continue
+                if line.startswith("Commands:"):
+                    in_commands = True
+                    continue
+                if not in_commands:
+                    continue
+                effect = line.split()[0]
+                if effect in EFFECT_META:
+                    effect_ids.append(effect)
+            if not effect_ids:
+                effect_ids = list(EFFECT_META)
+
+        # Step 2: for each effect, discover real capabilities via --help
+        result = []
+        for eid in effect_ids:
+            if eid not in _CAPS_CACHE:
+                caps = self._probe_effect_caps(eid)
+                _CAPS_CACHE[eid] = caps
+            caps = _CAPS_CACHE[eid]
+            # Build the full entry: start with EFFECT_META label, override caps
+            meta = dict(EFFECT_META.get(eid, {"label": eid, "colours": 1}))
+            meta["id"] = eid
+            meta["colours"] = caps.get("colours", meta.get("colours", 0))
+            meta["speed"] = caps.get("speed", meta.get("speed", False))
+            meta["direction"] = caps.get("direction", meta.get("direction", False))
+            result.append(meta)
+        return result
+
+    def _probe_effect_caps(self, effect_id: str) -> dict:
+        """Run `asusctl aura effect <id> --help` and parse actual arg support.
+
+        Returns capability dict: {colours, speed, direction}.
+        On parse failure, falls back to the conservative EFFECT_META entry.
+        """
+        if not self.asusctl:
+            caps = _parse_effect_caps("")
+        else:
+            ok, out = _run([self.asusctl, "aura", "effect", effect_id, "--help"], timeout=3.0)
+            if not ok or not out.strip():
+                # Fall back to the conservative static table
+                m = EFFECT_META.get(effect_id, {})
+                caps = {
+                    "colours": m.get("colours", 0),
+                    "speed": bool(m.get("speed")),
+                    "direction": bool(m.get("direction")),
+                }
+            else:
+                caps = _parse_effect_caps(out)
+        # Apply hardware-reality overrides (e.g. breathe ignores colour2 here).
+        override = HARDWARE_CAP_OVERRIDE.get(effect_id)
+        if override:
+            caps = dict(caps, **override)
+        return caps
 
     def _supported_effect_ids(self) -> set[str] | None:
         """Effect ids the keyboard firmware actually accepts, via asusd D-Bus.
@@ -491,16 +593,26 @@ def apply_state(raw: dict) -> dict:
     if not mgr.asusctl:
         return {"ok": False, "err": "No encontré asusctl en el sistema."}
 
+    # Use DISCOVERED capabilities (from --help parsing) instead of the static
+    # EFFECT_META table.  This prevents sending --speed to pulse (Strobing),
+    # --colour2 to effects that don't support it, etc.
+    # _CAPS_CACHE is populated by AuraManager._discover_effects() which runs
+    # at __init__ time (snapshot is called first in normal flow).  If for some
+    # reason _discover_effects hasn't run yet, probe on demand.
+    eid = state["effect"]
+    if eid not in _CAPS_CACHE:
+        _CAPS_CACHE[eid] = mgr._probe_effect_caps(eid)
+    caps = _CAPS_CACHE[eid]
+
     commands = [[mgr.asusctl, "leds", "set", state["brightness"]]]
-    cmd = [mgr.asusctl, "aura", "effect", state["effect"]]
-    meta = EFFECT_META.get(state["effect"], {})
-    if meta.get("colours", 0) >= 1 and state["colour"]:
+    cmd = [mgr.asusctl, "aura", "effect", eid]
+    if caps.get("colours", 0) >= 1 and state["colour"]:
         cmd.extend(["--colour", state["colour"]])
-    if meta.get("colours", 0) >= 2 and state["colour2"]:
+    if caps.get("colours", 0) >= 2 and state["colour2"]:
         cmd.extend(["--colour2", state["colour2"]])
-    if meta.get("speed") and state["speed"]:
+    if caps.get("speed") and state["speed"]:
         cmd.extend(["--speed", state["speed"]])
-    if meta.get("direction") and state["direction"]:
+    if caps.get("direction") and state["direction"]:
         cmd.extend(["--direction", state["direction"]])
     if state["zone"]:
         cmd.extend(["--zone", state["zone"]])

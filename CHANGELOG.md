@@ -1,5 +1,48 @@
 # Changelog
 
+## 10.0.0 — 2026-06-15
+
+> Build multiagente v2: Opus 4.8 orquestó **6 instancias Sonnet en paralelo**
+> (cada una en su git worktree). La cuenta volvió a cortar a los 6 a mitad
+> (límite de sesión); su trabajo se rescató con commits de respaldo y **2
+> agentes finalizadores** (A5-bis Roadmap, A6-bis cableado de poder) lo
+> completaron. El orquestador fusionó las 6 ramas, resolvió el conflicto y
+> verificó el backend en vivo en el G614JV.
+
+### Added
+- **Multi-idioma (8 idiomas)**: es/en/fr/it/pt/zh/ja/ko. Motor `i18n.js`
+  (`window.t` / `data-i18n`), botón selector «A文» en la barra, modal de idioma
+  y paso de idioma como primer paso del asistente.
+- **Tablero arrastrable** tipo sticky-notes: reordenar bloques, activar/desactivar
+  widgets, renumeración dinámica sin huecos, layout persistente.
+- **Roadmap** (botón `ROADMAP`): línea de tiempo «hecho» (por fechas) y «por hacer».
+- **Offsets de reloj GPU por NVML en Wayland** (sin X11): núcleo y memoria, con
+  rangos seguros y doble consentimiento; escritura por `pkexec`.
+- **Guardián térmico real**: mantiene la GPU bajo el techo elegido subiendo los
+  ventiladores primero y, si hace falta, recortando potencia (falla-seguro).
+
+### Changed
+- **Neón puro** en los 12 temas: glow fuerte en modo oscuro y «neón de día» en
+  modo claro (antes el claro se veía plano).
+- **Barra superior** rediseñada: píldora de estado (lámpara + CONECTADO/BATERÍA)
+  premium con borde de neón del tema.
+- **Benchmarks** rehechos: tarjetas neón con fecha/hora, clickables para ver el
+  detalle (antes solo texto plano). **Eventos** clickables con explicación.
+
+### Fixed
+- **Aura**: descubrimiento de argumentos por efecto del `asusctl` instalado.
+  Arregla el strobing («unrecognised argument speed» → ya no manda `--speed`) y
+  quita el color secundario inútil de la respiración (el teclado lo ignora).
+  Eliminada la sección «Más efectos» confusa; la cuadrícula de 9 modos es el
+  único selector.
+
+### Pendiente (requiere a Marshall)
+- Pasos con contraseña en `docs/SUDO-PENDIENTE-v10.md` (instalar el servicio del
+  guardián térmico; el SET de offsets ya corre por `pkexec` en runtime).
+- Repaso visual / CDP click-through de las superficies nuevas.
+- Long-tail de i18n: strings dinámicos de `app.js` y `roadmap.*` en los 6 idiomas
+  no-core (A1 dejó el core completo en los 8).
+
 ## 9.0.0 — 2026-06-13
 
 > Construido por **6 instancias Sonnet en paralelo** (cada una en su propio

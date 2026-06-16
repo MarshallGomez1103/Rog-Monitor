@@ -258,3 +258,107 @@
   margin-top: -0.5rem;
   margin-bottom: 0.7rem;
 }
+
+/* ===================================================================
+   OFFSETS DE RELOJ GPU (NVML) — A6
+   Bloque .power-offset: mismo look que .power-control pero con
+   marca de fábrica fija en 0 MHz y nota de rango seguro/avanzado.
+   =================================================================== */
+
+.power-control.power-offset {
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--hair);
+  background: color-mix(in srgb, var(--panel) 75%, var(--chip));
+}
+
+.power-slider-offset::-webkit-slider-thumb {
+  clip-path: none;
+  border-radius: 50%;
+  background: var(--accent2);
+}
+
+.power-slider-offset:hover::-webkit-slider-thumb {
+  background: color-mix(in srgb, var(--accent2) 80%, #fff);
+}
+
+/* marca de fábrica de los offsets: siempre en 0 MHz, estilo distinto
+   del tick genérico (ámbar tenue) para distinguirla a simple vista */
+
+.power-zero-tick {
+  color: var(--hot);
+  font-weight: 600;
+}
+
+/* nota de rango bajo el slider de offset */
+
+.power-range-note {
+  display: block;
+  font-size: 0.66rem;
+  color: var(--dim);
+  margin-top: 0.45rem;
+  letter-spacing: 0.02em;
+}
+
+.power-range-note.advanced {
+  color: var(--hot);
+  font-weight: 600;
+}
+
+/* checkbox "modo avanzado" — desbloquea el rango absoluto del driver */
+
+.power-advanced-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--dim);
+  cursor: pointer;
+  user-select: none;
+}
+
+.power-advanced-toggle input[type='checkbox'] {
+  accent-color: var(--hot);
+  cursor: pointer;
+}
+
+.power-advanced-toggle:hover {
+  color: var(--ink);
+}
+
+/* ===================================================================
+   GUARDIÁN TÉRMICO GPU — A6
+   Sección debajo de los sliders GPU: estado + techo + activar/desactivar.
+   =================================================================== */
+
+.power-thermal-guardian {
+  margin-top: 0.3rem;
+}
+
+.power-thermal-status {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--hair);
+  color: var(--dim);
+  background: var(--chip);
+}
+
+.power-thermal-status.active {
+  color: var(--accent2);
+  border-color: var(--accent2);
+  background: color-mix(in srgb, var(--accent2) 14%, var(--chip));
+}
+
+.power-thermal-row {
+  margin: 0.6rem 0 0.7rem;
+}
+
+.power-thermal-row .power-numbox {
+  width: 52px;
+}
+
+.power-thermal-toggle {
+  width: 100%;
+}

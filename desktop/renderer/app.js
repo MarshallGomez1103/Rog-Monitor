@@ -19,7 +19,33 @@ let auraDirty = false;
 let auraFocused = false;
 let benchmarkResult = null;
 let benchBusy = false;
-let benchmarkHistory = JSON.parse(localStorage.getItem('benchmarkHistory') || '[]');
+
+// v10: historial completo por corrida (V2). Migra el viejo formato simple.
+function _loadBenchmarkHistory() {
+  const v2 = localStorage.getItem('benchmarkHistoryV2');
+  if (v2) { try { return JSON.parse(v2); } catch (e) { /* fallback */ } }
+  // migrar el viejo texto plano → structs mínimos sin samples
+  const old = localStorage.getItem('benchmarkHistory');
+  if (old) {
+    try {
+      const arr = JSON.parse(old);
+      return arr.map((item) => ({
+        id: `legacy-${item.when || Date.now()}`,
+        kind: item.kind || 'cpu',
+        label: item.label || 'CPU',
+        started_at: null,
+        when: item.when || '',
+        seconds: null,
+        tool: null,
+        summary: null,
+        _legacyText: item.summary || '',
+      }));
+    } catch (e) { /* ignore */ }
+  }
+  return [];
+}
+
+let benchmarkHistory = _loadBenchmarkHistory();
 const AURA_PRIMARY_EFFECTS = ['static', 'breathe', 'rainbow-cycle', 'rainbow-wave', 'stars'];
 
 /* ---------- themes ---------- */
@@ -331,16 +357,6 @@ function auraEffects() {
   return auraState?.asus?.effects || [];
 }
 
-function auraBasicEffects() {
-  if (auraState?.asus?.basic_effects?.length) return auraState.asus.basic_effects;
-  const detected = auraEffects().filter((fx) => AURA_PRIMARY_EFFECTS.includes(fx.id));
-  return detected.length ? detected : auraEffects();
-}
-
-function auraExtraEffects() {
-  if (auraState?.asus?.extra_effects) return auraState.asus.extra_effects;
-  return auraEffects().filter((fx) => !AURA_PRIMARY_EFFECTS.includes(fx.id));
-}
 
 // Cuadrícula de 9 tiles estilo Armoury Crate.
 // Estados de un tile:
@@ -380,23 +396,8 @@ function renderModeGrid(selectedValue) {
 function renderAuraEffectControls(selectedValue) {
   const selected = selectedValue || auraSelectedEffect || $('aura-effect').value || 'static';
   renderModeGrid(selected);
-
-  // Selector oculto: mantenerlo sincronizado para compatibilidad con el flujo APLICAR.
-  const extra = auraExtraEffects().map((fx) => ({ value: fx.id, label: fx.label }));
-  const wrap = $('aura-extra-wrap');
-  const extraSel = $('aura-extra-effect');
-  wrap.classList.toggle('hidden', !extra.length);
-  if (!extra.length) {
-    extraSel.innerHTML = '<option value="">sin extras</option>';
-    extraSel.value = '';
-    extraSel.disabled = true;
-    return;
-  }
-  extraSel.disabled = false;
-  extraSel.innerHTML = ['<option value="">usar modo basico</option>']
-    .concat(extra.map((fx) => `<option value="${fx.value}">${fx.label}</option>`))
-    .join('');
-  extraSel.value = extra.some((fx) => fx.value === selected) ? selected : '';
+  // La cuadrícula de 9 modos (#aura-mode-grid) es el ÚNICO selector de efectos.
+  // La sección "Mas efectos ASUS" (#aura-extra-wrap) fue eliminada en v10 (A2).
 }
 
 function currentAuraFormState() {
@@ -510,8 +511,6 @@ function renderAura(aura, resetForm = false) {
     note.textContent = 'No encontré controladores RGB disponibles. Instala asusctl/asusd para Aura.';
     $('aura-apply').disabled = true;
     $('aura-music').disabled = true;
-    $('aura-extra-wrap').classList.add('hidden');
-    $('aura-extra-effect').innerHTML = '<option value="">sin extras</option>';
     fillSelect(effectSel, [], '', 'Sin efectos detectados');
     return;
   }
@@ -668,35 +667,212 @@ function benchmarkSummaryText(result) {
   return lines.join('\n');
 }
 
+/* ---- Generación de badges de veredicto para tarjetas de benchmark ---- */
+function _tempBadge(val, label) {
+  if (val == null) return '';
+  const cls = val >= 95 ? 'crit' : val >= 85 ? 'hot' : val >= 70 ? 'warn' : 'ok';
+  return `<span class="bench-badge ${cls}">${label} ${fmt(val, 1)}°C</span>`;
+}
+function _wattBadge(val, label) {
+  if (val == null) return '';
+  return `<span class="bench-badge neutral">${label} ${fmt(val, 1)} W</span>`;
+}
+function _throttleBadge(events) {
+  if (events == null) return '';
+  const cls = events > 50 ? 'crit' : events > 10 ? 'hot' : events > 0 ? 'warn' : 'ok';
+  return `<span class="bench-badge ${cls}">throttle ${events}</span>`;
+}
+function _capBadge(capRespected) {
+  if (capRespected == null) return '';
+  return capRespected
+    ? '<span class="bench-badge ok">cap respetado</span>'
+    : '<span class="bench-badge crit">cap EXCEDIDO</span>';
+}
+
+/* Dibuja una mini-gráfica de sparkline de temperatures en un canvas */
+function _drawSparkline(canvas, samples, key, color) {
+  if (!samples || !samples.length) return;
+  const vals = samples.map((s) => s[key]).filter((v) => v != null);
+  if (!vals.length) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.offsetWidth || canvas.width;
+  const h = canvas.offsetHeight || canvas.height;
+  canvas.width = w;
+  canvas.height = h;
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const range = max - min || 1;
+  const xStep = w / Math.max(vals.length - 1, 1);
+  ctx.clearRect(0, 0, w, h);
+  ctx.beginPath();
+  ctx.strokeStyle = color || '#f25c3d';
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  vals.forEach((v, i) => {
+    const x = i * xStep;
+    const y = h - ((v - min) / range) * (h - 4) - 2;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  // fill area
+  ctx.lineTo((vals.length - 1) * xStep, h);
+  ctx.lineTo(0, h);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, (color || '#f25c3d') + '44');
+  grad.addColorStop(1, (color || '#f25c3d') + '00');
+  ctx.fillStyle = grad;
+  ctx.fill();
+}
+
+/* Genera el HTML interior de una bench-card */
+function _benchCardHtml(item) {
+  const s = item.summary || {};
+  const kind = (item.kind || 'cpu').toUpperCase();
+  const label = item.label || kind;
+
+  // badges de veredicto
+  const badges = [
+    item.kind === 'cpu' ? _tempBadge(s.cpu_temp_max, 'CPU') : _tempBadge(s.gpu_temp_max, 'GPU'),
+    item.kind === 'cpu' ? _wattBadge(s.cpu_watts_max, 'CPU') : _wattBadge(s.gpu_watts_max, 'GPU'),
+    _throttleBadge(s.throttle_events),
+    _capBadge(s.cap_respected),
+  ].filter(Boolean).join('');
+
+  // detalle de texto: grid de valores
+  let detailGrid = '';
+  if (item.summary) {
+    const cells = [
+      { l: 'CPU máx', v: s.cpu_temp_max != null ? `${fmt(s.cpu_temp_max, 1)} °C` : '--', accent: s.cpu_temp_max >= 90 },
+      { l: 'CPU pkg', v: s.cpu_package_max != null ? `${fmt(s.cpu_package_max, 1)} °C` : '--' },
+      { l: 'CPU W máx', v: s.cpu_watts_max != null ? `${fmt(s.cpu_watts_max, 1)} W` : '--' },
+      { l: 'GPU máx', v: s.gpu_temp_max != null ? `${fmt(s.gpu_temp_max, 1)} °C` : '--', accent: s.gpu_temp_max >= 85 },
+      { l: 'GPU W máx', v: s.gpu_watts_max != null ? `${fmt(s.gpu_watts_max, 1)} W` : '--' },
+      { l: 'GPU uso', v: s.gpu_util_max != null ? `${fmt(s.gpu_util_max, 0)} %` : '--' },
+      { l: 'Throttle', v: `${s.throttle_events ?? 0} ev · ${s.throttle_ms ?? 0} ms`, accent: (s.throttle_events ?? 0) > 10 },
+      { l: 'Duración', v: item.seconds != null ? `${item.seconds} s` : '--' },
+    ];
+    detailGrid = `<div class="bench-detail-grid">${cells.map((c) =>
+      `<div class="bench-detail-cell">
+         <label>${escapeHtml(c.l)}</label>
+         <b${c.accent ? ' class="accent"' : ''}>${escapeHtml(c.v)}</b>
+       </div>`).join('')}</div>`;
+
+    // fan rpms
+    const fanEntries = Object.entries(s.fan_rpm_max || {});
+    if (fanEntries.length) {
+      detailGrid += `<div class="bench-detail-fans">Ventiladores: ${
+        fanEntries.map(([k, v]) => `<b>${escapeHtml(k)}: ${v} RPM</b>`).join(' · ')
+      }</div>`;
+    }
+    // cap verdict
+    if (s.fan_cap) {
+      const capText = Object.entries(s.fan_cap).map(([k, c]) =>
+        `${k.replace('_fan', '').toUpperCase()} ${c.max ?? '--'}/${c.cap}`).join(' · ');
+      detailGrid += `<div class="bench-detail-fans">Tope: ${escapeHtml(capText)}</div>`;
+    }
+  } else if (item._legacyText) {
+    detailGrid = `<div class="bench-detail-fans">${escapeHtml(item._legacyText)}</div>`;
+  }
+
+  // sparkline placeholder (se rellena en JS después de insertar al DOM)
+  const hasSparkline = Array.isArray(item.samples) && item.samples.length > 1;
+  const sparklineId = `spark-${item.id}`;
+  const sparkHtml = hasSparkline
+    ? `<canvas class="bench-sparkline" id="${sparklineId}" width="260" height="44"></canvas>`
+    : '';
+
+  // tool info
+  const toolHtml = item.tool
+    ? `<div class="bench-detail-tool">Herramienta: ${escapeHtml(item.tool)}</div>`
+    : '';
+
+  return `
+    <div class="bench-card-header">
+      <span class="bench-card-kind">${escapeHtml(kind)}</span>
+      <span class="bench-card-when">${escapeHtml(item.when || '')}</span>
+      <span class="bench-card-arrow">▼</span>
+    </div>
+    <div class="bench-card-summary">${badges || '<span class="bench-badge neutral">' + escapeHtml(label) + '</span>'}</div>
+    <div class="bench-card-detail">
+      ${sparkHtml}
+      ${detailGrid}
+      ${toolHtml}
+    </div>`;
+}
+
 function renderBenchmarkHistory() {
   const host = $('bench-history');
   if (!benchmarkHistory.length) {
-    host.innerHTML = '<li class="dim">sin historial</li>';
+    host.innerHTML = '<li class="bench-empty">sin historial</li>';
     $('bench-inline-status').textContent = 'Sin benchmarks en esta sesión.';
     return;
   }
-  host.innerHTML = benchmarkHistory.map((item) => `
-    <li>
-      <b>${item.label || item.kind.toUpperCase()} · ${item.when}</b>
-      <span>${item.summary}</span>
-    </li>`).join('');
-  $('bench-inline-status').textContent = benchmarkHistory[0].summary;
+
+  const items = benchmarkHistory.slice(0, 8);
+  host.innerHTML = items.map((item) =>
+    `<li class="bench-card" data-bid="${escapeHtml(item.id || '')}">${_benchCardHtml(item)}</li>`
+  ).join('');
+
+  // dibujar sparklines después de que los elementos estén en el DOM
+  items.forEach((item) => {
+    if (!Array.isArray(item.samples) || item.samples.length < 2) return;
+    const canvas = document.getElementById(`spark-${item.id}`);
+    if (!canvas) return;
+    const key = item.kind === 'gpu' ? 'gpu_temp' : 'cpu_temp';
+    const color = cssVar('--accent');
+    _drawSparkline(canvas, item.samples, key, color);
+  });
+
+  // click en cabecera → expandir/colapsar
+  host.querySelectorAll('.bench-card').forEach((card) => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.bench-card-detail')) return; // clic dentro del detalle no toglea
+      card.classList.toggle('open');
+      // si se abre, redibujar sparkline (puede que el canvas no tuviera tamaño aún)
+      if (card.classList.contains('open')) {
+        const bid = card.dataset.bid;
+        const item = benchmarkHistory.find((i) => i.id === bid);
+        if (item?.samples?.length > 1) {
+          const canvas = card.querySelector('.bench-sparkline');
+          if (canvas) {
+            const key = item.kind === 'gpu' ? 'gpu_temp' : 'cpu_temp';
+            _drawSparkline(canvas, item.samples, key, cssVar('--accent'));
+          }
+        }
+      }
+    });
+  });
+
+  // inline status: texto del último item
+  const first = items[0];
+  const s = first.summary || {};
+  const statusText = first.kind === 'cpu'
+    ? `CPU ${fmt(s.cpu_temp_max, 1)}°C · ${fmt(s.cpu_watts_max, 1)} W · throttle ${s.throttle_events ?? 0} — ${first.when}`
+    : first._legacyText
+      ? first._legacyText
+      : `GPU ${fmt(s.gpu_temp_max, 1)}°C · ${fmt(s.gpu_watts_max, 1)} W — ${first.when}`;
+  $('bench-inline-status').textContent = statusText;
 }
 
 function pushBenchmarkHistory(result) {
   if (!result?.ok) return;
   const s = result.summary || {};
-  const summary = result.kind === 'cpu'
-    ? `CPU ${fmt(s.cpu_temp_max, 1)}°C · ${fmt(s.cpu_watts_max, 1)} W · throttle ${s.throttle_events ?? 0}`
-    : `GPU ${fmt(s.gpu_temp_max, 1)}°C · ${fmt(s.gpu_watts_max, 1)} W · uso ${fmt(s.gpu_util_max, 0)}%`;
   const label = result.kind === 'cpu' ? 'CPU' : 'GPU LOCAL';
-  benchmarkHistory = [{
+  const now = new Date();
+  const record = {
+    id: `bench-${result.kind}-${now.getTime()}`,
     kind: result.kind,
     label,
-    when: new Date().toLocaleString(),
-    summary,
-  }, ...benchmarkHistory].slice(0, 8);
-  localStorage.setItem('benchmarkHistory', JSON.stringify(benchmarkHistory));
+    started_at: result.started_at || null,
+    when: now.toLocaleString(),
+    seconds: result.seconds || null,
+    tool: result.tool || null,
+    summary: s,
+    samples: result.samples || null,
+  };
+  benchmarkHistory = [record, ...benchmarkHistory].slice(0, 20);
+  localStorage.setItem('benchmarkHistoryV2', JSON.stringify(benchmarkHistory));
   renderBenchmarkHistory();
 }
 
@@ -972,6 +1148,59 @@ window.addEventListener('keydown', (e) => {
   if (e.key === '0') { e.preventDefault(); window.rog.zoom(null); }
 });
 
+/* ---------- i18n / idioma ---------- */
+
+// Idiomas con nombres nativos (en sincronía con i18n.js)
+const LANG_DISPLAY = [
+  { code: 'es', label: 'Español',   flag: '🇪🇸' },
+  { code: 'en', label: 'English',   flag: '🇬🇧' },
+  { code: 'fr', label: 'Français',  flag: '🇫🇷' },
+  { code: 'it', label: 'Italiano',  flag: '🇮🇹' },
+  { code: 'pt', label: 'Português', flag: '🇵🇹' },
+  { code: 'zh', label: '中文',      flag: '🇨🇳' },
+  { code: 'ja', label: '日本語',    flag: '🇯🇵' },
+  { code: 'ko', label: '한국어',    flag: '🇰🇷' },
+];
+
+function buildLangGrid() {
+  const grid = $('lang-grid');
+  if (!grid) return;
+  const active = window.i18n ? window.i18n.get() : 'es';
+  grid.innerHTML = LANG_DISPLAY.map((l) => `
+    <button class="lang-option${l.code === active ? ' active' : ''}" data-lang="${l.code}" type="button">
+      <span class="lang-flag">${l.flag}</span>
+      <span class="lang-name">${l.label}</span>
+    </button>`).join('');
+  grid.querySelectorAll('.lang-option').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (window.i18n) window.i18n.set(btn.dataset.lang);
+      // Actualizar estado activo en el grid sin reconstruir
+      grid.querySelectorAll('.lang-option').forEach((b) =>
+        b.classList.toggle('active', b.dataset.lang === btn.dataset.lang));
+    });
+  });
+}
+
+$('lang-btn').addEventListener('click', () => {
+  buildLangGrid();
+  $('lang-modal').classList.remove('hidden');
+});
+
+if ($('lang-close')) {
+  $('lang-close').addEventListener('click', () => $('lang-modal').classList.add('hidden'));
+}
+$('lang-modal').addEventListener('click', (e) => {
+  if (e.target === $('lang-modal')) $('lang-modal').classList.add('hidden');
+});
+
+// Cuando cambia el idioma: re-aplica data-i18n al DOM y regenera el grid
+if (window.i18n) {
+  window.i18n.onChange(() => {
+    window.i18n.apply();
+    buildLangGrid();
+  });
+}
+
 /* ---------- theme picker ---------- */
 
 $('theme-grid').innerHTML = THEMES.map(([id, name, desc]) => `
@@ -1101,7 +1330,6 @@ $('aura-mode-grid').addEventListener('click', (e) => {
 
   auraSelectedEffect = modeId;
   $('aura-effect').value = modeId;
-  $('aura-extra-effect').value = '';
   renderAuraEffectControls(modeId);
   syncAuraFields();
   saveAuraDraft(currentAuraFormState());
@@ -1119,20 +1347,8 @@ $('aura-effect').addEventListener('change', () => {
   saveAuraDraft(currentAuraFormState());
   markAuraDirty(true, 'Efecto cambiado. Falta aplicar.');
 });
-$('aura-extra-effect').addEventListener('change', () => {
-  const extra = $('aura-extra-effect').value;
-  if (!extra) {
-    const fallback = auraBasicEffects()[0]?.id || 'static';
-    $('aura-effect').value = fallback;
-  } else {
-    $('aura-effect').value = extra;
-  }
-  auraSelectedEffect = $('aura-effect').value;
-  renderAuraEffectControls(auraSelectedEffect);
-  syncAuraFields();
-  saveAuraDraft(currentAuraFormState());
-  markAuraDirty(true, extra ? 'Efecto avanzado cambiado. Falta aplicar.' : 'Volviste a un modo basico. Falta aplicar.');
-});
+// Nota: el listener de #aura-extra-effect fue eliminado en v10 (A2).
+// La cuadrícula #aura-mode-grid es el único selector de efectos.
 $('aura-colour').addEventListener('input', () => {
   saveAuraDraft(currentAuraFormState());
   markAuraDirty(true, 'Color cambiado. Falta aplicar.');

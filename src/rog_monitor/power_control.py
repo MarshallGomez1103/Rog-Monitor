@@ -13,16 +13,21 @@ python -m rog_monitor.power_control state
 python -m rog_monitor.power_control apply --json '{"pl1": 80, "pl2": 120}'
 python -m rog_monitor.power_control reset
 
-The Electron layer (Agent 2) runs WRITES via:
+The Electron layer runs WRITES via:
+- For pl1/pl2/dynamic_boost/thermal_target:
     pkexec bash scripts/apply-power-control.sh key=value [key=value ...]
+- For base_clock_offset/mem_clock_offset (GPU, NVML, requires root):
+    pkexec bash scripts/apply-gpu-clocks.sh set --core <MHz> --mem <MHz>
 and then calls `state` to read back.
 
 Design notes
 ------------
-- Writing sysfs current_value requires root -> delegated to the shell script.
-- Reads are always unprivileged (sysfs is world-readable).
+- Writing sysfs current_value requires root -> delegated to the shell scripts.
+- GPU clock offset READ is unprivileged (NVML, libnvidia-ml.so.1). SET needs root.
+- Reads are always unprivileged (sysfs / NVML are world-readable).
 - ROG_FW_ATTRS_DIR env override lets tests use a fake sysfs.
-- Session detection: Wayland -> GPU clock offsets marked writable:false.
+- GPU clock offsets: NO LONGER blocked by Wayland. NVML works in Wayland
+  (verified: driver 610.43.02, RTX 4060, G614JV). SET still needs root (pkexec).
 - Device detection: product_name DMI string matched against device_profiles.json.
 - Fallback: if device not in DB, use 'auto' profile with live sysfs ranges.
 - Custom override: ~/.config/rog-monitor/device.json (same structure as DB entry).
@@ -45,12 +50,13 @@ _REAL_ATTRS_DIR = "/sys/class/firmware-attributes/asus-armoury/attributes"
 _DMI_PRODUCT = "/sys/class/dmi/id/product_name"
 _PROFILES_JSON = Path(__file__).parent / "device_profiles.json"
 _SCRIPT = Path(__file__).parent.parent.parent / "scripts" / "apply-power-control.sh"
+_GPU_CLOCKS_SCRIPT = Path(__file__).parent.parent.parent / "scripts" / "apply-gpu-clocks.sh"
 
-# Controls backed by asus-armoury sysfs (writable via script).
-# Controls NOT in this map use device_profiles.json for metadata only.
+# Controls backed by asus-armoury sysfs (writable via apply-power-control.sh).
 _ATTR_KEYS = ("pl1", "pl2", "dynamic_boost", "thermal_target")
 
-# GPU clock offset keys: read from device_profiles.json, never written here.
+# GPU clock offset keys: read live from NVML (gpu_clocks.py); written via
+# apply-gpu-clocks.sh (pkexec). These are NOT passed through apply-power-control.sh.
 _CLOCK_KEYS = ("base_clock_offset", "mem_clock_offset")
 
 # Cache TTL for snapshot().
@@ -97,6 +103,19 @@ def _dmi_product() -> str:
 def _is_wayland() -> bool:
     return bool(os.environ.get("WAYLAND_DISPLAY") or
                 os.environ.get("XDG_SESSION_TYPE", "").lower() == "wayland")
+
+
+def _read_nvml_offsets() -> dict | None:
+    """Try to read GPU clock offsets from NVML (gpu_clocks.py). Returns None on failure.
+
+    NVML works unprivileged in Wayland (verified: driver 610.43.02, RTX 4060, G614JV).
+    This is read-only and never raises — failures are silently ignored for resilience.
+    """
+    try:
+        from rog_monitor.gpu_clocks import read_offsets, NvmlError
+        return read_offsets(0)
+    except Exception:
+        return None
 
 
 def _load_db() -> dict:
@@ -166,8 +185,14 @@ def _save_baseline(values: dict) -> None:
         pass
 
 
-def _controls_from_profile(entry: dict, wayland: bool) -> list[dict]:
-    """Build the controls list from a device profile entry, merging live sysfs values."""
+def _controls_from_profile(entry: dict, wayland: bool,
+                            nvml_data: dict | None = None) -> list[dict]:
+    """Build the controls list from a device profile entry, merging live sysfs values.
+
+    For base_clock_offset and mem_clock_offset, NVML data (from gpu_clocks.py)
+    takes precedence over the profile DB values. NVML works in Wayland — these
+    controls are now writable:True regardless of session type.
+    """
     controls = []
     for ctrl in entry.get("controls", []):
         key = ctrl["key"]
@@ -185,7 +210,7 @@ def _controls_from_profile(entry: dict, wayland: bool) -> list[dict]:
             "attr": attr,
             "label_es": ctrl.get("label_es", key),
             "label_en": ctrl.get("label_en", key),
-            "unit": ctrl.get("unit", ""),
+            "unit": ctrl.get("unit", "MHz"),
             "value": live_current,
             "min": live_min if live_min is not None else ctrl.get("min"),
             "max": live_max if live_max is not None else ctrl.get("max"),
@@ -194,12 +219,31 @@ def _controls_from_profile(entry: dict, wayland: bool) -> list[dict]:
             "reason": ctrl.get("reason"),
         }
 
-        # GPU clock offsets: always non-writable on Wayland (already in DB, but enforce).
+        # GPU clock offsets: inject NVML-live data and enable writable.
+        # NVML works in Wayland (verified driver 610.43.02, RTX 4060).
+        # SET requires root (pkexec → apply-gpu-clocks.sh), not Coolbits.
         if key in _CLOCK_KEYS:
-            c["writable"] = False
-            if wayland:
-                c["reason"] = ctrl.get("reason") or \
-                    "Requiere sesión X11 con Coolbits; no disponible en Wayland"
+            nvml_key = "core" if key == "base_clock_offset" else "mem"
+            if nvml_data and nvml_data.get("ok") and nvml_key in nvml_data:
+                nd = nvml_data[nvml_key]
+                c["value"] = nd.get("value", 0)
+                c["min"] = nd.get("safe_min", nd.get("min", -200))
+                c["max"] = nd.get("safe_max", nd.get("max", 200))
+                c["abs_min"] = nd.get("min")       # driver-reported absolute min
+                c["abs_max"] = nd.get("max")       # driver-reported absolute max
+                c["default"] = 0                    # factory = 0 MHz offset
+                c["writable"] = True
+                c["reason"] = None
+                c["nvml_ok"] = True
+                c["unit"] = nd.get("unit", "MHz")
+            else:
+                # NVML unavailable: show locked with explanation
+                c["writable"] = False
+                c["nvml_ok"] = False
+                c["reason"] = (
+                    "NVML no disponible (¿driver NVIDIA no cargado?). "
+                    "Reinicia la app cuando el driver esté activo."
+                )
 
         controls.append(c)
     return controls
@@ -211,6 +255,8 @@ def _auto_profile(db: dict, wayland: bool) -> dict:
         if entry.get("id") == "auto":
             return entry
     # Ultimate fallback: synthesize from DB structure.
+    # GPU clock offsets: writable=True stub; _controls_from_profile will inject
+    # the NVML-live values. writable=False only if NVML is missing (handled there).
     return {
         "id": "auto",
         "name": "Genérico (auto-detectado)",
@@ -224,13 +270,11 @@ def _auto_profile(db: dict, wayland: bool) -> dict:
             for k in _ATTR_KEYS
         ] + [
             {"key": "base_clock_offset", "attr": None, "label_es": "Offset clock base GPU",
-             "label_en": "GPU base clock offset", "unit": "MHz", "min": 0, "max": 200,
-             "default": 50, "writable": False,
-             "reason": "Requiere sesión X11 con Coolbits; no disponible en Wayland"},
+             "label_en": "GPU base clock offset", "unit": "MHz", "min": -200, "max": 200,
+             "default": 0, "writable": True, "reason": None},
             {"key": "mem_clock_offset", "attr": None, "label_es": "Offset clock memoria GPU",
-             "label_en": "GPU memory clock offset", "unit": "MHz", "min": 0, "max": 300,
-             "default": 100, "writable": False,
-             "reason": "Requiere sesión X11 con Coolbits; no disponible en Wayland"},
+             "label_en": "GPU memory clock offset", "unit": "MHz", "min": -500, "max": 1000,
+             "default": 0, "writable": True, "reason": None},
         ],
     }
 
@@ -268,61 +312,116 @@ class PowerControl:
         return dict(fresh)
 
     def apply(self, changes: dict) -> dict:
-        """Validate, clamp, then write via apply-power-control.sh.
+        """Validate, clamp, then write via the appropriate script.
 
-        In production the Electron layer runs:
-            pkexec bash scripts/apply-power-control.sh key=val ...
-        In test mode (ROG_FW_ATTRS_DIR set), the script is run directly
-        without pkexec (fake sysfs is writable by the current user).
+        Routing:
+        - pl1/pl2/dynamic_boost/thermal_target → apply-power-control.sh (pkexec)
+        - base_clock_offset/mem_clock_offset    → apply-gpu-clocks.sh (pkexec)
+          (NVML, works in Wayland; SET needs root)
+
+        In test mode (ROG_FW_ATTRS_DIR set), power script is run directly
+        without pkexec (fake sysfs is writable by the current user). GPU clock
+        changes are SKIPPED in test mode (no fake NVML).
+
         Returns the refreshed state on success, or {"ok": False, "err": ...}.
         """
         if not changes:
             return {"ok": False, "err": "No se enviaron cambios."}
 
-        # Reject unknown or non-writable keys.
-        allowed = set(_ATTR_KEYS)
-        for key in changes:
-            if key not in allowed:
-                if key in _CLOCK_KEYS:
-                    return {
-                        "ok": False,
-                        "err": f"'{key}' requiere sesión X11 con Coolbits; no disponible en Wayland.",
-                    }
+        # Split changes into two buckets.
+        attr_changes: dict[str, float] = {}
+        clock_changes: dict[str, int] = {}
+
+        for key, val in changes.items():
+            if key in _ATTR_KEYS:
+                attr_changes[key] = val
+            elif key in _CLOCK_KEYS:
+                clock_changes[key] = int(round(float(val)))
+            else:
                 return {"ok": False, "err": f"Clave no reconocida: '{key}'."}
 
-        # Build argument list: key=value (script will clamp).
-        args = [f"{k}={int(round(float(v)))}" for k, v in changes.items()]
-
-        # Decide how to invoke the script.
         test_mode = "ROG_FW_ATTRS_DIR" in os.environ
-        script_path = str(_SCRIPT)
+        applied: dict = {}
 
-        if test_mode:
-            cmd = ["bash", script_path] + args
-            env = dict(os.environ)
-        else:
-            cmd = ["pkexec", "bash", script_path] + args
-            env = None
+        # --- apply asus-armoury attrs via apply-power-control.sh ---
+        if attr_changes:
+            args = [f"{k}={int(round(float(v)))}" for k, v in attr_changes.items()]
+            script_path = str(_SCRIPT)
+            if test_mode:
+                cmd = ["bash", script_path] + args
+                env: dict | None = dict(os.environ)
+            else:
+                cmd = ["pkexec", "bash", script_path] + args
+                env = None
+            try:
+                proc = subprocess.run(
+                    cmd, capture_output=True, text=True, timeout=10,
+                    stdin=subprocess.DEVNULL, env=env,
+                )
+            except (OSError, subprocess.SubprocessError) as exc:
+                return {"ok": False, "err": f"Error ejecutando apply-power-control.sh: {exc}"}
+            if proc.returncode != 0:
+                err = (proc.stderr or proc.stdout or "Error desconocido.").strip()
+                return {"ok": False, "err": err}
+            applied.update(self._parse_script_output(proc.stdout))
 
-        try:
-            proc = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=10,
-                stdin=subprocess.DEVNULL,
-                env=env,
-            )
-        except (OSError, subprocess.SubprocessError) as exc:
-            return {"ok": False, "err": f"Error ejecutando el script: {exc}"}
+        # --- apply GPU clock offsets via apply-gpu-clocks.sh (NVML, pkexec) ---
+        if clock_changes and not test_mode:
+            core_mhz = clock_changes.get("base_clock_offset")
+            mem_mhz = clock_changes.get("mem_clock_offset")
 
-        if proc.returncode != 0:
-            err = (proc.stderr or proc.stdout or "Error desconocido.").strip()
-            return {"ok": False, "err": err}
+            # If only one offset was sent, read the current value for the other.
+            if core_mhz is None or mem_mhz is None:
+                nvml = _read_nvml_offsets()
+                if nvml and nvml.get("ok"):
+                    if core_mhz is None:
+                        core_mhz = nvml["core"]["value"]
+                    if mem_mhz is None:
+                        mem_mhz = nvml["mem"]["value"]
+                else:
+                    return {
+                        "ok": False,
+                        "err": "No se pudo leer los offsets actuales de NVML para rellenar el faltante.",
+                    }
+
+            gpu_script_path = str(_GPU_CLOCKS_SCRIPT)
+            if not Path(gpu_script_path).exists():
+                return {
+                    "ok": False,
+                    "err": f"Script no encontrado: {gpu_script_path}",
+                }
+
+            gpu_cmd = [
+                "pkexec", "bash", gpu_script_path,
+                "set",
+                "--core", str(core_mhz),
+                "--mem", str(mem_mhz),
+            ]
+            try:
+                gpu_proc = subprocess.run(
+                    gpu_cmd, capture_output=True, text=True, timeout=15,
+                    stdin=subprocess.DEVNULL,
+                )
+            except (OSError, subprocess.SubprocessError) as exc:
+                return {"ok": False, "err": f"Error ejecutando apply-gpu-clocks.sh: {exc}"}
+            if gpu_proc.returncode != 0:
+                err = (gpu_proc.stderr or gpu_proc.stdout or "Error desconocido.").strip()
+                return {"ok": False, "err": f"GPU clocks: {err}"}
+            # Parse JSON output from gpu_clocks.py
+            try:
+                gpu_result = json.loads(gpu_proc.stdout.strip() or '{}')
+            except json.JSONDecodeError:
+                gpu_result = {}
+            if gpu_result.get("ok"):
+                applied["base_clock_offset"] = gpu_result.get("core_applied", core_mhz)
+                applied["mem_clock_offset"] = gpu_result.get("mem_applied", mem_mhz)
+            else:
+                err = gpu_result.get("err", "Error desconocido al aplicar clocks de GPU.")
+                return {"ok": False, "err": f"GPU clocks: {err}"}
 
         # Invalidate cache and return fresh state.
         self._cache = None
-        return {"ok": True, "applied": self._parse_script_output(proc.stdout), "state": self.state()}
+        return {"ok": True, "applied": applied, "state": self.state()}
 
     def reset(self) -> dict:
         """Restore the machine's OWN factory values — the baseline captured
@@ -340,10 +439,13 @@ class PowerControl:
     # ------------------------------------------------------------------
 
     def _build_snapshot(self) -> dict:
-        """Build the full snapshot dict from live sysfs + device DB."""
+        """Build the full snapshot dict from live sysfs + device DB + NVML."""
         db = _load_db()
         wayland = _is_wayland()
         product = _dmi_product()
+
+        # Read NVML offsets once (unprivileged; works in Wayland).
+        nvml_data = _read_nvml_offsets()
 
         # Check for custom user override first.
         custom = _load_custom_profile()
@@ -377,7 +479,7 @@ class PowerControl:
                     "source": "auto",
                 }
 
-        controls_list = _controls_from_profile(profile, wayland)
+        controls_list = _controls_from_profile(profile, wayland, nvml_data)
 
         # Factory baseline: capture once (firmware default_value, else current),
         # save locally; RESET A FÁBRICA restores it. `default` shown in the UI is
@@ -403,7 +505,7 @@ class PowerControl:
             controls[c["key"]] = c
 
         # available = at least one knob is writable with a real value+range
-        # (i.e. asus-armoury is present and readable on this machine).
+        # (asus-armoury OR NVML GPU clocks present and readable on this machine).
         available = any(
             c.get("writable") and c.get("value") is not None
             and c.get("min") is not None and c.get("max") is not None
@@ -417,6 +519,7 @@ class PowerControl:
             "session": {
                 "wayland": wayland,
                 "display": os.environ.get("WAYLAND_DISPLAY") or os.environ.get("DISPLAY"),
+                "nvml_ok": bool(nvml_data and nvml_data.get("ok")),
             },
             "controls": controls,
             "baseline": baseline,
@@ -453,7 +556,8 @@ def main(argv=None) -> int:
     apply_p = sub.add_parser("apply", help="Aplicar cambios (JSON).")
     apply_p.add_argument(
         "--json", required=True, metavar="JSON",
-        help='Objeto JSON con claves pl1/pl2/dynamic_boost/thermal_target.',
+        help='Objeto JSON con claves pl1/pl2/dynamic_boost/thermal_target/'
+             'base_clock_offset/mem_clock_offset.',
     )
 
     sub.add_parser("reset", help="Restaurar valores por defecto del firmware.")

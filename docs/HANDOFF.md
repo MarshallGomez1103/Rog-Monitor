@@ -2,6 +2,48 @@
 
 > Cada agente actualiza esta sección al terminar. El siguiente la lee primero.
 
+## Última sesión: Claude (Opus 4.8, orquestador) — 2026-06-15 (v10.0.0)
+
+### Estado: v10.0.0 — i18n 8 idiomas + tablero arrastrable + neón puro + Roadmap + offsets GPU NVML (Wayland) + guardián térmico + fixes Aura. UN commit local, SIN push.
+
+**Workflow multiagente (lo pidió Marshall):** Opus orquestó, **6 Sonnet en
+worktrees** (`v10-a1..a6` desde el scaffolding `7ea31e0`). Reparto: A1 i18n+topbar+
+wizard, A2 Aura, A3 dashboard, A4 temas neón, A5 benchmarks/eventos/roadmap, A6
+poder/térmico/offsets. Contrato en `docs/build-spec-v10.md`. Andamiaje previo:
+shells i18n/neon/dashboard/extras, botones lang/roadmap, `data-block` por bloque,
+modales vacíos, y un hook `pre-push` que bloqueó pushes durante el build (REMOVIDO
+al entregar).
+
+**OJO — la cuenta VOLVIÓ a cortar a los 6 a mitad** (como en v9): su trabajo quedó
+en disco SIN commit. Lo rescaté (`git add -A && commit` por worktree). A1/A2/A3/A4
+quedaron completos; a A5 le faltaba el Roadmap y a A6 TODO el cableado (solo había
+escrito 3 archivos nuevos: gpu_clocks.py + apply-gpu-clocks.sh + rog-thermal-
+guardian.sh). Lancé **2 finalizadores**: A5-bis (Roadmap, `bcbde9f`) y A6-bis
+(cableó offsets+térmico en power_control/main/preload/power.js, `96eeeaa`). Fusioné
+las 6 ramas (1 conflicto trivial en index.html: combinar lang-modal + roadmap-modal).
+Fix del orquestador en aura.py: `HARDWARE_CAP_OVERRIDE` para que `breathe` reporte
+1 color (Marshall: el 2º color no hace nada en su teclado de 4 zonas).
+
+#### Verificado
+- Sintaxis: `node --check` de los 10 JS, `py_compile` de todo el paquete, HTML íntegro.
+- Backend EN VIVO (G614JV): `power_control state` → `ok/available/nvml_ok/wayland=True`,
+  los 6 controles `writable` (offsets en rangos seguros núcleo ±200 / mem -500..1000);
+  `aura state` → flags por efecto correctos (static/pulse 1 color sin speed, breathe
+  1 color, rainbow con speed/dir, sin args inválidos); stream `--json-stream` trae
+  `aura`+`power_control`+cpu/gpu/etc.
+- NVML lectura unprivileged OK (núcleo [-1000,1000], mem [-2000,6000]); SET por pkexec.
+
+#### Pendiente para la siguiente sesión / Marshall
+1. **Marshall**: pasos con clave en `docs/SUDO-PENDIENTE-v10.md` (instalar servicio
+   del guardián térmico; primer APLICAR real de offsets por pkexec; Coolbits solo
+   respaldo). El primer APLICAR real del Centro de Poder sigue pendiente desde v9.
+2. **CDP click-through** de las superficies nuevas (idioma, dashboard arrastrable,
+   neón claro/oscuro, benchmarks/eventos clickables, roadmap, offsets + guardián).
+   No alcanzó por el límite de sesión (igual que v9) — recomendado repaso visual.
+3. **i18n long-tail**: strings dinámicos de app.js (toasts/estados) y `roadmap.*`
+   en los 6 idiomas no-core (A1 dejó el core completo en los 8).
+4. Redragon sigue BLOQUEADO (brick). v9 grande sin tocar: AMD, SQLite, empaquetado.
+
 ## Última sesión: Claude (Opus 4.8, orquestador) — 2026-06-13 (v9.0.0)
 
 ### Estado: v9.0.0 — Centro de Poder + 12 temas + rejilla Aura + wizard + 4 estados. Commit local, SIN push.
