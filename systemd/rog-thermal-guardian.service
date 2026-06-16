@@ -26,7 +26,11 @@ Group=root
 # Endurecimiento conservador: no aislamos /sys porque el script necesita
 # escribir varias rutas sysfs reales del firmware ASUS y NVIDIA.
 NoNewPrivileges=true
-ProtectHome=true
+# read-only (NO true): el script vive en el home del usuario (dentro del repo),
+# asi que el servicio necesita poder LEERLO/ejecutarlo. read-only mantiene el
+# home protegido contra escritura sin ocultarlo; con "true" systemd montaria
+# /home vacio y el ExecStart fallaria con "No such file or directory".
+ProtectHome=read-only
 ProtectSystem=false
 
 [Install]
