@@ -29,6 +29,104 @@
       (vars[k] !== undefined ? String(vars[k]) : `{${k}}`));
   }
 
+  /* ================================================================
+     REGISTRO i18n PROPIO (A-POWER-UI) — formato { clave: { es, en, … } }.
+     Registramos aquí TODAS las claves nuevas de este módulo para que la UI
+     funcione aunque el orquestador todavía no las consolide en i18n.js.
+     El motor cae a 'es' si falta un idioma, así que es+en bastan; añadimos
+     traducciones reales donde el texto es corto/visible. NO toca i18n.js.
+  ================================================================= */
+  (function registerPowerUiKeys() {
+    if (!window.i18n || typeof window.i18n.register !== 'function') return;
+    const D = {
+      // --- cabecera / botón avanzado / rieles ---
+      'power.advancedBtn': { es: 'Avanzado', en: 'Advanced', fr: 'Avancé', it: 'Avanzate', pt: 'Avançado', zh: '高级', ja: '詳細設定', ko: '고급' },
+      'power.safetyRails': {
+        es: 'Tu equipo está protegido: cada valor se recorta al rango seguro de tu dispositivo (doble recorte en la app y de nuevo en el firmware). El firmware impone sus propios topes y nada se aplica sin tu confirmación.',
+        en: 'Your machine is protected: every value is clamped to your device’s safe range (double clamp, in the app and again in firmware). The firmware enforces its own limits and nothing is applied without your confirmation.',
+      },
+      // --- franja de peligro ---
+      'power.danger.heading': { es: 'Peligro: revisa qué vas a mover', en: 'Danger: review what you’re about to change' },
+      'power.danger.moved': { es: 'Moviste {label} {from}→{to} {unit}', en: 'You moved {label} {from}→{to} {unit}' },
+      'power.danger.beyondSafe': {
+        es: 'Fuera del rango seguro: requiere confirmación adicional al aplicar.',
+        en: 'Outside the safe range: requires extra confirmation when applying.',
+      },
+      'power.danger.railsNote': {
+        es: 'Cada valor se recorta al rango seguro de tu dispositivo y el firmware impone sus propios topes. Si algo falla, reinicia y usa Reset a fábrica.',
+        en: 'Every value is clamped to your device’s safe range and the firmware enforces its own caps. If something goes wrong, reboot and use Factory Reset.',
+      },
+      // consecuencias — subir mucho
+      'power.danger.pl1.up': { es: 'PL1 muy alto: la CPU se mantiene caliente bajo carga larga; más calor y ventiladores al máximo. El firmware hará throttling si se pasa.', en: 'PL1 too high: the CPU stays hot under sustained load; more heat and fans at max. The firmware will throttle if it goes too far.' },
+      'power.danger.pl2.up': { es: 'PL2 muy alto: picos de temperatura más fuertes que pueden disparar throttling y ruido de ventiladores.', en: 'PL2 too high: sharper temperature spikes that can trigger throttling and fan noise.' },
+      'power.danger.dynamic_boost.up': { es: 'Dynamic Boost muy alto: la GPU consume más y se calienta más; en chasis delgados puede activar throttling antes.', en: 'Dynamic Boost too high: the GPU draws more and runs hotter; in thin chassis it may throttle sooner.' },
+      'power.danger.thermal_target.up': { es: 'Techo térmico muy alto: la GPU correrá más caliente de forma sostenida; mayor desgaste térmico a largo plazo.', en: 'Thermal ceiling too high: the GPU will run hotter sustained; more long-term thermal wear.' },
+      'power.danger.base_clock_offset.up': { es: 'Offset de reloj base muy alto (overclock): inestabilidad, artefactos en pantalla y cuelgues; en casos extremos puede dañar la GPU.', en: 'Base clock offset too high (overclock): instability, on-screen artifacts and crashes; in extreme cases it can damage the GPU.' },
+      'power.danger.mem_clock_offset.up': { es: 'Offset de memoria muy alto: errores de textura (artefactos) y cierres de juego si la VRAM no aguanta.', en: 'Memory offset too high: texture errors (artifacts) and game crashes if the VRAM can’t keep up.' },
+      // consecuencias — bajar mucho
+      'power.danger.pl1.down': { es: 'PL1 muy bajo: la CPU rinde notablemente menos en cargas largas (compilar, render, juegos pesados).', en: 'PL1 too low: the CPU performs noticeably worse on sustained loads (compiling, rendering, heavy games).' },
+      'power.danger.pl2.down': { es: 'PL2 muy bajo (por debajo de PL1): la ráfaga deja de tener efecto; aperturas y picos se sienten lentos.', en: 'PL2 too low (below PL1): the burst stops having effect; launches and spikes feel slow.' },
+      'power.danger.dynamic_boost.down': { es: 'Dynamic Boost muy bajo: menos FPS en juegos donde la GPU podría tomar vatios extra de la CPU.', en: 'Dynamic Boost too low: fewer FPS in games where the GPU could borrow extra watts from the CPU.' },
+      'power.danger.thermal_target.down': { es: 'Techo térmico muy bajo: la GPU hará throttling antes y perderás rendimiento en picos.', en: 'Thermal ceiling too low: the GPU will throttle sooner and you’ll lose performance on spikes.' },
+      'power.danger.base_clock_offset.down': { es: 'Offset de reloj base muy bajo (undervolt agresivo): el sistema puede congelarse, apagarse o reiniciarse. Recuperable reiniciando.', en: 'Base clock offset too low (aggressive undervolt): the system may freeze, power off or reboot. Recoverable by rebooting.' },
+      'power.danger.mem_clock_offset.down': { es: 'Offset de memoria muy bajo: pérdida de ancho de banda y menos rendimiento en juegos que saturan la VRAM.', en: 'Memory offset too low: bandwidth loss and lower performance in games that saturate the VRAM.' },
+      // --- confirmación al aplicar ---
+      'power.confirm.title': { es: 'CENTRO DE PODER — Confirmar cambios', en: 'POWER CENTER — Confirm changes' },
+      'power.confirm.onlyChanged': { es: 'Vas a aplicar SOLO estos cambios:', en: 'You’re applying ONLY these changes:' },
+      'power.confirm.rails': {
+        es: 'Los valores van acotados a los rangos seguros de tu dispositivo (doble recorte) y el firmware impone sus propios topes. Si algo falla, reinicia y usa Reset a fábrica; estos cambios no sobreviven a un apagón forzado.',
+        en: 'Values are clamped to your device’s safe ranges (double clamp) and the firmware enforces its own caps. If something fails, reboot and use Factory Reset; these changes don’t survive a forced power-off.',
+      },
+      'power.confirm.question': { es: '¿Aplicar?', en: 'Apply?' },
+      'power.confirm.beyondTitle': { es: 'CONFIRMACIÓN ADICIONAL — Fuera del rango seguro', en: 'EXTRA CONFIRMATION — Outside the safe range' },
+      'power.confirm.beyondBody': {
+        es: 'Estos valores superan el rango seguro recomendado para tu dispositivo. El riesgo de inestabilidad o daño es MAYOR:',
+        en: 'These values exceed the recommended safe range for your device. The risk of instability or damage is HIGHER:',
+      },
+      'power.confirm.beyondQuestion': { es: '¿Aplicar fuera del rango seguro?', en: 'Apply outside the safe range?' },
+      // --- panel avanzado ---
+      'power.advanced.intro': {
+        es: 'Modo avanzado: elige marca y componente para ver la documentación oficial y los rangos seguros. Estos límites varían por modelo; consulta siempre la fuente oficial antes de salir del rango seguro.',
+        en: 'Advanced mode: pick a brand and component to see official documentation and safe ranges. These limits vary by model; always check the official source before leaving the safe range.',
+      },
+      'power.advanced.unavailable': {
+        es: 'La base de documentación de dispositivos aún no está disponible. Igual puedes ajustar dentro de los rangos seguros detectados para tu equipo.',
+        en: 'The device documentation database isn’t available yet. You can still adjust within the safe ranges detected for your machine.',
+      },
+      'power.advanced.brand': { es: 'Marca', en: 'Brand', fr: 'Marque', it: 'Marca', pt: 'Marca', zh: '品牌', ja: 'メーカー', ko: '브랜드' },
+      'power.advanced.component': { es: 'Componente', en: 'Component', fr: 'Composant', it: 'Componente', pt: 'Componente', zh: '组件', ja: 'コンポーネント', ko: '구성요소' },
+      'power.advanced.safeRangeRules': { es: 'Rangos seguros', en: 'Safe ranges' },
+      'power.advanced.officialDocs': { es: 'Documentación oficial', en: 'Official documentation' },
+      'power.advanced.source': { es: 'Fuente', en: 'Source' },
+      'power.advanced.ack': { es: 'Entiendo los riesgos', en: 'I understand the risks', fr: 'Je comprends les risques', it: 'Capisco i rischi', pt: 'Entendo os riscos', zh: '我了解风险', ja: 'リスクを理解しました', ko: '위험을 이해합니다' },
+      'power.advanced.needAck': { es: 'Marca "Entiendo los riesgos" en el panel Avanzado para aplicar.', en: 'Tick “I understand the risks” in the Advanced panel to apply.' },
+      'power.advanced.cc.cpuLaptop': { es: 'CPU (portátil)', en: 'CPU (laptop)' },
+      'power.advanced.cc.cpuDesktop': { es: 'CPU (escritorio)', en: 'CPU (desktop)' },
+      'power.advanced.cc.gpuLaptop': { es: 'GPU (portátil)', en: 'GPU (laptop)' },
+      'power.advanced.cc.gpuDesktop': { es: 'GPU (escritorio)', en: 'GPU (desktop)' },
+      // --- reset / errores / acciones (fallbacks; pueden ya existir en CORE) ---
+      'power.reset.title': { es: 'RESET A FÁBRICA', en: 'FACTORY RESET' },
+      'power.reset.body': {
+        es: 'Restaura los límites de potencia a los valores con los que vino tu equipo, detectados y guardados la primera vez que abriste la app.',
+        en: 'Restores the power limits to the values your machine shipped with, detected and saved the first time you opened the app.',
+      },
+      'power.reset.question': { es: '¿Continuar?', en: 'Continue?' },
+      'power.reset': { es: 'RESET A FÁBRICA', en: 'FACTORY RESET' },
+      'power.resetting': { es: 'RESETEANDO…', en: 'RESETTING…' },
+      'power.apply': { es: 'APLICAR', en: 'APPLY' },
+      'power.applying': { es: 'APLICANDO…', en: 'APPLYING…' },
+      'power.err': { es: 'Error', en: 'Error' },
+      'power.err_fetch': { es: 'No se pudo obtener el estado de potencia', en: 'Could not read the power state' },
+      'power.err_no_response': { es: 'Sin respuesta del backend', en: 'No response from the backend' },
+      'power.err_apply': { es: 'No se aplicó', en: 'Not applied' },
+      'power.err_reset': { es: 'No se pudo resetear', en: 'Could not reset' },
+      'power.err_unknown': { es: 'error desconocido', en: 'unknown error' },
+      'power.notAvailableConfig': { es: 'No disponible en esta configuración', en: 'Not available in this configuration' },
+      'power.consentRecover': { es: 'Si el sistema se cuelga tras aplicar, reinicia.', en: 'If the system hangs after applying, reboot.' },
+    };
+    try { window.i18n.register(D); } catch (_) { /* nunca bloquea la UI */ }
+  })();
+
   /* ---- estado del módulo ---- */
   let powerState = null;       // última respuesta de getPowerControl()
   let pendingChanges = {};     // { pl1: 120, pl2: 160, … }
