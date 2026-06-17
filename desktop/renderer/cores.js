@@ -1,13 +1,27 @@
-/* ROG Monitor — Grid de núcleos (v11.2).
- * Botón "NÚCLEOS" en el topbar -> modal con una rejilla de todos los hilos de
- * la CPU: uso%, frecuencia y temperatura por núcleo, con tooltip descriptivo.
- * Autocontenido: crea su botón y su modal en runtime (no toca index.html).
- * Lee stats.cpu.core_grid del stream existente (window.rog.onStats). Solo
- * redibuja cuando el modal está abierto, para no gastar CPU de fondo. */
+/* ROG Monitor — Grid de núcleos (v13).
+ * Botón "NÚCLEOS" (dentro del bloque de Procesos) -> modal con una rejilla de
+ * todos los hilos de la CPU: uso%, frecuencia (GHz inline) y temperatura por
+ * núcleo. Distingue núcleos de Rendimiento (P, estética deportiva) de los de
+ * Eficiencia (E, estética ecológica) cuando el hardware lo permite; si la CPU
+ * es homogénea degrada a un estilo neutro.
+ *
+ * Clic en un núcleo -> modal de detalle: procesos que corren en ese núcleo,
+ * uso%, frecuencia y temperatura. Se refresca cada segundo SIN toast (ambos
+ * modales se redibujan desde el mismo stream window.rog.onStats).
+ *
+ * Autocontenido: crea su DOM en runtime (no toca index.html). Lee
+ * stats.cpu.core_grid y stats.procs[].last_cpu del stream existente. Solo
+ * redibuja cuando hay un modal abierto, para no gastar CPU de fondo. */
 (function () {
   'use strict';
 
-  const t = (k, fb) => (window.t ? (window.t(k) || fb || k) : (fb || k));
+  const t = (k, fb, vars) => {
+    if (window.t) {
+      const out = window.t(k, vars);
+      return out && out !== k ? out : (fb || k);
+    }
+    return fb || k;
+  };
 
   if (window.i18n && typeof window.i18n.register === 'function') {
     window.i18n.register({
@@ -17,9 +31,25 @@
         'cores.subtitle': '{model} · {threads} hilos ({phys} núcleos) · uso {use}% · máx {max}°C',
         'cores.ptype': 'Núcleo de rendimiento (P)',
         'cores.etype': 'Núcleo de eficiencia (E)',
-        'cores.tip': 'CPU {cpu} · {type}\nUso {usage}%  ·  {ghz} GHz  ·  {temp}°C',
-        'cores.legend': 'Color = temperatura. Barra = uso. P = rendimiento, E = eficiencia.',
+        'cores.type': 'Núcleo',
+        'cores.legend': 'Color = temperatura · barra = uso · P = rendimiento (deportivo) · E = eficiencia (ecológico) · clic en un núcleo para ver su detalle.',
+        'cores.legend.flat': 'Color = temperatura · barra = uso · clic en un núcleo para ver su detalle.',
         'cores.none': 'Sin datos de núcleos todavía…',
+        'cores.ghz': 'GHz',
+        'cores.usage': 'uso',
+        'cores.hint': 'Clic para ver detalle',
+        // --- modal de detalle ---
+        'cores.detail.title': 'Núcleo {cpu}',
+        'cores.detail.ptype': 'Rendimiento (P)',
+        'cores.detail.etype': 'Eficiencia (E)',
+        'cores.detail.usage': 'Uso',
+        'cores.detail.freq': 'Frecuencia',
+        'cores.detail.temp': 'Temperatura',
+        'cores.detail.procs': 'Procesos en este núcleo',
+        'cores.detail.procs.none': 'Sin procesos activos detectados en este núcleo ahora mismo.',
+        'cores.detail.live': 'En vivo · actualiza cada segundo',
+        'cores.detail.col.proc': 'Proceso',
+        'cores.detail.col.cpu': '% CPU',
         'common.close': 'Cerrar',
       },
       en: {
@@ -28,9 +58,24 @@
         'cores.subtitle': '{model} · {threads} threads ({phys} cores) · {use}% used · max {max}°C',
         'cores.ptype': 'Performance core (P)',
         'cores.etype': 'Efficiency core (E)',
-        'cores.tip': 'CPU {cpu} · {type}\nUsage {usage}%  ·  {ghz} GHz  ·  {temp}°C',
-        'cores.legend': 'Color = temperature. Bar = usage. P = performance, E = efficiency.',
+        'cores.type': 'Core',
+        'cores.legend': 'Color = temperature · bar = usage · P = performance (sporty) · E = efficiency (eco) · click a core for details.',
+        'cores.legend.flat': 'Color = temperature · bar = usage · click a core for details.',
         'cores.none': 'No core data yet…',
+        'cores.ghz': 'GHz',
+        'cores.usage': 'usage',
+        'cores.hint': 'Click for details',
+        'cores.detail.title': 'Core {cpu}',
+        'cores.detail.ptype': 'Performance (P)',
+        'cores.detail.etype': 'Efficiency (E)',
+        'cores.detail.usage': 'Usage',
+        'cores.detail.freq': 'Frequency',
+        'cores.detail.temp': 'Temperature',
+        'cores.detail.procs': 'Processes on this core',
+        'cores.detail.procs.none': 'No active processes detected on this core right now.',
+        'cores.detail.live': 'Live · updates every second',
+        'cores.detail.col.proc': 'Process',
+        'cores.detail.col.cpu': 'CPU %',
         'common.close': 'Close',
       },
     });
@@ -39,8 +84,21 @@
   let modal = null;
   let gridEl = null;
   let subEl = null;
+  let legendEl = null;
   let isOpen = false;
-  let latest = null;
+  let latest = null;          // stats.cpu del último frame
+  let latestProcs = null;     // stats.procs del último frame
+
+  // --- modal de detalle por núcleo ---
+  let detail = null;
+  let detailOpen = false;
+  let detailCpu = null;       // cpu lógico que se está inspeccionando
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
+  }
 
   function tempClass(temp) {
     if (temp == null) return 'c-na';
@@ -50,19 +108,34 @@
     return 'c-crit';
   }
 
-  // P-core si su core_id aparece en 2 hilos (HyperThreading); E-core si en 1.
+  // core_id que aparece en >=2 hilos => P-core (HyperThreading); 1 hilo => E-core.
   function typeMap(grid) {
     const count = {};
     grid.forEach((c) => { count[c.core_id] = (count[c.core_id] || 0) + 1; });
     return count;
   }
 
+  function isPCore(counts, coreId) {
+    return (counts[coreId] || 1) >= 2;
+  }
+
+  // Heterogénea = hay P-cores Y E-cores (la CPU distingue tipos). Si todos son
+  // iguales, no pintamos badges P/E (degradación elegante).
+  function isHetero(grid, counts) {
+    let hasP = false;
+    let hasE = false;
+    grid.forEach((c) => {
+      if (isPCore(counts, c.core_id)) hasP = true; else hasE = true;
+    });
+    return hasP && hasE;
+  }
+
+  function ghzText(c) {
+    return c.ghz != null ? Number(c.ghz).toFixed(2) : '--';
+  }
+
   function build() {
     if (document.getElementById('cores-modal')) return; // ya construido
-
-    // v12: el botón de NÚCLEOS ya NO va en la topbar — vive dentro del bloque de
-    // Procesos (#procs-cores-btn, inyectado en index.html). El modal se crea aquí
-    // y app.js lo abre vía window.RogCores.open(). Esto consolida la topbar (Task 4).
 
     modal = document.createElement('div');
     modal.id = 'cores-modal';
@@ -72,7 +145,7 @@
         <h3 data-i18n="cores.title">${t('cores.title', 'Núcleos de la CPU')}</h3>
         <p class="sub" id="cores-sub"></p>
         <div class="cores-grid" id="cores-grid"></div>
-        <p class="cores-legend" data-i18n="cores.legend">${t('cores.legend', '')}</p>
+        <p class="cores-legend" id="cores-legend"></p>
         <div class="cores-close-row">
           <button class="ghost modal-close" id="cores-close" data-i18n="common.close">${t('common.close', 'Cerrar')}</button>
         </div>
@@ -80,9 +153,37 @@
     document.body.appendChild(modal);
     gridEl = modal.querySelector('#cores-grid');
     subEl = modal.querySelector('#cores-sub');
+    legendEl = modal.querySelector('#cores-legend');
 
     modal.querySelector('#cores-close').addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+    // Delegación: clic en una celda abre el detalle del núcleo.
+    gridEl.addEventListener('click', (e) => {
+      const tile = e.target.closest('.core-tile');
+      if (!tile) return;
+      const cpu = parseInt(tile.dataset.cpu, 10);
+      if (!Number.isNaN(cpu)) openDetail(cpu);
+    });
+
+    // --- modal de detalle por núcleo ---
+    detail = document.createElement('div');
+    detail.id = 'core-detail-modal';
+    detail.className = 'modal hidden';
+    detail.innerHTML = `
+      <div class="modal-card core-detail-card">
+        <h3 id="core-detail-title"></h3>
+        <p class="sub core-detail-live" id="core-detail-live"></p>
+        <div class="core-detail-stats" id="core-detail-stats"></div>
+        <h4 class="core-detail-h4" id="core-detail-procs-h" data-i18n="cores.detail.procs">${t('cores.detail.procs', 'Procesos en este núcleo')}</h4>
+        <div class="core-detail-procs" id="core-detail-procs"></div>
+        <div class="cores-close-row">
+          <button class="ghost modal-close" id="core-detail-close" data-i18n="common.close">${t('common.close', 'Cerrar')}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(detail);
+    detail.querySelector('#core-detail-close').addEventListener('click', closeDetail);
+    detail.addEventListener('click', (e) => { if (e.target === detail) closeDetail(); });
   }
 
   function openModal() {
@@ -94,16 +195,32 @@
   function closeModal() {
     if (modal) modal.classList.add('hidden');
     isOpen = false;
+    closeDetail();
+  }
+
+  function openDetail(cpu) {
+    if (!detail) return;
+    detailCpu = cpu;
+    detail.classList.remove('hidden');
+    detailOpen = true;
+    renderDetail();
+  }
+  function closeDetail() {
+    if (detail) detail.classList.add('hidden');
+    detailOpen = false;
+    detailCpu = null;
   }
 
   function render() {
     if (!isOpen || !gridEl) return;
     const grid = latest && latest.core_grid;
     if (!grid || !grid.length) {
-      gridEl.innerHTML = `<p class="sub">${t('cores.none', '')}</p>`;
+      gridEl.innerHTML = `<p class="sub">${t('cores.none', 'Sin datos de núcleos todavía…')}</p>`;
+      if (legendEl) legendEl.textContent = '';
       return;
     }
     const counts = typeMap(grid);
+    const hetero = isHetero(grid, counts);
     const temps = grid.map((c) => c.temp).filter((x) => x != null);
     const uses = grid.map((c) => c.usage);
     const maxT = temps.length ? Math.max(...temps) : null;
@@ -111,43 +228,135 @@
     const phys = Object.keys(counts).length;
 
     if (subEl) {
-      subEl.textContent = t('cores.subtitle', '')
-        .replace('{model}', latest.model || 'CPU')
-        .replace('{threads}', grid.length)
-        .replace('{phys}', phys)
-        .replace('{use}', avgU)
-        .replace('{max}', maxT != null ? maxT : '--');
+      subEl.textContent = t('cores.subtitle', '', {
+        model: latest.model || 'CPU',
+        threads: grid.length,
+        phys: phys,
+        use: avgU,
+        max: maxT != null ? maxT : '--',
+      });
+    }
+    if (legendEl) {
+      legendEl.textContent = hetero
+        ? t('cores.legend', '')
+        : t('cores.legend.flat', '');
     }
 
     gridEl.innerHTML = grid.map((c) => {
-      const isP = (counts[c.core_id] || 1) >= 2;
-      const typeLabel = isP ? t('cores.ptype', 'P') : t('cores.etype', 'E');
-      const tip = t('cores.tip', '')
-        .replace('{cpu}', c.cpu)
-        .replace('{type}', typeLabel)
-        .replace('{usage}', c.usage)
-        .replace('{ghz}', c.ghz != null ? c.ghz : '--')
-        .replace('{temp}', c.temp != null ? c.temp : '--');
+      const isP = isPCore(counts, c.core_id);
+      // Clase de tipo solo si la CPU distingue (degradación elegante).
+      const typeClass = hetero ? (isP ? 'core-p' : 'core-e') : 'core-flat';
+      const badge = hetero
+        ? `<span class="core-badge ${isP ? 'badge-p' : 'badge-e'}" aria-hidden="true">${isP ? '⚡' : '🌿'}<i>${isP ? 'P' : 'E'}</i></span>`
+        : '';
       return `
-        <div class="core-tile ${tempClass(c.temp)}" title="${tip.replace(/"/g, '&quot;')}">
-          <span class="core-badge">${isP ? 'P' : 'E'}</span>
+        <div class="core-tile ${tempClass(c.temp)} ${typeClass}" data-cpu="${c.cpu}" role="button" tabindex="0">
+          ${badge}
           <span class="core-temp">${c.temp != null ? c.temp + '°' : '--'}</span>
           <span class="core-num">cpu ${c.cpu}</span>
           <div class="core-bar"><div class="core-bar-fill" style="width:${c.usage}%"></div></div>
-          <span class="core-usage">${c.usage}%</span>
+          <div class="core-foot">
+            <span class="core-usage">${c.usage}%</span>
+            <span class="core-ghz">${ghzText(c)}<small>${t('cores.ghz', 'GHz')}</small></span>
+          </div>
+          <span class="core-hint">${t('cores.hint', 'Clic para ver detalle')}</span>
         </div>`;
     }).join('');
   }
 
+  function renderDetail() {
+    if (!detailOpen || !detail || detailCpu == null) return;
+    const grid = (latest && latest.core_grid) || [];
+    const c = grid.find((x) => x.cpu === detailCpu);
+    const counts = typeMap(grid);
+    const hetero = isHetero(grid, counts);
+    const isP = c ? isPCore(counts, c.core_id) : false;
+
+    const titleEl = detail.querySelector('#core-detail-title');
+    const liveEl = detail.querySelector('#core-detail-live');
+    const statsEl = detail.querySelector('#core-detail-stats');
+    const procsEl = detail.querySelector('#core-detail-procs');
+
+    const card = detail.querySelector('.core-detail-card');
+    if (card) {
+      card.classList.remove('core-p', 'core-e', 'core-flat');
+      card.classList.add(hetero ? (isP ? 'core-p' : 'core-e') : 'core-flat');
+    }
+
+    if (titleEl) {
+      const typeTag = hetero
+        ? ` · ${isP ? t('cores.detail.ptype', 'Rendimiento (P)') : t('cores.detail.etype', 'Eficiencia (E)')}`
+        : '';
+      titleEl.textContent = t('cores.detail.title', 'Núcleo {cpu}', { cpu: detailCpu }) + typeTag;
+    }
+    if (liveEl) liveEl.textContent = t('cores.detail.live', 'En vivo · actualiza cada segundo');
+
+    if (statsEl) {
+      const usage = c ? c.usage : null;
+      const ghz = c ? ghzText(c) : '--';
+      const temp = c && c.temp != null ? c.temp + '°C' : '--';
+      const tc = tempClass(c ? c.temp : null);
+      statsEl.innerHTML = `
+        <div class="cd-stat">
+          <span class="cd-k">${t('cores.detail.usage', 'Uso')}</span>
+          <span class="cd-v">${usage != null ? usage + '%' : '--'}</span>
+          <div class="cd-bar"><div class="cd-bar-fill" style="width:${usage != null ? usage : 0}%"></div></div>
+        </div>
+        <div class="cd-stat">
+          <span class="cd-k">${t('cores.detail.freq', 'Frecuencia')}</span>
+          <span class="cd-v">${ghz} <small>${t('cores.ghz', 'GHz')}</small></span>
+        </div>
+        <div class="cd-stat ${tc}">
+          <span class="cd-k">${t('cores.detail.temp', 'Temperatura')}</span>
+          <span class="cd-v cd-temp">${temp}</span>
+        </div>`;
+    }
+
+    if (procsEl) {
+      // Procesos cuyo last_cpu == este núcleo (de la lista top del stream).
+      const procs = (latestProcs || [])
+        .filter((p) => p.last_cpu === detailCpu)
+        .sort((a, b) => (b.cpu || 0) - (a.cpu || 0));
+      if (!procs.length) {
+        procsEl.innerHTML = `<p class="sub cd-empty">${t('cores.detail.procs.none', 'Sin procesos activos detectados en este núcleo ahora mismo.')}</p>`;
+      } else {
+        const head = `
+          <div class="cd-prow cd-phead">
+            <span class="cd-ppid">PID</span>
+            <span class="cd-pname">${t('cores.detail.col.proc', 'Proceso')}</span>
+            <span class="cd-pcpu">${t('cores.detail.col.cpu', '% CPU')}</span>
+          </div>`;
+        const rows = procs.map((p) => `
+          <div class="cd-prow">
+            <span class="cd-ppid">${escapeHtml(p.pid)}</span>
+            <span class="cd-pname">${escapeHtml(p.name)}</span>
+            <span class="cd-pcpu">${(p.cpu != null ? p.cpu : 0).toFixed(1)}%</span>
+          </div>`).join('');
+        procsEl.innerHTML = head + rows;
+      }
+    }
+  }
+
   function onStats(stats) {
     if (stats && stats.cpu && stats.cpu.core_grid) latest = stats.cpu;
+    if (stats && stats.procs) latestProcs = stats.procs;
     if (isOpen) render();
+    if (detailOpen) renderDetail();
+  }
+
+  // Re-traducir textos estáticos al cambiar idioma con un modal abierto.
+  function onLangChange() {
+    if (isOpen) render();
+    if (detailOpen) renderDetail();
   }
 
   function init() {
     build();
     if (window.rog && typeof window.rog.onStats === 'function') {
       window.rog.onStats(onStats);
+    }
+    if (window.i18n && typeof window.i18n.onChange === 'function') {
+      window.i18n.onChange(onLangChange);
     }
   }
 

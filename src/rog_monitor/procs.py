@@ -18,6 +18,10 @@ class ProcReader:
     def __init__(self):
         self._last: dict[int, int] = {}
         self._last_total = _total_jiffies()
+        # Última lista COMPLETA de procesos activos (con last_cpu) del ciclo
+        # más reciente. by_core() la reusa para agrupar por núcleo sin volver
+        # a recorrer /proc.
+        self._last_rows: list[dict] = []
 
     def read(self, top: int = 5) -> list[dict]:
         total = _total_jiffies()
@@ -41,6 +45,9 @@ class ProcReader:
             try:
                 jiffies = int(fields[11]) + int(fields[12])  # utime + stime
                 rss_pages = int(fields[21])
+                # field 39 (1-based) = processor: last logical CPU this task ran
+                # on. Index 36 here because fields[] starts after "comm) ".
+                last_cpu = int(fields[36]) if len(fields) > 36 else None
             except (IndexError, ValueError):
                 continue
             current[pid] = jiffies
@@ -59,13 +66,34 @@ class ProcReader:
                     "cpu": round(cpu, 1),
                     "cpu_core": round(cpu * ncpu, 1),
                     "mem_mb": rss_pages * PAGE_KB // 1024,
+                    "last_cpu": last_cpu,
                 }
             )
 
         self._last = current
         self._last_total = total
         rows.sort(key=lambda r: r["cpu"], reverse=True)
+        self._last_rows = rows
         return rows[:top]
+
+    def by_core(self, per_core: int = 5) -> dict[int, list[dict]]:
+        """Procesos activos agrupados por núcleo lógico (last_cpu) del último
+        ciclo de read(). Devuelve {cpu_logico: [procesos top ...]}.
+
+        Pensado para la vista de detalle por núcleo: cada lista trae hasta
+        `per_core` procesos ordenados por uso de CPU. Degrada elegante: si
+        last_cpu no está disponible (kernel exótico), simplemente no aparecen.
+        """
+        out: dict[int, list[dict]] = {}
+        for row in self._last_rows:
+            cpu = row.get("last_cpu")
+            if cpu is None:
+                continue
+            out.setdefault(cpu, []).append(row)
+        for cpu in out:
+            out[cpu].sort(key=lambda r: r["cpu"], reverse=True)
+            out[cpu] = out[cpu][:per_core]
+        return out
 
     def top_memory(self, top: int = 8) -> list[dict]:
         """Top processes by resident RAM (no deltas needed)."""

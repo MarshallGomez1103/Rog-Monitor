@@ -1,78 +1,272 @@
-/* ROG Monitor — Grid de núcleos (cores.js). Reutiliza .modal/.modal-card y las
-   variables de nivel --lvl-cold/ok/hot/crit (dueño A2). Solo clases .core*. */
+/* ROG Monitor — Grid de núcleos (cores.js · v13).
+   Reutiliza .modal/.modal-card y las variables de nivel --lvl-cold/ok/hot/crit.
+   Solo clases .core* y .cd-* (detalle). Más neón; distingue P (deportivo) de
+   E (ecológico) con color/ícono/acento; GHz inline; modal de detalle por núcleo. */
+
+/* Acentos de tipo de núcleo — derivados con fallback para los 24 temas.
+   P = rojo/deportivo (calor, velocidad). E = verde/ecológico (eficiencia). */
+:root {
+  --p-core: var(--lvl-hot, #ff5e4d);
+  --p-core-2: var(--lvl-crit, #ff2d55);
+  --e-core: var(--lvl-ok, #3ce087);
+  --e-core-2: #19c37d;
+}
 
 #cores-modal .cores-card {
-  width: min(680px, 94vw);
-  max-height: 86vh;
+  width: min(720px, 94vw);
+  max-height: 88vh;
 }
 
 .cores-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
-  gap: 8px;
-  margin: 10px 0 6px;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 9px;
+  margin: 12px 0 8px;
 }
 
 .core-tile {
   position: relative;
   border: 1px solid var(--hair);
   border-left: 3px solid var(--dim);
-  border-radius: 3px;
-  padding: 8px 9px 9px;
-  background: color-mix(in srgb, var(--panel) 75%, transparent);
+  border-radius: 4px;
+  padding: 9px 10px 10px;
+  background:
+    linear-gradient(160deg,
+      color-mix(in srgb, var(--panel) 88%, transparent),
+      color-mix(in srgb, var(--panel) 62%, transparent));
   display: flex;
   flex-direction: column;
   gap: 3px;
-  cursor: default;
-  transition: transform .08s ease;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform .1s ease, box-shadow .1s ease, border-color .1s ease;
 }
-.core-tile:hover { transform: translateY(-1px); }
+.core-tile:hover,
+.core-tile:focus-visible {
+  transform: translateY(-2px);
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--hair));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 35%, transparent);
+}
 
-/* color del borde y el número por temperatura (nivel) */
+/* ---- color del borde y números por temperatura (nivel) + glow neón ---- */
 .core-tile.c-cold   { border-left-color: var(--lvl-cold, #4db8ff); }
 .core-tile.c-normal { border-left-color: var(--lvl-ok, #3ce087); }
 .core-tile.c-hot    { border-left-color: var(--lvl-hot, #ffb13c); }
 .core-tile.c-crit   { border-left-color: var(--lvl-crit, #ff4d4d); }
 .core-tile.c-na     { border-left-color: var(--dim); }
 
-.core-temp { font-size: 1.05rem; font-weight: 700; line-height: 1; }
-.core-tile.c-cold   .core-temp { color: var(--lvl-cold, #4db8ff); }
-.core-tile.c-normal .core-temp { color: var(--lvl-ok, #3ce087); }
-.core-tile.c-hot    .core-temp { color: var(--lvl-hot, #ffb13c); }
-.core-tile.c-crit   .core-temp { color: var(--lvl-crit, #ff4d4d); text-shadow: 0 0 6px color-mix(in srgb, var(--lvl-crit) 55%, transparent); }
+.core-temp { font-size: 1.12rem; font-weight: 800; line-height: 1; letter-spacing: .01em; }
+.core-tile.c-cold   .core-temp { color: var(--lvl-cold, #4db8ff); text-shadow: 0 0 8px color-mix(in srgb, var(--lvl-cold) 45%, transparent); }
+.core-tile.c-normal .core-temp { color: var(--lvl-ok, #3ce087);  text-shadow: 0 0 8px color-mix(in srgb, var(--lvl-ok) 40%, transparent); }
+.core-tile.c-hot    .core-temp { color: var(--lvl-hot, #ffb13c); text-shadow: 0 0 9px color-mix(in srgb, var(--lvl-hot) 50%, transparent); }
+.core-tile.c-crit   .core-temp { color: var(--lvl-crit, #ff4d4d); text-shadow: 0 0 11px color-mix(in srgb, var(--lvl-crit) 60%, transparent); }
 
-.core-num { font-size: .66rem; color: var(--dim); letter-spacing: .02em; }
+.core-num { font-size: .68rem; color: var(--dim); letter-spacing: .04em; text-transform: uppercase; }
 
-.core-badge {
-  position: absolute;
-  top: 6px;
-  right: 7px;
-  font-size: .58rem;
-  font-weight: 800;
-  padding: 1px 4px;
-  border-radius: 2px;
-  color: var(--bg);
-  background: var(--accent);
-  opacity: .85;
+/* ---- pie: uso% (izq) + GHz inline (der) ---- */
+.core-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 1px;
 }
+.core-usage { font-size: .72rem; color: var(--ink); opacity: .85; font-variant-numeric: tabular-nums; }
+.core-ghz {
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--accent2);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 6px color-mix(in srgb, var(--accent2) 35%, transparent);
+}
+.core-ghz small { font-size: .56rem; font-weight: 600; opacity: .7; margin-left: 1px; }
 
+/* ---- barra de uso ---- */
 .core-bar {
   height: 5px;
   border-radius: 3px;
   background: color-mix(in srgb, var(--ink) 12%, transparent);
   overflow: hidden;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 .core-bar-fill {
   height: 100%;
-  background: var(--accent);
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 50%, transparent);
   transition: width .4s ease;
 }
-.core-usage { font-size: .66rem; color: var(--ink); opacity: .8; }
+
+/* ---- pista al pasar el cursor (reemplaza el toast/title que parpadeaba) ---- */
+.core-hint {
+  font-size: .58rem;
+  color: var(--accent);
+  letter-spacing: .02em;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity .12s ease, max-height .12s ease;
+}
+.core-tile:hover .core-hint,
+.core-tile:focus-visible .core-hint { opacity: .85; max-height: 1.2em; }
+
+/* ===================================================================
+   P-cores (RENDIMIENTO · deportivo) vs E-cores (EFICIENCIA · ecológico)
+   El badge superior derecho lleva ícono + letra; el borde superior tinta
+   la celda con el acento del tipo. Si la CPU es homogénea -> .core-flat
+   (sin badge ni tinte), degradación elegante.
+   =================================================================== */
+.core-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: .82rem;
+  line-height: 1;
+  padding: 2px 5px 2px 4px;
+  border-radius: 3px;
+  font-weight: 900;
+}
+.core-badge i { font-style: normal; font-size: .56rem; letter-spacing: .02em; }
+
+.core-badge.badge-p {
+  color: var(--p-core);
+  background: color-mix(in srgb, var(--p-core) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--p-core) 45%, transparent);
+  text-shadow: 0 0 7px color-mix(in srgb, var(--p-core) 55%, transparent);
+}
+.core-badge.badge-e {
+  color: var(--e-core);
+  background: color-mix(in srgb, var(--e-core) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--e-core) 45%, transparent);
+  text-shadow: 0 0 7px color-mix(in srgb, var(--e-core) 55%, transparent);
+}
+
+/* tinte deportivo: borde superior anaranjado/rojo con sutil rayado diagonal */
+.core-tile.core-p {
+  border-top: 2px solid color-mix(in srgb, var(--p-core) 70%, transparent);
+}
+.core-tile.core-p:hover,
+.core-tile.core-p:focus-visible {
+  border-color: color-mix(in srgb, var(--p-core) 55%, var(--hair));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--p-core) 38%, transparent);
+}
+/* tinte ecológico: borde superior verde, look más calmado */
+.core-tile.core-e {
+  border-top: 2px solid color-mix(in srgb, var(--e-core) 60%, transparent);
+}
+.core-tile.core-e:hover,
+.core-tile.core-e:focus-visible {
+  border-color: color-mix(in srgb, var(--e-core) 50%, var(--hair));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--e-core) 34%, transparent);
+}
 
 .cores-legend {
-  font-size: .7rem;
+  font-size: .72rem;
   color: var(--dim);
-  margin: 4px 0 12px;
+  line-height: 1.5;
+  margin: 6px 0 14px;
 }
 .cores-close-row { display: flex; justify-content: flex-end; }
+
+/* ===================================================================
+   Modal de DETALLE por núcleo (clic en una celda)
+   =================================================================== */
+#core-detail-modal .core-detail-card {
+  width: min(440px, 92vw);
+}
+#core-detail-modal .core-detail-card h3 {
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+/* el acento del título sigue el tipo de núcleo */
+#core-detail-modal .core-detail-card.core-p h3 {
+  color: var(--p-core);
+  text-shadow: 0 0 9px color-mix(in srgb, var(--p-core) 45%, transparent);
+}
+#core-detail-modal .core-detail-card.core-e h3 {
+  color: var(--e-core);
+  text-shadow: 0 0 9px color-mix(in srgb, var(--e-core) 45%, transparent);
+}
+.core-detail-live {
+  font-size: 11px !important;
+  color: var(--accent2) !important;
+  letter-spacing: .03em;
+  margin-bottom: 12px !important;
+}
+.core-detail-live::before {
+  content: '';
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: baseline;
+  background: var(--lvl-ok, #3ce087);
+  box-shadow: 0 0 8px var(--lvl-ok, #3ce087);
+  animation: cd-pulse 1s ease-in-out infinite;
+}
+@keyframes cd-pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+
+.core-detail-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.cd-stat {
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  padding: 8px 9px;
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cd-k { font-size: .62rem; color: var(--dim); text-transform: uppercase; letter-spacing: .04em; }
+.cd-v { font-size: 1.05rem; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+.cd-v small { font-size: .56rem; font-weight: 600; opacity: .7; }
+.cd-bar { height: 4px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 12%, transparent); overflow: hidden; }
+.cd-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 50%, transparent);
+  transition: width .4s ease;
+}
+/* la tarjeta de temperatura se tinta por nivel */
+.cd-stat.c-cold   .cd-temp { color: var(--lvl-cold, #4db8ff); text-shadow: 0 0 8px color-mix(in srgb, var(--lvl-cold) 45%, transparent); }
+.cd-stat.c-normal .cd-temp { color: var(--lvl-ok, #3ce087);  text-shadow: 0 0 8px color-mix(in srgb, var(--lvl-ok) 40%, transparent); }
+.cd-stat.c-hot    .cd-temp { color: var(--lvl-hot, #ffb13c); text-shadow: 0 0 9px color-mix(in srgb, var(--lvl-hot) 50%, transparent); }
+.cd-stat.c-crit   .cd-temp { color: var(--lvl-crit, #ff4d4d); text-shadow: 0 0 11px color-mix(in srgb, var(--lvl-crit) 60%, transparent); }
+
+.core-detail-h4 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--dim);
+  margin: 0 0 8px;
+}
+.core-detail-procs { display: flex; flex-direction: column; gap: 2px; margin-bottom: 4px; }
+.cd-prow {
+  display: grid;
+  grid-template-columns: 64px 1fr 58px;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 8px;
+  border-radius: 3px;
+  font-size: 12.5px;
+  background: color-mix(in srgb, var(--panel) 55%, transparent);
+}
+.cd-phead {
+  background: transparent;
+  color: var(--dim);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  padding-bottom: 2px;
+}
+.cd-ppid { color: var(--dim); font-variant-numeric: tabular-nums; }
+.cd-pname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.cd-pcpu { text-align: right; color: var(--accent2); font-weight: 700; font-variant-numeric: tabular-nums; }
+.cd-empty { font-size: 12px; color: var(--dim); margin: 4px 0 8px; }
