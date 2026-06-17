@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # rog-thermal-guardian.sh — Guardián térmico GPU: VENTILADORES PRIMERO
 #
-# Filosofía (elegida por Marshall):
+# Filosofía de diseño:
 #   1. GPU demasiado caliente → subir ventiladores primero.
 #   2. Si sigue subiendo → recortar nv_dynamic_boost y, si hace falta, PL.
 #   3. Al enfriar → revertir suavemente.
@@ -22,7 +22,7 @@
 # bajen de golpe en 2 escalones en COOLDOWN+STEP_DELAY s. Con la corrección,
 # cada escalón requiere COOLDOWN s de carga baja sostenida (≈ 20 s quiet,
 # 20 s balanced → 40 s totales para ir de high a silence). Esto es
-# exactamente el comportamiento "bajan pero no de golpe" que Marshall pidió.
+# exactamente el comportamiento buscado: "bajan pero no de golpe".
 #
 # Integración con rog-profile-sync:
 #   - Este daemon NUNCA escribe directamente a pwm*_auto_pointN (eso lo hace

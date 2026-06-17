@@ -69,8 +69,8 @@ principales.
 - **Modo Música**: captura el audio del sistema (PipeWire, `pw-record --target
   <sink>`) y ajusta brillo/color de Aura en tiempo real.
 - Perfiles de Aura guardados en `~/.config/rog-monitor/aura.json`.
-- Periférico Redragon K734WCG-RGB-PRO detectado (cable 258a:010c, dongle
-  3554:fa09) — control pendiente de capturas USB (ver `docs/redragon-protocol.md`).
+- Detección de teclados RGB USB de terceros; el control por OpenRGB llegará
+  cuando el protocolo del periférico esté verificado.
 
 ### Centro de Poder
 

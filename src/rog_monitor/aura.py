@@ -81,7 +81,7 @@ MODE_GRID_DEFINITION = [
         "icon": "★",
         "hw_id": "stars",
         "kind": "hardware",
-        "reason": "no soportado por el teclado interno (lo hará un teclado con zonas / Redragon)",
+        "reason": "no soportado por el teclado interno (lo hará un teclado externo con zonas vía OpenRGB)",
     },
     {
         "id": "smart",
@@ -89,7 +89,7 @@ MODE_GRID_DEFINITION = [
         "icon": "⊛",
         "hw_id": None,
         "kind": "future",
-        "reason": "próximamente (requiere Redragon vía OpenRGB)",
+        "reason": "próximamente (requiere un teclado externo vía OpenRGB)",
     },
     {
         "id": "adaptive",
@@ -97,7 +97,7 @@ MODE_GRID_DEFINITION = [
         "icon": "◈",
         "hw_id": None,
         "kind": "future",
-        "reason": "próximamente (requiere Redragon vía OpenRGB)",
+        "reason": "próximamente (requiere un teclado externo vía OpenRGB)",
     },
 ]
 ASUSCTL_CANDIDATES = [
@@ -169,7 +169,7 @@ EFFECT_META = {
 # Overrides de realidad-hardware para el teclado de ESTE equipo (G614JV,
 # placa interna de 4 zonas). `asusctl aura effect breathe --help` anuncia
 # --colour2, pero el firmware IGNORA el segundo color (respira un solo color).
-# Marshall vio que el color secundario no hacía nada y pidió quitarlo. Forzar
+# El firmware de este teclado ignora el segundo color, así que se oculta. Forzar
 # colours=1 aquí elimina el selector de color2 (UI) y el arg --colour2
 # (apply_state) para breathe. NO subir esto a 2 sin reprobar en el teclado real.
 HARDWARE_CAP_OVERRIDE = {
@@ -522,7 +522,7 @@ class AuraManager:
                 # refinar el mensaje
                 if not tile_supported and reason is None:
                     if supported is not None:
-                        reason = "no soportado por el teclado interno (lo hará un teclado con zonas / Redragon)"
+                        reason = "no soportado por el teclado interno (lo hará un teclado externo con zonas vía OpenRGB)"
                     else:
                         reason = "estado desconocido — asusctl no responde"
             elif tile["kind"] == "software":
@@ -588,7 +588,7 @@ def apply_state(raw: dict) -> dict:
     if state["driver"] != "asus":
         return {
             "ok": False,
-            "err": "OpenRGB aún no está activo en este equipo. Instálalo y levanta su SDK local para el periférico Redragon.",
+            "err": "OpenRGB aún no está activo en este equipo. Instálalo y levanta su SDK local para el teclado externo.",
         }
     if not mgr.asusctl:
         return {"ok": False, "err": "No encontré asusctl en el sistema."}
