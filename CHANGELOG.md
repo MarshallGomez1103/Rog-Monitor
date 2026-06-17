@@ -30,6 +30,13 @@
   roadmap en orden cronológico ascendente; explicaciones de poder en español.
 - **Dash**: modal de fans por perfil, historial de benchmarks mejorado, núcleos
   integrados en Procesos, barra superior consolidada.
+- **Temas claros rediseñados (A-LIGHT)**: las 12 paletas en modo claro dejan de
+  ser lavados pastel saturados. Estrategia invertida como en oscuro: **lienzo
+  casi blanco con un susurro del matiz** (bg ~96-99% de luminancia), paneles
+  blancos elevados, y la personalidad en **accents profundos con contraste AAA**.
+  Carácter por tema conservado (magma=ascua, oceano=teal, glaciar=ártico…).
+  Contraste WCAG verificado: ink/panel AAA (17-19:1) en los 12; accent/panel AAA
+  en los 12; dim ≥ AA. Glows de `neon.css` realineados a los nuevos accents.
 
 ### Glue del orquestador
 - **IPC de fans verificado** ya cableado end-to-end (`get-fan-config` /
@@ -37,10 +44,10 @@
   de contrato A-DASH↔A-FANS era falsa alarma.
 - **Selector de idioma sin emojis**: `app.js` usa `window.i18n.LANG_META` +
   insignia con el código (ES/EN/FR…); `.lang-flag` reestilado como badge mono.
-- HANDOFF.md reconciliado con las 5 sesiones.
-
-### Pendiente
-- Rediseño de los **temas en modo claro** (siguiente tanda).
+- HANDOFF.md reconciliado con las 6 sesiones (5 + A-LIGHT).
+- Rediseño de temas claros (A-LIGHT) integrado por cherry-pick quirúrgico: solo
+  el delta de paletas/glows claros sobre master, preservando el trabajo oscuro de
+  A-VISUAL y el token `--chart-grid`; modo oscuro byte-idéntico.
 
 ## 11.0.0 — 2026-06-16
 

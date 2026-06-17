@@ -2,6 +2,31 @@
 
 > Cada agente actualiza esta sección al terminar. El siguiente la lee primero.
 
+## Sesión: A-LIGHT + Opus 4.8 (ORQUESTADOR) — 2026-06-17 — rediseño de temas CLAROS
+
+Marshall: "los temas claros están horribles, pastel, parece política (uno izquierda,
+otro derecha); déjalos claros y chéveres". Diagnóstico: las paletas claras usaban
+`--bg` de tono medio SATURADO → inundaban la pantalla de un matiz. Solución (A-LIGHT,
+Sonnet, worktree `agent-a69f63fe7c9c4bdeb`): invertir la estrategia como en oscuro —
+**lienzo casi blanco con susurro de matiz** + paneles blancos elevados + accents
+profundos AAA. Rediseñadas las 12 paletas claras de `style.css` y realineados los
+glows claros de `neon.css` a los nuevos accents.
+
+**Integración (orquestador):** A-LIGHT se ramificó del base viejo `c8d9050`, NO del
+master integrado `3167e38` (el worktree del harness usó el base del lote, no mi commit
+de integración). Por eso un `git checkout` directo de sus archivos habría REVERTIDO el
+trabajo oscuro de A-VISUAL. Se integró por **cherry-pick** de sus 2 commits (`a72674d`,
+`5ea6411`): el delta de A-LIGHT toca SOLO las regiones claras (las 12 paletas + los 12
+bloques de glow claro), idénticas entre master y su base → cherry-pick limpio sin
+conflictos. Verificado: bloques `data-mode="dark"` byte-idénticos en ambos archivos,
+`--chart-grid` preservado, llaves balanceadas, 12 temas en ambos archivos.
+
+Contraste WCAG (A-LIGHT): ink/panel 17-19:1 (AAA ×12), accent/panel AAA ×12,
+dim ≥ AA (AAA en 10, AA en oceano 6.3 y neon 6.1).
+
+**Pendiente:** ninguno del lote v12. (Recordatorio permanente: NO pushear; Marshall
+revisa y pushea. Pasos de sistema de fans en `docs/APPLY-FANS-v12.md`.)
+
 ## Sesión: Claude (Opus 4.8 ORQUESTADOR) — 2026-06-17 — integración v12 multiagente
 
 Integradas las 5 ramas worktree v12 a master (file-by-file, sin conflictos: cada
