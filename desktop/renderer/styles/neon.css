@@ -257,36 +257,40 @@ html[data-mode="light"] .bignum {
   display: inline-block;
 }
 
+/* NITIDEZ (v13): el núcleo pasa de 3px a 1px para que el glifo quede definido
+   y no "borroso"; el bloom de color se conserva pero algo más contenido. Así el
+   número se lee crujiente y sigue teniendo neón. */
+
 /* Fría: azul cristal — sensación de pantalla LCD fría */
 html[data-mode="dark"] .bignum span.t-cold {
   text-shadow:
-    0 0 3px  #b8e4ff,
-    0 0 8px  var(--lvl-cold),
-    0 0 18px color-mix(in srgb, var(--lvl-cold) 45%, transparent);
+    0 0 1px  #d4efff,
+    0 0 6px  var(--lvl-cold),
+    0 0 14px color-mix(in srgb, var(--lvl-cold) 40%, transparent);
 }
 
 /* Normal: verde vivo — "todo bien" */
 html[data-mode="dark"] .bignum span.t-normal {
   text-shadow:
-    0 0 3px  #b0ffd4,
-    0 0 8px  var(--lvl-ok),
-    0 0 18px color-mix(in srgb, var(--lvl-ok) 40%, transparent);
+    0 0 1px  #ccffe4,
+    0 0 6px  var(--lvl-ok),
+    0 0 14px color-mix(in srgb, var(--lvl-ok) 35%, transparent);
 }
 
 /* Caliente: ámbar volcánico — atención pero no alarma */
 html[data-mode="dark"] .bignum span.t-hot {
   text-shadow:
-    0 0 3px  #ffe5a0,
-    0 0 9px  var(--lvl-hot),
-    0 0 20px color-mix(in srgb, var(--lvl-hot) 50%, transparent);
+    0 0 1px  #fff0c8,
+    0 0 7px  var(--lvl-hot),
+    0 0 16px color-mix(in srgb, var(--lvl-hot) 45%, transparent);
 }
 
 /* Crítica: rojo encendido — alarma inmediata */
 html[data-mode="dark"] .bignum span.t-critical {
   text-shadow:
-    0 0 3px  #ffb0b0,
-    0 0 10px var(--lvl-crit),
-    0 0 22px color-mix(in srgb, var(--lvl-crit) 55%, transparent);
+    0 0 1px  #ffd0d0,
+    0 0 8px  var(--lvl-crit),
+    0 0 18px color-mix(in srgb, var(--lvl-crit) 50%, transparent);
   animation: temp-crit-pulse 1.2s ease-in-out infinite alternate;
 }
 

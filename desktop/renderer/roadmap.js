@@ -1,6 +1,6 @@
-/* ROG Monitor — Roadmap (v10, dueño: Agente A5).
+/* ROG Monitor — Roadmap (v13).
  * Botón #roadmap-btn -> #roadmap-modal con "Hecho" (por fechas) y "Por hacer".
- * Se carga DESPUÉS de app.js. Contrato en docs/build-spec-v10.md §A5. */
+ * Se carga DESPUÉS de app.js. Datos: ROADMAP_CURRENT/DONE/TODO abajo. */
 
 /* ============================================================
    DATOS DEL ROADMAP
@@ -8,24 +8,35 @@
    Para actualizar: edita estos objetos; el render es automático.
    ============================================================ */
 
+// NOTA: mantener esta versión sincronizada con desktop/package.json ("version").
 const ROADMAP_CURRENT = {
-  version: 'v10',
-  label: 'Power User (en progreso)',
-  // Descripción de lo que hay HOY en la app:
+  version: 'v13.0.0',
+  label: 'Listo para publicar (open source)',
+  // Lo que la app YA hace hoy:
   features: [
-    'Centro de Poder: PL1/PL2/Dynamic Boost/Thermal Target vía asus-armoury, calibrado G614JV, doble consentimiento, reset a fábrica',
-    'Grid de 9 modos Aura: 5 hardware + Música + 3 honestos; perfiles con color, guardar/cargar, inicio automático',
-    'Overlay para juegos: ventana siempre encima, click-through, temp/W/RPM/FPS (MangoHud opt-in)',
-    'Wizard de primera vez: 5 pasos repetibles (ventiladores → calibración → benchmark → tour)',
-    '4 estados por widget: con datos / cargando / sin datos / error',
-    '12 temas × claro/oscuro: Magma, Nébula, Océano, Glaciar, Reactor, Grafito, Neón, Atardecer, Neon Nights, Cyberpunk, Aurora, Alba',
-    'Benchmarks CPU y GPU (modal con exportación JSON, historial persistente clickable)',
-    'Cap de RPM verificado (calibración PWM→RPM real, curva prístina, servicio reaplica si el firmware la pisa)',
+    'Monitoreo en vivo (1 Hz): CPU/GPU temperatura, potencia, frecuencias, ventiladores (RPM), RAM, discos, red y batería',
+    'Centro de Poder seguro: PL1/PL2, Dynamic Boost, techo térmico y offsets de reloj GPU — con doble recorte al rango seguro, aviso de riesgos por cada cambio y modo avanzado por marca/componente con documentación oficial',
+    'Perfiles Ahorro/Balance/Performance que aplican curvas de ventilador Y límites de poder reales: en Ahorro el equipo no puede calentarse como en Performance',
+    'Ventiladores: editor de curvas por perfil (8 puntos × ventilador) con cap de RPM verificado por calibración real',
+    'Núcleos: rejilla por hilo con frecuencia/temperatura, P-cores vs E-cores diferenciados y detalle por núcleo',
+    'Sesión de juego: graba una sesión y la compara contra otra (original vs ajustada) en %, calcula el costo en energía y abre gráficas neón ampliables',
+    'Benchmarks CPU/GPU con historial y modal de detalle (gráficas + eventos)',
+    'Iluminación Aura (efectos reales del hardware + modo música) y overlay para juegos siempre encima',
+    '8 idiomas (es/en/fr/it/pt/zh/ja/ko) · 12 temas × claro/oscuro · tablero arrastrable',
   ],
 };
 
 // Hitos completados — orden cronológico ascendente (más viejo arriba, más reciente justo antes de POR HACER)
 const ROADMAP_DONE = [
+  {
+    date: '2026-06-08',
+    version: 'v1',
+    title: 'Primer monitor en tiempo real (TUI)',
+    points: [
+      'Lectura directa de sensores (sysfs/hwmon) de CPU, GPU, ventiladores y temperaturas',
+      'Salida de terminal con refresco continuo — la semilla de todo el proyecto',
+    ],
+  },
   {
     date: '2026-06-08',
     version: 'v2',
@@ -41,6 +52,7 @@ const ROADMAP_DONE = [
     version: 'v5',
     title: 'Dashboard profesional (reescritura modular)',
     points: [
+      'Las versiones 3 y 4 fueron iteraciones internas sin release; v5 consolidó la reescritura modular',
       'Paquete Python modular en src/rog_monitor/ — sin script monolítico',
       'Sistema de alertas con umbrales, notificaciones de escritorio y log de eventos',
       'Detección de thermal throttling, promedios 1m/5m/15m, gráficas multihistorial',
@@ -125,7 +137,7 @@ const ROADMAP_DONE = [
       'Modo claro con identidad real: paneles tintados por paleta (antes todos "blanco plano")',
       'Nombre de GPU detectado (nvidia-smi), ya no hardcodeado como "RTX 4060"',
       'Consumo GPU por power.draw.average → no se desploma a 1 W en micro-sueños',
-      'Redragon K734WCG-RGB-PRO detectado por sysfs; control bloqueado hasta capturas USB',
+      'Detección de teclados RGB USB de terceros vía sysfs (control sujeto a protocolo verificado)',
     ],
   },
   {
@@ -174,39 +186,51 @@ const ROADMAP_DONE = [
       'Modal de detalle de benchmark: gráficas grandes con ejes, eventos importantes, tabla de resumen',
     ],
   },
+  {
+    date: '2026-06-16',
+    version: 'v11.1–11.2',
+    title: 'Pulido visual + rejilla de núcleos',
+    points: [
+      'Temas con tinte estático (sin animación continua que castigue CPU/GPU)',
+      'Glow de números moderado y reactivo por nivel',
+      'Rejilla de núcleos por CPU; ejes legibles en las gráficas de benchmark',
+    ],
+  },
+  {
+    date: '2026-06-17',
+    version: 'v12.0.0',
+    title: 'Integración multiagente: neón por nivel, fans inteligentes, sesión de juego',
+    points: [
+      'Neón por nivel de alerta consolidado; temas con carácter (animaciones baratas por paleta)',
+      'Ventiladores con curvas suaves por perfil e histéresis; guardián térmico consciente de carga',
+      'Sesión de juego con resumen y comparación; i18n y dashboard mejorados',
+    ],
+  },
+  {
+    date: '2026-06-17',
+    version: 'v13.0.0',
+    title: 'Centro de Poder seguro + sesión de juego comparativa + listo para open source',
+    points: [
+      'Perfiles Ahorro/Balance/Performance que aplican límites de poder REALES (CPU/GPU) con recorte seguro, además de las curvas de ventilador',
+      'Centro de Poder: aviso de riesgos por cada cambio, rieles de seguridad, doble consentimiento fuera de rango y modo avanzado por marca/componente con documentación oficial',
+      'Sesión de juego: gráficas neón ampliables con zoom, comparación original vs ajustada en %, costo en energía y notas',
+      'Núcleos: P-cores (rendimiento) y E-cores (eficiencia) diferenciados, GHz en la celda y detalle por núcleo',
+      'Arreglos: cambio de perfil sin "rebote"; todos los textos de bloques cambian de idioma',
+      'Limpieza para publicar: versión unificada, roadmap honesto y sin datos personales',
+    ],
+  },
 ];
 
-// Pendientes (por hacer) — solo lo que genuinamente falta según git log
+// Pendientes (por hacer) — visión a futuro de la aplicación
 const ROADMAP_TODO = [
   {
-    title: 'Redragon K734WCG-RGB-PRO — control completo',
+    title: 'Monitoreo multi-equipo / centro de datos (visión)',
     points: [
-      'Pendiente: captura USB en Windows con el software BYCOMBO4 (guía en docs/redragon-protocol.md)',
-      'Con capturas: escribir redragon.py (hidraw + ioctl, sin dependencias externas)',
-      'NO mandar comandos adivinados — familia Sinowealth se ha brickeado con comandos sin verificar',
-    ],
-  },
-  {
-    title: 'GPU Clock Offsets (base/memoria) — desbloqueados por Marshall',
-    points: [
-      'La UI y el backend ya están listos; los offsets están disponibles pero requieren rangos seguros',
-      'Pendiente: activar el primer APLICAR real con pkexec para probar en vivo',
-      'Wayland puede requerir sesión X11 para Coolbits; NVML funciona para lectura',
-    ],
-  },
-  {
-    title: 'Guardar y Aplicar ventiladores — un paso de Marshall',
-    points: [
-      'El script blindado con check-only y FALLBACK_MAX está listo en el repo',
-      'Un GUARDAR Y APLICAR instala la versión nueva en /usr/local/sbin (pkexec)',
-      'El cap ya funciona porque max_rpm/calibration están en fan-curves.json',
-    ],
-  },
-  {
-    title: 'Activar guardián térmico desde la app',
-    points: [
-      'El script rog-thermal-guardian.sh está instalado pero el servicio no se activa desde la app',
-      'Conectar el botón GPU → Guardián en Centro de Poder para que la modulación por carga actúe',
+      'Agente servidor "ROG Monitor Server" para monitorear varios equipos a la vez en la misma red',
+      'Ideal para un segundo PC, un servidor o un centro de datos: ver procesos, temperaturas y benchmarks de todos en un solo tablero',
+      'Instalación headless (sin interfaz gráfica) para servidores tipo Ubuntu Server',
+      'Conexión segura y autenticada: nadie en la red puede conectarse ni modificar sin permiso',
+      'Aún NO implementado — es la dirección a futuro del proyecto',
     ],
   },
   {
@@ -217,43 +241,41 @@ const ROADMAP_TODO = [
     ],
   },
   {
-    title: 'Historial persistente (SQLite)',
+    title: 'Historial persistente (base de datos)',
     points: [
-      'Base de datos en ~/.local/share/rog-monitor/ para consultar semanas de datos',
+      'Base de datos local para consultar semanas de datos',
       'Gráficas de tendencia a largo plazo',
     ],
   },
   {
-    title: 'Música por zonas',
+    title: 'Iluminación por zonas reactiva al audio',
     points: [
       'Graves/medios/agudos en distintas zonas del teclado',
-      'El teclado interno reporta 0 zonas; apunta al Redragon vía OpenRGB cuando esté',
+      'Soporte de teclados externos vía OpenRGB cuando el protocolo esté verificado',
     ],
   },
   {
-    title: 'Widget KDE Plasma 6 + Prometheus + Alertas inteligentes',
+    title: 'Widget de escritorio + métricas + alertas inteligentes',
     points: [
-      'Plasmoid que lee --json sin necesitar la app Electron abierta',
-      'Exportación Prometheus (--serve :9871/metrics) + dashboard Grafana',
-      'Alertas con acciones: bajar perfil automáticamente al throttlear',
+      'Widget que lee los datos sin necesitar la app de escritorio abierta',
+      'Exportación de métricas (Prometheus/Grafana) para tableros externos',
+      'Alertas con acciones: bajar el perfil automáticamente al hacer throttling',
     ],
   },
   {
     title: 'Multi-distro / multi-marca + paquetes',
     points: [
-      'Probar en Mint/Fedora; detectar hwmon genérico para no-ROG',
-      'Meta: "Armoury Crate de Linux" para Legion y otros',
-      'Paquetes: PyPI (pipx install rog-monitor), Flatpak, AUR, COPR',
+      'Detección de hwmon genérico para portátiles no-ASUS (Lenovo, Gigabyte, MSI…)',
+      'Meta: un "centro de control" de Linux para portátiles gaming',
+      'Empaquetado: PyPI (pipx), Flatpak, AUR, COPR',
     ],
   },
   {
-    title: 'Open Source — publicación (lo último, cuando Marshall dé el visto bueno)',
+    title: 'Publicación open source',
     points: [
-      'GitHub Actions: lint + prueba --json en runner Ubuntu',
+      'CI: lint + prueba de la salida --json en runner Ubuntu',
       'Releases con tag semver y notas de cambio',
-      'Capturas de pantalla en el README',
-      'Wiki: sensores soportados, troubleshooting por modelo',
-      'Publicación pública + post en r/linuxhardware y foros ROG',
+      'Capturas en el README y wiki de modelos soportados',
     ],
   },
 ];
@@ -390,7 +412,7 @@ function openRoadmapModal() {
 
   // ABRIR SIEMPRE PRIMERO: si rellenar lanzara una excepción, el modal igual
   // queda visible (antes, un throw en _fillModal cortaba antes de quitar
-  // 'hidden' y el modal nunca aparecía — bug que veía Marshall).
+  // 'hidden' y el modal nunca aparecía — bug histórico ya corregido).
   modal.classList.remove('hidden');
 
   try {

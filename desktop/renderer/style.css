@@ -807,7 +807,7 @@ input[type="color"] {
 .note.status-ok { color: var(--okstate); }
 .note.status-live { color: var(--accent2); }
 
-/* periféricos RGB detectados (Redragon, etc.) */
+/* periféricos RGB de terceros detectados */
 .periph {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   margin-top: 10px; padding: 8px 10px;
