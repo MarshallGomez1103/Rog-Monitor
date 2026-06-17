@@ -973,6 +973,32 @@ const APPLY_GPU_CLOCKS_SCRIPT = path.join(REPO, 'scripts', 'apply-gpu-clocks.sh'
 ipcMain.handle('get-power-control', async () =>
   runJsonModule('rog_monitor.power_control', ['state'], 8000));
 
+/* Centro de Poder — modo Avanzado: base de datos de rangos seguros + enlaces a
+   documentación oficial por marca/componente. Solo lectura de un JSON del repo. */
+const DEVICE_DOCS = path.join(REPO, 'src', 'rog_monitor', 'device_docs.json');
+ipcMain.handle('get-device-docs', async () => {
+  try {
+    const json = JSON.parse(fs.readFileSync(DEVICE_DOCS, 'utf8'));
+    // Exponer como `docs` (array) para que power.js use la vía IPC directa.
+    return { ok: true, docs: json.entries || json.docs || [], schema: json._schema };
+  } catch (e) {
+    return { ok: false, err: String((e && e.message) || e) };
+  }
+});
+
+/* Abrir un enlace de documentación en el navegador del sistema. Solo http(s). */
+ipcMain.handle('open-external', async (_e, url) => {
+  try {
+    if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
+      await shell.openExternal(url);
+      return { ok: true };
+    }
+    return { ok: false, err: 'URL no permitida' };
+  } catch (e) {
+    return { ok: false, err: String((e && e.message) || e) };
+  }
+});
+
 ipcMain.handle('set-power-control', async (_e, payload) => {
   // Allowlist de claves: las 4 de asus-armoury + 2 de GPU clocks (NVML).
   // power_control.py se encarga del dispatch al script correcto.

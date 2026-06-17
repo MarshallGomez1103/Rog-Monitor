@@ -55,6 +55,9 @@ contextBridge.exposeInMainWorld('rog', {
   },
   // --- power control (A6: pl1/pl2/boost/thermal + offsets GPU NVML) ---
   getPowerControl: () => ipcRenderer.invoke('get-power-control'),
+  // --- Centro de Poder avanzado (v13): docs por marca/componente + abrir enlaces ---
+  getDeviceDocs: () => ipcRenderer.invoke('get-device-docs'),
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
   setPowerControl: (payload) => ipcRenderer.invoke('set-power-control', payload),
   resetPowerControl: () => ipcRenderer.invoke('reset-power-control'),
   // --- guardián térmico GPU (A6) ---
