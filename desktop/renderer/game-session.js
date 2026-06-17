@@ -92,6 +92,40 @@
         'gamesession.game_a': 'Juego A',
         'gamesession.game_b': 'Juego B',
         'gamesession.samples_count': '{n} muestras',
+        'gamesession.chart_hint': 'Clic en una gráfica para verla grande con zoom',
+        'gamesession.chart_zoom_title': 'Rueda del ratón para acercar · arrastra para desplazar el tiempo',
+        'gamesession.zoom_in': 'Acercar',
+        'gamesession.zoom_out': 'Alejar',
+        'gamesession.zoom_reset': 'Ver todo',
+        'gamesession.cost_title': 'Costo de energía',
+        'gamesession.cost_hint': 'Estimado a partir de la potencia de CPU+GPU integrada en el tiempo. Es solo de referencia.',
+        'gamesession.cost_energy': 'Energía consumida',
+        'gamesession.cost_price_label': 'Precio de la electricidad',
+        'gamesession.cost_per_kwh': 'por kWh',
+        'gamesession.cost_total': 'Costo de la sesión',
+        'gamesession.cost_cpu': 'CPU',
+        'gamesession.cost_gpu': 'GPU',
+        'gamesession.cost_show_cop': 'Mostrar también en COP',
+        'gamesession.cost_cop_rate': 'Tasa COP por kWh',
+        'gamesession.cost_no_data': 'No hay datos de potencia suficientes para estimar el costo.',
+        'gamesession.note_title': 'Notas de la sesión',
+        'gamesession.note_placeholder': 'Anota qué ajustes probaste (ej. perfil silencioso, undervolt…)',
+        'gamesession.note_saved': 'Nota guardada',
+        'gamesession.compare_panels_title': 'Comparación de sesiones',
+        'gamesession.compare_panel_original': 'Original (referencia)',
+        'gamesession.compare_panel_new': 'Nueva (tras ajustes)',
+        'gamesession.compare_panel_table': 'Diferencias',
+        'gamesession.compare_overlay_hint': 'Clic en una métrica para superponer ambas sesiones',
+        'gamesession.compare_overlay_title': 'Superposición',
+        'gamesession.compare_legend_a': 'Original',
+        'gamesession.compare_legend_b': 'Nueva',
+        'gamesession.cooler_short': '{pct}% más fría',
+        'gamesession.hotter_short': '{pct}% más caliente',
+        'gamesession.more_short': '{pct}% más',
+        'gamesession.less_short': '{pct}% menos',
+        'gamesession.compare_energy': 'Energía',
+        'gamesession.compare_saved_energy': '{pct}% menos energía',
+        'gamesession.compare_more_energy': '{pct}% más energía',
       },
       en: {
         'gamesession.topbar_btn': 'GAME SESSION',
@@ -152,6 +186,40 @@
         'gamesession.game_a': 'Game A',
         'gamesession.game_b': 'Game B',
         'gamesession.samples_count': '{n} samples',
+        'gamesession.chart_hint': 'Click a chart to open it large with zoom',
+        'gamesession.chart_zoom_title': 'Mouse wheel to zoom · drag to pan the timeline',
+        'gamesession.zoom_in': 'Zoom in',
+        'gamesession.zoom_out': 'Zoom out',
+        'gamesession.zoom_reset': 'Fit all',
+        'gamesession.cost_title': 'Energy cost',
+        'gamesession.cost_hint': 'Estimated from CPU+GPU power integrated over time. For reference only.',
+        'gamesession.cost_energy': 'Energy used',
+        'gamesession.cost_price_label': 'Electricity price',
+        'gamesession.cost_per_kwh': 'per kWh',
+        'gamesession.cost_total': 'Session cost',
+        'gamesession.cost_cpu': 'CPU',
+        'gamesession.cost_gpu': 'GPU',
+        'gamesession.cost_show_cop': 'Also show in COP',
+        'gamesession.cost_cop_rate': 'COP rate per kWh',
+        'gamesession.cost_no_data': 'Not enough power data to estimate the cost.',
+        'gamesession.note_title': 'Session notes',
+        'gamesession.note_placeholder': 'Note which tweaks you tried (e.g. quiet profile, undervolt…)',
+        'gamesession.note_saved': 'Note saved',
+        'gamesession.compare_panels_title': 'Session comparison',
+        'gamesession.compare_panel_original': 'Original (reference)',
+        'gamesession.compare_panel_new': 'New (after tweaks)',
+        'gamesession.compare_panel_table': 'Differences',
+        'gamesession.compare_overlay_hint': 'Click a metric to overlay both sessions',
+        'gamesession.compare_overlay_title': 'Overlay',
+        'gamesession.compare_legend_a': 'Original',
+        'gamesession.compare_legend_b': 'New',
+        'gamesession.cooler_short': '{pct}% cooler',
+        'gamesession.hotter_short': '{pct}% hotter',
+        'gamesession.more_short': '{pct}% more',
+        'gamesession.less_short': '{pct}% less',
+        'gamesession.compare_energy': 'Energy',
+        'gamesession.compare_saved_energy': '{pct}% less energy',
+        'gamesession.compare_more_energy': '{pct}% more energy',
       },
     });
   }
@@ -424,17 +492,46 @@
     } catch (_) { /* noop */ }
   }
 
+  /* Color por métrica: NOMBRE de variable CSS (sin envolver en var()), para
+     poder resolverlo a un color real con cv() — canvas no entiende var(). */
   const METRIC_COLOR = {
-    cpu_temp: 'var(--cold)',
-    gpu_temp: 'var(--hot)',
-    cpu_watts: 'var(--accent)',
-    gpu_watts: 'var(--accent2)',
-    gpu_util: 'var(--okstate)',
-    ram_percent: 'var(--okstate)',
-    fan_cpu_rpm: 'var(--cold)',
-    fan_gpu_rpm: 'var(--hot)',
-    fan_mid_rpm: 'var(--accent)',
+    cpu_temp: '--cold',
+    gpu_temp: '--hot',
+    cpu_watts: '--accent',
+    gpu_watts: '--accent2',
+    gpu_util: '--okstate',
+    ram_percent: '--okstate',
+    fan_cpu_rpm: '--cold',
+    fan_gpu_rpm: '--hot',
+    fan_mid_rpm: '--accent',
   };
+
+  /* ---- color real desde una CSS var (canvas no resuelve var()) ---- */
+  function cv(name, fb) {
+    try {
+      const v = (typeof window.cssVar === 'function')
+        ? window.cssVar(name)
+        : getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      return v || fb;
+    } catch (_) { return fb; }
+  }
+  function metricColor(metric) {
+    return cv(METRIC_COLOR[metric] || '--accent', '#f25c3d');
+  }
+  /* Aplica alfa a un color #rrggbb / #rgb. Si no es hex, devuelve color-mix. */
+  function withAlpha(color, alpha) {
+    const hex = color && color[0] === '#' ? color : null;
+    if (hex) {
+      let h = hex.slice(1);
+      if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+      if (h.length === 6) {
+        const a = Math.round(Math.max(0, Math.min(1, alpha)) * 255)
+          .toString(16).padStart(2, '0');
+        return '#' + h + a;
+      }
+    }
+    return `color-mix(in srgb, ${color} ${Math.round(alpha * 100)}%, transparent)`;
+  }
 
   // Unidades por métrica (para mostrar en el tooltip de hover)
   const METRIC_UNIT = {
