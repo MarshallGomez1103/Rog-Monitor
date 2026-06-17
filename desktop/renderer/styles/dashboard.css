@@ -48,10 +48,20 @@ h2 > i.dash-num {
   position: relative; /* necesario para el posicionamiento de .dash-block-ctrl */
 }
 
-.block:hover .dash-block-ctrl,
-.block:focus-within .dash-block-ctrl {
+/* Los controles (≡ / ×) SOLO aparecen con el modo edición activo.
+   data-edit-mode lo pone dashboard.js en <html>. Sin modo edición, ni con
+   hover salen (bug reportado: aparecían siempre al pasar el cursor). */
+html[data-edit-mode="on"] .block:hover .dash-block-ctrl,
+html[data-edit-mode="on"] .block:focus-within .dash-block-ctrl {
   opacity: 1;
   pointer-events: auto;
+}
+
+/* Indicación visual de que el modo edición está activo: borde punteado sutil
+   en las tarjetas para que se note que se pueden mover. */
+html[data-edit-mode="on"] .block {
+  outline: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 2px;
 }
 
 /* Handle ≡ */

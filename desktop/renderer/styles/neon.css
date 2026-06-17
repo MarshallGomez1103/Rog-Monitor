@@ -246,15 +246,17 @@ html[data-mode="light"] .bignum {
 }
 
 /* El span con clase de nivel gana SIEMPRE: bloom de su color semántico. */
-html[data-mode="dark"] .bignum span.t-cold     { text-shadow: 0 0 6px var(--lvl-cold), 0 0 18px color-mix(in srgb, var(--lvl-cold) 80%, transparent), 0 0 40px color-mix(in srgb, var(--lvl-cold) 45%, transparent); }
-html[data-mode="dark"] .bignum span.t-normal   { text-shadow: 0 0 6px var(--lvl-ok),   0 0 18px color-mix(in srgb, var(--lvl-ok) 80%, transparent),   0 0 40px color-mix(in srgb, var(--lvl-ok) 45%, transparent); }
-html[data-mode="dark"] .bignum span.t-hot      { text-shadow: 0 0 6px var(--lvl-hot),  0 0 18px color-mix(in srgb, var(--lvl-hot) 85%, transparent),  0 0 40px color-mix(in srgb, var(--lvl-hot) 50%, transparent); }
-html[data-mode="dark"] .bignum span.t-critical { text-shadow: 0 0 7px var(--lvl-crit), 0 0 20px color-mix(in srgb, var(--lvl-crit) 90%, transparent), 0 0 46px color-mix(in srgb, var(--lvl-crit) 55%, transparent); }
+/* Glow MODERADO (feedback: estaba "muy neón, distorsionado"). 2 capas cortas,
+   sin el halo grande de 40-46px que distorsionaba el número. */
+html[data-mode="dark"] .bignum span.t-cold     { text-shadow: 0 0 4px color-mix(in srgb, var(--lvl-cold) 70%, transparent), 0 0 11px color-mix(in srgb, var(--lvl-cold) 35%, transparent); }
+html[data-mode="dark"] .bignum span.t-normal   { text-shadow: 0 0 4px color-mix(in srgb, var(--lvl-ok) 70%, transparent),   0 0 11px color-mix(in srgb, var(--lvl-ok) 35%, transparent); }
+html[data-mode="dark"] .bignum span.t-hot      { text-shadow: 0 0 4px color-mix(in srgb, var(--lvl-hot) 75%, transparent),  0 0 12px color-mix(in srgb, var(--lvl-hot) 40%, transparent); }
+html[data-mode="dark"] .bignum span.t-critical { text-shadow: 0 0 5px color-mix(in srgb, var(--lvl-crit) 80%, transparent), 0 0 13px color-mix(in srgb, var(--lvl-crit) 45%, transparent); }
 
-html[data-mode="light"] .bignum span.t-cold     { text-shadow: 0 0 0 1px color-mix(in srgb, var(--lvl-cold) 25%, transparent), 0 0 8px  color-mix(in srgb, var(--lvl-cold) 70%, transparent), 0 0 18px color-mix(in srgb, var(--lvl-cold) 40%, transparent); }
-html[data-mode="light"] .bignum span.t-normal   { text-shadow: 0 0 0 1px color-mix(in srgb, var(--lvl-ok) 25%, transparent),   0 0 8px  color-mix(in srgb, var(--lvl-ok) 70%, transparent),   0 0 18px color-mix(in srgb, var(--lvl-ok) 40%, transparent); }
-html[data-mode="light"] .bignum span.t-hot      { text-shadow: 0 0 0 1px color-mix(in srgb, var(--lvl-hot) 28%, transparent), 0 0 9px  color-mix(in srgb, var(--lvl-hot) 75%, transparent), 0 0 20px color-mix(in srgb, var(--lvl-hot) 45%, transparent); }
-html[data-mode="light"] .bignum span.t-critical { text-shadow: 0 0 0 1px color-mix(in srgb, var(--lvl-crit) 30%, transparent), 0 0 10px color-mix(in srgb, var(--lvl-crit) 80%, transparent), 0 0 22px color-mix(in srgb, var(--lvl-crit) 50%, transparent); }
+html[data-mode="light"] .bignum span.t-cold     { text-shadow: 0 0 5px  color-mix(in srgb, var(--lvl-cold) 55%, transparent); }
+html[data-mode="light"] .bignum span.t-normal   { text-shadow: 0 0 5px  color-mix(in srgb, var(--lvl-ok) 55%, transparent); }
+html[data-mode="light"] .bignum span.t-hot      { text-shadow: 0 0 6px  color-mix(in srgb, var(--lvl-hot) 60%, transparent); }
+html[data-mode="light"] .bignum span.t-critical { text-shadow: 0 0 6px color-mix(in srgb, var(--lvl-crit) 65%, transparent); }
 
 /* ---- Número de bloque (.block h2 i) — placa inclinada con chip de acento ---- */
 html[data-mode="dark"] .block h2 i {
@@ -404,153 +406,97 @@ html[data-mode="light"] .aura-actions .aura-primary {
                     esquina, definida en style.css) para no tapar nada */
   }
 
-  /* --- Magma: lava escurriendo desde el borde superior --- */
+  /* Carácter por tema, versión SUAVE (feedback de Marshall: "que no distraigan
+     tanto, más translúcidos"). Regla nueva: NO mover formas visibles (los
+     barridos de background-position distraían y costaban repintado). Solo se
+     anima `opacity` (compositor, barato → baja el consumo de la app). El
+     gradiente da el color/carácter; la animación es un latido lento y tenue.
+     Tope global de opacidad bajo para que sea translúcido en todos. */
+  .block::after { opacity: .28; }
+
+  @keyframes fx-breathe { 0%, 100% { opacity: .16; } 50% { opacity: .42; } }
+
+  /* --- Magma: rescoldo cálido subiendo desde abajo --- */
   html[data-theme="magma"] .block::after {
-    background: linear-gradient(180deg,
-      color-mix(in srgb, var(--accent) 16%, transparent) 0%,
-      transparent 38%);
-    background-size: 100% 220%;
-    animation: magma-drip 7s ease-in-out infinite;
-  }
-  @keyframes magma-drip {
-    0%, 100% { background-position: 0 -40%; opacity: .55; }
-    50%      { background-position: 0 10%;  opacity: .9; }
+    background: linear-gradient(0deg,
+      color-mix(in srgb, var(--accent) 11%, transparent) 0%, transparent 45%);
+    animation: fx-breathe 12s ease-in-out infinite;
   }
 
-  /* --- Océano: oleaje horizontal, dos capas a distinta velocidad --- */
+  /* --- Océano: brillo de agua suave (sin rayas que se deslicen) --- */
   html[data-theme="oceano"] .block::after {
-    background:
-      repeating-linear-gradient(100deg,
-        color-mix(in srgb, var(--accent2) 10%, transparent) 0 40px,
-        transparent 40px 90px);
-    background-size: 220% 100%;
-    animation: oceano-wave 9s linear infinite;
-  }
-  @keyframes oceano-wave {
-    0%   { background-position: 0% 0; }
-    100% { background-position: -220% 0; }
+    background: radial-gradient(120% 80% at 30% 0%,
+      color-mix(in srgb, var(--accent2) 10%, transparent), transparent 70%);
+    animation: fx-breathe 14s ease-in-out infinite;
   }
 
-  /* --- Glaciar: escarcha que se condensa en las esquinas --- */
+  /* --- Glaciar: escarcha en las esquinas --- */
   html[data-theme="glaciar"] .block::after {
     background:
-      radial-gradient(120px 80px at 0% 0%, color-mix(in srgb, var(--accent2) 22%, transparent), transparent 70%),
-      radial-gradient(120px 80px at 100% 100%, color-mix(in srgb, var(--accent2) 16%, transparent), transparent 70%);
-    animation: glaciar-frost 6s ease-in-out infinite;
-  }
-  @keyframes glaciar-frost {
-    0%, 100% { opacity: .5; }
-    50%      { opacity: 1; }
+      radial-gradient(120px 80px at 0% 0%, color-mix(in srgb, var(--accent2) 14%, transparent), transparent 70%),
+      radial-gradient(120px 80px at 100% 100%, color-mix(in srgb, var(--accent2) 10%, transparent), transparent 70%);
+    animation: fx-breathe 11s ease-in-out infinite;
   }
 
-  /* --- Reactor: pulso de energía, el panel "respira" --- */
+  /* --- Reactor: pulso de energía (sin escala, solo brillo) --- */
   html[data-theme="reactor"] .block::after {
     background: radial-gradient(60% 60% at 50% 0%,
-      color-mix(in srgb, var(--accent) 18%, transparent), transparent 75%);
-    animation: reactor-pulse 2.4s ease-in-out infinite;
-  }
-  @keyframes reactor-pulse {
-    0%, 100% { opacity: .35; transform: scale(1); }
-    50%      { opacity: .85; transform: scale(1.04); }
+      color-mix(in srgb, var(--accent) 12%, transparent), transparent 75%);
+    animation: fx-breathe 4.5s ease-in-out infinite;
   }
 
-  /* --- Nébula: nube de partículas a la deriva, muy lenta --- */
+  /* --- Nébula: tres motas tenues, latido muy lento --- */
   html[data-theme="nebula"] .block::after {
     background:
-      radial-gradient(2px 2px at 20% 30%, color-mix(in srgb, var(--accent2) 70%, transparent), transparent 60%),
-      radial-gradient(2px 2px at 70% 60%, color-mix(in srgb, var(--accent) 70%, transparent), transparent 60%),
-      radial-gradient(1.5px 1.5px at 45% 85%, color-mix(in srgb, var(--accent2) 60%, transparent), transparent 60%);
-    background-size: 140% 140%;
-    animation: nebula-drift 14s ease-in-out infinite alternate;
-  }
-  @keyframes nebula-drift {
-    0%   { background-position: 0% 0%; opacity: .6; }
-    100% { background-position: 25% 18%; opacity: .9; }
+      radial-gradient(2px 2px at 22% 30%, color-mix(in srgb, var(--accent2) 50%, transparent), transparent 60%),
+      radial-gradient(2px 2px at 70% 62%, color-mix(in srgb, var(--accent) 50%, transparent), transparent 60%),
+      radial-gradient(1.5px 1.5px at 45% 85%, color-mix(in srgb, var(--accent2) 40%, transparent), transparent 60%);
+    animation: fx-breathe 16s ease-in-out infinite;
   }
 
-  /* --- Neón (arcade): parpadeo de letrero, muy ocasional --- */
+  /* --- Neón (arcade): resplandor lateral tenue (sin parpadeo brusco) --- */
   html[data-theme="neon"] .block::after {
     background: linear-gradient(90deg,
-      color-mix(in srgb, var(--accent) 14%, transparent),
-      transparent 60%);
-    animation: neon-flicker 5s steps(1) infinite;
-  }
-  @keyframes neon-flicker {
-    0%, 92%, 100% { opacity: .55; }
-    93%           { opacity: .15; }
-    95%           { opacity: .8; }
-    96%           { opacity: .25; }
+      color-mix(in srgb, var(--accent) 10%, transparent), transparent 60%);
+    animation: fx-breathe 9s ease-in-out infinite;
   }
 
-  /* --- Atardecer: barrido de luz cálida, como el sol bajando --- */
+  /* --- Atardecer: brillo cálido (sin rectángulo que se desliza) --- */
   html[data-theme="atardecer"] .block::after {
-    background: linear-gradient(120deg,
-      color-mix(in srgb, var(--accent) 16%, transparent) 0%,
-      transparent 30%,
-      color-mix(in srgb, var(--accent2) 12%, transparent) 60%,
-      transparent 90%);
-    background-size: 250% 100%;
-    animation: atardecer-sweep 11s ease-in-out infinite;
-  }
-  @keyframes atardecer-sweep {
-    0%, 100% { background-position: 0% 0; }
-    50%      { background-position: -150% 0; }
+    background: radial-gradient(100% 80% at 80% 100%,
+      color-mix(in srgb, var(--accent) 11%, transparent),
+      color-mix(in srgb, var(--accent2) 7%, transparent) 50%, transparent 80%);
+    animation: fx-breathe 13s ease-in-out infinite;
   }
 
-  /* --- Neon Nights: barrido sintético cian/magenta cruzando el panel --- */
+  /* --- Neon Nights: doble tinte cian/magenta tenue (atenuado, era brillante) --- */
   html[data-theme="neon-nights"] .block::after {
-    background: linear-gradient(115deg,
-      transparent 0%,
-      color-mix(in srgb, var(--accent2) 18%, transparent) 45%,
-      color-mix(in srgb, var(--accent) 18%, transparent) 55%,
-      transparent 100%);
-    background-size: 300% 100%;
-    animation: nights-sweep 6s linear infinite;
-  }
-  @keyframes nights-sweep {
-    0%   { background-position: 100% 0; }
-    100% { background-position: -200% 0; }
+    background:
+      radial-gradient(90% 70% at 15% 0%, color-mix(in srgb, var(--accent2) 9%, transparent), transparent 65%),
+      radial-gradient(90% 70% at 100% 100%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 65%);
+    animation: fx-breathe 12s ease-in-out infinite;
   }
 
-  /* --- Cyberpunk: parpadeo eléctrico irregular tipo letrero roto --- */
+  /* --- Cyberpunk: brillo eléctrico (sin glitch brusco) --- */
   html[data-theme="cyberpunk"] .block::after {
     background: linear-gradient(180deg,
-      color-mix(in srgb, var(--accent) 14%, transparent), transparent 50%);
-    animation: cyberpunk-glitch 3.6s steps(1) infinite;
-  }
-  @keyframes cyberpunk-glitch {
-    0%, 70%, 100% { opacity: .4; }
-    72%           { opacity: .9; }
-    74%           { opacity: .2; }
-    78%           { opacity: .7; }
+      color-mix(in srgb, var(--accent) 10%, transparent), transparent 50%);
+    animation: fx-breathe 8s ease-in-out infinite;
   }
 
-  /* --- Aurora: cortinas de luz boreal ondulando despacio --- */
+  /* --- Aurora: cortinas boreales tenues --- */
   html[data-theme="aurora"] .block::after {
     background:
-      linear-gradient(200deg,
-        color-mix(in srgb, var(--accent) 14%, transparent) 0%,
-        transparent 40%),
-      linear-gradient(160deg,
-        color-mix(in srgb, var(--accent2) 12%, transparent) 20%,
-        transparent 65%);
-    background-size: 180% 180%;
-    animation: aurora-wave 13s ease-in-out infinite alternate;
-  }
-  @keyframes aurora-wave {
-    0%   { background-position: 0% 0%; }
-    100% { background-position: 30% 22%; }
+      linear-gradient(200deg, color-mix(in srgb, var(--accent) 10%, transparent) 0%, transparent 45%),
+      linear-gradient(160deg, color-mix(in srgb, var(--accent2) 8%, transparent) 20%, transparent 65%);
+    animation: fx-breathe 15s ease-in-out infinite;
   }
 
-  /* --- Alba: amanecer, brillo cálido que crece muy despacio --- */
+  /* --- Alba: amanecer cálido creciendo despacio --- */
   html[data-theme="alba"] .block::after {
     background: radial-gradient(80% 60% at 50% 100%,
-      color-mix(in srgb, var(--accent) 14%, transparent), transparent 75%);
-    animation: alba-rise 10s ease-in-out infinite;
-  }
-  @keyframes alba-rise {
-    0%, 100% { opacity: .35; }
-    50%      { opacity: .8; }
+      color-mix(in srgb, var(--accent) 10%, transparent), transparent 75%);
+    animation: fx-breathe 13s ease-in-out infinite;
   }
 
   /* --- Grafito: sin animación de color (acero frío, sobrio a propósito) ---
