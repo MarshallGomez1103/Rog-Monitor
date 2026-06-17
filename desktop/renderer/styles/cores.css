@@ -1,0 +1,78 @@
+/* ROG Monitor — Grid de núcleos (cores.js). Reutiliza .modal/.modal-card y las
+   variables de nivel --lvl-cold/ok/hot/crit (dueño A2). Solo clases .core*. */
+
+#cores-modal .cores-card {
+  width: min(680px, 94vw);
+  max-height: 86vh;
+}
+
+.cores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+  gap: 8px;
+  margin: 10px 0 6px;
+}
+
+.core-tile {
+  position: relative;
+  border: 1px solid var(--hair);
+  border-left: 3px solid var(--dim);
+  border-radius: 3px;
+  padding: 8px 9px 9px;
+  background: color-mix(in srgb, var(--panel) 75%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  cursor: default;
+  transition: transform .08s ease;
+}
+.core-tile:hover { transform: translateY(-1px); }
+
+/* color del borde y el número por temperatura (nivel) */
+.core-tile.c-cold   { border-left-color: var(--lvl-cold, #4db8ff); }
+.core-tile.c-normal { border-left-color: var(--lvl-ok, #3ce087); }
+.core-tile.c-hot    { border-left-color: var(--lvl-hot, #ffb13c); }
+.core-tile.c-crit   { border-left-color: var(--lvl-crit, #ff4d4d); }
+.core-tile.c-na     { border-left-color: var(--dim); }
+
+.core-temp { font-size: 1.05rem; font-weight: 700; line-height: 1; }
+.core-tile.c-cold   .core-temp { color: var(--lvl-cold, #4db8ff); }
+.core-tile.c-normal .core-temp { color: var(--lvl-ok, #3ce087); }
+.core-tile.c-hot    .core-temp { color: var(--lvl-hot, #ffb13c); }
+.core-tile.c-crit   .core-temp { color: var(--lvl-crit, #ff4d4d); text-shadow: 0 0 6px color-mix(in srgb, var(--lvl-crit) 55%, transparent); }
+
+.core-num { font-size: .66rem; color: var(--dim); letter-spacing: .02em; }
+
+.core-badge {
+  position: absolute;
+  top: 6px;
+  right: 7px;
+  font-size: .58rem;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 2px;
+  color: var(--bg);
+  background: var(--accent);
+  opacity: .85;
+}
+
+.core-bar {
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+  overflow: hidden;
+  margin-top: 2px;
+}
+.core-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width .4s ease;
+}
+.core-usage { font-size: .66rem; color: var(--ink); opacity: .8; }
+
+.cores-legend {
+  font-size: .7rem;
+  color: var(--dim);
+  margin: 4px 0 12px;
+}
+.cores-close-row { display: flex; justify-content: flex-end; }

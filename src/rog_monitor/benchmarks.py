@@ -137,7 +137,7 @@ def run_cpu_benchmark(seconds: int = 45, workers: int | None = None) -> dict:
         "ok": True,
         "kind": "cpu",
         "seconds": seconds,
-        "tool": f"python busy-loop x{workers}",
+        "tool": f"CPU al 100% · {workers} hilos en paralelo",
         "started_at": wall_started,
         "samples": samples,
         "summary": _summarize(samples),

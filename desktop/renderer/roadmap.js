@@ -373,16 +373,28 @@ function openRoadmapModal() {
   const modal = document.getElementById('roadmap-modal');
   if (!modal) return;
 
-  // Defensa adicional: si por cualquier motivo (orden de scripts, render
-  // anterior fallido, etc.) el modal-card no existe o quedó vacío, lo
-  // rellenamos aquí también — no solo al cargar el script.
-  const card = modal.querySelector('.modal-card');
-  if (!card || !card.querySelector('.roadmap-timeline')) {
-    _fillModal();
-    _wireExpandToggle(modal);
-  }
-
+  // ABRIR SIEMPRE PRIMERO: si rellenar lanzara una excepción, el modal igual
+  // queda visible (antes, un throw en _fillModal cortaba antes de quitar
+  // 'hidden' y el modal nunca aparecía — bug que veía Marshall).
   modal.classList.remove('hidden');
+
+  try {
+    const card = modal.querySelector('.modal-card');
+    if (!card || !card.querySelector('.roadmap-timeline')) {
+      _fillModal();
+      _wireExpandToggle(modal);
+    }
+  } catch (e) {
+    const card = modal.querySelector('.modal-card');
+    if (card) {
+      card.innerHTML = '<div class="roadmap-scroll"><h3>Roadmap</h3>'
+        + '<p class="sub">No se pudo cargar el contenido del roadmap.</p>'
+        + '<button class="ghost modal-close" id="roadmap-close">Cerrar</button></div>';
+      const c = card.querySelector('#roadmap-close');
+      if (c) c.addEventListener('click', closeRoadmapModal);
+    }
+    console.error('[roadmap] fallo al rellenar:', e);
+  }
 }
 
 function closeRoadmapModal() {
@@ -401,11 +413,20 @@ function closeRoadmapModal() {
   // ni impedir que el botón de la topbar quede cableado.
   try { _fillModal(); } catch (e) { /* se reintenta en openRoadmapModal() */ }
 
-  // Botón del topbar
+  // Botón del topbar — listener directo + DELEGACIÓN en document como red de
+  // seguridad: si por cualquier motivo el listener directo no quedó (orden de
+  // carga, nodo reemplazado por el sistema i18n, etc.), la delegación lo capta.
   const btn = document.getElementById('roadmap-btn');
   if (btn) {
     btn.addEventListener('click', openRoadmapModal);
   }
+  document.addEventListener('click', (e) => {
+    const t = e.target;
+    if (t && t.closest && t.closest('#roadmap-btn')) {
+      e.preventDefault();
+      openRoadmapModal();
+    }
+  });
 
   // Cerrar con clic en el overlay (fuera del modal-card)
   const modal = document.getElementById('roadmap-modal');

@@ -697,6 +697,15 @@ function _capBadge(capRespected) {
 }
 
 /* Dibuja una mini-gráfica de sparkline de temperatures en un canvas */
+function _unitForKey(key) {
+  const k = (key || '').toLowerCase();
+  if (k.includes('temp')) return '°C';
+  if (k.includes('watt') || k.includes('power')) return ' W';
+  if (k.includes('util') || k.includes('usage') || k.includes('percent')) return '%';
+  if (k.includes('rpm') || k.includes('fan')) return '';
+  return '';
+}
+
 function _drawSparkline(canvas, samples, key, color) {
   if (!samples || !samples.length) return;
   const vals = samples.map((s) => s[key]).filter((v) => v != null);
@@ -706,28 +715,55 @@ function _drawSparkline(canvas, samples, key, color) {
   const h = canvas.offsetHeight || canvas.height;
   canvas.width = w;
   canvas.height = h;
+  // Márgenes para ejes: izquierda (valores), abajo (segundos)
+  const padL = 34, padB = 14, padT = 6, padR = 4;
+  const gw = w - padL - padR;
+  const gh = h - padT - padB;
   const min = Math.min(...vals);
   const max = Math.max(...vals);
   const range = max - min || 1;
-  const xStep = w / Math.max(vals.length - 1, 1);
+  const xStep = gw / Math.max(vals.length - 1, 1);
+  const col = color || '#f25c3d';
+  const ink = cssVar('--dim') || '#888';
   ctx.clearRect(0, 0, w, h);
+
+  // rejilla + etiquetas Y (máx arriba, mín abajo) y X (0s … Ns)
+  const unit = _unitForKey(key);
+  ctx.font = '9px system-ui, sans-serif';
+  ctx.fillStyle = ink;
+  ctx.strokeStyle = (cssVar('--hair') || '#333');
+  ctx.lineWidth = 1;
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'right';
+  [max, (max + min) / 2, min].forEach((val, i) => {
+    const y = padT + (gh * i) / 2;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.globalAlpha = 0.25; ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.fillText(Math.round(val) + unit, padL - 4, y);
+  });
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('0s', padL, h - padB + 3);
+  ctx.textAlign = 'right';
+  ctx.fillText(Math.max(vals.length - 1, 0) + 's', w - padR, h - padB + 3);
+
+  // línea de datos
   ctx.beginPath();
-  ctx.strokeStyle = color || '#f25c3d';
+  ctx.strokeStyle = col;
   ctx.lineWidth = 1.5;
   ctx.lineJoin = 'round';
   vals.forEach((v, i) => {
-    const x = i * xStep;
-    const y = h - ((v - min) / range) * (h - 4) - 2;
+    const x = padL + i * xStep;
+    const y = padT + gh - ((v - min) / range) * gh;
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   });
   ctx.stroke();
-  // fill area
-  ctx.lineTo((vals.length - 1) * xStep, h);
-  ctx.lineTo(0, h);
+  // área bajo la curva
+  ctx.lineTo(padL + (vals.length - 1) * xStep, padT + gh);
+  ctx.lineTo(padL, padT + gh);
   ctx.closePath();
-  const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, (color || '#f25c3d') + '44');
-  grad.addColorStop(1, (color || '#f25c3d') + '00');
+  const grad = ctx.createLinearGradient(0, padT, 0, padT + gh);
+  grad.addColorStop(0, col + '44');
+  grad.addColorStop(1, col + '00');
   ctx.fillStyle = grad;
   ctx.fill();
 }
@@ -786,7 +822,7 @@ function _benchCardHtml(item) {
   const hasSparkline = Array.isArray(item.samples) && item.samples.length > 1;
   const sparklineId = `spark-${item.id}`;
   const sparkHtml = hasSparkline
-    ? `<canvas class="bench-sparkline" id="${sparklineId}" width="260" height="44"></canvas>`
+    ? `<canvas class="bench-sparkline" id="${sparklineId}" width="280" height="96"></canvas>`
     : '';
 
   // tool info
