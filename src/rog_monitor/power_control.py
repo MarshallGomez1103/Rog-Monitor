@@ -55,6 +55,18 @@ _GPU_CLOCKS_SCRIPT = Path(__file__).parent.parent.parent / "scripts" / "apply-gp
 # Controls backed by asus-armoury sysfs (writable via apply-power-control.sh).
 _ATTR_KEYS = ("pl1", "pl2", "dynamic_boost", "thermal_target")
 
+# Canonical system profiles and the aliases we accept for each. The PPD bus
+# calls the low-power profile "power-saver"; the fan curves call it "quiet".
+# Both map to the same profile_power set in device_profiles.json.
+_PROFILE_ALIASES = {
+    "quiet": "quiet",
+    "power-saver": "quiet",
+    "power_saver": "quiet",
+    "powersave": "quiet",
+    "balanced": "balanced",
+    "performance": "performance",
+}
+
 # GPU clock offset keys: read live from NVML (gpu_clocks.py); written via
 # apply-gpu-clocks.sh (pkexec). These are NOT passed through apply-power-control.sh.
 _CLOCK_KEYS = ("base_clock_offset", "mem_clock_offset")
@@ -143,6 +155,78 @@ def _load_custom_profile() -> dict | None:
             return json.load(fh)
     except (OSError, json.JSONDecodeError):
         return None
+
+
+def _canonical_profile(profile: str | None) -> str | None:
+    """Map any accepted profile name/alias to its canonical key, or None."""
+    if not profile:
+        return None
+    return _PROFILE_ALIASES.get(str(profile).strip().lower())
+
+
+def _active_profile_entry() -> dict | None:
+    """Return the active device profile entry (custom override > DB match)."""
+    custom = _load_custom_profile()
+    if custom:
+        return custom
+    db = _load_db()
+    return _find_device_profile(_dmi_product(), db)
+
+
+def _safe_clamp(value: int, lo, hi) -> int:
+    """Clamp value to [lo, hi] when both bounds are known (UI-side first clamp).
+
+    This is the FIRST of the double clamp; apply-power-control.sh applies the
+    SECOND clamp against the live firmware min/max. Missing bounds pass through
+    unchanged so the script (and firmware) remain the final authority.
+    """
+    if lo is not None and value < lo:
+        value = lo
+    if hi is not None and value > hi:
+        value = hi
+    return value
+
+
+def profile_power_for(profile: str | None,
+                      entry: dict | None = None) -> dict | None:
+    """Resolve the {pl1, pl2, dynamic_boost, thermal_target} set for a profile.
+
+    Looks up `profile_power[<canonical profile>]` in the active device entry,
+    pre-clamps each value to that control's safe min/max declared in the same
+    file (first clamp), and returns only the _ATTR_KEYS. Returns None when the
+    device has no profile_power table or the profile is unknown — in that case
+    the caller should leave power untouched (fan curve still changes).
+    """
+    canon = _canonical_profile(profile)
+    if canon is None:
+        return None
+    if entry is None:
+        entry = _active_profile_entry()
+    if not entry:
+        return None
+    table = entry.get("profile_power")
+    if not isinstance(table, dict):
+        return None
+    pset = table.get(canon)
+    if not isinstance(pset, dict):
+        return None
+
+    # Build a lookup of safe min/max per control key from the entry's controls.
+    bounds: dict[str, tuple] = {}
+    for ctrl in entry.get("controls", []):
+        bounds[ctrl.get("key")] = (ctrl.get("min"), ctrl.get("max"))
+
+    out: dict[str, int] = {}
+    for key in _ATTR_KEYS:
+        if key not in pset:
+            continue
+        try:
+            val = int(round(float(pset[key])))
+        except (TypeError, ValueError):
+            continue
+        lo, hi = bounds.get(key, (None, None))
+        out[key] = _safe_clamp(val, lo, hi)
+    return out or None
 
 
 # ---------------------------------------------------------------------------
@@ -434,6 +518,40 @@ class PowerControl:
             return {"ok": False, "err": "No encontré los valores de fábrica de este equipo."}
         return self.apply(values)
 
+    def apply_for_profile(self, profile: str | None) -> dict:
+        """Apply the calibrated power limits bound to a system profile.
+
+        Called when the system switches between quiet/balanced/performance
+        (alongside the fan curve). Resolves `profile_power` for the active
+        device, pre-clamps to the safe range (first clamp), then routes the
+        CPU/GPU power limits through the SAME pkexec path as manual changes
+        (apply-power-control.sh), which re-clamps to the live firmware min/max
+        (second clamp). GPU clock offsets are intentionally NOT touched here —
+        a profile change never overrides the user's manual overclock.
+
+        Returns:
+          {"ok": True, "profile": <canon>, "applied": {...}, "state": {...}}
+          {"ok": True, "skipped": "<reason>"} when this device has no
+            profile_power table (power left untouched; fans still change).
+          {"ok": False, "err": ...} on a write failure.
+        """
+        canon = _canonical_profile(profile)
+        if canon is None:
+            return {"ok": False, "err": f"Perfil no reconocido: '{profile}'."}
+
+        values = profile_power_for(canon, _active_profile_entry())
+        if not values:
+            return {
+                "ok": True,
+                "profile": canon,
+                "skipped": "device-sin-profile_power",
+            }
+
+        result = self.apply(values)
+        if result.get("ok"):
+            result["profile"] = canon
+        return result
+
     # ------------------------------------------------------------------
     # Internal
     # ------------------------------------------------------------------
@@ -562,6 +680,16 @@ def main(argv=None) -> int:
 
     sub.add_parser("reset", help="Restaurar valores por defecto del firmware.")
 
+    prof_p = sub.add_parser(
+        "apply-profile",
+        help="Aplicar los límites de poder calibrados de un perfil "
+             "(quiet/balanced/performance).",
+    )
+    prof_p.add_argument(
+        "profile", metavar="PROFILE",
+        help="quiet | balanced | performance (acepta power-saver = quiet).",
+    )
+
     args = parser.parse_args(argv)
     pc = PowerControl()
 
@@ -581,6 +709,11 @@ def main(argv=None) -> int:
 
     if args.cmd == "reset":
         result = pc.reset()
+        print(json.dumps(result, indent=2))
+        return 0 if result.get("ok") else 1
+
+    if args.cmd == "apply-profile":
+        result = pc.apply_for_profile(args.profile)
         print(json.dumps(result, indent=2))
         return 0 if result.get("ok") else 1
 

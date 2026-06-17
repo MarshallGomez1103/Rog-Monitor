@@ -2,6 +2,7 @@
   "_comment": "ROG Monitor device profiles. Each entry describes the power/clock control surface for a specific laptop model.",
   "_custom_override": "Create ~/.config/rog-monitor/device.json with the same structure to override the active profile. The 'id' field must match the auto-detected device or be 'custom'.",
   "_clock_offset_note": "base_clock_offset and mem_clock_offset ranges here are the SAFE UI defaults. The absolute driver limits (NVML) override these at runtime (core: -1000..+1000, mem: -2000..+6000). The UI shows the safe range and requires double consent to exceed it.",
+  "_profile_power_note": "profile_power maps each system profile (quiet/balanced/performance) to a set of power limits {pl1, pl2, dynamic_boost, thermal_target}. These are applied automatically when the profile changes (alongside the fan curve), via the same pkexec path as manual changes (apply-power-control.sh), which re-clamps every value to the live firmware min/max (DOUBLE CLAMP). All values here are already inside each control's safe min..max in this file; quiet is the lowest (cool & silent), performance is the factory safe ceiling. 'power-saver' is accepted as an alias of 'quiet' (PPD naming). The 'est_thermal' field per profile documents the estimated steady-state temperature band under sustained gaming load on this model; it is informational only and not enforced.",
   "devices": [
     {
       "id": "asus-rog-strix-g16-g614jv",
@@ -11,6 +12,30 @@
       "dmi_field": "/sys/class/dmi/id/product_name",
       "calibrated": true,
       "calibrated_date": "2026-06-15",
+      "profile_power": {
+        "_comment": "Per-profile power sets. Every value is within this device's safe control ranges (pl1 28-140 W, pl2 28-175 W, dynamic_boost 5-25 W, thermal_target 75-87 C). Applied via apply-power-control.sh (double clamp to live firmware min/max). quiet < balanced < performance for every knob that raises heat.",
+        "quiet": {
+          "pl1": 35,
+          "pl2": 45,
+          "dynamic_boost": 5,
+          "thermal_target": 75,
+          "est_thermal": "CPU ~60-72 C / GPU ~62-72 C under sustained gaming. Lowest heat & noise; capped so the machine physically cannot run as hot as performance."
+        },
+        "balanced": {
+          "pl1": 80,
+          "pl2": 110,
+          "dynamic_boost": 15,
+          "thermal_target": 82,
+          "est_thermal": "CPU ~72-84 C / GPU ~72-82 C under sustained gaming. Middle ground between heat/noise and performance."
+        },
+        "performance": {
+          "pl1": 140,
+          "pl2": 175,
+          "dynamic_boost": 25,
+          "thermal_target": 87,
+          "est_thermal": "CPU ~85-95 C / GPU ~82-87 C under sustained gaming. Factory safe ceiling; firmware throttles at thermal_target."
+        }
+      },
       "controls": [
         {
           "key": "pl1",
