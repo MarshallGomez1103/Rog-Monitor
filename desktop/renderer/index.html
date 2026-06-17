@@ -490,8 +490,21 @@
   <!-- CENTRO DE PODER modal (Agent 2) -->
   <div id="power-modal" class="modal hidden">
     <div class="modal-card">
-      <h3>CENTRO DE PODER</h3>
+      <!-- v13 POWER-UI: cabecera con título + botón Avanzado a la derecha -->
+      <div id="power-title-row">
+        <h3>CENTRO DE PODER</h3>
+        <button class="ghost" id="power-advanced-btn" data-i18n="power.advancedBtn">Avanzado</button>
+      </div>
+      <!-- /v13 POWER-UI -->
       <p class="sub">Límites de potencia CPU y GPU. Cada cambio requiere tu contraseña (pkexec). Los valores están acotados a los rangos seguros del firmware.</p>
+
+      <!-- v13 POWER-UI: rieles de seguridad (doble recorte + topes de firmware) -->
+      <p id="power-safety-rails" data-i18n="power.safetyRails">Tu equipo está protegido: cada valor se recorta al rango seguro de tu dispositivo (doble recorte en la app y de nuevo en el firmware). El firmware impone sus propios topes y nada se aplica sin tu confirmación.</p>
+      <!-- /v13 POWER-UI -->
+
+      <!-- v13 POWER-UI: panel AVANZADO (marca + componente, docs y rangos) -->
+      <div id="power-advanced-panel" class="hidden"></div>
+      <!-- /v13 POWER-UI -->
 
       <!-- pestañas CPU / GPU -->
       <div class="segment" id="power-tabs">
@@ -512,6 +525,10 @@
 
       <!-- estado de error / no disponible -->
       <div id="power-unavail" style="display:none"></div>
+
+      <!-- v13 POWER-UI: franja de PELIGRO por-cambio (consecuencias concretas) -->
+      <div id="power-danger-strip" class="hidden"></div>
+      <!-- /v13 POWER-UI -->
 
       <!-- botones de acción -->
       <div id="power-actions">
