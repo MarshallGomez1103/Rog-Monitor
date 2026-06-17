@@ -1,0 +1,195 @@
+{
+  "_comment": "Community-extensible database of OFFICIAL vendor documentation and CONSERVATIVE safe-range guidance for power/clock tuning, grouped by vendor and component_class. ROG Monitor reads this to power the Advanced panel of the Power Center (window.rog.getDeviceDocs()). It is informational/educational: the real enforcement is the per-device safe range in device_profiles.json plus the firmware's own hard limits (double clamp via apply-power-control.sh). Nothing here is applied to hardware automatically.",
+  "_schema": {
+    "version": 1,
+    "entry_shape": {
+      "vendor": "Brand or silicon maker, e.g. 'ASUS', 'NVIDIA', 'Intel'.",
+      "component_class": "One of: CPU-laptop, CPU-desktop, GPU-laptop, GPU-desktop, chassis-laptop (the OEM control software / operating modes).",
+      "safe_range_rules": {
+        "text": "Plain-language conservative guidance for a normal user.",
+        "limits": "Optional numeric conservative bounds {key: {min, max, unit, note}}; absent when the OEM/firmware does not expose a number. These are GENERIC conservative ceilings, NOT a per-SKU spec — always defer to the live firmware min/max and to device_profiles.json for the actual machine."
+      },
+      "official_docs": "List of {title, url} pointing ONLY to official vendor/maker pages. Each entry should cite its source."
+    },
+    "_how_to_extend": "Append new objects to 'entries'. Keep urls official (the maker's own domain). One object per (vendor, component_class). Add SKU-specific notes inside safe_range_rules.text rather than creating a row per SKU."
+  },
+  "entries": [
+    {
+      "vendor": "Intel",
+      "component_class": "CPU-laptop",
+      "safe_range_rules": {
+        "text": "Look up your exact CPU on Intel ARK. The two power knobs are Processor Base Power (PL1, sustained) and Maximum Turbo Power (PL2, burst). Safe range: never set PL1/PL2 above the Maximum Turbo Power that ARK lists for your SKU; the firmware will refuse or throttle beyond it. Lowering PL1 reduces sustained heat and fan noise with little gaming impact (games are usually GPU-bound). Raising PL2 only helps short bursts and adds heat. Example mobile H/HX-class figures: i9-14900HX = 55 W base / 157 W turbo; i9-13900H = 45 W base / 115 W turbo. Use YOUR SKU's numbers from ARK as the ceiling.",
+        "limits": {
+          "pl1": {"min": 15, "max": 65, "unit": "W", "note": "Conservative generic ceiling for H/HX mobile sustained power; HX may allow higher per ARK. Defer to firmware min/max."},
+          "pl2": {"min": 28, "max": 175, "unit": "W", "note": "Conservative generic ceiling for mobile burst power; never exceed your SKU's Maximum Turbo Power on ARK."}
+        }
+      },
+      "official_docs": [
+        {"title": "Intel ARK — Product Specifications (search your CPU for Base/Turbo Power)", "url": "https://ark.intel.com/"},
+        {"title": "Intel Core i9-14900HX — Product Specifications (Base 55 W / Turbo 157 W)", "url": "https://www.intel.com/content/www/us/en/products/sku/235995/intel-core-i9-processor-14900hx-36m-cache-up-to-5-80-ghz/specifications.html"},
+        {"title": "Intel Core i9-13900HX — Product Specifications", "url": "https://www.intel.com/content/www/us/en/products/sku/232171/intel-core-i913900hx-processor-36m-cache-up-to-5-40-ghz/specifications.html"}
+      ]
+    },
+    {
+      "vendor": "Intel",
+      "component_class": "CPU-desktop",
+      "safe_range_rules": {
+        "text": "Desktop K-series CPUs expose Processor Base Power and Maximum Turbo Power on Intel ARK; many boards run an 'unlimited' PL1=PL2 profile that can cause thermal/voltage stress. Intel's recommended baseline is to keep PL1/PL2 at the values ARK lists for the SKU (e.g. i9-14900K = 125 W base / 253 W turbo) unless you have the cooling and have read Intel's default-settings guidance. Use the Intel Default Settings profile if your motherboard offers it.",
+        "limits": {
+          "pl1": {"min": 35, "max": 253, "unit": "W", "note": "Generic conservative ceiling; use your SKU's Base/Turbo Power from ARK and Intel's default-settings guidance."},
+          "pl2": {"min": 35, "max": 253, "unit": "W", "note": "Do not exceed the Maximum Turbo Power ARK lists for your SKU."}
+        }
+      },
+      "official_docs": [
+        {"title": "Intel ARK — Desktop Processor Specifications", "url": "https://ark.intel.com/"},
+        {"title": "Intel Core i9-14900K — Product Specifications", "url": "https://www.intel.com/content/www/us/en/products/sku/236773/intel-core-i9-processor-14900k-36m-cache-up-to-6-00-ghz/specifications.html"}
+      ]
+    },
+    {
+      "vendor": "AMD",
+      "component_class": "CPU-laptop",
+      "safe_range_rules": {
+        "text": "Find your Ryzen mobile SKU on AMD's product pages; the relevant numbers are Default TDP and AMD Configurable TDP (cTDP) range. Stay within the cTDP window the OEM allows for your chassis — e.g. Ryzen 9 7945HX = 55 W default, 55-75 W cTDP. Lowering toward the bottom of cTDP cuts heat and noise; raising above the top is not supported and the firmware will cap it.",
+        "limits": {
+          "pl1": {"min": 15, "max": 75, "unit": "W", "note": "Maps to AMD sustained package power (cTDP). Generic conservative ceiling; use your SKU's cTDP from amd.com."},
+          "pl2": {"min": 28, "max": 90, "unit": "W", "note": "Short-term boost (PPT-like). Defer to firmware min/max for the chassis."}
+        }
+      },
+      "official_docs": [
+        {"title": "AMD Ryzen Laptop Processors (find your SKU for Default TDP / cTDP)", "url": "https://www.amd.com/en/products/processors/laptop/ryzen.html"},
+        {"title": "AMD Ryzen 9 7945HX — Specifications (55 W default, 55-75 W cTDP)", "url": "https://www.amd.com/en/products/processors/laptop/ryzen/7000-series/amd-ryzen-9-7945hx.html"}
+      ]
+    },
+    {
+      "vendor": "AMD",
+      "component_class": "CPU-desktop",
+      "safe_range_rules": {
+        "text": "Desktop Ryzen CPUs are tuned mainly through PPT (Package Power Tracking), TDC and EDC limits in BIOS / Ryzen Master, plus Precision Boost Overdrive (PBO). The conservative path is to leave PPT at the AMD default for the socket and use Curve Optimizer for undervolting rather than raising PPT. Check the product page for the SKU's Default TDP.",
+        "limits": {
+          "pl1": {"min": 45, "max": 230, "unit": "W", "note": "Approximate PPT envelope across AM5 SKUs; use AMD's product page + Ryzen Master defaults."}
+        }
+      },
+      "official_docs": [
+        {"title": "AMD Ryzen Desktop Processors", "url": "https://www.amd.com/en/products/processors/desktops/ryzen.html"},
+        {"title": "AMD Ryzen Master (overclocking utility & limits)", "url": "https://www.amd.com/en/products/software/ryzen-master.html"}
+      ]
+    },
+    {
+      "vendor": "NVIDIA",
+      "component_class": "GPU-laptop",
+      "safe_range_rules": {
+        "text": "Laptop GeForce RTX power is set by the laptop maker as TGP (Total Graphics Power) plus Dynamic Boost (extra watts shifted from the CPU when the CPU is idle, up to 25 W on RTX 40). You do NOT raise TGP past what the OEM ships; you only lower it (quieter/cooler) or use the OEM's max. Core/memory clock OFFSETS are the only true overclock you control: small offsets (roughly +100 to +200 MHz core, +200 to +500 MHz memory) are commonly stable, larger ones risk artifacts, crashes or driver resets. Always stress-test after a change and back off if you see instability. The GPU thermal ceiling on RTX 40 laptops is firmware-capped (commonly ~87 C); it cannot be pushed past the firmware limit.",
+        "limits": {
+          "dynamic_boost": {"min": 0, "max": 25, "unit": "W", "note": "RTX 40-series Dynamic Boost shifts up to 25 W from CPU to GPU; OEM may cap lower."},
+          "thermal_target": {"min": 75, "max": 87, "unit": "C", "note": "Firmware-capped GPU thermal ceiling on RTX 40 laptops; cannot exceed firmware hard limit."},
+          "base_clock_offset": {"min": -200, "max": 200, "unit": "MHz", "note": "Conservative safe core offset; driver absolute range is wider but instability rises sharply."},
+          "mem_clock_offset": {"min": -500, "max": 1000, "unit": "MHz", "note": "Conservative safe memory offset; verify stability with benchmarks."}
+        }
+      },
+      "official_docs": [
+        {"title": "GeForce RTX 40 Series Gaming Laptops (official specs, Dynamic Boost, Max-Q)", "url": "https://www.nvidia.com/en-us/geforce/laptops/40-series/"},
+        {"title": "Understanding the Power, Performance & Efficiency of RTX 40 Series Laptops", "url": "https://www.nvidia.com/en-us/geforce/news/geforce-rtx-40-series-laptop-power-and-efficiency/"},
+        {"title": "Compare GeForce RTX Laptop GPUs", "url": "https://www.nvidia.com/en-us/geforce/laptops/compare/"}
+      ]
+    },
+    {
+      "vendor": "NVIDIA",
+      "component_class": "GPU-desktop",
+      "safe_range_rules": {
+        "text": "Desktop GeForce cards are tuned via Power Limit (% of TDP), Temperature Limit, and core/memory clock offsets, typically in a tool like the NVIDIA app or third-party utilities. Conservative practice: keep the temperature limit at or below the board's default (often ~83-88 C), use small clock offsets and stress-test. Raising the power limit above 100% only helps if cooling allows; it never exceeds the board's hardware power ceiling.",
+        "limits": {
+          "thermal_target": {"min": 70, "max": 88, "unit": "C", "note": "Typical desktop GPU temperature-limit range; defer to the board's default ceiling."},
+          "base_clock_offset": {"min": -200, "max": 200, "unit": "MHz", "note": "Conservative safe core offset; test stability."},
+          "mem_clock_offset": {"min": -500, "max": 1500, "unit": "MHz", "note": "Conservative safe memory offset; GDDR6/6X tolerate more than laptop parts but verify."}
+        }
+      },
+      "official_docs": [
+        {"title": "GeForce RTX 40 Series Graphics Cards (official specs)", "url": "https://www.nvidia.com/en-us/geforce/graphics-cards/40-series/"},
+        {"title": "A Deeper Look at GPU Power Consumption (TGP vs total power)", "url": "https://www.nvidia.com/en-us/geforce/news/geforce-rtx-40-series-ultra-efficient-beyond-fast/"}
+      ]
+    },
+    {
+      "vendor": "ASUS",
+      "component_class": "chassis-laptop",
+      "safe_range_rules": {
+        "text": "ASUS ROG/TUF laptops switch power through Armoury Crate operating modes: Silent (limits CPU & GPU power, very quiet), Performance (balances power/temp/acoustics) and Turbo (maximum CPU+GPU power and fan speed, AC only). Manual mode exposes per-component limits and, on supported machines, GPU base/memory clock offsets — ASUS warns these can reduce stability and recommends benchmarking after each change. Stay on AC power for the higher modes. ROG Monitor mirrors this: quiet = lowest safe limits, performance = factory safe ceiling, all re-clamped to the firmware's own min/max.",
+        "limits": null
+      },
+      "official_docs": [
+        {"title": "Armoury Crate operating modes explained: Silent vs Performance vs Turbo vs Windows", "url": "https://rog.asus.com/articles/guides/armoury-crate-performance-modes-explained-silent-vs-performance-vs-turbo-vs-windows/"},
+        {"title": "How to tweak your ROG laptop's performance with Armoury Crate's Manual Mode", "url": "https://rog.asus.com/articles/guides/how-to-tweak-your-rog-laptops-performance-with-armoury-crates-manual-mode/"},
+        {"title": "Can I overclock my GPU with Armoury Crate? (safe offset guidance & warnings)", "url": "https://rog.asus.com/articles/guides/can-i-overclock-my-gpu-with-armoury-crate/"}
+      ]
+    },
+    {
+      "vendor": "Lenovo",
+      "component_class": "chassis-laptop",
+      "safe_range_rules": {
+        "text": "Lenovo Legion laptops switch power via Lenovo Vantage / Legion Space or the Fn+Q hotkey: Quiet (lowest power & noise), Balanced (dynamically shifts CPU/GPU power for everyday use) and Performance (maximum power, more noise and heat). Custom mode on some models exposes TDP and GPU overclock sliders. Use Quiet to keep the machine cool, Performance only on AC power; the firmware caps each mode.",
+        "limits": null
+      },
+      "official_docs": [
+        {"title": "Lenovo Legion — System operation modes (Quiet/Balanced/Performance)", "url": "https://download.lenovo.com/pccbbs/pubs/legion_slim_5/html_en/EN/common_topics_2022-8_RTM_updated/intro_operation_mode_legion.html"},
+        {"title": "Lenovo — How to use the Intelligent Cooling feature", "url": "https://download.lenovo.com/pccbbs/mobiles_pdf/tp_how_to_use_lenovo_intelligent_cooling_feature_3.pdf"}
+      ]
+    },
+    {
+      "vendor": "Gigabyte",
+      "component_class": "chassis-laptop",
+      "safe_range_rules": {
+        "text": "Gigabyte AORUS/AERO laptops use GIGABYTE Control Center (Fn+ESC) with QUIET, POWER SAVING, PERFORMANCE and ENTERTAINMENT modes. Gaming/Turbo modes raise system power and enable Dynamic Boost 2.0 with automatic CPU/GPU overclock and full fan speed. Use Quiet/Power Saving for low heat, Turbo only on AC; the firmware bounds each mode.",
+        "limits": null
+      },
+      "official_docs": [
+        {"title": "GIGABYTE Control Center (official software page)", "url": "https://www.gigabyte.com/Consumer/Software/GIGABYTE-Control-Center/global/"},
+        {"title": "GIGABYTE Laptop GPUs Full Technology Guide (TGP / Dynamic Boost)", "url": "https://www.gigabyte.com/WebPage/784/"}
+      ]
+    },
+    {
+      "vendor": "MSI",
+      "component_class": "chassis-laptop",
+      "safe_range_rules": {
+        "text": "MSI gaming laptops switch power through MSI Center > Features > User Scenario: typically Super Battery / Balanced / Extreme Performance. Extreme Performance gives the highest CPU/GPU limits and exposes a GPU OC option (gear icon) on supported parts. Keep the AC adapter connected for the higher scenarios; lower scenarios reduce heat and noise. Firmware caps each scenario.",
+        "limits": null
+      },
+      "official_docs": [
+        {"title": "MSI Center (official software page)", "url": "https://www.msi.com/support/technical_details/NB_%20SW_MSI_Center"},
+        {"title": "MSI — How to deal with low FPS / less-than-expected performance (notebook)", "url": "https://us.msi.com/support/technical_details/NB_Perf_Low_FPS"}
+      ]
+    },
+    {
+      "vendor": "HP",
+      "component_class": "chassis-laptop",
+      "safe_range_rules": {
+        "text": "HP OMEN/Victus laptops use OMEN Gaming Hub for performance control; Performance mode raises CPU/GPU power and is most useful on higher-TDP GPUs with a sufficient power adapter (availability varies by model). Use the default/balanced mode for cooler, quieter operation. Firmware and adapter wattage bound what each mode can do.",
+        "limits": null
+      },
+      "official_docs": [
+        {"title": "HP PCs — OMEN Gaming Hub (official support)", "url": "https://support.hp.com/us-en/document/ish_3912817-3737596-16"},
+        {"title": "OMEN Gaming Hub — official product page", "url": "https://www.hp.com/us-en/gaming-pc/omen-gaming-hub.html"}
+      ]
+    },
+    {
+      "vendor": "Dell",
+      "component_class": "chassis-laptop",
+      "safe_range_rules": {
+        "text": "Dell/Alienware laptops manage power through Alienware Command Center (AWCC) or Dell Power Manager, including a High Performance mode for Alienware laptops and quieter balanced/battery modes. Use balanced modes for low heat; High Performance on AC. Firmware and the thermal table bound each mode.",
+        "limits": null
+      },
+      "official_docs": [
+        {"title": "Alienware Command Center 6.x — Performance page / High Performance Mode", "url": "https://www.dell.com/support/manuals/en-us/alienware-command-center/awcc_ug_6.x/performance-page-high-performance-mode-for-alienware-laptops"}
+      ]
+    },
+    {
+      "vendor": "Acer",
+      "component_class": "chassis-laptop",
+      "safe_range_rules": {
+        "text": "Acer Predator/Nitro laptops use PredatorSense (or NitroSense) with modes such as Quiet/Default, Balanced, Performance/Extreme and Turbo, plus Auto thermal management. Turbo/Extreme push CPU/GPU to maximum (AC only) and may overclock; lower modes reduce heat and noise. Firmware bounds each mode.",
+        "limits": null
+      },
+      "official_docs": [
+        {"title": "PredatorSense — official Acer page", "url": "https://www.acer.com/us-en/predator/predatorsense"}
+      ]
+    }
+  ]
+}
