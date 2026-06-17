@@ -120,107 +120,107 @@ html[data-mode="dark"][data-theme="alba"] {
 
 /* ========================================================================
    TOKENS POR TEMA — MODO CLARO ("NEÓN DE DÍA")
-   Fondo ya tintado por tema (no blanco plano). Texto --ink permanece oscuro
-   para contraste AA. Los acentos de números/bordes usan el accent del tema
-   (que ya tiene relación de contraste ≥ 4.5:1 con --panel/--bg).
-   Glow "de día": halo de color + sombra exterior que hace el elemento
-   "salir" del fondo, con un brillo saturado visible incluso en ambiente claro.
+   Fondo ahora casi blanco (panel = #ffffff). El glow de día envuelve el
+   elemento con un halo del acento — visible sobre superficies blancas porque
+   el acento es profundo y saturado (contraste AAA). La primera capa de
+   --neon-glow usa #ffffff como respaldo de "núcleo" para que el halo salga
+   del blanco, no de un panel tintado anterior.
    ======================================================================== */
 
-/* --- Magma claro (brasa sobre crema volcánica) --- */
+/* --- Magma claro (ladrillo ascua sobre lienzo casi blanco) --- */
 html[data-mode="light"][data-theme="magma"] {
-  --neon-glow:      0 0 0 2px #fff,       0 0 8px  #b83318cc, 0 0 20px #b8331866, 0 2px 0 #fff;
-  --neon-glow-soft: 0 0 5px #b83318aa,    0 0 12px #b8331855;
-  --neon-box:       0 0 0 2px #b83318,    0 0 10px #b8331888, 0 0 22px #b8331844;
-  --neon-line:      0 0 5px #b83318aa,    0 0 14px #b8331866;
+  --neon-glow:      0 0 0 2px #fff,       0 0 8px  #9e2a0fcc, 0 0 20px #9e2a0f66, 0 2px 0 #fff;
+  --neon-glow-soft: 0 0 5px #9e2a0faa,    0 0 12px #9e2a0f55;
+  --neon-box:       0 0 0 2px #9e2a0f,    0 0 10px #9e2a0f88, 0 0 22px #9e2a0f44;
+  --neon-line:      0 0 5px #9e2a0faa,    0 0 14px #9e2a0f66;
 }
 
-/* --- Nébula clara (púrpura sobre porcelana violácea) --- */
+/* --- Nébula clara (violeta espacial sobre lienzo porcelana) --- */
 html[data-mode="light"][data-theme="nebula"] {
-  --neon-glow:      0 0 0 2px #f4eefe,    0 0 8px  #5c1fb8cc, 0 0 20px #5c1fb866;
+  --neon-glow:      0 0 0 2px #fff,       0 0 8px  #5c1fb8cc, 0 0 20px #5c1fb866;
   --neon-glow-soft: 0 0 5px #5c1fb8aa,    0 0 12px #5c1fb855;
   --neon-box:       0 0 0 2px #5c1fb8,    0 0 10px #5c1fb888, 0 0 22px #5c1fb844;
   --neon-line:      0 0 5px #5c1fb8aa,    0 0 14px #5c1fb866;
 }
 
-/* --- Océano claro (jade sobre espuma marina) --- */
+/* --- Océano claro (jade profundo sobre lienzo blanco teñido de teal) --- */
 html[data-mode="light"][data-theme="oceano"] {
-  --neon-glow:      0 0 0 2px #e0f5f2,    0 0 8px  #0a6e63cc, 0 0 20px #0a6e6366;
-  --neon-glow-soft: 0 0 5px #0a6e63aa,    0 0 12px #0a6e6355;
-  --neon-box:       0 0 0 2px #0a6e63,    0 0 10px #0a6e6388, 0 0 22px #0a6e6344;
-  --neon-line:      0 0 5px #0a6e63aa,    0 0 14px #0a6e6366;
+  --neon-glow:      0 0 0 2px #fff,       0 0 8px  #0a5f56cc, 0 0 20px #0a5f5666;
+  --neon-glow-soft: 0 0 5px #0a5f56aa,    0 0 12px #0a5f5655;
+  --neon-box:       0 0 0 2px #0a5f56,    0 0 10px #0a5f5688, 0 0 22px #0a5f5644;
+  --neon-line:      0 0 5px #0a5f56aa,    0 0 14px #0a5f5666;
 }
 
-/* --- Glaciar claro (acero celeste sobre hielo) --- */
+/* --- Glaciar claro (azul ártico profundo sobre blanco con susurro celeste) --- */
 html[data-mode="light"][data-theme="glaciar"] {
-  --neon-glow:      0 0 0 2px #e8f3fc,    0 0 8px  #1656a0cc, 0 0 20px #1656a066;
-  --neon-glow-soft: 0 0 5px #1656a0aa,    0 0 12px #1656a055;
-  --neon-box:       0 0 0 2px #1656a0,    0 0 10px #1656a088, 0 0 22px #1656a044;
-  --neon-line:      0 0 5px #1656a0aa,    0 0 14px #1656a066;
+  --neon-glow:      0 0 0 2px #fff,       0 0 8px  #0b3e7acc, 0 0 20px #0b3e7a66;
+  --neon-glow-soft: 0 0 5px #0b3e7aaa,    0 0 12px #0b3e7a55;
+  --neon-box:       0 0 0 2px #0b3e7a,    0 0 10px #0b3e7a88, 0 0 22px #0b3e7a44;
+  --neon-line:      0 0 5px #0b3e7aaa,    0 0 14px #0b3e7a66;
 }
 
-/* --- Reactor claro (verde hoja sobre esmeralda suave) --- */
+/* --- Reactor claro (verde sala-de-máquinas sobre lienzo blanco vegetal) --- */
 html[data-mode="light"][data-theme="reactor"] {
-  --neon-glow:      0 0 0 2px #ebf8e5,    0 0 8px  #126830cc, 0 0 20px #12683066;
-  --neon-glow-soft: 0 0 5px #126830aa,    0 0 12px #12683055;
-  --neon-box:       0 0 0 2px #126830,    0 0 10px #12683088, 0 0 22px #12683044;
-  --neon-line:      0 0 5px #126830aa,    0 0 14px #12683066;
+  --neon-glow:      0 0 0 2px #fff,       0 0 8px  #1a6030cc, 0 0 20px #1a603066;
+  --neon-glow-soft: 0 0 5px #1a6030aa,    0 0 12px #1a603055;
+  --neon-box:       0 0 0 2px #1a6030,    0 0 10px #1a603088, 0 0 22px #1a603044;
+  --neon-line:      0 0 5px #1a6030aa,    0 0 14px #1a603066;
 }
 
-/* --- Grafito claro (antracita sobre acero frío) --- */
+/* --- Grafito claro (antracita sobre blanco acero frío) --- */
 html[data-mode="light"][data-theme="grafito"] {
-  --neon-glow:      0 0 0 2px #f0f2f4,    0 0 6px  #26303ccc, 0 0 16px #26303c66;
+  --neon-glow:      0 0 0 2px #fff,       0 0 6px  #26303ccc, 0 0 16px #26303c66;
   --neon-glow-soft: 0 0 4px #26303caa,    0 0 10px #26303c55;
   --neon-box:       0 0 0 2px #26303c,    0 0 8px  #26303c88, 0 0 18px #26303c44;
   --neon-line:      0 0 4px #26303caa,    0 0 12px #26303c66;
 }
 
-/* --- Neón claro (laguna con destellos magenta) --- */
+/* --- Neón claro (laguna profunda + magenta sobre lienzo cian casi blanco) --- */
 html[data-mode="light"][data-theme="neon"] {
-  --neon-glow:      0 0 0 2px #e6f6f9,    0 0 8px  #055e6ecc, 0 0 20px #055e6e55, 0 0 28px #9c0f8833;
-  --neon-glow-soft: 0 0 5px #055e6eaa,    0 0 12px #055e6e55;
-  --neon-box:       0 0 0 2px #055e6e,    0 0 10px #055e6e88, 0 0 22px #9c0f8844;
-  --neon-line:      0 0 5px #055e6eaa,    0 0 14px #9c0f8844;
+  --neon-glow:      0 0 0 2px #fff,       0 0 8px  #0a5c6ecc, 0 0 20px #0a5c6e55, 0 0 28px #90108033;
+  --neon-glow-soft: 0 0 5px #0a5c6eaa,    0 0 12px #0a5c6e55;
+  --neon-box:       0 0 0 2px #0a5c6e,    0 0 10px #0a5c6e88, 0 0 22px #90108044;
+  --neon-line:      0 0 5px #0a5c6eaa,    0 0 14px #90108044;
 }
 
-/* --- Atardecer claro (naranja horneado sobre melocotón) --- */
+/* --- Atardecer claro (naranja horneado + mora sobre marfil dorado) --- */
 html[data-mode="light"][data-theme="atardecer"] {
-  --neon-glow:      0 0 0 2px #fef3e4,    0 0 8px  #aa4c08cc, 0 0 20px #aa4c0855, 0 0 28px #90264a33;
-  --neon-glow-soft: 0 0 5px #aa4c08aa,    0 0 12px #aa4c0855;
-  --neon-box:       0 0 0 2px #aa4c08,    0 0 10px #aa4c0888, 0 0 22px #90264a44;
-  --neon-line:      0 0 5px #aa4c08aa,    0 0 14px #90264a44;
+  --neon-glow:      0 0 0 2px #fff,       0 0 8px  #923e06cc, 0 0 20px #923e0655, 0 0 28px #82205033;
+  --neon-glow-soft: 0 0 5px #923e06aa,    0 0 12px #923e0655;
+  --neon-box:       0 0 0 2px #923e06,    0 0 10px #923e0688, 0 0 22px #82205044;
+  --neon-line:      0 0 5px #923e06aa,    0 0 14px #82205044;
 }
 
-/* --- Neon Nights claro (lila eléctrico sobre heliotropo) --- */
+/* --- Neon Nights claro (magenta synthwave + cian sobre blanco lila) --- */
 html[data-mode="light"][data-theme="neon-nights"] {
-  --neon-glow:      0 0 0 2px #faeeff,    0 0 8px  #8c0878cc, 0 0 20px #8c087855, 0 0 28px #0868b033;
-  --neon-glow-soft: 0 0 5px #8c0878aa,    0 0 12px #8c087855;
-  --neon-box:       0 0 0 2px #8c0878,    0 0 10px #8c087888, 0 0 22px #0868b044;
-  --neon-line:      0 0 5px #8c0878aa,    0 0 14px #0868b044;
+  --neon-glow:      0 0 0 2px #fff,       0 0 8px  #80066ecc, 0 0 20px #80066e55, 0 0 28px #0660a833;
+  --neon-glow-soft: 0 0 5px #80066eaa,    0 0 12px #80066e55;
+  --neon-box:       0 0 0 2px #80066e,    0 0 10px #80066e88, 0 0 22px #0660a844;
+  --neon-line:      0 0 5px #80066eaa,    0 0 14px #0660a844;
 }
 
-/* --- Cyberpunk claro (mostaza sobre cuarzo ahumado) --- */
+/* --- Cyberpunk claro (mostaza oscura + cian abismo sobre crema eléctrica) --- */
 html[data-mode="light"][data-theme="cyberpunk"] {
-  --neon-glow:      0 0 0 2px #f5f2dc,    0 0 8px  #6a5c00cc, 0 0 20px #6a5c0055, 0 0 28px #005a6a33;
-  --neon-glow-soft: 0 0 5px #6a5c00aa,    0 0 12px #6a5c0055;
-  --neon-box:       0 0 0 2px #6a5c00,    0 0 10px #6a5c0088, 0 0 22px #005a6a44;
-  --neon-line:      0 0 5px #6a5c00aa,    0 0 14px #005a6a44;
+  --neon-glow:      0 0 0 2px #fff,       0 0 8px  #5a4e00cc, 0 0 20px #5a4e0055, 0 0 28px #00506033;
+  --neon-glow-soft: 0 0 5px #5a4e00aa,    0 0 12px #5a4e0055;
+  --neon-box:       0 0 0 2px #5a4e00,    0 0 10px #5a4e0088, 0 0 22px #00506044;
+  --neon-line:      0 0 5px #5a4e00aa,    0 0 14px #00506044;
 }
 
-/* --- Aurora clara (menta glacial con teal y violeta) --- */
+/* --- Aurora clara (teal nórdico + violeta sobre lienzo boreal blanco) --- */
 html[data-mode="light"][data-theme="aurora"] {
-  --neon-glow:      0 0 0 2px #dff5f2,    0 0 8px  #066858cc, 0 0 20px #06685866, 0 0 28px #5a30b033;
-  --neon-glow-soft: 0 0 5px #066858aa,    0 0 12px #06685855;
-  --neon-box:       0 0 0 2px #066858,    0 0 10px #06685888, 0 0 22px #5a30b044;
-  --neon-line:      0 0 5px #066858aa,    0 0 14px #5a30b044;
+  --neon-glow:      0 0 0 2px #fff,       0 0 8px  #056048cc, 0 0 20px #05604866, 0 0 28px #5a30b033;
+  --neon-glow-soft: 0 0 5px #056048aa,    0 0 12px #05604855;
+  --neon-box:       0 0 0 2px #056048,    0 0 10px #05604888, 0 0 22px #5a30b044;
+  --neon-line:      0 0 5px #056048aa,    0 0 14px #5a30b044;
 }
 
-/* --- Alba clara (oro cálido sobre marfil porcelana) --- */
+/* --- Alba clara (oro antiguo + durazno profundo sobre marfil porcelana) --- */
 html[data-mode="light"][data-theme="alba"] {
-  --neon-glow:      0 0 0 2px #fdf8ef,    0 0 8px  #8a5c00cc, 0 0 20px #8a5c0066, 0 0 28px #9e304033;
-  --neon-glow-soft: 0 0 5px #8a5c00aa,    0 0 12px #8a5c0055;
-  --neon-box:       0 0 0 2px #8a5c00,    0 0 10px #8a5c0088, 0 0 22px #9e304044;
-  --neon-line:      0 0 5px #8a5c00aa,    0 0 14px #9e304044;
+  --neon-glow:      0 0 0 2px #fff,       0 0 8px  #7a4e00cc, 0 0 20px #7a4e0066, 0 0 28px #8a2a3833;
+  --neon-glow-soft: 0 0 5px #7a4e00aa,    0 0 12px #7a4e0055;
+  --neon-box:       0 0 0 2px #7a4e00,    0 0 10px #7a4e0088, 0 0 22px #8a2a3844;
+  --neon-line:      0 0 5px #7a4e00aa,    0 0 14px #8a2a3844;
 }
 
 /* ========================================================================
