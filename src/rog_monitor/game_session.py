@@ -1,4 +1,4 @@
-"""Sesión de juego: grabar una serie temporal de sensores mientras Marshall
+"""Sesión de juego: grabar una serie temporal de sensores mientras el usuario
 juega, resumir (mín/máx/promedio), guardar en disco y comparar dos sesiones.
 
 Diseño: módulo CLI autónomo (igual que benchmarks.py) para que la app de
@@ -15,6 +15,7 @@ Subcomandos:
   compare --a ID --b ID         -> diff %, veredicto, ambas sesiones
   baseline                      -> devuelve el id de la sesión baseline (si hay)
   delete --id ID                -> borra una sesión guardada
+  note --id ID --text TEXTO     -> guarda una nota corta en la sesión
 
 Persistencia: ~/.local/share/rog-monitor/game-sessions/<id>.json
 (respeta XDG_DATA_HOME vía config.DATA_DIR, como el resto de la app).
@@ -203,7 +204,36 @@ def summarize(samples: list[dict]) -> dict:
     out["_game"] = game_name
     out["_duration_s"] = round(samples[-1]["t"], 1) if samples else 0.0
     out["_sample_count"] = len(samples)
+    # Energía consumida (∫ potencia dt) por integración trapezoidal sobre el
+    # eje de tiempo real de la sesión. La app la convierte a dinero con $/kWh.
+    out["_energy_wh"] = _energy_wh(samples)
     return out
+
+
+def _integrate_wh(samples: list[dict], key: str) -> float | None:
+    """Integral trapezoidal de la potencia (W) de `key` respecto al tiempo
+    (segundos) de la sesión, devuelta en Wh. None si no hay datos válidos."""
+    pairs = [(s.get("t"), s.get(key)) for s in samples]
+    pairs = [(t, w) for t, w in pairs if t is not None and w is not None]
+    if len(pairs) < 2:
+        return None
+    joules = 0.0
+    for (t0, w0), (t1, w1) in zip(pairs, pairs[1:]):
+        dt = t1 - t0
+        if dt <= 0:
+            continue
+        joules += (w0 + w1) / 2.0 * dt  # área del trapecio (W·s)
+    return round(joules / 3600.0, 4)  # W·s -> Wh
+
+
+def _energy_wh(samples: list[dict]) -> dict:
+    """Energía CPU/GPU/total en Wh para el cálculo de costo en la UI."""
+    cpu = _integrate_wh(samples, "cpu_watts")
+    gpu = _integrate_wh(samples, "gpu_watts")
+    total = None
+    if cpu is not None or gpu is not None:
+        total = round((cpu or 0.0) + (gpu or 0.0), 4)
+    return {"cpu": cpu, "gpu": gpu, "total": total}
 
 
 def cmd_start(_args) -> dict:
@@ -271,6 +301,7 @@ def cmd_list(_args) -> dict:
             "baseline": bool(data.get("baseline")),
             "game": data.get("game"),
             "summary": data.get("summary"),
+            "note": data.get("note"),
         })
     return {"ok": True, "sessions": out}
 
@@ -301,6 +332,16 @@ def cmd_delete(args) -> dict:
         return {"ok": True}
     except OSError as exc:
         return {"ok": False, "err": str(exc)}
+
+
+def cmd_note(args) -> dict:
+    """Guarda una nota corta en la sesión (persiste en su JSON)."""
+    session = _load_session(args.id)
+    if session is None:
+        return {"ok": False, "err": f"sesión {args.id} no encontrada"}
+    session["note"] = (args.text or "")[:500]
+    _save_session(session)
+    return {"ok": True, "note": session["note"]}
 
 
 def _pct_diff(a: float | None, b: float | None) -> float | None:
@@ -348,8 +389,10 @@ def compare_sessions(a: dict, b: dict) -> dict:
 
     return {
         "ok": True,
-        "a": {"id": a.get("id"), "baseline": bool(a.get("baseline")), "game": a.get("game")},
-        "b": {"id": b.get("id"), "baseline": bool(b.get("baseline")), "game": b.get("game")},
+        "a": {"id": a.get("id"), "baseline": bool(a.get("baseline")), "game": a.get("game"),
+              "energy_wh": sa.get("_energy_wh"), "duration_s": sa.get("_duration_s")},
+        "b": {"id": b.get("id"), "baseline": bool(b.get("baseline")), "game": b.get("game"),
+              "energy_wh": sb.get("_energy_wh"), "duration_s": sb.get("_duration_s")},
         "diffs": diffs,
         "verdict": verdict,
         "headline_metric": headline_metric,
@@ -389,6 +432,10 @@ def main(argv=None) -> int:
     p_delete = sub.add_parser("delete")
     p_delete.add_argument("--id", required=True)
 
+    p_note = sub.add_parser("note")
+    p_note.add_argument("--id", required=True)
+    p_note.add_argument("--text", default="")
+
     p_compare = sub.add_parser("compare")
     p_compare.add_argument("--a", required=True)
     p_compare.add_argument("--b", required=True)
@@ -402,6 +449,7 @@ def main(argv=None) -> int:
         "get": cmd_get,
         "baseline": cmd_baseline,
         "delete": cmd_delete,
+        "note": cmd_note,
         "compare": cmd_compare,
     }
     print(json.dumps(handlers[args.cmd](args)))
