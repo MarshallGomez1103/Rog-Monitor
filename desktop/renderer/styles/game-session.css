@@ -159,10 +159,33 @@
   color: var(--ink);
 }
 
+/* onboarding hint (primera vez, sin sesiones) */
+.gs-onboarding-hint {
+  background: color-mix(in srgb, var(--accent) 10%, var(--chip));
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-left: 3px solid var(--accent);
+  padding: 10px 13px;
+  font-size: 12.5px;
+  color: var(--ink);
+  border-radius: 2px;
+  margin-bottom: 14px;
+}
+
 .gs-summary-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   font-size: 13px;
   margin-bottom: 6px;
 }
+
+.gs-summary-meta {
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.gs-dim { opacity: 0.6; }
 
 .gs-metric-grid {
   display: grid;
@@ -201,10 +224,29 @@
 .gs-metric-stats {
   display: flex;
   justify-content: space-between;
+  gap: 4px;
   font-size: 11px;
   color: var(--dim);
   margin-top: 6px;
 }
+
+.gs-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.gs-stat-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--dim);
+  margin-bottom: 1px;
+}
+
+.gs-stat-avg b { color: var(--accent); font-size: 12px; }
 
 .gs-metric-stats b { color: var(--ink); }
 
@@ -288,3 +330,62 @@
 }
 
 .gs-recommend li { margin-bottom: 4px; }
+
+/* Selectors de comparación manual */
+.gs-compare-pickers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 12px 0 16px;
+}
+
+@media (max-width: 600px) {
+  .gs-compare-pickers { grid-template-columns: 1fr; }
+}
+
+.gs-picker-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gs-picker-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--dim);
+}
+
+.gs-select {
+  background: var(--panel);
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  color: var(--ink);
+  font-size: 12px;
+  padding: 6px 8px;
+  width: 100%;
+  cursor: pointer;
+}
+
+.gs-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.gs-compare-run-btn {
+  display: block;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  color: var(--bg);
+  background: linear-gradient(135deg, var(--accent), var(--accent2, var(--accent)));
+  box-shadow: var(--neon-box, 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent));
+  transition: transform .08s ease, filter .12s ease;
+}
+.gs-compare-run-btn:hover { transform: translateY(-1px); filter: brightness(1.08); }

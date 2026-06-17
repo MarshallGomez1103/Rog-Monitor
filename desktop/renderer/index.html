@@ -215,11 +215,13 @@
       </article>
 
       <article class="block" id="bench-block" data-block="bench">
-        <h2><i class="dash-num"></i> Benchmarks <small>carga térmica y resultados</small></h2>
+        <h2><i class="dash-num"></i> Benchmarks &amp; Sesión <small>carga térmica · sesión de juego</small></h2>
         <div class="bench-actions">
           <button class="ghost" id="benchmark-btn">ABRIR BENCHMARKS</button>
           <button class="ghost" id="bench-run-cpu-quick">CPU 45 s</button>
           <button class="ghost" id="bench-run-gpu-quick">GPU LOCAL 45 s</button>
+          <!-- Sesión de juego integrada aquí (Task 4: consolidar topbar) -->
+          <button class="ghost bench-game-session-btn" id="bench-game-session-btn" title="Grabar temperaturas, RPM, watts y uso mientras juegas">SESIÓN DE JUEGO</button>
         </div>
         <p id="bench-inline-status" class="note">Sin benchmarks en esta sesión.</p>
         <ul id="bench-history" class="bench-history">
@@ -257,11 +259,13 @@
         </article>
 
         <article class="block" id="procs-block" data-block="procs">
-          <h2><i class="dash-num"></i> Procesos <small>top 5 por uso de CPU · clic para cerrar uno</small></h2>
+          <h2><i class="dash-num"></i> Procesos
+            <small>top 5 · clic para cerrar · <button id="procs-cores-btn" class="ghost procs-cores-link" title="Ver uso por núcleo individual">NÚCLEOS</button></small>
+          </h2>
           <table id="procs">
             <thead>
               <tr><th>PID</th><th>proceso</th>
-                  <th class="r" title="Porcentaje del procesador COMPLETO (todos los núcleos) usado en el último segundo">% CPU</th>
+                  <th class="r" title="% total (todos los núcleos) · en gris: % de 1 núcleo (estilo top)">% CPU</th>
                   <th class="r" title="Memoria RAM residente">RAM</th></tr>
             </thead>
             <tbody id="procs-body"></tbody>
@@ -313,11 +317,21 @@
 
   <div id="fan-modal" class="modal hidden">
     <div class="modal-card wide">
-      <h3>Ventiladores — perfil <span id="fan-profile" class="accent2"></span></h3>
+      <h3>Ventiladores — perfil activo: <span id="fan-profile" class="accent2"></span></h3>
       <p class="sub">
-        Los cambios aplican <b>solo al perfil activo</b> y se guardan en el
-        script del sistema (<code id="fan-script-path"></code>). Aplicarlos
-        reinicia el servicio de curvas y pide tu contraseña.
+        Edita curvas y tope de RPM para cada perfil de energía por separado.
+        Los cambios se guardan en <code id="fan-script-path"></code> y reinician
+        el servicio de curvas (pide contraseña).
+      </p>
+
+      <!-- Selector de perfil a editar (Task 1 / C3) -->
+      <div class="fan-profile-tabs" id="fan-profile-tabs">
+        <button class="ghost fan-ptab active" data-pfan="quiet">AHORRO</button>
+        <button class="ghost fan-ptab" data-pfan="balanced">BALANCED</button>
+        <button class="ghost fan-ptab" data-pfan="performance">PERFORMANCE</button>
+      </div>
+      <p class="sub fan-editing-note">Editando perfil: <b id="fan-editing-label">AHORRO</b>
+        <span class="fan-active-indicator hidden" id="fan-active-indicator">(perfil activo del sistema)</span>
       </p>
 
       <p class="sub warn-note hidden" id="fan-calib-banner">
@@ -327,7 +341,7 @@
       </p>
       <div class="fan-cap-row">
         <div>
-          <label>Tope de RPM (cap para todos los ventiladores)</label>
+          <label>Tope de RPM — perfil <span id="fan-cap-label">AHORRO</span> (compartido entre ventiladores)</label>
           <input type="number" id="fan-cap" min="2000" max="8000" step="100" placeholder="sin tope">
         </div>
         <button class="ghost" id="fan-clear-cap" title="Borra el tope: cada ventilador vuelve a poder llegar a su máximo">QUITAR CAP</button>
@@ -337,9 +351,7 @@
       <p class="sub" id="fan-max-note"></p>
       <p class="sub">Las velocidades se editan en <b>% del máximo de cada ventilador</b>.
         La curva se guarda <b>completa (sin recortar)</b>: el tope se aplica al
-        momento de mandarla al hardware, así subirlo o quitarlo libera los
-        ventiladores al instante. El % que ves en la tarjeta de ventiladores es
-        respecto al tope cuando hay uno activo.</p>
+        momento de mandarla al hardware. Cada perfil puede tener curvas distintas.</p>
 
       <div id="fan-curves"></div>
 

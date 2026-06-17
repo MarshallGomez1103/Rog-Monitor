@@ -584,3 +584,210 @@
   margin: 0.2rem 0 0;
   text-transform: uppercase;
 }
+
+/* =========================================================
+   FAN MODAL — selector de perfil por tabs (Task 1 / C3)
+   ========================================================= */
+
+.fan-profile-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0.5rem 0 0.2rem;
+  flex-wrap: wrap;
+}
+
+.fan-ptab {
+  font-size: 0.72rem;
+  padding: 0.3em 0.8em;
+  letter-spacing: 0.1em;
+  border-radius: 3px;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.fan-ptab.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  font-weight: 700;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.fan-ptab:not(.active):hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  color: var(--ink);
+}
+
+.fan-editing-note {
+  font-size: 0.72rem;
+  color: var(--dim);
+  margin: 0.15rem 0 0.5rem;
+}
+
+.fan-editing-note b {
+  color: var(--ink);
+}
+
+.fan-active-indicator {
+  font-size: 0.68rem;
+  color: var(--accent);
+  font-weight: 600;
+  margin-left: 0.4em;
+}
+
+.fan-active-indicator.hidden {
+  display: none;
+}
+
+/* =========================================================
+   TOPBAR CONSOLIDATION (Task 4)
+   El botón de sesión de juego (#game-session-btn) lo inyecta game-session.js
+   en la topbar; nosotros lo movimos al bloque de Benchmarks → ocultamos el
+   duplicado de la topbar. El de dentro del bloque sigue visible.
+   ========================================================= */
+#game-session-btn {
+  display: none !important;
+}
+
+/* =========================================================
+   PROCESOS — indicador de CPU por núcleo (Task 3)
+   Muestra el % de 1 núcleo en gris pequeño junto al % total, estilo htop.
+   ========================================================= */
+.procs-core {
+  display: inline-block;
+  font-size: 0.68rem;
+  color: var(--dim);
+  margin-left: 0.3em;
+  letter-spacing: 0.02em;
+  cursor: help;
+}
+
+/* Botón NÚCLEOS dentro del h2 de Procesos — pequeño, estilo texto */
+.procs-cores-link {
+  font-size: 0.65rem !important;
+  padding: 0.1em 0.4em !important;
+  letter-spacing: 0.08em;
+  vertical-align: middle;
+  border-radius: 2px;
+}
+
+/* =========================================================
+   BENCHMARK CARDS — mejoras visuales (Task 2)
+   Las tarjetas del historial merecen más altura, más contraste y una
+   separación visual clara entre header / badges / sparkline / detalles.
+   ========================================================= */
+
+/* Más énfasis en el header de la tarjeta */
+.bench-card-header {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* El tipo de benchmark (CPU/GPU) más prominente */
+.bench-card-kind {
+  font-size: 0.78rem;
+  padding: 0.2em 0.6em;
+}
+
+/* Fecha en header: separada visualmente */
+.bench-card-when {
+  font-size: 0.7rem;
+}
+
+/* Botón borrar: alineado a la derecha, rojo al hover */
+.bench-card-delete {
+  margin-left: auto;
+  font-size: 0.75rem;
+  padding: 0.1em 0.35em;
+  color: var(--dim);
+  border: 1px solid transparent;
+  border-radius: 2px;
+  cursor: pointer;
+  background: none;
+  transition: color 0.12s, border-color 0.12s;
+  flex-shrink: 0;
+}
+.bench-card-delete:hover {
+  color: #f25c3d;
+  border-color: color-mix(in srgb, #f25c3d 45%, transparent);
+}
+
+/* Arrow: ya no empuja al botón borrar */
+.bench-card-arrow {
+  margin-left: 0;
+  order: 99;
+}
+
+/* Grilla de resumen: más generosa y legible */
+.bench-detail-grid {
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.4rem 0.7rem;
+  padding: 0.15rem 0;
+}
+
+/* Valores de la grilla: más grandes */
+.bench-detail-cell b {
+  font-size: 0.95rem;
+}
+
+/* Sparkline: un poco más alta para que se vea bien con los ejes */
+.bench-sparkline {
+  height: 108px;
+  margin: 0.5rem 0 0.3rem;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
+}
+
+/* Panel de detalle: padding más generoso */
+.bench-card-detail {
+  padding: 0 0.9rem 0.75rem;
+}
+
+/* Ventiladores y tool info: más visibles */
+.bench-detail-fans {
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--ink);
+  opacity: 0.8;
+}
+
+.bench-detail-tool {
+  margin-top: 0.3rem;
+  font-size: 0.66rem;
+  color: var(--dim);
+  font-style: italic;
+}
+
+/* Bench-block: botones de acción más organizados */
+.bench-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+/* Separador visual entre los botones de benchmark y el de sesión de juego */
+.bench-game-session-btn {
+  border-left: 1px solid var(--hair);
+  margin-left: 0.2rem;
+  padding-left: 0.8rem;
+}
+
+/* =========================================================
+   MODO EDICIÓN — indicación visual que A-VISUAL no añadió (Task 5)
+   app.js y dashboard.js ya ponen html[data-edit-mode="on|off"]; este bloque
+   añade el realce visual que quedó pendiente en v11.
+   ========================================================= */
+#edit-mode-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* Las tarjetas NO tiemblan en hover cuando el modo edición está OFF:
+   el outline punteado solo aparece con data-edit-mode="on" (dashboard.css ya lo
+   tiene, pero reforzamos que NO haya transform/shake sin edición) */
+html:not([data-edit-mode="on"]) .block {
+  transform: none !important;
+}

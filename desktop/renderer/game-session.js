@@ -83,6 +83,15 @@
         'gamesession.error_generic': 'No se pudo completar la operación de sesión de juego.',
         'gamesession.session_label': 'Sesión',
         'gamesession.vs': 'vs',
+        'gamesession.onboarding_hint': 'Consejo: graba una sesión ANTES de tunear el equipo. Esa sesión quedará como "original" y podrás comparar el calor, ruido y consumo antes y después de cada ajuste.',
+        'gamesession.loading_samples': 'Cargando datos de la sesión…',
+        'gamesession.no_samples': 'Esta sesión no tiene muestras grabadas (la sesión puede haber sido interrumpida).',
+        'gamesession.compare_select_a': 'Sesión A (referencia)',
+        'gamesession.compare_select_b': 'Sesión B (nueva)',
+        'gamesession.compare_run': 'Comparar',
+        'gamesession.game_a': 'Juego A',
+        'gamesession.game_b': 'Juego B',
+        'gamesession.samples_count': '{n} muestras',
       },
       en: {
         'gamesession.topbar_btn': 'GAME SESSION',
@@ -134,6 +143,15 @@
         'gamesession.error_generic': 'Could not complete the game session operation.',
         'gamesession.session_label': 'Session',
         'gamesession.vs': 'vs',
+        'gamesession.onboarding_hint': 'Tip: record a session BEFORE tuning the machine. That session becomes the "original" reference so you can compare heat, noise and power draw before and after each tweak.',
+        'gamesession.loading_samples': 'Loading session data…',
+        'gamesession.no_samples': 'This session has no recorded samples (it may have been interrupted).',
+        'gamesession.compare_select_a': 'Session A (reference)',
+        'gamesession.compare_select_b': 'Session B (new)',
+        'gamesession.compare_run': 'Compare',
+        'gamesession.game_a': 'Game A',
+        'gamesession.game_b': 'Game B',
+        'gamesession.samples_count': '{n} samples',
       },
     });
   }
@@ -241,13 +259,25 @@
   }
 
   function renderStart(body) {
+    // El hint de onboarding se muestra cuando aún no hay sesiones grabadas
+    const hasNoSessions = sessionsCache.length === 0;
+    const canCompare = sessionsCache.length >= 2;
+    const onboardingHtml = hasNoSessions
+      ? `<p class="gs-onboarding-hint">${t('gamesession.onboarding_hint')}</p>` : '';
+    const compareBtn = canCompare
+      ? `<button class="ghost gs-compare-btn" id="gs-open-compare" style="margin-bottom:12px;width:100%;">${t('gamesession.compare_btn')}</button>` : '';
     body.innerHTML = `
       <p class="gs-intro">${t('gamesession.intro')}</p>
+      ${onboardingHtml}
       <button class="primary gs-start-btn" id="gs-start">${t('gamesession.start_btn')}</button>
+      ${compareBtn}
       <h4 class="gs-subhead">${t('gamesession.list_title')}</h4>
       <div id="gs-list" class="gs-list"></div>
     `;
     body.querySelector('#gs-start').addEventListener('click', startSession);
+    if (canCompare) {
+      body.querySelector('#gs-open-compare').addEventListener('click', () => { view = 'compare'; render(); });
+    }
     refreshList();
   }
 
@@ -260,6 +290,11 @@
       sessionsCache = (res && res.sessions) || [];
     } catch (_) {
       sessionsCache = [];
+    }
+    // Actualizar el hint de onboarding si existe en el DOM
+    const hint = $('gs-body') && $('gs-body').querySelector('.gs-onboarding-hint');
+    if (hint) {
+      hint.style.display = sessionsCache.length ? 'none' : '';
     }
     if (!sessionsCache.length) {
       list.innerHTML = `<p class="gs-empty">${t('gamesession.no_sessions')}</p>`;
@@ -401,6 +436,14 @@
     fan_mid_rpm: 'var(--accent)',
   };
 
+  // Unidades por métrica (para mostrar en el tooltip de hover)
+  const METRIC_UNIT = {
+    cpu_temp: '°C', gpu_temp: '°C',
+    cpu_watts: 'W', gpu_watts: 'W',
+    gpu_util: '%', ram_percent: '%',
+    fan_cpu_rpm: 'RPM', fan_gpu_rpm: 'RPM', fan_mid_rpm: 'RPM',
+  };
+
   function renderSummary(body) {
     if (!lastSession) { view = 'start'; render(); return; }
     const summary = lastSession.summary || {};
@@ -408,27 +451,37 @@
     const duration = summary._duration_s || 0;
     const mins = Math.floor(duration / 60);
     const secs = Math.round(duration % 60);
+    const sampleCount = (lastSession.samples || []).length;
+    const gameName = (game && game.name) || t('gamesession.no_game_detected');
+
     body.innerHTML = `
-      <p class="gs-summary-head">
-        <strong>${escapeHtml((game && game.name) || t('gamesession.no_game_detected'))}</strong>
+      <div class="gs-summary-head">
+        <strong>${escapeHtml(gameName)}</strong>
         ${lastSession.baseline ? `<span class="gs-badge">${t('gamesession.baseline_badge')}</span>` : ''}
-      </p>
-      <p>${t('gamesession.duration')}: <strong>${mins}m ${secs}s</strong></p>
+        <span class="gs-summary-meta">${t('gamesession.duration')}: <b>${mins}m ${secs}s</b></span>
+        ${sampleCount ? `<span class="gs-summary-meta gs-dim">${sampleCount} muestras</span>` : ''}
+      </div>
+      ${!sampleCount ? `<p class="gs-warning">${t('gamesession.no_samples')}</p>` : ''}
       <div class="gs-metric-grid" id="gs-metric-grid"></div>
       <button class="ghost gs-back-btn" id="gs-back">${t('gamesession.back')}</button>
     `;
+
     const grid = body.querySelector('#gs-metric-grid');
+    if (!grid) return; // defensa: no debería ocurrir si el HTML está bien
+
     METRICS.forEach((metric) => {
       const stat = summary[metric] || {};
+      const hasData = stat.min !== null && stat.min !== undefined;
+      const unit = METRIC_UNIT[metric] || '';
       const card = document.createElement('div');
       card.className = 'gs-metric-card';
       card.innerHTML = `
         <h5>${t('gamesession.metric_' + metric)}</h5>
-        <canvas class="gs-chart" data-metric="${metric}" width="320" height="90"></canvas>
+        <canvas class="gs-chart" data-metric="${metric}" width="400" height="90"></canvas>
         <div class="gs-metric-stats">
-          <span>${t('gamesession.metric_min')}: <b>${fmt(stat.min)}</b></span>
-          <span>${t('gamesession.metric_avg')}: <b>${fmt(stat.avg)}</b></span>
-          <span>${t('gamesession.metric_max')}: <b>${fmt(stat.max)}</b></span>
+          <span class="gs-stat-item"><span class="gs-stat-label">${t('gamesession.metric_min')}</span><b>${hasData ? fmt(stat.min) + ' ' + unit : '—'}</b></span>
+          <span class="gs-stat-item gs-stat-avg"><span class="gs-stat-label">${t('gamesession.metric_avg')}</span><b>${hasData ? fmt(stat.avg) + ' ' + unit : '—'}</b></span>
+          <span class="gs-stat-item"><span class="gs-stat-label">${t('gamesession.metric_max')}</span><b>${hasData ? fmt(stat.max) + ' ' + unit : '—'}</b></span>
         </div>
         <div class="gs-tip hidden"></div>
       `;
@@ -436,23 +489,25 @@
       const canvas = card.querySelector('canvas');
       const values = (lastSession.samples || []).map((s) => s[metric]);
       const times = (lastSession.samples || []).map((s) => s.t);
-      drawSessionChart(canvas, times, values, METRIC_COLOR[metric] || 'var(--accent)');
-      wireSessionChartHover(canvas, times, values, card.querySelector('.gs-tip'));
+      drawSessionChart(canvas, times, values, METRIC_COLOR[metric] || 'var(--accent)', unit);
+      wireSessionChartHover(canvas, times, values, card.querySelector('.gs-tip'), unit);
     });
     body.querySelector('#gs-back').addEventListener('click', () => { view = 'start'; render(); });
   }
 
   /* mini chart propio (no depende de app.js): eje X = tiempo real de la
-     sesión (segundos desde el inicio), eje Y autoescalado. */
-  function drawSessionChart(canvas, times, values, color) {
+     sesión (segundos desde el inicio), eje Y autoescalado con etiquetas
+     mín/máx en el margen izquierdo. color = CSS var string del tema. */
+  function drawSessionChart(canvas, times, values, color, unit) {
     const ctx = canvas.getContext('2d');
     const w = canvas.width, h = canvas.height;
     ctx.clearRect(0, 0, w, h);
     const pts = values.map((v, i) => [times[i], v]).filter(([, v]) => v !== null && v !== undefined);
     if (pts.length < 2) {
-      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fillStyle = 'rgba(128,128,128,0.5)';
       ctx.font = '11px sans-serif';
-      ctx.fillText('—', w / 2 - 4, h / 2);
+      ctx.textAlign = 'center';
+      ctx.fillText('—', w / 2, h / 2 + 4);
       return;
     }
     const xs = pts.map((p) => p[0]);
@@ -461,28 +516,75 @@
     const yMin = Math.min(...ys), yMax = Math.max(...ys);
     const xSpan = xMax - xMin || 1;
     const ySpan = (yMax - yMin) || 1;
-    const pad = 6;
-    const toX = (x) => pad + ((x - xMin) / xSpan) * (w - pad * 2);
-    const toY = (y) => h - pad - ((y - yMin) / ySpan) * (h - pad * 2);
+    // margen izquierdo para etiquetas del eje Y
+    const padL = 30, padR = 6, padT = 6, padB = 18;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+    const toX = (x) => padL + ((x - xMin) / xSpan) * plotW;
+    const toY = (y) => padT + plotH - ((y - yMin) / ySpan) * plotH;
 
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.6;
+    // área de la gráfica: fondo sutil
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    ctx.fillRect(padL, padT, plotW, plotH);
+
+    // línea de la gráfica con fill suave debajo
+    ctx.save();
+    // Obtener el color real computado del CSS variable si es posible
+    const lineColor = color;
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.8;
+    ctx.lineJoin = 'round';
     ctx.beginPath();
     pts.forEach(([x, y], i) => {
       const px = toX(x), py = toY(y);
       if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
     });
     ctx.stroke();
+    // fill bajo la curva
+    ctx.lineTo(toX(xs[xs.length - 1]), padT + plotH);
+    ctx.lineTo(toX(xs[0]), padT + plotH);
+    ctx.closePath();
+    ctx.fillStyle = lineColor.replace(')', ', 0.12)').replace('var(', 'rgba(0,0,0,');
+    // fallback: solo aplica si el color es una cadena rgba() directa
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = lineColor;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.restore();
 
-    canvas._gsChart = { pts, toX, toY, xMin, xMax, yMin, yMax };
+    // etiquetas eje Y
+    ctx.fillStyle = 'rgba(180,180,180,0.7)';
+    ctx.font = '9px var(--mono, monospace)';
+    ctx.textAlign = 'right';
+    ctx.fillText(fmt(yMax), padL - 2, padT + 8);
+    ctx.fillText(fmt(yMin), padL - 2, padT + plotH);
+
+    // etiquetas eje X (inicio y fin de sesión)
+    ctx.textAlign = 'left';
+    ctx.fillText(formatDuration(xMin), padL, h - 2);
+    ctx.textAlign = 'right';
+    ctx.fillText(formatDuration(xMax), w - padR, h - 2);
+
+    canvas._gsChart = { pts, toX, toY, xMin, xMax, yMin, yMax, padL, padR, padT, padB, plotW, plotH };
   }
 
-  function wireSessionChartHover(canvas, times, values, tipEl) {
+  /* Hover sobre la gráfica: crosshair punteado + tooltip con valor y tiempo.
+     BUG FIX: el left del tooltip debe escalarse con el ratio CSS/canvas,
+     porque el canvas tiene width="400" (canvas coords) pero width:100% CSS.
+     Si no se escala, el tooltip aparece desplazado en pantallas densas. */
+  function wireSessionChartHover(canvas, times, values, tipEl, unit) {
     canvas.addEventListener('mousemove', (e) => {
       const chart = canvas._gsChart;
       if (!chart || !chart.pts.length) return;
       const rect = canvas.getBoundingClientRect();
-      const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+      // Convertir coordenadas de pantalla a coordenadas del canvas
+      const scaleX = canvas.width / rect.width;
+      const mx = (e.clientX - rect.left) * scaleX;
+      // Ignora el mousemove fuera del área de datos
+      if (mx < chart.padL || mx > chart.padL + chart.plotW) {
+        tipEl.classList.add('hidden');
+        return;
+      }
       // encuentra el punto más cercano en X
       let nearest = chart.pts[0];
       let best = Infinity;
@@ -492,8 +594,11 @@
       });
       const [tSec, val] = nearest;
       tipEl.classList.remove('hidden');
-      tipEl.textContent = `${fmt(val)} · ${formatDuration(tSec)}`;
-      tipEl.style.left = Math.min(canvas.width - 60, Math.max(0, chart.toX(tSec))) + 'px';
+      tipEl.textContent = `${fmt(val)}${unit ? ' ' + unit : ''} · ${formatDuration(tSec)}`;
+      // Posición del tooltip en píxeles CSS (dividir por scaleX)
+      const tipX = chart.toX(tSec) / scaleX;
+      const maxLeft = rect.width - 80;
+      tipEl.style.left = Math.min(maxLeft, Math.max(4, tipX - 30)) + 'px';
     });
     canvas.addEventListener('mouseleave', () => tipEl.classList.add('hidden'));
   }
@@ -521,8 +626,58 @@
     }
   }
 
+  /* Vista de comparación manual: dos <select> con las sesiones disponibles */
   function renderCompare(body) {
-    body.innerHTML = `<p>${t('gamesession.pick_two')}</p>`;
+    if (!sessionsCache.length) {
+      body.innerHTML = `<p class="gs-empty">${t('gamesession.no_sessions')}</p>
+        <button class="ghost gs-back-btn" id="gs-back">${t('gamesession.back')}</button>`;
+      body.querySelector('#gs-back').addEventListener('click', () => { view = 'start'; render(); });
+      return;
+    }
+    const optHtml = sessionsCache.map((s) => {
+      const when = s.started_at ? new Date(s.started_at).toLocaleString() : '?';
+      const game = (s.game && s.game.name) ? s.game.name : '—';
+      const bl = s.baseline ? ' [BASELINE]' : '';
+      return `<option value="${escapeHtml(s.id)}">${escapeHtml(game + bl + ' · ' + when)}</option>`;
+    }).join('');
+    body.innerHTML = `
+      <h4>${t('gamesession.compare_title')}</h4>
+      <p class="gs-intro">${t('gamesession.pick_two')}</p>
+      <div class="gs-compare-pickers">
+        <div class="gs-picker-group">
+          <label class="gs-picker-label">${t('gamesession.compare_select_a')}</label>
+          <select id="gs-pick-a" class="gs-select">${optHtml}</select>
+        </div>
+        <div class="gs-picker-group">
+          <label class="gs-picker-label">${t('gamesession.compare_select_b')}</label>
+          <select id="gs-pick-b" class="gs-select">${optHtml}</select>
+        </div>
+      </div>
+      <button class="primary gs-compare-run-btn" id="gs-compare-run">${t('gamesession.compare_run')}</button>
+      <button class="ghost gs-back-btn" id="gs-back">${t('gamesession.back')}</button>
+    `;
+    // Pre-seleccionar: A = baseline (si existe), B = segunda sesión
+    const baselineIdx = sessionsCache.findIndex((s) => s.baseline);
+    if (baselineIdx >= 0) {
+      body.querySelector('#gs-pick-a').selectedIndex = baselineIdx;
+      const bIdx = sessionsCache.length > 1 ? (baselineIdx === 0 ? 1 : 0) : 0;
+      body.querySelector('#gs-pick-b').selectedIndex = bIdx;
+    } else if (sessionsCache.length > 1) {
+      body.querySelector('#gs-pick-b').selectedIndex = 1;
+    }
+    body.querySelector('#gs-compare-run').addEventListener('click', async () => {
+      const a = body.querySelector('#gs-pick-a').value;
+      const b = body.querySelector('#gs-pick-b').value;
+      if (a === b) { flashError({ err: 'Elige dos sesiones distintas para comparar.' }); return; }
+      const api = bridge();
+      if (!api) return;
+      try {
+        const res = await api.gameSessionCompare(a, b);
+        if (!res || !res.ok) { flashError(res); return; }
+        renderCompareResult(res);
+      } catch (_) { flashError(null); }
+    });
+    body.querySelector('#gs-back').addEventListener('click', () => { view = 'start'; render(); });
   }
 
   function renderCompareResult(result) {

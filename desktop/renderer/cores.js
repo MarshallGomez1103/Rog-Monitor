@@ -58,24 +58,11 @@
   }
 
   function build() {
-    if (document.getElementById('cores-btn')) return;
+    if (document.getElementById('cores-modal')) return; // ya construido
 
-    const controls = document.querySelector('#topbar .controls')
-      || document.querySelector('.controls')
-      || document.querySelector('header .controls');
-    const btn = document.createElement('button');
-    btn.id = 'cores-btn';
-    btn.className = 'ghost';
-    btn.textContent = t('cores.btn', 'NÚCLEOS');
-    btn.title = t('cores.title', 'Núcleos de la CPU');
-    btn.setAttribute('data-i18n', 'cores.btn');
-    btn.addEventListener('click', openModal);
-    if (controls) {
-      const lang = document.getElementById('lang-btn');
-      controls.insertBefore(btn, lang || null);
-    } else {
-      document.body.appendChild(btn);
-    }
+    // v12: el botón de NÚCLEOS ya NO va en la topbar — vive dentro del bloque de
+    // Procesos (#procs-cores-btn, inyectado en index.html). El modal se crea aquí
+    // y app.js lo abre vía window.RogCores.open(). Esto consolida la topbar (Task 4).
 
     modal = document.createElement('div');
     modal.id = 'cores-modal';

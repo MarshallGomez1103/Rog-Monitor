@@ -234,29 +234,116 @@ html[data-mode="light"][data-theme="alba"] {
    t-cold/t-normal/t-hot/t-critical que app.js ya asigna), NUNCA por el
    acento del tema — antes este bloque usaba --neon-glow (color del tema) y
    pisaba el currentColor de style.css, que es lo que se veía "feo": un
-   número frío con halo rojo de Magma, por ejemplo. */
+   número frío con halo rojo de Magma, por ejemplo.
 
-/* Cifras SIN clase de nivel (ej. "%", "W" sin estado) sí siguen el carácter
-   del tema — usan el glow de tema suave, igual que antes. */
+   PREMIUM: 3 capas de text-shadow (núcleo nítido + bloom medio + aureola
+   difusa) + filter drop-shadow de respaldo. El color viene de
+   --lvl-cold/ok/hot/crit definidos en style.css por modo. */
+
+/* Cifras SIN clase de nivel (ej. "%", "W" sin estado) siguen el tema. */
 html[data-mode="dark"] .bignum {
   text-shadow: var(--neon-glow-soft);
 }
 html[data-mode="light"] .bignum {
-  text-shadow: none; /* el texto principal es --ink, AA garantizado */
+  text-shadow: none;
 }
 
-/* El span con clase de nivel gana SIEMPRE: bloom de su color semántico. */
-/* Glow MODERADO (feedback: estaba "muy neón, distorsionado"). 2 capas cortas,
-   sin el halo grande de 40-46px que distorsionaba el número. */
-html[data-mode="dark"] .bignum span.t-cold     { text-shadow: 0 0 4px color-mix(in srgb, var(--lvl-cold) 70%, transparent), 0 0 11px color-mix(in srgb, var(--lvl-cold) 35%, transparent); }
-html[data-mode="dark"] .bignum span.t-normal   { text-shadow: 0 0 4px color-mix(in srgb, var(--lvl-ok) 70%, transparent),   0 0 11px color-mix(in srgb, var(--lvl-ok) 35%, transparent); }
-html[data-mode="dark"] .bignum span.t-hot      { text-shadow: 0 0 4px color-mix(in srgb, var(--lvl-hot) 75%, transparent),  0 0 12px color-mix(in srgb, var(--lvl-hot) 40%, transparent); }
-html[data-mode="dark"] .bignum span.t-critical { text-shadow: 0 0 5px color-mix(in srgb, var(--lvl-crit) 80%, transparent), 0 0 13px color-mix(in srgb, var(--lvl-crit) 45%, transparent); }
+/* ---------- Números con nivel — modo oscuro ----------
+   3 capas: núcleo saturado + bloom medio + aureola exterior.
+   Ninguna supera 18px de radio para no distorsionar la lectura.
+   transition: el cambio de nivel es una transición visual suave. */
+.bignum span[class*="t-"] {
+  transition: text-shadow 0.4s ease, color 0.3s ease;
+  display: inline-block;
+}
 
-html[data-mode="light"] .bignum span.t-cold     { text-shadow: 0 0 5px  color-mix(in srgb, var(--lvl-cold) 55%, transparent); }
-html[data-mode="light"] .bignum span.t-normal   { text-shadow: 0 0 5px  color-mix(in srgb, var(--lvl-ok) 55%, transparent); }
-html[data-mode="light"] .bignum span.t-hot      { text-shadow: 0 0 6px  color-mix(in srgb, var(--lvl-hot) 60%, transparent); }
-html[data-mode="light"] .bignum span.t-critical { text-shadow: 0 0 6px color-mix(in srgb, var(--lvl-crit) 65%, transparent); }
+/* Fría: azul cristal — sensación de pantalla LCD fría */
+html[data-mode="dark"] .bignum span.t-cold {
+  text-shadow:
+    0 0 3px  #b8e4ff,
+    0 0 8px  var(--lvl-cold),
+    0 0 18px color-mix(in srgb, var(--lvl-cold) 45%, transparent);
+}
+
+/* Normal: verde vivo — "todo bien" */
+html[data-mode="dark"] .bignum span.t-normal {
+  text-shadow:
+    0 0 3px  #b0ffd4,
+    0 0 8px  var(--lvl-ok),
+    0 0 18px color-mix(in srgb, var(--lvl-ok) 40%, transparent);
+}
+
+/* Caliente: ámbar volcánico — atención pero no alarma */
+html[data-mode="dark"] .bignum span.t-hot {
+  text-shadow:
+    0 0 3px  #ffe5a0,
+    0 0 9px  var(--lvl-hot),
+    0 0 20px color-mix(in srgb, var(--lvl-hot) 50%, transparent);
+}
+
+/* Crítica: rojo encendido — alarma inmediata */
+html[data-mode="dark"] .bignum span.t-critical {
+  text-shadow:
+    0 0 3px  #ffb0b0,
+    0 0 10px var(--lvl-crit),
+    0 0 22px color-mix(in srgb, var(--lvl-crit) 55%, transparent);
+  animation: temp-crit-pulse 1.2s ease-in-out infinite alternate;
+}
+
+/* Pulso suave en crítico — opacity oscila entre pleno y 85% */
+@keyframes temp-crit-pulse {
+  from { opacity: 1; }
+  to   { opacity: .85; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-mode="dark"] .bignum span.t-critical { animation: none; }
+}
+
+/* ---------- Números con nivel — modo claro ----------
+   Sobre fondo claro: halo saturado + contorno de color para que el número
+   "salte" del panel tintado. Sin bloom difuso (se perdería). */
+html[data-mode="light"] .bignum span.t-cold {
+  text-shadow:
+    0 0 0 1px color-mix(in srgb, var(--lvl-cold) 30%, transparent),
+    0 0 7px  color-mix(in srgb, var(--lvl-cold) 60%, transparent);
+}
+html[data-mode="light"] .bignum span.t-normal {
+  text-shadow:
+    0 0 0 1px color-mix(in srgb, var(--lvl-ok) 30%, transparent),
+    0 0 7px  color-mix(in srgb, var(--lvl-ok) 60%, transparent);
+}
+html[data-mode="light"] .bignum span.t-hot {
+  text-shadow:
+    0 0 0 1px color-mix(in srgb, var(--lvl-hot) 35%, transparent),
+    0 0 8px  color-mix(in srgb, var(--lvl-hot) 65%, transparent);
+}
+html[data-mode="light"] .bignum span.t-critical {
+  text-shadow:
+    0 0 0 1px color-mix(in srgb, var(--lvl-crit) 40%, transparent),
+    0 0 9px  color-mix(in srgb, var(--lvl-crit) 70%, transparent);
+  animation: temp-crit-pulse 1.2s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-mode="light"] .bignum span.t-critical { animation: none; }
+}
+
+/* ---- Tinte de borde del bloque cuando hay nivel de temperatura ----
+   El borde de la tarjeta CPU/GPU toma un matiz del color de nivel activo.
+   CSS no puede "subir" una variable desde un descendiente al padre, así
+   que usamos :has() directamente con el color semántico por nivel.
+   Solo en modo oscuro — en claro los fondos tintados ya dan contraste. */
+html[data-mode="dark"] .block:has(.bignum span.t-cold) {
+  border-color: color-mix(in srgb, var(--lvl-cold) 22%, var(--hair));
+}
+html[data-mode="dark"] .block:has(.bignum span.t-normal) {
+  border-color: color-mix(in srgb, var(--lvl-ok) 22%, var(--hair));
+}
+html[data-mode="dark"] .block:has(.bignum span.t-hot) {
+  border-color: color-mix(in srgb, var(--lvl-hot) 28%, var(--hair));
+}
+html[data-mode="dark"] .block:has(.bignum span.t-critical) {
+  border-color: color-mix(in srgb, var(--lvl-crit) 35%, var(--hair));
+}
 
 /* ---- Número de bloque (.block h2 i) — placa inclinada con chip de acento ---- */
 html[data-mode="dark"] .block h2 i {
@@ -395,102 +482,176 @@ html[data-mode="light"] .aura-actions .aura-primary {
    ======================================================================== */
 @media (prefers-reduced-motion: no-preference) {
 
-  .block { isolation: isolate; } /* el overlay no se filtra a hijos */
+  .block { isolation: isolate; }
   .block::after {
     content: '';
     position: absolute;
     inset: 0;
     pointer-events: none;
     clip-path: polygon(0 0, calc(100% - 17px) 0, 100% 17px, 100% 100%, 0 100%);
-    z-index: -1; /* bajo el contenido real Y bajo .block::before (franja de
-                    esquina, definida en style.css) para no tapar nada */
+    z-index: -1;
+    will-change: opacity; /* solo animamos opacity → compositor, sin repaint */
   }
 
-  /* Carácter por tema, versión SUAVE (feedback de Marshall: "que no distraigan
-     tanto, más translúcidos"). Regla nueva: NO mover formas visibles (los
-     barridos de background-position distraían y costaban repintado). Solo se
-     anima `opacity` (compositor, barato → baja el consumo de la app). El
-     gradiente da el color/carácter; la animación es un latido lento y tenue.
-     Tope global de opacidad bajo para que sea translúcido en todos. */
-  .block::after { opacity: .28; }
+  /* -----------------------------------------------------------------------
+     CARÁCTER POR TEMA — Principio: solo opacity y/o transform en las
+     animaciones (propiedades de compositor: 0 repaint, 0 relayout).
+     Frecuencia baja (4-8 s) para no distraer. alternate → sin snap brusco.
+     Opacidad máxima ≤ 0.38 para seguir siendo translúcido.
+     ----------------------------------------------------------------------- */
 
+  /* keyframes reutilizables — todos solo opacity */
+  @keyframes th-breathe-slow   { from { opacity: 0.14; } to { opacity: 0.34; } }
+  @keyframes th-breathe-mid    { from { opacity: 0.16; } to { opacity: 0.38; } }
+  @keyframes th-pulse-sharp    { from { opacity: 0.10; } to { opacity: 0.32; } }
+  @keyframes th-flicker-subtle {
+    0%   { opacity: 0.18; }
+    42%  { opacity: 0.30; }
+    55%  { opacity: 0.14; }
+    80%  { opacity: 0.28; }
+    100% { opacity: 0.22; }
+  }
+  @keyframes th-tide {
+    0%   { opacity: 0.12; }
+    35%  { opacity: 0.28; }
+    65%  { opacity: 0.34; }
+    100% { opacity: 0.18; }
+  }
+  @keyframes th-frost {
+    0%   { opacity: 0.20; }
+    50%  { opacity: 0.10; }
+    100% { opacity: 0.24; }
+  }
 
-  /* --- Magma: rescoldo cálido subiendo desde abajo --- */
+  /* === MAGMA — brasa/lava: latido lento como ascua encendida ===
+     Gradiente vertical: el "calor" sube desde el fondo.
+     Animación: breathe a 6s — respira como un carbón vivo. */
   html[data-theme="magma"] .block::after {
     background: linear-gradient(0deg,
-      color-mix(in srgb, var(--accent) 11%, transparent) 0%, transparent 45%);
+      color-mix(in srgb, var(--accent) 18%, transparent) 0%,
+      color-mix(in srgb, var(--accent) 6%, transparent) 50%,
+      transparent 80%);
+    animation: th-breathe-slow 5.8s ease-in-out infinite alternate;
   }
 
-  /* --- Océano: brillo de agua suave (sin rayas que se deslicen) --- */
+  /* === OCÉANO — agua moviéndose: ola de brillo teal en movimiento ===
+     Radial superior izquierda que "respira" como luz bajo el agua.
+     Animación: tide a 7s — cadencia de ola. */
   html[data-theme="oceano"] .block::after {
-    background: radial-gradient(120% 80% at 30% 0%,
-      color-mix(in srgb, var(--accent2) 10%, transparent), transparent 70%);
+    background: radial-gradient(130% 90% at 20% -10%,
+      color-mix(in srgb, var(--accent2) 18%, transparent) 0%,
+      color-mix(in srgb, var(--accent) 8%, transparent) 45%,
+      transparent 75%);
+    animation: th-tide 6.5s ease-in-out infinite alternate;
   }
 
-  /* --- Glaciar: escarcha en las esquinas --- */
+  /* === GLACIAR — hielo/escarcha: cristales en las esquinas ===
+     Dos radiales en esquinas opuestas que respiran de manera asimétrica.
+     Animación: frost a 8s — hielo que crece y retrocede lentamente. */
   html[data-theme="glaciar"] .block::after {
     background:
-      radial-gradient(120px 80px at 0% 0%, color-mix(in srgb, var(--accent2) 14%, transparent), transparent 70%),
-      radial-gradient(120px 80px at 100% 100%, color-mix(in srgb, var(--accent2) 10%, transparent), transparent 70%);
+      radial-gradient(110px 70px at 0% 0%,
+        color-mix(in srgb, var(--accent2) 22%, transparent), transparent 75%),
+      radial-gradient(90px 60px at 100% 100%,
+        color-mix(in srgb, var(--accent) 16%, transparent), transparent 75%);
+    animation: th-frost 7.8s ease-in-out infinite alternate;
   }
 
-  /* --- Reactor: pulso de energía (sin escala, solo brillo) --- */
+  /* === REACTOR — pulso de energía: latido agudo como un reactor nuclear ===
+     Radial centrado en la parte superior (zona de "emisión de energía").
+     Animación: pulse_sharp a 2.4s — ritmo de latido cardiaco, energético. */
   html[data-theme="reactor"] .block::after {
-    background: radial-gradient(60% 60% at 50% 0%,
-      color-mix(in srgb, var(--accent) 12%, transparent), transparent 75%);
+    background: radial-gradient(55% 55% at 50% -5%,
+      color-mix(in srgb, var(--accent) 22%, transparent) 0%,
+      color-mix(in srgb, var(--accent) 8%, transparent) 50%,
+      transparent 80%);
+    animation: th-pulse-sharp 2.4s ease-in-out infinite alternate;
   }
 
-  /* --- Nébula: tres motas tenues, latido muy lento --- */
+  /* === NÉBULA — estrellitas en el espacio: puntos que titilan ===
+     Tres motas pequeñas en posiciones fijas (no se mueven, solo parpadean).
+     Animación: flicker_subtle a 5s. */
   html[data-theme="nebula"] .block::after {
     background:
-      radial-gradient(2px 2px at 22% 30%, color-mix(in srgb, var(--accent2) 50%, transparent), transparent 60%),
-      radial-gradient(2px 2px at 70% 62%, color-mix(in srgb, var(--accent) 50%, transparent), transparent 60%),
-      radial-gradient(1.5px 1.5px at 45% 85%, color-mix(in srgb, var(--accent2) 40%, transparent), transparent 60%);
+      radial-gradient(3px 3px at 22% 30%, color-mix(in srgb, var(--accent2) 65%, transparent), transparent 50%),
+      radial-gradient(3px 3px at 70% 62%, color-mix(in srgb, var(--accent) 60%, transparent), transparent 50%),
+      radial-gradient(2px 2px at 45% 85%, color-mix(in srgb, var(--accent2) 50%, transparent), transparent 50%);
+    animation: th-flicker-subtle 5.2s ease-in-out infinite alternate;
   }
 
-  /* --- Neón (arcade): resplandor lateral tenue (sin parpadeo brusco) --- */
+  /* === NEÓN (arcade) — destello de cian desde el lateral izquierdo ===
+     Gradiente lateral que pulsa como el tubo de neón de una marquesina.
+     Animación: breathe_mid a 3.2s — más rápido, energía de arcade. */
   html[data-theme="neon"] .block::after {
     background: linear-gradient(90deg,
-      color-mix(in srgb, var(--accent) 10%, transparent), transparent 60%);
+      color-mix(in srgb, var(--accent) 18%, transparent) 0%,
+      color-mix(in srgb, var(--accent2) 8%, transparent) 35%,
+      transparent 65%);
+    animation: th-breathe-mid 3.2s ease-in-out infinite alternate;
   }
 
-  /* --- Atardecer: brillo cálido (sin rectángulo que se desliza) --- */
+  /* === ATARDECER — brillo cálido en la esquina inferior derecha ===
+     Como la luz del atardecer entrando por la ventana inferior.
+     Animación: breathe_slow a 7s — ritmo dorado y lento. */
   html[data-theme="atardecer"] .block::after {
-    background: radial-gradient(100% 80% at 80% 100%,
-      color-mix(in srgb, var(--accent) 11%, transparent),
-      color-mix(in srgb, var(--accent2) 7%, transparent) 50%, transparent 80%);
+    background: radial-gradient(110% 90% at 90% 105%,
+      color-mix(in srgb, var(--accent) 16%, transparent) 0%,
+      color-mix(in srgb, var(--accent2) 10%, transparent) 40%,
+      transparent 72%);
+    animation: th-breathe-slow 6.8s ease-in-out infinite alternate;
   }
 
-  /* --- Neon Nights: doble tinte cian/magenta tenue (atenuado, era brillante) --- */
+  /* === NEON NIGHTS (synthwave) — doble respiración cian + magenta ===
+     Dos radiales en esquinas opuestas que "compiten" al respirar.
+     Animación: breathe_mid a 4.5s — ritmo de sintetizador. */
   html[data-theme="neon-nights"] .block::after {
     background:
-      radial-gradient(90% 70% at 15% 0%, color-mix(in srgb, var(--accent2) 9%, transparent), transparent 65%),
-      radial-gradient(90% 70% at 100% 100%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 65%);
+      radial-gradient(95% 75% at 5% -5%,
+        color-mix(in srgb, var(--accent2) 14%, transparent), transparent 65%),
+      radial-gradient(95% 75% at 95% 100%,
+        color-mix(in srgb, var(--accent) 12%, transparent), transparent 65%);
+    animation: th-breathe-mid 4.4s ease-in-out infinite alternate;
   }
 
-  /* --- Cyberpunk: brillo eléctrico (sin glitch brusco) --- */
+  /* === CYBERPUNK — destello eléctrico cortante desde arriba ===
+     Gradiente vertical descendente, como el reflejo de un neón en lluvia.
+     Animación: pulse_sharp a 1.8s — el más agudo, energía Night City. */
   html[data-theme="cyberpunk"] .block::after {
     background: linear-gradient(180deg,
-      color-mix(in srgb, var(--accent) 10%, transparent), transparent 50%);
+      color-mix(in srgb, var(--accent) 18%, transparent) 0%,
+      color-mix(in srgb, var(--accent2) 6%, transparent) 35%,
+      transparent 60%);
+    animation: th-pulse-sharp 1.9s ease-in-out infinite alternate;
   }
 
-  /* --- Aurora: cortinas boreales tenues --- */
+  /* === AURORA — cortinas boreales: dos gradientes angulados ===
+     Como las auroras reales: bandas diagonales teal → violeta.
+     Animación: tide a 9s — el ritmo más largo, lento como la aurora boreal. */
   html[data-theme="aurora"] .block::after {
     background:
-      linear-gradient(200deg, color-mix(in srgb, var(--accent) 10%, transparent) 0%, transparent 45%),
-      linear-gradient(160deg, color-mix(in srgb, var(--accent2) 8%, transparent) 20%, transparent 65%);
+      linear-gradient(205deg,
+        color-mix(in srgb, var(--accent) 14%, transparent) 0%, transparent 50%),
+      linear-gradient(155deg,
+        color-mix(in srgb, var(--accent2) 11%, transparent) 15%, transparent 60%);
+    animation: th-tide 9.0s ease-in-out infinite alternate;
   }
 
-  /* --- Alba: amanecer cálido creciendo despacio --- */
+  /* === ALBA — amanecer cálido: radial desde el horizonte inferior ===
+     Luz creciente que sube desde el borde inferior como el sol al amanecer.
+     Animación: breathe_slow a 8s — el más pausado, muy cálido. */
   html[data-theme="alba"] .block::after {
-    background: radial-gradient(80% 60% at 50% 100%,
-      color-mix(in srgb, var(--accent) 10%, transparent), transparent 75%);
+    background: radial-gradient(85% 65% at 50% 110%,
+      color-mix(in srgb, var(--accent) 18%, transparent) 0%,
+      color-mix(in srgb, var(--accent2) 8%, transparent) 45%,
+      transparent 75%);
+    animation: th-breathe-slow 8.2s ease-in-out infinite alternate;
   }
 
-  /* --- Grafito: sin animación de color (acero frío, sobrio a propósito) ---
-     deja el ::after vacío/transparente — el carácter de Grafito es la calma. */
+  /* === GRAFITO — sin animación, sin ::after ===
+     El acero frío no brilla. Solo el glow de borde (definido antes). */
   html[data-theme="grafito"] .block::after {
     background: none;
     animation: none;
+    opacity: 0;
   }
 }

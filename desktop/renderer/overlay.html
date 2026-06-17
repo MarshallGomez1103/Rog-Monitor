@@ -6,43 +6,198 @@
   <title>ROG Overlay</title>
   <style>
     :root {
-      --ok: #4cd964; --warn: #ffcc33; --hot: #ff8a3d; --crit: #ff453a;
-      --ink: #f2f4f8; --dim: #9aa3b2;
+      --ok:    #4cd964;
+      --warn:  #ffcc33;
+      --hot:   #ff8a3d;
+      --crit:  #ff453a;
+      --ink:   #f2f4f8;
+      --dim:   #7a8398;
+      --bg:    rgba(10, 12, 18, 0.88);
+      --border: rgba(255, 255, 255, 0.08);
+      --accent: #c8f;
+      --radius: 10px;
     }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { background: transparent; overflow: hidden; user-select: none; }
+    html, body {
+      background: transparent;
+      overflow: hidden;
+      user-select: none;
+      -webkit-app-region: no-drag;
+    }
     body {
-      font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace;
+      font-family: "JetBrains Mono", "DejaVu Sans Mono", "Cascadia Code", monospace;
       color: var(--ink);
-      padding: 2px;
+      padding: 4px;
+      min-width: 170px;
     }
+
+    /* ---- Tarjeta principal ---- */
     .card {
-      background: rgba(12, 14, 18, 0.82);
-      border: 1px solid rgba(255, 255, 255, 0.10);
-      border-radius: 12px;
-      padding: 10px 12px;
-      backdrop-filter: blur(3px);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 8px 10px 6px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
-    .title {
-      font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
-      color: var(--dim); margin-bottom: 6px; display: flex; justify-content: space-between;
+
+    /* ---- Encabezado ---- */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
     }
-    .row { display: flex; align-items: baseline; gap: 6px; margin: 3px 0; }
-    .row .lbl { font-size: 10px; color: var(--dim); width: 38px; }
-    .row .val { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
-    .row .sub { font-size: 10px; color: var(--dim); margin-left: auto; font-variant-numeric: tabular-nums; }
-    .fans { font-size: 10px; color: var(--dim); margin-top: 6px; font-variant-numeric: tabular-nums; }
-    .fans b { color: var(--ink); font-weight: 600; }
+    .header-brand {
+      font-size: 8px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+      opacity: 0.85;
+    }
+    .header-profile {
+      font-size: 8px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--dim);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ---- Filas de datos ---- */
+    .row {
+      display: flex;
+      align-items: baseline;
+      gap: 0;
+      margin: 4px 0;
+    }
+    .row-label {
+      font-size: 9px;
+      color: var(--dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      width: 34px;
+      flex-shrink: 0;
+    }
+    .row-value {
+      font-size: 19px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      min-width: 44px;
+    }
+    .row-unit {
+      font-size: 9px;
+      color: var(--dim);
+      margin-left: 1px;
+      align-self: flex-end;
+      margin-bottom: 2px;
+    }
+    .row-sub {
+      font-size: 9px;
+      color: var(--dim);
+      margin-left: auto;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    /* ---- Fila FPS — ligeramente destacada ---- */
+    #fps-row .row-value {
+      color: var(--ok);
+    }
+    #fps-row .row-label {
+      color: var(--ok);
+      opacity: 0.7;
+    }
+
+    /* ---- Divider entre CPU/GPU y fans ---- */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 5px 0 4px;
+    }
+
+    /* ---- Fila de ventiladores ---- */
+    .fans-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .fans-label {
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--dim);
+      margin-right: 2px;
+    }
+    .fan-chip {
+      font-size: 9px;
+      font-variant-numeric: tabular-nums;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .fan-chip .fan-key {
+      color: var(--dim);
+      font-size: 8px;
+    }
+    .fan-chip .fan-pct {
+      opacity: 0.55;
+      font-size: 8px;
+    }
+    .fans-none {
+      font-size: 9px;
+      color: var(--dim);
+    }
   </style>
 </head>
 <body>
   <div class="card">
-    <div class="title"><span>ROG MONITOR</span><span id="prof">--</span></div>
-    <div class="row" id="fps-row" style="display:none"><span class="lbl">FPS</span><span class="val" id="fps-v">--</span><span class="sub">MangoHud</span></div>
-    <div class="row" id="cpu-row"><span class="lbl">CPU</span><span class="val" id="cpu-t">--</span><span class="sub" id="cpu-w">-- W · AVG</span></div>
-    <div class="row" id="gpu-row"><span class="lbl">GPU</span><span class="val" id="gpu-t">--</span><span class="sub" id="gpu-w">-- W</span></div>
-    <div class="fans" id="fans">ventiladores --</div>
+    <!-- Encabezado: marca + perfil activo -->
+    <div class="header">
+      <span class="header-brand" id="brand-label">ROG MONITOR</span>
+      <span class="header-profile" id="prof">--</span>
+    </div>
+
+    <!-- FPS (MangoHud, solo cuando hay dato) -->
+    <div class="row" id="fps-row" style="display:none">
+      <span class="row-label" id="fps-label">FPS</span>
+      <span class="row-value" id="fps-v">--</span>
+      <span class="row-sub" id="fps-source">MangoHud</span>
+    </div>
+
+    <!-- CPU -->
+    <div class="row" id="cpu-row">
+      <span class="row-label" id="cpu-label">CPU</span>
+      <span class="row-value" id="cpu-t">--</span>
+      <span class="row-unit">°</span>
+      <span class="row-sub" id="cpu-w">-- W</span>
+    </div>
+
+    <!-- GPU -->
+    <div class="row" id="gpu-row">
+      <span class="row-label" id="gpu-label">GPU</span>
+      <span class="row-value" id="gpu-t">--</span>
+      <span class="row-unit">°</span>
+      <span class="row-sub" id="gpu-w">-- W · --%</span>
+    </div>
+
+    <!-- Ventiladores -->
+    <div id="fans-section">
+      <div class="divider"></div>
+      <div class="fans-row" id="fans-row">
+        <span class="fans-label" id="fans-label">Fans</span>
+        <span class="fans-none" id="fans-none">--</span>
+      </div>
+    </div>
   </div>
+
   <script src="overlay.js"></script>
 </body>
 </html>

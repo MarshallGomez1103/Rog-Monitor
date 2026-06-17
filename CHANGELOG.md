@@ -1,5 +1,47 @@
 # Changelog
 
+## 12.0.0 — 2026-06-17
+
+> Build multiagente v12: Opus 4.8 orquestó **5 instancias Sonnet** en worktrees
+> aislados (A-VISUAL, A-DASH, A-GAME, A-FANS, A-I18N). **Esta vez la cuenta no
+> cortó**: los 5 agentes terminaron. Integración por dueño de archivo (cada
+> archivo un único propietario → cero conflictos). `node --check` + `py_compile`
+> + `bash -n` OK en todo lo tocado. Contrato base en `docs/build-spec-v12.md`.
+
+### Pulido sobre v11 (mismas funciones, terminadas bien)
+- **Números de temperatura premium**: glow neón de **3 capas por nivel de
+  alerta** (frío→azul, normal→verde, caliente→ámbar, crítico→rojo con pulso),
+  reactivo a la temperatura y no al color del tema. Borde de la tarjeta tintado
+  por nivel vía `:has()`.
+- **Temas con carácter**: animaciones CSS baratas (solo `opacity`, con
+  `prefers-reduced-motion`) por paleta — magma, océano, glaciar, reactor… sin
+  castigar la CPU.
+- **Guardián térmico**: corregida la histéresis (cada escalón de bajada exige
+  ~20 s de carga baja sostenida, no 10 s) + estado JSON enriquecido. Curvas
+  suaves por perfil + API de perfiles y CLI en `fans.py`. Pasos de sistema
+  (pkexec) documentados en `docs/APPLY-FANS-v12.md`.
+- **Sesión de juego**: arreglado el **resumen vacío** (causa: `maxBuffer` 1 MB
+  truncaba ~2.3 MB de JSON → ahora 16 MB). Resumen con unidades, comparación
+  manual de 2 sesiones con veredicto, onboarding de baseline, hover corregido.
+- **Modo edición del tablero**: sin temblor al pasar el cursor con el modo OFF;
+  realce premium con el modo ON.
+- **Gráficas**: token `--chart-grid` por modo — rejilla casi invisible en claro.
+- **i18n**: TUI ampliada a 8 idiomas; overlay rediseñado (glassmorphism) e i18n;
+  roadmap en orden cronológico ascendente; explicaciones de poder en español.
+- **Dash**: modal de fans por perfil, historial de benchmarks mejorado, núcleos
+  integrados en Procesos, barra superior consolidada.
+
+### Glue del orquestador
+- **IPC de fans verificado** ya cableado end-to-end (`get-fan-config` /
+  `set-fan-config` → `store.profiles[perfil]` → pkexec); el supuesto conflicto
+  de contrato A-DASH↔A-FANS era falsa alarma.
+- **Selector de idioma sin emojis**: `app.js` usa `window.i18n.LANG_META` +
+  insignia con el código (ES/EN/FR…); `.lang-flag` reestilado como badge mono.
+- HANDOFF.md reconciliado con las 5 sesiones.
+
+### Pendiente
+- Rediseño de los **temas en modo claro** (siguiente tanda).
+
 ## 11.0.0 — 2026-06-16
 
 > Build multiagente v3: Opus 4.8 orquestó **5 instancias Sonnet** en worktrees.

@@ -2,6 +2,353 @@
 
 > Cada agente actualiza esta sección al terminar. El siguiente la lee primero.
 
+## Sesión: Claude (Opus 4.8 ORQUESTADOR) — 2026-06-17 — integración v12 multiagente
+
+Integradas las 5 ramas worktree v12 a master (file-by-file, sin conflictos: cada
+archivo tiene un único dueño). `node --check` + `py_compile` + `bash -n` OK en todo.
+Glue del orquestador: (1) IPC de fans (`get-fan-config`/`set-fan-config`) verificado
+ya cableado end-to-end (preload→main→store.profiles por perfil→pkexec); el supuesto
+conflicto de contrato era falsa alarma. (2) Selector de idioma sin emojis: `app.js`
+usa `window.i18n.LANG_META` + insignia de código (ES/EN/…); CSS `.lang-flag` reestilado.
+NO se hizo push (regla #1). Pendiente: rediseño de temas CLAROS (siguiente tanda).
+
+Resúmenes por agente abajo (A-VISUAL, A-DASH, A-GAME, A-FANS, A-I18N):
+
+## Sesión: A-VISUAL (Sonnet 4.6, worktree agent-a7c22c31b9ab2e35d) — 2026-06-17
+
+### Archivos modificados (solo mis archivos)
+- `desktop/renderer/styles/neon.css` — glow temperatura + animaciones de tema
+- `desktop/renderer/styles/dashboard.css` — modo edición + fix hover
+- `desktop/renderer/style.css` — token --chart-grid, token --lvl-* ya existían
+
+### Lo que hice (4 commits)
+
+**1. Temperatura premium (t-cold/t-normal/t-hot/t-critical) — TAREA PRIORIDAD 1**
+- Glow de 3 capas: núcleo nítido (#ffb0b0-ish blanco) + bloom de `--lvl-*` + aureola difusa. Radio máx 22px, no distorsiona.
+- `t-critical` pulsa opacity 100%→85% @1.2s (`temp-crit-pulse`) — `prefers-reduced-motion: reduce` lo desactiva.
+- Transición 0.4s al cambiar de nivel (no salto brusco).
+- Modo claro: halo saturado visible sin bloom difuso (que se perdería sobre fondo claro).
+- Borde de la tarjeta (`.block`) toma tinte del nivel activo en modo oscuro vía `:has()`.
+- Clases correctas: `t-cold`, `t-normal`, `t-hot`, `t-critical` (iguales a las que emite `tempClass()` en app.js).
+
+**2. Temas con carácter (animaciones baratas)**
+- 6 keyframes: `th-breathe-slow`, `th-breathe-mid`, `th-pulse-sharp`, `th-flicker-subtle`, `th-tide`, `th-frost`.
+- Cada tema tiene su propia animación + gradiente de carácter. Solo `opacity` (GPU-only, 0 repaint):
+  - Magma @5.8s breathe-slow (brasa), Océano @6.5s tide (ola), Glaciar @7.8s frost (escarcha)
+  - Reactor @2.4s pulse-sharp (núcleo), Nébula @5.2s flicker-subtle (estrellas), Neón @3.2s breathe-mid
+  - Atardecer @6.8s, Neon Nights @4.4s, Cyberpunk @1.9s (más agudo), Aurora @9s (más lento), Alba @8.2s
+  - Grafito: sin animación (carácter = calma)
+- Todo dentro de `@media (prefers-reduced-motion: no-preference)`.
+
+**3. Token --chart-grid (Contrato C2 → A-DASH debe consumirlo)**
+- Oscuro: `--chart-grid: var(--hair)` (igual que antes, ya tenue).
+- Claro: `--chart-grid: color-mix(in srgb, var(--hair) 18%, transparent)` — CASI invisible.
+- **A3/A-DASH**: cambiar `cssVar('--hair')` a `cssVar('--chart-grid')` en `drawChart()` en `app.js` línea ~153 para las 3 líneas horizontales de rejilla.
+
+**4. Modo edición + fix temblor**
+- Sin edición (`html:not([data-edit-mode="on"]) .block`): `cursor: default; transition: none;` — elimina temblor en hover.
+- Con edición activa: `cursor: grab`, box-shadow 3 capas (inset + outline + halo), hover "levanta" la tarjeta.
+- Los controles ≡/× siguen apareciendo solo en `html[data-edit-mode="on"] .block:hover`.
+
+### Pendiente para el orquestador / A-DASH (A3)
+1. **CRÍTICO (C2)**: en `app.js` `drawChart()`, línea ~153, cambiar:
+   `ctx.strokeStyle = cssVar('--hair');` → `ctx.strokeStyle = cssVar('--chart-grid');`
+   El token `--chart-grid` ya está definido en `style.css`.
+2. La clase de nivel crítico es `t-critical` (no `t-very-hot`). Ya estaba unificado en v11.0, confirmado.
+3. No se modificó JS — todos los cambios son CSS puro.
+
+### Verificación
+- Braces balanceados: neon.css 118/118, dashboard.css 28/28, style.css 277/277.
+- Sin `git push`. Solo commits locales en `worktree-agent-a7c22c31b9ab2e35d`.
+- No se abrió Electron (worktree sin sesión gráfica) — razonamiento visual.
+
+## Sesión: A-DASH (Claude Sonnet 4.6) — 2026-06-17 — v12 multiagente
+
+**Archivos tocados:** `desktop/renderer/app.js`, `desktop/renderer/index.html`,
+`desktop/renderer/cores.js`, `desktop/renderer/styles/extras.css`.
+`node --check` OK en todos los JS. `py_compile procs.py` OK. 2 commits locales.
+
+### Entregado
+
+1. **C3 Fan modal por perfil (Task 1):** El modal de Ventiladores tiene ahora
+   tabs AHORRO / BALANCED / PERFORMANCE. Al cambiar de tab se carga el perfil
+   correspondiente con `getFanConfig(profile)` (caché en `fanCfgByProfile`).
+   El cap sigue siendo compartido (lo impone el JSON root `cap_rpm`), con
+   etiqueta actualizada al perfil activo. El botón GUARDAR Y APLICAR llama a
+   `setFanConfig({ profile: fanEditingProfile, curves, cap })` (IPC existente,
+   sin cambios en main.js). El perfil activo del sistema se marca con un
+   indicador "(perfil activo del sistema)".
+
+2. **Benchmarks lista bonita (Task 2):** `_benchCardHtml` sin cambios de
+   lógica, pero `extras.css` mejoró: header con fondo sutil, botón borrar con
+   hover rojo, sparkline más alta (108 px), grilla de valores con celdas más
+   generosas. `.bench-actions` en flex-wrap para acomodar el nuevo botón de
+   sesión de juego.
+
+3. **Procesos por núcleo (Task 3):** La columna % CPU muestra ahora el total
+   + un `.procs-core` en gris con el porcentaje de 1 núcleo (`cpu_core` del
+   stream, ya expuesto por `procs.py`). Tooltip explica que 100% = 1 núcleo
+   completo, como htop/top. No hay cambios en procs.py (ya exponía `cpu_core`).
+
+4. **Topbar consolidada (Task 4):**
+   - Botón NÚCLEOS: `cores.js` ya no lo inyecta en la topbar; ahora vive como
+     botón `.procs-cores-link` dentro del `<h2>` del bloque Procesos en
+     `index.html`. `app.js` lo cablea para llamar a `window.RogCores.open()`.
+   - Sesión de juego: `index.html` tiene `#bench-game-session-btn` en el bloque
+     de Benchmarks. CSS oculta `#game-session-btn` (topbar). El clic delega
+     al botón original para que la lógica interna de `game-session.js` (estado
+     de sesión, render) funcione sin modificar ese archivo.
+
+5. **Modo edición (Task 5):** `extras.css` añade indicador visual del botón
+   `#edit-mode-btn.active` (neón del acento) y la regla
+   `html:not([data-edit-mode="on"]) .block { transform: none !important }` que
+   evita cualquier temblor de hover con el modo apagado.
+
+6. **C2 Grilla de gráficas:** `drawChart()` usa
+   `cssVar('--chart-grid') || cssVar('--hair')` — A-VISUAL puede definir
+   `--chart-grid` para distinguir el color de la cuadrícula del fondo.
+
+7. **C1 tempClass():** Verificado — emite exactamente `t-cold / t-normal /
+   t-hot / t-critical`. Ningún cambio necesario.
+
+### IPC pendiente / para el orquestador
+
+- Ningún IPC nuevo necesario: todas las tasks usan IPC existente.
+- `game-session.js` NO expone `window.RogGameSession.open()` (solo `init()`).
+  Si se quiere abrir programáticamente, habría que añadirlo en ese archivo (no
+  es urgente, el fallback con click() funciona).
+- `--chart-grid` aún no definido por A-VISUAL. El fallback a `--hair` funciona.
+  Cuando A-VISUAL lo defina no hace falta cambiar nada en app.js.
+
+### Claves i18n nuevas (para A-I18N)
+
+- Ninguna clave nueva de i18n (todos los textos del modal de fans son inline,
+  no pasados por el sistema i18n).
+
+---
+
+## Sesión: A-GAME (Claude Sonnet 4.6) — 2026-06-17 — game-session: fix resumen vacío + mejoras
+
+**Archivos tocados:** `desktop/main.js`, `desktop/renderer/game-session.js`,
+`desktop/renderer/styles/game-session.css`. No se tocó `preload.js` (ya tenía
+los 8 puentes de A5) ni `src/rog_monitor/game_session.py` (correcto).
+Todos los archivos pasan `node --check` / `py_compile`. Dos commits locales.
+
+### BUG CRÍTICO resuelto: resumen vacío tras sesión larga
+
+**Causa real:** `execFile` de Node.js tiene `maxBuffer` = 1 MB por defecto.
+Una sesión de 100 min genera ~6 000 samples × ~400 B/sample de JSON ≈ **2,3 MB**.
+El stdout de `cmd_stop` / `cmd_get` era truncado silenciosamente al superar
+el 1 MB → `JSON.parse` lanzaba `SyntaxError` → `runJsonModule` devolvía
+`{ok: false, err: "respuesta inválida..."}` → `stopSession` asignaba
+`undefined` a `lastSession` → `renderSummary` veía `!lastSession` y redirigía
+a la vista de inicio → **RESUMEN VACÍO**.
+
+**Fix en `desktop/main.js`:**
+- `runPythonModule`: añade `maxBuffer: 16 * 1024 * 1024` (16 MB → soporta ~650 min)
+- `game-session-stop/get`: timeout 8 s → 30 s
+- `game-session-sample`: 8 s → 12 s
+- `game-session-list/compare`: 8 s → 15/20 s
+
+Prueba sintética verificada: 6 000 samples → 2,35 MB → summarize + compare OK.
+
+### Mejoras del frontend (`game-session.js` + `game-session.css`)
+
+1. **Resumen con unidades:** min/máx/prom cada métrica muestra °C / W / % / RPM.
+   Promedio destacado en color acento.
+2. **Gráficas mejoradas:** canvas 400 px, padding interior, etiquetas eje Y
+   (mín/máx), etiquetas eje X (duración), fill suave bajo la curva.
+3. **Fix tooltip hover:** posición del `.gs-tip` corregida para escalar con
+   el ratio CSS/canvas (`tipX / scaleX`). Antes salía desplazado a la izquierda
+   porque `toX()` devuelve canvas-px (0..400) pero el canvas se escala al 100% CSS.
+   El tooltip ahora muestra la unidad: `"72.5 °C · 5:30"`.
+4. **Comparación manual:** `renderCompare` ahora tiene dos `<select>` con
+   todas las sesiones (pre-selecciona baseline en A, segunda en B). Botón
+   "COMPARAR SESIONES" en la vista start cuando hay ≥ 2 sesiones.
+5. **Onboarding:** hint con borde del color de acento cuando no hay sesiones:
+   "graba ANTES de tunear → la sesión queda como original → compara calor,
+   ruido y consumo antes y después". Desaparece cuando hay sesiones.
+6. **Defensas en renderSummary:** null-check explícito en grid; mensaje claro
+   si no hay samples; número de muestras visible junto a la duración.
+
+### Claves i18n nuevas (para A4 — añadir fr/it/pt/zh/ja/ko)
+
+```
+gamesession.onboarding_hint
+gamesession.loading_samples
+gamesession.no_samples
+gamesession.compare_select_a
+gamesession.compare_select_b
+gamesession.compare_run
+gamesession.game_a
+gamesession.game_b
+gamesession.samples_count
+```
+Es/en ya están en game-session.js (auto-registradas con `window.i18n.register`).
+
+### Pendiente
+
+- **Prueba viva (CDP):** no se pudo abrir Electron en el worktree. Marshall debe
+  grabar una sesión de ≥5 min y verificar que el resumen aparece con datos y gráficas.
+- **Sesión de ~100 min:** la prueba sintética confirma el fix; la prueba real en HW
+  requeriría ese tiempo de juego.
+- **`_Readers` por proceso:** cada llamada a `cmd_sample` crea lectores nuevos
+  (~0,5-1 s de overhead). Para futuras versiones, considerar un proceso daemon de
+  muestreo persistente; por ahora es suficiente para 1 muestra/s.
+
+---
+
+## Sesión: A-FANS (Claude Sonnet 4.6) — 2026-06-17 — Guardián térmico v12 + curvas suaves + API perfiles
+
+**Rol:** A-FANS del build multiagente v12. Archivos tocados: `scripts/rog-thermal-guardian.sh`,
+`src/rog_monitor/fans.py`, `docs/APPLY-FANS-v12.md`. **NO tocó** app.js, main.js ni nada de UI.
+
+### Qué se hizo (3 commits, todas las validaciones pasadas)
+
+1. **`scripts/rog-thermal-guardian.sh` — corrección de histéresis (commit 69638ad)**
+   - Bug: después de cada escalón de bajada, el timer `LOW_SINCE` NO se reiniciaba.
+     Resultado: el 2.º escalón llegaba STEP_DELAY=10s después del 1.º en lugar de
+     esperar otro COOLDOWN=20s completo. Los fans bajaban 2 escalones en ~30s (muy rápido,
+     risgo de rebote). Ahora cada escalón reinicia `LOW_SINCE="$now"` para que el siguiente
+     también espere ~20s de carga baja sostenida.
+   - Log al inicio del cooldown: "Carga/temp baja detectada — esperando Ns para bajar a X".
+   - `write_guardian_state()` ahora escribe JSON enriquecido:
+     `{"mode","reason","updated","aggression","thermal_state","cooldown_remaining","interventions"}`
+     (la UI puede mostrar estos datos para explicar qué está haciendo el guardián).
+   - Sintaxis validada: `bash -n` OK.
+
+2. **`src/rog_monitor/fans.py` — curvas v12 + API de perfiles (commit 33893b7)**
+   - `DEFAULT_FAN_CURVES`: dict con las curvas exactas del HANDOFF v11 (copiadas verbatim):
+     - `quiet`: PWM=0 hasta 40°C (fan apagado); caps 4500 RPM — zona de silencio real.
+     - `balanced`: arranque 15-18 PWM desde 35-48°C; caps 5500 RPM.
+     - `performance`: arranque 30-35 PWM desde 35°C; caps 6500 RPM.
+     - Los 3 perfiles claramente distintos en curva Y cap.
+   - API nueva (contrato C3):
+     - `load_profiles()` / `save_profiles()` — leer/escribir los 3 perfiles con validación
+       (8 puntos, monotonía de temps y pwms).
+     - `load_all_config()` / `save_all_config()` — config completa (caps+perfiles+calibración);
+       main.js puede usar estas en get-fan-config/set-fan-config.
+     - `guardian_status()` enriquecido: propaga aggression, thermal_state, cooldown_remaining,
+       interventions del JSON v12 del guardián.
+   - CLI retrocompatible con nuevos subcomandos:
+     `python -m rog_monitor.fans profiles [--profile <name>]`
+     `python -m rog_monitor.fans write-profiles <json>`
+     `python -m rog_monitor.fans defaults`
+     `python -m rog_monitor.fans all-config`
+   - `py_compile` OK; tests funcionales inline OK.
+
+3. **`docs/APPLY-FANS-v12.md` — pasos exactos para Marshall (commit 8e03a62)**
+   - Paso A: bloque `case` verbatim para `~/Rog-Monitor-Scripts/scripts/rog-profile-sync.sh`
+     con las curvas v12 embebidas (cpu/gpu/mid × performance/balanced/quiet).
+   - Paso B: instalar/actualizar servicio del guardián (comandos exactos con sudo).
+   - Paso C: verificación (systemctl status, journalctl -f, cat state.json, sensors).
+   - Paso D: GUARDAR Y APLICAR desde la app (pkexec).
+   - Explica por qué sin estos pasos los fans siguen como antes (2 capas: código + sistema).
+
+### PENDIENTE para Marshall (requiere tu clave/root)
+
+1. **Aplicar el bloque de curvas** en `~/Rog-Monitor-Scripts/scripts/rog-profile-sync.sh`
+   (Paso A de APPLY-FANS-v12.md). El bloque verbatim está ahí.
+2. **Reinstalar el servicio del guardián** (Paso B):
+   ```bash
+   REPO="$(pwd)"
+   sudo install -m 0644 "$REPO/systemd/rog-thermal-guardian.service" /etc/systemd/system/
+   sudo sed -i "s#__ROG_MONITOR_REPO__#$REPO#" /etc/systemd/system/rog-thermal-guardian.service
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now rog-thermal-guardian.service
+   ```
+3. **GUARDAR Y APLICAR** desde la app (Paso D) para que las curvas del JSON lleguen al HW.
+4. **Sin estos pasos**: el guardián sigue inactivo y las curvas viejas agresivas siguen en HW.
+
+### PENDIENTE para el siguiente agente / orquestador
+
+- Estas funciones nuevas de `fans.py` (load_profiles, save_all_config, etc.) aún no están
+  cableadas en `main.js` (get-fan-config / set-fan-config). Si la UI de curvas lo necesita,
+  el orquestador o A-UI debería actualizar los handlers de IPC en main.js para usar
+  `load_all_config()` / `save_all_config()` en lugar de solo escribir el JSON de caps.
+- La UI podría mostrar `cooldown_remaining` y `aggression` del guardián para que Marshall
+  sepa cuántos segundos faltan para que los fans bajen.
+
+## Sesión: A-I18N (Sonnet 4.6) — 2026-06-17 — i18n completo, overlay rediseñado, roadmap corregido
+
+Tanda multiagente v12. Worktree: `agent-a016206ed3bf364c7`. Archivos tocados:
+`roadmap.js`, `i18n.js`, `wizard.js`, `power.js` (sin cambios JS, solo i18n),
+`overlay.html`, `overlay.js`, `src/rog_monitor/i18n.py`.
+
+### 5 commits realizados
+
+1. **`17e862c`** — roadmap.js: corrección del orden + ROADMAP_TODO auditado
+2. **`a20cef5`** — i18n.js: LANG_META sin emojis + claves `dash.*` y `gamesession.*` en 8 idiomas + explicaciones de potencia mejoradas
+3. **`2d0fc58`** — power.js (sin cambios JS; las mejoras iban en i18n.js)
+4. **`154e98c`** — overlay.html + overlay.js: rediseño completo con jerarquía y colores de alerta
+5. **`33727f2`** — i18n.py: fr/it/pt/zh/ja/ko completos para la TUI
+
+### Qué se hizo por tarea
+
+**Tarea 1 — Roadmap orden cronológico**: eliminado `.reverse()` erróneo en
+`_buildRoadmapContent()` (línea ~304). El ROADMAP_DONE ahora se muestra de más
+viejo arriba a más reciente justo antes de "POR HACER".
+
+**Tarea 2 — ROADMAP_TODO limpio**: auditado contra git log. Movidos a DONE:
+"Dashboard reordenable/drag-drop", "Neón de verdad por nivel", "i18n 8 idiomas".
+Añadidas entradas v10.0.0 y v11.0.0 con detalle en ROADMAP_DONE. TODO conserva
+solo items genuinamente pendientes: Redragon USB, GPU offsets pkexec real,
+guardar y aplicar fans, guardián desde app, AMD, SQLite, música por zonas,
+Prometheus, multi-distro, open source.
+
+**Tarea 3 — Wizard 100% i18n**: el wizard ya venía casi completo desde v10
+(todo el contenido de cada paso usa `t(key)`). En esta sesión se actualizó
+`LANG_OPTIONS` para usar `window.i18n.LANG_META` como fuente canónica (sin
+emojis/banderas) y se verificó que el onChange de i18n re-renderiza correctamente.
+
+**Tarea 4 — Selector de idioma sin emojis**: añadida constante `LANG_META` (8
+entradas, solo `code`/`label`/`native`, cero emojis/banderas) en i18n.js y
+expuesta como `window.i18n.LANG_META`. OJO: la topbar de app.js sigue usando
+`LANG_DISPLAY` con emojis — ese archivo pertenece a A-DASH y no se puede tocar.
+Cualquier agente futuro que refactorice la topbar debe usar `window.i18n.LANG_META`.
+
+**Tarea 5 — Traducir claves nuevas a fr/it/pt/zh/ja/ko**:
+- En i18n.js: claves `dash.*` (16) y `gamesession.*` (50+) añadidas directamente
+  al CORE en todos los 8 idiomas (el CORE tiene prioridad sobre los registros de módulo).
+- En i18n.py: STRINGS expandido de 2 idiomas (es/en) a 8 (es/en/fr/it/pt/zh/ja/ko).
+  Cubre todos los keys TUI: perfil, CPU/GPU/fans, estados térmicos, historial,
+  sistema, ayuda, alertas, mensajes de acción, controles de potencia.
+  `py_compile` verificado OK.
+
+**Tarea 6 — Explicaciones de potencia claras para no técnicos**: los textos
+`power.explain.*.body` en i18n.js ahora explican en español coloquial qué hace
+cada control, qué pasa si se sube/baja, y para qué sirve (PL1, PL2, Dynamic
+Boost, Thermal Target, base_clock_offset, mem_clock_offset).
+
+**Tarea 7 — Overlay rediseño + i18n**: `overlay.html` rediseñado con card
+glassmorphism (bg rgba, backdrop-filter, borde superior de acento, border-radius),
+header con brand + perfil activo, filas jerarquizadas (label 9px dim + valor
+19px bold + subinfo alineada a la derecha), FPS en verde, divisor antes de fans,
+fan-chips compactos sin emoji. `overlay.js` reescrito con `OVERLAY_STRINGS` por
+los 8 idiomas, re-detección de idioma en cada tick, y `applyLabels()` explícito.
+
+### Pendientes / notas para el orquestador
+
+- **LANG_DISPLAY con emojis en app.js**: no se pudo tocar (no es nuestro archivo).
+  La topbar sigue mostrando banderas. Solución: cuando A-DASH refactorice el
+  selector de idioma, usar `window.i18n.LANG_META` en lugar de su `LANG_DISPLAY`.
+- **CDP / prueba visual**: ninguna tarea fue verificada por CDP (worktree sin
+  sesión gráfica). Recomendado repaso visual especialmente del overlay y del paso 0
+  del wizard al cambiar idioma.
+- **power.js JS**: no hubo cambios de lógica JS en power.js — todos los cambios
+  de Tarea 6 fueron en los strings de i18n.js. `powerTooltip(key)` ya llama
+  `t('power.explain.${ek}.body')` correctamente.
+- **i18n.py TUI fr/it/pt/zh/ja/ko**: completo pero NO probado contra el terminal
+  real. `py_compile` OK. Los strings de `keys_pairs` son lists-of-lists — la
+  `Translator` class de la TUI los consume tal cual.
+
+### node --check verificados
+
+`roadmap.js` OK, `i18n.js` OK, `wizard.js` OK, `overlay.js` OK.
+`python3 -m py_compile src/rog_monitor/i18n.py` OK.
+
+---
+
 ## Sesión: Claude (Opus 4.8) — 2026-06-16 — fix roadmap vacío + modal de benchmark
 
 Dos arreglos pedidos por Marshall (`node --check` OK en los 2 JS tocados):

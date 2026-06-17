@@ -24,7 +24,7 @@ const ROADMAP_CURRENT = {
   ],
 };
 
-// Hitos completados — orden cronológico ascendente
+// Hitos completados — orden cronológico ascendente (más viejo arriba, más reciente justo antes de POR HACER)
 const ROADMAP_DONE = [
   {
     date: '2026-06-08',
@@ -143,35 +143,41 @@ const ROADMAP_DONE = [
       'docs/supported-devices.md, CONTRIBUTING.md, plantillas de issues, CI GitHub Actions (preparado para open source)',
     ],
   },
+  {
+    date: '2026-06-15',
+    version: 'v10.0.0',
+    title: 'i18n 8 idiomas + tablero arrastrable + neón puro + Roadmap + offsets GPU NVML + guardián térmico',
+    points: [
+      'Internacionalización completa: 8 idiomas (es/en/fr/it/pt/zh/ja/ko), selector en topbar, 100% de claves core',
+      'Tablero reordenable y arrastrable: drag-and-drop por bloques, ocultar/mostrar, layout persistido',
+      'Offsets GPU (núcleo/memoria) vía NVML: rangos seguros por device_profiles.json, rango avanzado con doble consentimiento',
+      'Guardián térmico: systemd unit con lógica consciente de carga CPU/GPU e histéresis de bajada',
+      'Roadmap interactivo: timeline expandible con hitos completados y por hacer',
+      'Neón reactivo puro: glow de números por nivel de alerta (frío/normal/caliente/crítico), no por color de tema',
+      'Benchmarks con historial clickable: cada resultado abre un modal de detalle con gráficas',
+      'Fix Aura: HARDWARE_CAP_OVERRIDE para teclados de 4 zonas (breathe 1 color sin segundos)',
+    ],
+  },
+  {
+    date: '2026-06-16',
+    version: 'v11.0.0',
+    title: 'Ventiladores inteligentes + modo edición + neón reactivo + sesión de juego',
+    points: [
+      'Ventiladores inteligentes: curvas por perfil con histéresis (subir inmediato, bajar escalonado tras 20 s)',
+      'Guardián consciente de carga: modula agresividad por uso CPU/GPU + temperatura + tendencia',
+      'Neón por nivel: glow/box-shadow de números atado a variables de nivel (--lvl-cold/ok/hot/crit), no al acento',
+      'Bordes neón en tarjetas: glow del acento del tema, sutil y visible',
+      'Modo edición del tablero: toggle en barra superior; arrastre/ocultación solo cuando está activo',
+      'Sesión de juego: graba CPU/GPU temp, RPM, watts, RAM; resumen con gráficas; comparar vs baseline; detecta el juego',
+      'Temas con carácter: 11 animaciones CSS por tema (Magma=lava, Océano=agua, Glaciar=hielo, Reactor=pulso)',
+      'Menú de núcleos CPU: grid con frecuencia y temperatura por núcleo',
+      'Modal de detalle de benchmark: gráficas grandes con ejes, eventos importantes, tabla de resumen',
+    ],
+  },
 ];
 
-// Pendientes (por hacer) — de docs/roadmap.md y HANDOFF.md
+// Pendientes (por hacer) — solo lo que genuinamente falta según git log
 const ROADMAP_TODO = [
-  {
-    title: 'Dashboard reordenable y por-widget configurable',
-    points: [
-      'Arrastrar y reordenar los 9 bloques con handle (≡) al hover',
-      'Activar/desactivar cada widget individualmente; panel para re-activar ocultos',
-      'Numeración dinámica sin huecos, persistida en localStorage',
-    ],
-  },
-  {
-    title: 'Neón de verdad en los 12 temas',
-    points: [
-      'Glow multicapa (Cyberpunk 2077 / Liam Wong) en oscuro: los acentos irradian',
-      '"Neón de día" en modo claro: halos saturados sobre fondo claro, contraste AA mínimo',
-      'Tokens --neon-glow / --neon-box / --neon-line compartidos por todos los módulos',
-    ],
-  },
-  {
-    title: 'Internacionalización (8 idiomas) + selector de idioma',
-    points: [
-      'window.t(key) / window.i18n.register(dict) disponibles antes de app.js',
-      'Selector de idioma en topbar (botón A文) + modal con bandera/nombre nativo',
-      'Paso 0 del wizard: "Elige tu idioma", persiste en localStorage',
-      'Idiomas: es (base), en, fr, it, pt, zh, ja, ko',
-    ],
-  },
   {
     title: 'Redragon K734WCG-RGB-PRO — control completo',
     points: [
@@ -181,18 +187,26 @@ const ROADMAP_TODO = [
     ],
   },
   {
-    title: 'GPU Clock Offsets (base/memoria)',
+    title: 'GPU Clock Offsets (base/memoria) — desbloqueados por Marshall',
     points: [
-      'Bloqueados en Wayland por limitación del driver NVIDIA; require X11/Coolbits',
-      'Pendiente explorar ruta NVML o sesión X11 opcional',
+      'La UI y el backend ya están listos; los offsets están disponibles pero requieren rangos seguros',
+      'Pendiente: activar el primer APLICAR real con pkexec para probar en vivo',
+      'Wayland puede requerir sesión X11 para Coolbits; NVML funciona para lectura',
     ],
   },
   {
-    title: 'Guardar y Aplicar (ventiladores) — un paso de Marshall',
+    title: 'Guardar y Aplicar ventiladores — un paso de Marshall',
     points: [
       'El script blindado con check-only y FALLBACK_MAX está listo en el repo',
       'Un GUARDAR Y APLICAR instala la versión nueva en /usr/local/sbin (pkexec)',
       'El cap ya funciona porque max_rpm/calibration están en fan-curves.json',
+    ],
+  },
+  {
+    title: 'Activar guardián térmico desde la app',
+    points: [
+      'El script rog-thermal-guardian.sh está instalado pero el servicio no se activa desde la app',
+      'Conectar el botón GPU → Guardián en Centro de Poder para que la modulación por carga actúe',
     ],
   },
   {
@@ -233,7 +247,7 @@ const ROADMAP_TODO = [
     ],
   },
   {
-    title: 'v11 — Open Source (lo último, cuando Marshall dé el visto bueno)',
+    title: 'Open Source — publicación (lo último, cuando Marshall dé el visto bueno)',
     points: [
       'GitHub Actions: lint + prueba --json en runner Ubuntu',
       'Releases con tag semver y notas de cambio',
@@ -301,7 +315,8 @@ function _buildTimelineItem(item, isDone, idx) {
 }
 
 function _buildRoadmapContent() {
-  const doneItems = [...ROADMAP_DONE].reverse(); // más reciente primero
+  // Orden cronológico: más viejo arriba → más reciente justo encima de "POR HACER"
+  const doneItems = ROADMAP_DONE;
 
   const doneHtml = doneItems
     .map((item, i) => _buildTimelineItem(item, true, i))

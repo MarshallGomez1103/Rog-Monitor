@@ -150,7 +150,8 @@ function drawChart(canvas, values, color, opts = {}) {
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, w, h);
 
-  ctx.strokeStyle = cssVar('--hair');
+  // Contrato C2: usa --chart-grid si A-VISUAL lo define; cae a --hair como fallback.
+  ctx.strokeStyle = cssVar('--chart-grid') || cssVar('--hair');
   ctx.lineWidth = 1;
   for (let i = 1; i <= 3; i++) {
     ctx.beginPath();
@@ -1149,11 +1150,14 @@ function update(stats) {
         `<li class="${level}"><time>${ts}</time>${msg}</li>`).join('')
     : '<li class="dim">sin eventos</li>';
 
-  /* processes */
-  $('procs-body').innerHTML = (stats.procs || []).map((p) => `
-    <tr data-pid="${p.pid}" data-name="${p.name}" title="Clic para cerrar ${p.name}">
+  /* processes — muestra cpu (% total) y cpu_core (% de 1 núcleo, estilo top) */
+  $('procs-body').innerHTML = (stats.procs || []).map((p) => {
+    const coreVal = p.cpu_core != null ? `<span class="procs-core" title="% de 1 núcleo (${p.cpu_core.toFixed(1)}% = ${p.cpu_core >= 100 ? Math.floor(p.cpu_core / 100) + ' núcleo(s) completo(s)' : 'fracción de núcleo'})">${p.cpu_core.toFixed(0)}%</span>` : '';
+    return `<tr data-pid="${p.pid}" data-name="${p.name}" title="Clic para cerrar ${p.name}">
         <td class="pid">${p.pid}</td><td>${p.name}</td>
-        <td class="cpu">${p.cpu.toFixed(1)}%</td><td class="mem">${p.mem_mb} MB</td></tr>`).join('');
+        <td class="cpu" title="% del CPU total (todos los núcleos)">${p.cpu.toFixed(1)}%${coreVal}</td>
+        <td class="mem">${p.mem_mb} MB</td></tr>`;
+  }).join('');
 
   $('backend-state').textContent =
     `sensores OK · core v${stats.version || '?'} · ${new Date().toLocaleTimeString()}`;
@@ -1271,25 +1275,28 @@ window.addEventListener('keydown', (e) => {
 /* ---------- i18n / idioma ---------- */
 
 // Idiomas con nombres nativos (en sincronía con i18n.js)
-const LANG_DISPLAY = [
-  { code: 'es', label: 'Español',   flag: '🇪🇸' },
-  { code: 'en', label: 'English',   flag: '🇬🇧' },
-  { code: 'fr', label: 'Français',  flag: '🇫🇷' },
-  { code: 'it', label: 'Italiano',  flag: '🇮🇹' },
-  { code: 'pt', label: 'Português', flag: '🇵🇹' },
-  { code: 'zh', label: '中文',      flag: '🇨🇳' },
-  { code: 'ja', label: '日本語',    flag: '🇯🇵' },
-  { code: 'ko', label: '한국어',    flag: '🇰🇷' },
+// Sin banderas/emojis: el selector usa LANG_META (i18n.js) con nombre nativo
+// y una insignia con el código de idioma. Fallback local por si i18n no cargó.
+const LANG_FALLBACK = [
+  { code: 'es', native: 'Español'  },
+  { code: 'en', native: 'English'  },
+  { code: 'fr', native: 'Français' },
+  { code: 'it', native: 'Italiano' },
+  { code: 'pt', native: 'Português' },
+  { code: 'zh', native: '中文'      },
+  { code: 'ja', native: '日本語'    },
+  { code: 'ko', native: '한국어'    },
 ];
 
 function buildLangGrid() {
   const grid = $('lang-grid');
   if (!grid) return;
   const active = window.i18n ? window.i18n.get() : 'es';
-  grid.innerHTML = LANG_DISPLAY.map((l) => `
+  const langs = (window.i18n && window.i18n.LANG_META) || LANG_FALLBACK;
+  grid.innerHTML = langs.map((l) => `
     <button class="lang-option${l.code === active ? ' active' : ''}" data-lang="${l.code}" type="button">
-      <span class="lang-flag">${l.flag}</span>
-      <span class="lang-name">${l.label}</span>
+      <span class="lang-flag">${l.code.toUpperCase()}</span>
+      <span class="lang-name">${l.native || l.label}</span>
     </button>`).join('');
   grid.querySelectorAll('.lang-option').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -1617,11 +1624,23 @@ $('procs-body').addEventListener('click', async (e) => {
   toast(res.ok ? `Señal de cierre enviada a ${name}` : `No se pudo: ${res.err}`);
 });
 
-/* ---------- fan control center ---------- */
+/* ---------- fan control center — con selector de perfil (Task 1 / C3) ---------- */
 
 const FAN_NAMES = { cpu: 'CPU', gpu: 'GPU', mid: 'MID (central)' };
 const FAN_MAX_DEFAULT = { cpu: 7000, gpu: 6900, mid: 7500 };
-let fanCfg = null;
+// fanCfgByProfile: caché de los 3 perfiles cargados (carga bajo demanda)
+let fanCfg = null;          // perfil actualmente en el formulario
+let fanActiveProfile = '';  // perfil del sistema (lastStats.asus_profile)
+let fanEditingProfile = '';  // perfil que se está editando en el modal
+const fanCfgByProfile = {}; // { quiet: res, balanced: res, performance: res }
+
+const FAN_PROFILE_LABELS = {
+  'quiet':       'AHORRO',
+  'balanced':    'BALANCED',
+  'performance': 'PERFORMANCE',
+  'power-saver': 'AHORRO',
+};
+
 localStorage.removeItem('fanMax'); // legado: vivía aquí y nunca era real
 
 function fanName(fan) {
@@ -1662,7 +1681,6 @@ function currentCap() {
 }
 
 // La curva guardada queda PRISTINA: el cap se aplica al escribir al hardware.
-// Esta nota muestra qué recortará el cap actual sin tocar los inputs.
 function updateCapPreview() {
   const note = $('fan-cap-preview');
   const cap = currentCap();
@@ -1701,7 +1719,6 @@ function readCurvesFromForm() {
     curves[fan] = { temps: Array(8).fill(0), pwms: Array(8).fill(0) };
     box.querySelectorAll('input').forEach((inp) => {
       const raw = Math.round(+inp.value);
-      // speeds are edited as %, stored as PWM 0-255
       curves[fan][inp.dataset.kind][+inp.dataset.i] =
         inp.dataset.kind === 'pwms' ? Math.round(raw * 255 / 100) : raw;
     });
@@ -1717,28 +1734,74 @@ function fanMaxSummary() {
 
 function refreshFanNotes() {
   const calibrated = Object.keys(fanCfg.curves).some(fanCalibrated);
+  const editLabel = FAN_PROFILE_LABELS[fanEditingProfile] || fanEditingProfile.toUpperCase();
   $('fan-max-note').textContent =
-    `Curvas ${fanCfg.source}. Máximos ${calibrated ? 'medidos ✓' : 'ESTIMADOS (sin medir)'}: ` +
+    `Curvas ${fanCfg.source} (perfil ${editLabel}). ` +
+    `Máximos ${calibrated ? 'medidos ✓' : 'ESTIMADOS (sin medir)'}: ` +
     `${fanMaxSummary()} RPM · ${Object.keys(fanCfg.curves).length} ventiladores detectados.`;
   $('fan-calib-banner').classList.toggle('hidden', calibrated);
   $('fan-benchmark').classList.toggle('attention', !calibrated);
   updateCapPreview();
 }
 
-$('fans-block').addEventListener('click', async () => {
-  const profile = lastStats?.asus_profile;
-  if (!profile) { toast('Aún no conozco el perfil ASUS activo'); return; }
-  const res = await window.rog.getFanConfig(profile);
-  if (!res.ok) { toast(res.err); return; }
+/* Carga fanCfg para el perfil dado y actualiza el formulario */
+async function loadFanProfile(profile) {
+  // Usar caché si ya se cargó y no cambió calibración
+  let res = fanCfgByProfile[profile];
+  if (!res) {
+    res = await window.rog.getFanConfig(profile);
+    if (!res.ok) { toast(res.err); return false; }
+    fanCfgByProfile[profile] = res;
+  }
   fanCfg = res;
-  $('fan-profile').textContent = profile;
-  $('fan-script-path').textContent = res.path;
-  // Pre-fill the cap from the saved store (shared by all fans).
+  fanEditingProfile = profile;
+  // Sincronizar etiquetas
+  const editLabel = FAN_PROFILE_LABELS[profile] || profile.toUpperCase();
+  $('fan-editing-label').textContent = editLabel;
+  if ($('fan-cap-label')) $('fan-cap-label').textContent = editLabel;
+  // Indicador si es el perfil activo del sistema
+  const isActive = profile === fanActiveProfile
+    || (profile === 'quiet' && fanActiveProfile === 'power-saver');
+  const indicator = $('fan-active-indicator');
+  if (indicator) indicator.classList.toggle('hidden', !isActive);
+  // Cap: usar el del perfil cargado (compartido globalmente, mismo JSON)
   const savedCap = res.cap && Object.values(res.cap).find((v) => v > 0);
   $('fan-cap').value = savedCap || '';
+  // Resaltar tab activa
+  document.querySelectorAll('.fan-ptab').forEach((t) => {
+    const tabProfile = t.dataset.pfan;
+    t.classList.toggle('active', tabProfile === profile
+      || (tabProfile === 'quiet' && profile === 'power-saver'));
+  });
   renderCurves();
   refreshFanNotes();
+  return true;
+}
+
+/* Abrir el modal de ventiladores: siempre carga los 3 perfiles en caché */
+$('fans-block').addEventListener('click', async () => {
+  const sysProfile = lastStats?.asus_profile;
+  if (!sysProfile) { toast('Aún no conozco el perfil ASUS activo'); return; }
+  fanActiveProfile = sysProfile;
+  $('fan-profile').textContent = sysProfile;
+  // Elegir qué perfil mostrar primero: el activo del sistema, o "quiet" si es power-saver
+  let startProfile = sysProfile;
+  if (!['quiet', 'balanced', 'performance'].includes(startProfile)) startProfile = 'quiet';
+  // Invalidar caché para asegurar datos frescos al abrir el modal
+  Object.keys(fanCfgByProfile).forEach((k) => delete fanCfgByProfile[k]);
+  const ok = await loadFanProfile(startProfile);
+  if (!ok) return;
+  if (fanCfg?.path) $('fan-script-path').textContent = fanCfg.path;
   $('fan-modal').classList.remove('hidden');
+});
+
+/* Selector de perfil: tabs AHORRO / BALANCED / PERFORMANCE */
+$('fan-profile-tabs').addEventListener('click', async (e) => {
+  const tab = e.target.closest('.fan-ptab');
+  if (!tab) return;
+  const profile = tab.dataset.pfan;
+  if (profile === fanEditingProfile) return; // ya estamos aquí
+  await loadFanProfile(profile);
 });
 
 $('fan-close').addEventListener('click', () => $('fan-modal').classList.add('hidden'));
@@ -1765,6 +1828,11 @@ $('fan-benchmark').addEventListener('click', async () => {
   if (!res.ok) { toast(`No se pudo: ${res.err}`); return; }
   fanCfg.max_rpm = res.max;
   fanCfg.calibration = res.calibration;
+  // Propagar calibración a todos los perfiles en caché
+  Object.values(fanCfgByProfile).forEach((c) => {
+    c.max_rpm = res.max;
+    c.calibration = res.calibration;
+  });
   renderCurves();
   refreshFanNotes();
   toast(`Calibración lista ✓ Máximos reales: ${fanMaxSummary()} RPM`);
@@ -1773,8 +1841,8 @@ $('fan-benchmark').addEventListener('click', async () => {
 $('fan-save').addEventListener('click', async () => {
   const curves = readCurvesFromForm();
   const cap = currentCap();
-  // consent gate: slow fans at the two hottest points are dangerous. The cap
-  // also counts, because the service trims the curve with it at apply time.
+  const editLabel = FAN_PROFILE_LABELS[fanEditingProfile] || fanEditingProfile.toUpperCase();
+  // consent gate: slow fans at the two hottest points are dangerous
   const risky = Object.entries(curves).filter(([fan, c]) => {
     const limit = cap ? capToPwm(cap, fan) : 255;
     return Math.min(c.pwms[6], limit) < 150 || Math.min(c.pwms[7], limit) < 150;
@@ -1784,14 +1852,18 @@ $('fan-save').addEventListener('click', async () => {
     'más calientes de la curva (' + risky.map(([f]) => fanName(f)).join(', ') + ').\n\n' +
     'Esto puede sobrecalentar y dañar tu equipo bajo carga.\n\n' +
     '¿Entiendes el riesgo y quieres continuar?')) return;
-  const res = await window.rog.setFanConfig({ profile: fanCfg.profile, curves, cap });
+  const res = await window.rog.setFanConfig({ profile: fanEditingProfile, curves, cap });
   if (res.ok) {
+    // Actualizar caché del perfil guardado
+    if (fanCfgByProfile[fanEditingProfile]) {
+      fanCfgByProfile[fanEditingProfile].curves = curves;
+    }
     $('fan-modal').classList.add('hidden');
     toast(res.warn
       ? res.warn
       : (cap
-          ? `Guardado ✓ Tope de ${cap} RPM activo para el perfil ${fanCfg.profile} (persiste al reiniciar).`
-          : `Guardado ✓ Sin tope: ventiladores libres en el perfil ${fanCfg.profile}.`));
+          ? `Guardado ✓ Tope de ${cap} RPM para perfil ${editLabel} (persiste al reiniciar).`
+          : `Guardado ✓ Sin tope: ventiladores libres en perfil ${editLabel}.`));
   } else {
     toast(`Error: ${res.err}`);
   }
@@ -2073,6 +2145,58 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
     toast('Tamaño aplicado (también funciona Ctrl + rueda del mouse)');
   });
 });
+
+/* ---------- sesión de juego integrada en bench-block (Task 4) ---------- */
+// game-session.js añade su botón a la topbar (#game-session-btn). Ocultamos ese
+// botón sobrante via CSS (extras.css) y re-exponemos la función desde el bloque
+// de Benchmarks (#bench-game-session-btn, en index.html).
+(function wireBenchGameSessionBtn() {
+  function tryWire() {
+    const btn = document.getElementById('bench-game-session-btn');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      // Delegar al botón original de game-session.js (display:none pero funcional).
+      // Esto asegura que la lógica interna de game-session.js (crear modal, render,
+      // estado de la sesión) se ejecuta correctamente.
+      const topBtn = document.getElementById('game-session-btn');
+      if (topBtn) {
+        topBtn.click();
+      } else {
+        // Si el botón aún no fue inyectado, abrir el modal directamente
+        const gsModal = document.getElementById('game-session-modal');
+        if (gsModal) gsModal.classList.remove('hidden');
+      }
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryWire);
+  } else {
+    tryWire();
+  }
+})();
+
+/* ---------- enlace NÚCLEOS dentro del panel de procesos ---------- */
+// El botón #procs-cores-btn (en el h2 del bloque procs) abre el modal de núcleos.
+// Esto evita tener un botón suelto extra en la topbar: la conciencia por núcleo
+// vive dentro del contexto de Procesos, que es donde tiene sentido (Task 3+4).
+(function wireProcsCoreBtns() {
+  function tryWire() {
+    const btn = document.getElementById('procs-cores-btn');
+    if (!btn) return;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // cores.js expone window.RogCores.open() cuando está listo
+      if (window.RogCores && typeof window.RogCores.open === 'function') {
+        window.RogCores.open();
+      }
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryWire);
+  } else {
+    tryWire();
+  }
+})();
 
 /* ---------- export events ---------- */
 

@@ -33,6 +33,8 @@ html[data-mode="dark"] {
   --lvl-ok:   #3ce087;
   --lvl-hot:  #ffb13c;
   --lvl-crit: #ff4d4d;
+  /* líneas de rejilla de las gráficas — en oscuro: igual que --hair (ya tenue) */
+  --chart-grid: var(--hair);
 }
 /* Magma — rojo volcánico sobre negro carbón (firma ROG) */
 html[data-mode="dark"][data-theme="magma"] {
@@ -123,6 +125,10 @@ html[data-mode="light"] {
   --lvl-ok:   #157a3f;
   --lvl-hot:  #b35a00;
   --lvl-crit: #c01818;
+  /* líneas de rejilla de las gráficas en claro: MUY tenues para no estorbar
+     (las 3 líneas horizontales molestaban mucho sobre fondos claros tintados).
+     color-mix al 18% con transparent → casi invisibles, solo orientativas. */
+  --chart-grid: color-mix(in srgb, var(--hair) 18%, transparent);
 }
 /* Magma claro — ladrillo quemado sobre crema volcánica */
 html[data-mode="light"][data-theme="magma"] {
@@ -359,7 +365,19 @@ b, .num { font-variant-numeric: tabular-nums; }
   border-color: var(--accent);
   box-shadow: var(--neon-box, 0 0 8px var(--glow, transparent));
 }
-.lang-flag { font-size: 22px; line-height: 1; }
+/* insignia con el código de idioma (ES/EN/FR…) — sin banderas/emoji */
+.lang-flag {
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  line-height: 1;
+  padding: 3px 6px;
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  color: var(--accent);
+}
+.lang-option.active .lang-flag { color: inherit; border-color: currentColor; }
 .lang-name { font-size: 12px; letter-spacing: .3px; }
 
 /* ---- grilla de idiomas en el wizard (paso 0) ---- */
@@ -801,7 +819,11 @@ input[type="color"] {
 .periph-link { color: var(--dim); font-family: var(--mono); font-size: 11px; }
 .periph-note { flex-basis: 100%; color: var(--dim); font-size: 11.5px; }
 
-/* ---------- charts ---------- */
+/* ---------- charts ----------
+   CONTRATO C2 (A-VISUAL → A-DASH): usar cssVar('--chart-grid') como
+   strokeStyle de las 3 líneas horizontales en drawChart() en lugar de
+   cssVar('--hair'). En modo claro el token es casi transparente para que
+   las líneas no estorben sobre fondos tintados. */
 .chart-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
 .chart label { font-size: 11.5px; letter-spacing: 1px; color: var(--dim); text-transform: uppercase; }
 .chart canvas { width: 100%; height: 130px; display: block; margin-top: 6px; }

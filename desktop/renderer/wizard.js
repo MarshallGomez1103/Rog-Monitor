@@ -16,8 +16,9 @@
 (function () {
   'use strict';
 
-  /* ---- idiomas disponibles con nombres nativos (sin emoji/banderas) ---- */
-  const LANG_OPTIONS = [
+  /* ---- idiomas disponibles: usa LANG_META de i18n.js (sin emoji/banderas).
+         Fallback local por si i18n.js aún no cargó (orden de carga). ---- */
+  const LANG_OPTIONS = (window.i18n && window.i18n.LANG_META) || [
     { code: 'es', label: 'Español' },
     { code: 'en', label: 'English' },
     { code: 'fr', label: 'Français' },
@@ -75,7 +76,7 @@
               <button class="wiz-lang-btn${l.code === activeLang ? ' active' : ''}"
                       data-lang="${l.code}"
                       type="button">
-                <span class="wiz-lang-name">${l.label}</span>
+                <span class="wiz-lang-name">${l.native || l.label}</span>
               </button>
             `).join('')}
           </div>`;

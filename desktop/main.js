@@ -101,11 +101,19 @@ function run(cmd, args, timeoutMs = 10000) {
   });
 }
 
+// maxBuffer ampliado a 16 MB para soportar sesiones de juego de 100+ min
+// (~6 000 samples × ~200 B/sample = ~1,2 MB; el default de Node 1 MB cortaba
+// stdout silenciosamente → cmd_stop / cmd_get devolvían string vacío → el
+// JSON.parse fallaba → res.ok = false → lastSession = undefined → resumen vacío).
+const MODULE_MAX_BUFFER = 16 * 1024 * 1024; // 16 MB
+
 function runPythonModule(module, args, timeoutMs = 10000) {
   return new Promise((resolve) => {
-    execFile(PYTHON, ['-m', module, ...args], { timeout: timeoutMs, cwd: REPO, env: PY_ENV }, (err, stdout, stderr) => {
-      resolve({ ok: !err, out: (stdout || '').trim(), err: (stderr || String(err || '')).trim() });
-    });
+    execFile(PYTHON, ['-m', module, ...args],
+      { timeout: timeoutMs, cwd: REPO, env: PY_ENV, maxBuffer: MODULE_MAX_BUFFER },
+      (err, stdout, stderr) => {
+        resolve({ ok: !err, out: (stdout || '').trim(), err: (stderr || String(err || '')).trim() });
+      });
   });
 }
 
@@ -757,19 +765,22 @@ ipcMain.handle('cpu-benchmark', async (_e, seconds = 45) =>
 ipcMain.handle('gpu-benchmark', async (_e, seconds = 45) =>
   runJsonModule('rog_monitor.benchmarks', ['gpu', '--seconds', String(seconds)], (seconds + 25) * 1000));
 
-/* ---------- game session (v11) ---------- */
+/* ---------- game session (v11) ----------
+   Timeouts generosos en stop/get/compare: sesiones de 100 min tienen
+   ~6 000 samples; serializar + leer puede tomar 2-3 s en disco lento.
+   maxBuffer ya está en 16 MB (runPythonModule), suficiente para ~80 min. */
 ipcMain.handle('game-session-start', async () =>
   runJsonModule('rog_monitor.game_session', ['start'], 8000));
 ipcMain.handle('game-session-sample', async (_e, id) =>
-  runJsonModule('rog_monitor.game_session', ['sample', '--id', id], 8000));
+  runJsonModule('rog_monitor.game_session', ['sample', '--id', id], 12000));
 ipcMain.handle('game-session-stop', async (_e, id) =>
-  runJsonModule('rog_monitor.game_session', ['stop', '--id', id], 8000));
+  runJsonModule('rog_monitor.game_session', ['stop', '--id', id], 30000));
 ipcMain.handle('game-session-list', async () =>
-  runJsonModule('rog_monitor.game_session', ['list'], 8000));
+  runJsonModule('rog_monitor.game_session', ['list'], 15000));
 ipcMain.handle('game-session-get', async (_e, id) =>
-  runJsonModule('rog_monitor.game_session', ['get', '--id', id], 8000));
+  runJsonModule('rog_monitor.game_session', ['get', '--id', id], 30000));
 ipcMain.handle('game-session-compare', async (_e, { a, b }) =>
-  runJsonModule('rog_monitor.game_session', ['compare', '--a', a, '--b', b], 8000));
+  runJsonModule('rog_monitor.game_session', ['compare', '--a', a, '--b', b], 20000));
 ipcMain.handle('game-session-baseline', async () =>
   runJsonModule('rog_monitor.game_session', ['baseline'], 8000));
 ipcMain.handle('game-session-delete', async (_e, id) =>

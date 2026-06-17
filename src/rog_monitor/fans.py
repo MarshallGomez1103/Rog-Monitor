@@ -1,6 +1,22 @@
-"""Fan RPM reading with percentages relative to the user's RPM cap."""
+"""Fan RPM reading with percentages relative to the user's RPM cap.
+
+v12 (A-FANS):
+  - DEFAULT_FAN_CURVES con curvas suaves por perfil (quiet arranca en PWM 0
+    = fan apagado hasta ~40 °C; performance/balanced con idle más bajo que
+    antes para que los fans sí bajen cuando la carga termina).
+  - load_profiles() / save_profiles() para leer y escribir los tres perfiles
+    del fan-curves.json (contrato C3: la UI puede mostrar/editar las tres
+    curvas). API retrocompatible: load_caps() y FanReader.read() no cambian.
+  - load_all_config() / save_all_config() para que main.js use una sola
+    llamada en get-fan-config / set-fan-config.
+  - CLI: añade subcomandos `profiles` (leer) y `write-profiles` (escribir)
+    sin cambiar las firmas/subcomandos existentes.
+"""
+
+from __future__ import annotations
 
 import json
+import sys
 import time
 
 from . import hwmon
@@ -24,6 +40,194 @@ GUARDIAN_STATE_FILE = DATA_DIR / "thermal-guardian-state.json"
 GUARDIAN_STATE_MAX_AGE = 30.0
 # JSON cap keys (cpu/gpu/mid) → hwmon fan labels.
 CAP_KEY = {"cpu_fan": "cpu", "gpu_fan": "gpu", "mid_fan": "mid"}
+
+# ------------------------------------------------------------------
+# Curvas por defecto v12 — más suaves que las agresivas de v11.
+# Fuente: HANDOFF.md (pendiente v11, fila "curvas exactas").
+#
+# Formato por perfil y zona: {"temps": [t1..t8], "pwms": [p1..p8]}
+# quiet: fan APAGADO (pwm 0) por debajo de ~40 °C — zona de silencio real.
+# balanced: arranca suave desde 15-18 PWM a 35-48 °C (muy bajo).
+# performance: arranca en 30-35 PWM a 35 °C (sigue siendo audible pero
+#   mucho menos que las curvas viejas horneadas con idle en 6000-6300 RPM).
+#
+# Los tres perfiles deben quedar claramente distintos en cap y curva.
+# ------------------------------------------------------------------
+DEFAULT_FAN_CURVES: dict = {
+    "version": FAN_CURVES_SCHEMA_VERSION,
+    "cap_rpm": {
+        "cpu": 6500,
+        "gpu": 6500,
+        "mid": 6500,
+    },
+    "profiles": {
+        "performance": {
+            "cap_rpm": {"cpu": 6500, "gpu": 6500, "mid": 6500},
+            "gpu": {
+                "temps": [35, 45, 55, 62, 70, 75, 80, 83],
+                "pwms":  [30, 46, 70, 100, 150, 195, 235, 250],
+            },
+            "mid": {
+                "temps": [35, 45, 55, 65, 75, 82, 88, 95],
+                "pwms":  [30, 50, 80, 115, 158, 198, 232, 247],
+            },
+            "cpu": {
+                "temps": [35, 45, 55, 65, 75, 82, 88, 95],
+                "pwms":  [35, 55, 85, 120, 160, 200, 235, 247],
+            },
+        },
+        "balanced": {
+            "cap_rpm": {"cpu": 5500, "gpu": 5500, "mid": 5500},
+            "gpu": {
+                "temps": [35, 48, 58, 64, 71, 76, 80, 83],
+                "pwms":  [15, 26, 46, 75, 112, 150, 185, 195],
+            },
+            "mid": {
+                "temps": [35, 48, 58, 68, 78, 84, 90, 95],
+                "pwms":  [16, 30, 52, 85, 122, 158, 190, 200],
+            },
+            "cpu": {
+                "temps": [35, 48, 58, 68, 78, 84, 90, 95],
+                "pwms":  [18, 32, 55, 88, 128, 165, 200, 210],
+            },
+        },
+        "quiet": {
+            "cap_rpm": {"cpu": 4500, "gpu": 4500, "mid": 4500},
+            "gpu": {
+                "temps": [40, 52, 62, 68, 74, 78, 82, 85],
+                "pwms":  [0, 14, 26, 46, 72, 98, 128, 140],
+            },
+            "mid": {
+                "temps": [40, 52, 62, 70, 80, 85, 90, 95],
+                "pwms":  [0, 18, 32, 56, 84, 112, 140, 150],
+            },
+            "cpu": {
+                "temps": [40, 52, 62, 70, 80, 85, 90, 95],
+                "pwms":  [0, 16, 30, 52, 80, 110, 140, 150],
+            },
+        },
+    },
+}
+
+
+# ------------------------------------------------------------------
+# Funciones de lectura/escritura del JSON de curvas
+# ------------------------------------------------------------------
+
+def _load_raw() -> dict:
+    """Carga fan-curves.json tal cual (sin defaults). Retorna {} si no existe."""
+    try:
+        with open(FAN_CURVES_FILE) as fh:
+            return json.load(fh) or {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _save_raw(data: dict) -> None:
+    """Guarda data en fan-curves.json (crea CONFIG_DIR si hace falta)."""
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = FAN_CURVES_FILE.with_suffix(".json.tmp")
+    with open(tmp, "w") as fh:
+        json.dump(data, fh, indent=2, sort_keys=True)
+        fh.write("\n")
+    tmp.replace(FAN_CURVES_FILE)
+
+
+def load_all_config() -> dict:
+    """Carga la config completa de fans (caps + perfiles + version).
+
+    Si el archivo no existe o le faltan secciones, se completan con
+    DEFAULT_FAN_CURVES sin pisar lo que sí exista. Siempre retorna un dict
+    con claves "version", "cap_rpm" y "profiles".
+    """
+    import copy
+    data = _load_raw()
+    merged = copy.deepcopy(DEFAULT_FAN_CURVES)
+    # Preservar cap_rpm global si existe
+    if isinstance(data.get("cap_rpm"), dict):
+        merged["cap_rpm"].update(data["cap_rpm"])
+    # Preservar perfiles si existen (solo sobreescribe claves presentes)
+    raw_profiles = data.get("profiles") or {}
+    for prof_name, prof_defaults in merged["profiles"].items():
+        raw_prof = raw_profiles.get(prof_name) or {}
+        import copy as _copy
+        merged_prof = _copy.deepcopy(prof_defaults)
+        if isinstance(raw_prof.get("cap_rpm"), dict):
+            merged_prof["cap_rpm"].update(raw_prof["cap_rpm"])
+        for fan in ("cpu", "gpu", "mid"):
+            if isinstance(raw_prof.get(fan), dict):
+                merged_prof[fan] = raw_prof[fan]
+        merged["profiles"][prof_name] = merged_prof
+    # Preservar calibración y max_rpm si existen
+    for key in ("calibration", "max_rpm"):
+        if key in data:
+            merged[key] = data[key]
+    merged["version"] = FAN_CURVES_SCHEMA_VERSION
+    return merged
+
+
+def save_all_config(data: dict) -> None:
+    """Guarda la config completa de fans en fan-curves.json.
+
+    Solo escribe; no aplica nada al hardware (eso lo hace rog-profile-sync
+    con pkexec, disparado desde main.js después de llamar a esta función).
+    Preserva "calibration" y "max_rpm" si ya existen y no vienen en `data`.
+    """
+    existing = _load_raw()
+    for key in ("calibration", "max_rpm"):
+        if key in existing and key not in data:
+            data[key] = existing[key]
+    data.setdefault("version", FAN_CURVES_SCHEMA_VERSION)
+    _save_raw(data)
+
+
+def load_profiles() -> dict:
+    """Lee solo la sección "profiles" del fan-curves.json.
+
+    Retorna un dict con los tres perfiles (performance/balanced/quiet).
+    Si falta alguno, se completa con DEFAULT_FAN_CURVES. Compatible con
+    el esquema v1 (sin "profiles") → en ese caso devuelve los defaults.
+    Contrato C3: la UI usa esta función para mostrar/editar curvas.
+    """
+    return load_all_config()["profiles"]
+
+
+def save_profiles(profiles: dict) -> None:
+    """Escribe la sección "profiles" en fan-curves.json.
+
+    Preserva cap_rpm global, calibration y max_rpm. Solo escribe; no aplica.
+    Valida que cada perfil tenga exactamente 8 puntos en temps y pwms, y que
+    las listas sean monótonas (temp creciente, pwm no decreciente).
+    """
+    import copy
+    # Validar antes de guardar
+    for prof_name, prof in profiles.items():
+        for fan in ("cpu", "gpu", "mid"):
+            curve = prof.get(fan)
+            if not isinstance(curve, dict):
+                continue
+            temps = curve.get("temps", [])
+            pwms = curve.get("pwms", [])
+            if len(temps) != 8 or len(pwms) != 8:
+                raise ValueError(
+                    f"Perfil {prof_name}/{fan}: se requieren exactamente 8 puntos "
+                    f"(temps={len(temps)}, pwms={len(pwms)})"
+                )
+            for i in range(1, 8):
+                if temps[i] <= temps[i - 1]:
+                    raise ValueError(
+                        f"Perfil {prof_name}/{fan}: temps no monótonas en pos {i} "
+                        f"({temps[i-1]} → {temps[i]})"
+                    )
+                if pwms[i] < pwms[i - 1]:
+                    raise ValueError(
+                        f"Perfil {prof_name}/{fan}: pwms no monótonas en pos {i} "
+                        f"({pwms[i-1]} → {pwms[i]})"
+                    )
+    existing = _load_raw()
+    existing["profiles"] = profiles
+    existing.setdefault("version", FAN_CURVES_SCHEMA_VERSION)
+    _save_raw(existing)
 
 
 def _store_section(name: str, profile: str | None = None) -> dict:
@@ -76,11 +280,12 @@ def load_schema_version() -> int:
 def guardian_status() -> dict:
     """Estado del guardián térmico para el stream NDJSON (solo lectura).
 
-    rog-thermal-guardian.sh (root) escribe GUARDIAN_STATE_FILE con
-    {"mode": "silence|normal|high", "reason": str, "updated": epoch}. Esta
-    app solo lo lee; nunca escribe ahí ni asume que el guardián está
-    instalado. Si el archivo falta o está viejo, "mode" es None (UI debe
-    tratarlo como "desconocido/no instalado", no como silencio).
+    rog-thermal-guardian.sh (root) escribe GUARDIAN_STATE_FILE con el
+    estado enriquecido (v12): mode, reason, updated, aggression,
+    thermal_state, cooldown_remaining, interventions. Esta app solo lo lee;
+    nunca escribe ahí ni asume que el guardián está instalado.
+    Si el archivo falta o está viejo, "mode" es None (UI debe tratarlo como
+    "desconocido/no instalado", no como silencio).
     """
     try:
         with open(GUARDIAN_STATE_FILE) as fh:
@@ -89,11 +294,16 @@ def guardian_status() -> dict:
         return {"mode": None, "running": False}
     updated = data.get("updated")
     fresh = isinstance(updated, (int, float)) and (time.time() - updated) < GUARDIAN_STATE_MAX_AGE
-    mode = data.get("mode") if fresh else None
+    if not fresh:
+        return {"mode": None, "running": False}
     return {
-        "mode": mode,
-        "running": bool(fresh),
-        "reason": data.get("reason") if fresh else None,
+        "mode": data.get("mode"),
+        "running": True,
+        "reason": data.get("reason"),
+        "aggression": data.get("aggression"),
+        "thermal_state": data.get("thermal_state"),
+        "cooldown_remaining": data.get("cooldown_remaining", 0),
+        "interventions": data.get("interventions", 0),
     }
 
 
@@ -175,3 +385,89 @@ class FanReader:
             "active_profile": self._active_profile,
             "guardian": guardian_status(),
         }
+
+
+# ------------------------------------------------------------------
+# CLI (retrocompatible): añade subcomandos sin cambiar los existentes.
+#
+# Subcomandos nuevos (v12):
+#   fans profiles                   → imprime los 3 perfiles como JSON
+#   fans profiles --profile <name>  → imprime solo ese perfil
+#   fans write-profiles <json>      → guarda perfiles (JSON por stdin o arg)
+#   fans defaults                   → imprime DEFAULT_FAN_CURVES completo
+# ------------------------------------------------------------------
+
+def _cli_profiles(args: list[str]) -> None:
+    """Imprime perfiles del fan-curves.json (defaults si no existe)."""
+    profile_filter = None
+    i = 0
+    while i < len(args):
+        if args[i] == "--profile" and i + 1 < len(args):
+            profile_filter = args[i + 1]
+            i += 2
+        else:
+            i += 1
+    profiles = load_profiles()
+    if profile_filter:
+        if profile_filter not in profiles:
+            print(json.dumps({"error": f"Perfil desconocido: {profile_filter}"}))
+            sys.exit(1)
+        print(json.dumps({profile_filter: profiles[profile_filter]}, indent=2))
+    else:
+        print(json.dumps(profiles, indent=2))
+
+
+def _cli_write_profiles(args: list[str]) -> None:
+    """Lee JSON de stdin o del primer arg y guarda los perfiles."""
+    if args:
+        raw = args[0]
+    else:
+        raw = sys.stdin.read()
+    try:
+        profiles = json.loads(raw)
+    except ValueError as e:
+        print(json.dumps({"error": f"JSON inválido: {e}"}))
+        sys.exit(1)
+    if not isinstance(profiles, dict):
+        print(json.dumps({"error": "Se espera un objeto JSON con perfiles"}))
+        sys.exit(1)
+    try:
+        save_profiles(profiles)
+    except ValueError as e:
+        print(json.dumps({"error": str(e)}))
+        sys.exit(1)
+    print(json.dumps({"ok": True, "saved_profiles": list(profiles.keys())}))
+
+
+def _cli_defaults(_args: list[str]) -> None:
+    """Imprime las curvas por defecto (DEFAULT_FAN_CURVES) como JSON."""
+    print(json.dumps(DEFAULT_FAN_CURVES, indent=2))
+
+
+def _cli_all_config(_args: list[str]) -> None:
+    """Imprime la config completa (caps + perfiles + version) como JSON."""
+    print(json.dumps(load_all_config(), indent=2))
+
+
+def main(argv: list[str] | None = None) -> None:
+    """Punto de entrada CLI: python -m rog_monitor.fans <subcommand>."""
+    args = argv if argv is not None else sys.argv[1:]
+    if not args:
+        print("Uso: fans profiles | write-profiles | defaults | all-config")
+        sys.exit(1)
+    cmd = args[0]
+    rest = args[1:]
+    dispatch = {
+        "profiles": _cli_profiles,
+        "write-profiles": _cli_write_profiles,
+        "defaults": _cli_defaults,
+        "all-config": _cli_all_config,
+    }
+    if cmd not in dispatch:
+        print(json.dumps({"error": f"Subcomando desconocido: {cmd}"}))
+        sys.exit(1)
+    dispatch[cmd](rest)
+
+
+if __name__ == "__main__":
+    main()

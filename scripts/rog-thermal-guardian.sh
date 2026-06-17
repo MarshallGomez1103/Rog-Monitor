@@ -13,8 +13,16 @@
 # emergencia, así que en escritorio con perfil performance los fans no
 # bajaban (idle alto horneado en la curva). Ahora, si la carga y la
 # temperatura son bajas, pide agresividad "quiet" aunque el perfil activo de
-# Windows^H^H ASUS sea performance — y al terminar carga, BAJA ESCALONADO
-# con histéresis temporal (no de golpe) para no oscilar.
+# ASUS sea performance — y al terminar carga, BAJA ESCALONADO con histéresis
+# temporal (no de golpe) para no oscilar.
+#
+# v12 (A-FANS): corrección de histéresis — cada escalón de bajada reinicia su
+# propio contador COOLDOWN (antes el segundo escalón se aplicaba STEP_DELAY
+# después del primero sin esperar COOLDOWN de nuevo). Esto evita que los fans
+# bajen de golpe en 2 escalones en COOLDOWN+STEP_DELAY s. Con la corrección,
+# cada escalón requiere COOLDOWN s de carga baja sostenida (≈ 20 s quiet,
+# 20 s balanced → 40 s totales para ir de high a silence). Esto es
+# exactamente el comportamiento "bajan pero no de golpe" que Marshall pidió.
 #
 # Integración con rog-profile-sync:
 #   - Este daemon NUNCA escribe directamente a pwm*_auto_pointN (eso lo hace
@@ -188,14 +196,34 @@ read_gpu_load() {
 # ------------------------------------------------------------------
 # Publicar estado para la UI (solo lectura para la app; este script es la
 # única fuente de escritura). Falla en silencio si no hay home de usuario.
+# Formato: {"mode": "silence|normal|high", "reason": str, "updated": epoch,
+#           "aggression": "quiet|balanced|performance",
+#           "thermal_state": "normal|fans-up|boost-down|pl-down",
+#           "cooldown_remaining": segundos hasta siguiente escalón (0 si no aplica),
+#           "interventions": N}
 # ------------------------------------------------------------------
 write_guardian_state() {
     local mode="$1" reason="$2"
+    local now; now="$(date +%s)"
+    local remaining=0
+    # Calcular segundos restantes hasta el próximo escalón (para la UI).
+    if (( LOW_SINCE > 0 && CURRENT_LOAD_LEVEL > 0 )); then
+        local elapsed=$(( now - LOW_SINCE ))
+        remaining=$(( COOLDOWN - elapsed ))
+        (( remaining < 0 )) && remaining=0
+    fi
+    local payload
+    printf -v payload \
+        '{"mode":"%s","reason":"%s","updated":%s,"aggression":"%s","thermal_state":"%s","cooldown_remaining":%s,"interventions":%s}' \
+        "$mode" "$reason" "$now" \
+        "${LOAD_LEVELS[$CURRENT_LOAD_LEVEL]:-balanced}" \
+        "${GUARDIAN_STATE:-normal}" \
+        "$remaining" \
+        "${INTERVENTION_COUNT:-0}"
     local f
     for f in /var/home/*/.local/share/rog-monitor /home/*/.local/share/rog-monitor; do
         [[ -d "$f" ]] || continue
-        printf '{"mode":"%s","reason":"%s","updated":%s}\n' \
-            "$mode" "$reason" "$(date +%s)" \
+        printf '%s\n' "$payload" \
             > "$f/thermal-guardian-state.json.tmp" 2>/dev/null &&
             mv -f "$f/thermal-guardian-state.json.tmp" "$f/thermal-guardian-state.json" 2>/dev/null
     done
@@ -326,17 +354,26 @@ evaluate_load() {
     if (( want > CURRENT_LOAD_LEVEL )); then
         # Subir agresividad: inmediato, sin esperar.
         CURRENT_LOAD_LEVEL="$want"
-        LOW_SINCE=0
+        LOW_SINCE=0          # cancelar cualquier cooldown en curso
         LAST_STEP_DOWN="$now"
     elif (( want < CURRENT_LOAD_LEVEL )); then
         if (( LOW_SINCE == 0 )); then
+            # Primera vez que detectamos que podríamos bajar: iniciar contador.
             LOW_SINCE="$now"
+            log "Carga/temp baja detectada — esperando ${COOLDOWN}s para bajar a ${LOAD_LEVELS[$((CURRENT_LOAD_LEVEL-1))]}"
         elif (( now - LOW_SINCE >= COOLDOWN && now - LAST_STEP_DOWN >= STEP_DELAY )); then
+            # COOLDOWN cumplido: dar un escalón de bajada.
             CURRENT_LOAD_LEVEL=$(( CURRENT_LOAD_LEVEL - 1 ))
             LAST_STEP_DOWN="$now"
-            log "Carga baja sostenida ${COOLDOWN}s+ — bajando un escalón a ${LOAD_LEVELS[$CURRENT_LOAD_LEVEL]}"
+            # IMPORTANTE (fix v12): cada escalón reinicia LOW_SINCE para que
+            # el SIGUIENTE escalón también espere COOLDOWN segundos de carga
+            # baja sostenida, no solo STEP_DELAY. Sin esto los fans bajan 2
+            # escalones en COOLDOWN+STEP_DELAY s (demasiado rápido).
+            LOW_SINCE="$now"
+            log "Carga baja sostenida ${COOLDOWN}s → escalón a ${LOAD_LEVELS[$CURRENT_LOAD_LEVEL]}"
         fi
     else
+        # want == CURRENT_LOAD_LEVEL: carga en el nivel actual → cancelar cooldown.
         LOW_SINCE=0
     fi
 
