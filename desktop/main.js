@@ -785,6 +785,8 @@ ipcMain.handle('game-session-baseline', async () =>
   runJsonModule('rog_monitor.game_session', ['baseline'], 8000));
 ipcMain.handle('game-session-delete', async (_e, id) =>
   runJsonModule('rog_monitor.game_session', ['delete', '--id', id], 8000));
+ipcMain.handle('game-session-note', async (_e, { id, text }) =>
+  runJsonModule('rog_monitor.game_session', ['note', '--id', id, '--text', String(text == null ? '' : text)], 8000));
 
 ipcMain.handle('export-benchmark', async (_e, { kind, text }) => {
   const stamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 16);

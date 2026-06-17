@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('rog', {
   gameSessionCompare: (a, b) => ipcRenderer.invoke('game-session-compare', { a, b }),
   gameSessionBaseline: () => ipcRenderer.invoke('game-session-baseline'),
   gameSessionDelete: (id) => ipcRenderer.invoke('game-session-delete', id),
+  gameSessionNote: (id, text) => ipcRenderer.invoke('game-session-note', { id, text }),
   listDisplays: () => ipcRenderer.invoke('list-displays'),
   setOverlay: (cfg) => ipcRenderer.invoke('set-overlay', cfg),
   getFpsLogging: () => ipcRenderer.invoke('get-fps-logging'),
