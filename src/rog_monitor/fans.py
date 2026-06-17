@@ -42,16 +42,25 @@ GUARDIAN_STATE_MAX_AGE = 30.0
 CAP_KEY = {"cpu_fan": "cpu", "gpu_fan": "gpu", "mid_fan": "mid"}
 
 # ------------------------------------------------------------------
-# Curvas por defecto v12 — más suaves que las agresivas de v11.
-# Fuente: HANDOFF.md (pendiente v11, fila "curvas exactas").
+# Curvas por defecto v13 — coherentes con profile_power (device_profiles.json).
 #
 # Formato por perfil y zona: {"temps": [t1..t8], "pwms": [p1..p8]}
-# quiet: fan APAGADO (pwm 0) por debajo de ~40 °C — zona de silencio real.
-# balanced: arranca suave desde 15-18 PWM a 35-48 °C (muy bajo).
-# performance: arranca en 30-35 PWM a 35 °C (sigue siendo audible pero
-#   mucho menos que las curvas viejas horneadas con idle en 6000-6300 RPM).
+# (8 puntos, temps estrictamente crecientes, pwms no decrecientes).
 #
-# Los tres perfiles deben quedar claramente distintos en cap y curva.
+# La curva sólo define el mapeo temperatura→PWM; la HISTÉRESIS (anti-rebote)
+# la aplica rog-thermal-guardian.sh en el otro repo y NO se toca aquí.
+#
+# Coherencia con el objetivo térmico de cada perfil (profile_power):
+#   - quiet     → thermal_target 75 °C: el ventilador llega a su tope ANTES de
+#                 ~75 °C (defiende activamente el techo más bajo) y arranca
+#                 APAGADO (pwm 0) por debajo de ~42 °C = silencio real. Como
+#                 el poder ya está bajo, rara vez necesita ese tope.
+#   - balanced  → thermal_target 82 °C: tope alrededor de ~82-84 °C.
+#   - performance → thermal_target 87 °C: tope alrededor de ~87-90 °C, deja
+#                 que el equipo trabaje caliente pero seguro hasta el techo de
+#                 fábrica.
+# Los cap_rpm bajan en quiet (más silencio) y suben en performance.
+# Los tres perfiles quedan claramente distintos en cap y curva.
 # ------------------------------------------------------------------
 DEFAULT_FAN_CURVES: dict = {
     "version": FAN_CURVES_SCHEMA_VERSION,
@@ -64,46 +73,46 @@ DEFAULT_FAN_CURVES: dict = {
         "performance": {
             "cap_rpm": {"cpu": 6500, "gpu": 6500, "mid": 6500},
             "gpu": {
-                "temps": [35, 45, 55, 62, 70, 75, 80, 83],
-                "pwms":  [30, 46, 70, 100, 150, 195, 235, 250],
+                "temps": [35, 45, 55, 62, 70, 78, 84, 88],
+                "pwms":  [30, 46, 70, 100, 150, 200, 240, 255],
             },
             "mid": {
-                "temps": [35, 45, 55, 65, 75, 82, 88, 95],
-                "pwms":  [30, 50, 80, 115, 158, 198, 232, 247],
+                "temps": [35, 45, 55, 65, 75, 83, 89, 95],
+                "pwms":  [30, 50, 80, 115, 158, 205, 240, 255],
             },
             "cpu": {
-                "temps": [35, 45, 55, 65, 75, 82, 88, 95],
-                "pwms":  [35, 55, 85, 120, 160, 200, 235, 247],
+                "temps": [35, 45, 55, 65, 75, 83, 89, 95],
+                "pwms":  [35, 55, 85, 120, 160, 205, 240, 255],
             },
         },
         "balanced": {
             "cap_rpm": {"cpu": 5500, "gpu": 5500, "mid": 5500},
             "gpu": {
-                "temps": [35, 48, 58, 64, 71, 76, 80, 83],
-                "pwms":  [15, 26, 46, 75, 112, 150, 185, 195],
+                "temps": [36, 46, 56, 63, 70, 76, 81, 84],
+                "pwms":  [15, 28, 50, 82, 122, 165, 200, 215],
             },
             "mid": {
-                "temps": [35, 48, 58, 68, 78, 84, 90, 95],
-                "pwms":  [16, 30, 52, 85, 122, 158, 190, 200],
+                "temps": [36, 46, 56, 66, 74, 80, 85, 90],
+                "pwms":  [16, 32, 56, 92, 132, 172, 205, 220],
             },
             "cpu": {
-                "temps": [35, 48, 58, 68, 78, 84, 90, 95],
-                "pwms":  [18, 32, 55, 88, 128, 165, 200, 210],
+                "temps": [36, 46, 56, 66, 74, 80, 85, 90],
+                "pwms":  [18, 35, 60, 95, 138, 178, 210, 225],
             },
         },
         "quiet": {
             "cap_rpm": {"cpu": 4500, "gpu": 4500, "mid": 4500},
             "gpu": {
-                "temps": [40, 52, 62, 68, 74, 78, 82, 85],
-                "pwms":  [0, 14, 26, 46, 72, 98, 128, 140],
+                "temps": [42, 52, 60, 66, 70, 73, 75, 78],
+                "pwms":  [0, 18, 38, 68, 100, 130, 155, 170],
             },
             "mid": {
-                "temps": [40, 52, 62, 70, 80, 85, 90, 95],
-                "pwms":  [0, 18, 32, 56, 84, 112, 140, 150],
+                "temps": [42, 52, 60, 67, 72, 75, 78, 82],
+                "pwms":  [0, 22, 44, 76, 110, 140, 165, 180],
             },
             "cpu": {
-                "temps": [40, 52, 62, 70, 80, 85, 90, 95],
-                "pwms":  [0, 16, 30, 52, 80, 110, 140, 150],
+                "temps": [42, 52, 60, 67, 72, 75, 78, 82],
+                "pwms":  [0, 20, 42, 74, 108, 140, 165, 180],
             },
         },
     },
