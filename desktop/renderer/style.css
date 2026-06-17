@@ -110,10 +110,12 @@ html[data-mode="dark"][data-theme="alba"] {
 }
 
 /* ---------- palettes (light) ----------
-   Paneles TINTADOS (no blanco plano): cada paleta usa su propia tinta.
-   Fondo = matiz saturado medio; panel = tono más claro pero SIEMPRE cromático;
-   hair = borde con carácter; chip = superficie de datos con tinte.
-   Ink/dim ajustados para contraste AAA en todo panel/bg de la paleta. */
+   Estrategia: fondo CASI BLANCO con un susurro del matiz del tema (luminancia
+   96-98%). El panel es blanco puro — las tarjetas se leen como superficies
+   elevadas sobre el lienzo (como Linear/Vercel). El acento vive saturado y
+   profundo (contraste AAA ≥ 7:1 sobre panel/bg), no en el fondo.
+   Todos los pares ink/panel e ink/bg: AAA. accent/panel: ≥ 7:1 AAA.
+   dim/panel: AA+ (≥ 4.5:1, mayoría AAA). */
 html[data-mode="light"] {
   --ink: #1a1e25;
   --dim: #5a636f;
@@ -130,77 +132,77 @@ html[data-mode="light"] {
      color-mix al 18% con transparent → casi invisibles, solo orientativas. */
   --chart-grid: color-mix(in srgb, var(--hair) 18%, transparent);
 }
-/* Magma claro — ladrillo quemado sobre crema volcánica */
+/* Magma claro — ladrillo ascua sobre lienzo casi blanco con susurro rojizo */
 html[data-mode="light"][data-theme="magma"] {
-  --bg: #f5e0d6; --panel: #fceee6; --hair: #d4927a;
-  --accent: #b83318; --accent2: #7a1e08; --chip: #f0d0c0;
-  --ink: #250d06; --dim: #7a4030;
+  --bg: #fdf5f3; --panel: #ffffff; --hair: #d4907c;
+  --accent: #9e2a0f; --accent2: #c4420a; --chip: #f8e8e4;
+  --ink: #1e0b07; --dim: #6e3a2a;
 }
-/* Nébula clara — porcelana violácea con acento púrpura intenso */
+/* Nébula clara — lienzo porcelana con acento violeta espacial profundo */
 html[data-mode="light"][data-theme="nebula"] {
-  --bg: #e8ddf7; --panel: #f4eefe; --hair: #b89ee0;
-  --accent: #5c1fb8; --accent2: #3d1490; --chip: #dcd0f5;
-  --ink: #1a0a30; --dim: #5a3a8a;
+  --bg: #f8f5fe; --panel: #ffffff; --hair: #b090d8;
+  --accent: #5c1fb8; --accent2: #3d1490; --chip: #ede5fb;
+  --ink: #180830; --dim: #5a3a8a;
 }
-/* Océano claro — turquesa profundo sobre arrecife, nada pastel */
+/* Océano claro — superficie casi blanca teñida de teal, acento jade profundo */
 html[data-mode="light"][data-theme="oceano"] {
-  --bg: #9fd6cd; --panel: #ddf3ee; --hair: #2f8f80;
-  --accent: #036358; --accent2: #02403a; --chip: #a6dcd2;
-  --ink: #031c18; --dim: #1d5a4f;
+  --bg: #f2f9f8; --panel: #ffffff; --hair: #80c4bc;
+  --accent: #0a5f56; --accent2: #086358; --chip: #e0f4f1;
+  --ink: #031c18; --dim: #2e6a62;
 }
-/* Glaciar claro — azul ártico saturado sobre hielo, con punch */
+/* Glaciar claro — blanco ártico con susurro celeste, acento azul profundo */
 html[data-mode="light"][data-theme="glaciar"] {
-  --bg: #a9cdef; --panel: #e2eefb; --hair: #2f6fb0;
-  --accent: #0b407e; --accent2: #062a56; --chip: #aecdec;
-  --ink: #04102a; --dim: #1c4878;
+  --bg: #f2f6fc; --panel: #ffffff; --hair: #88b8e0;
+  --accent: #0b3e7a; --accent2: #0c509e; --chip: #dce9f8;
+  --ink: #04102a; --dim: #2a4e78;
 }
-/* Reactor claro — verde sala de máquinas, intenso y mineral */
+/* Reactor claro — lienzo blanco con tinte vegetal, acento verde sala-de-máquinas */
 html[data-mode="light"][data-theme="reactor"] {
-  --bg: #a9dd95; --panel: #e4f6da; --hair: #3a8a3c;
-  --accent: #0a5222; --accent2: #06330f; --chip: #aedb98;
-  --ink: #03150a; --dim: #245024;
+  --bg: #f4fbf2; --panel: #ffffff; --hair: #88c878;
+  --accent: #1a6030; --accent2: #2a8040; --chip: #dcf4d4;
+  --ink: #03150a; --dim: #2e6040;
 }
-/* Grafito claro — acero frío con acento antracita, elegante y serio */
+/* Grafito claro — acero frío neutro, acento antracita, sobrio y elegante */
 html[data-mode="light"][data-theme="grafito"] {
-  --bg: #e2e5e9; --panel: #f0f2f4; --hair: #aab0ba;
-  --accent: #26303c; --accent2: #454e5a; --chip: #d4d8de;
+  --bg: #f4f5f6; --panel: #ffffff; --hair: #b0b6be;
+  --accent: #26303c; --accent2: #454e5a; --chip: #e4e6e9;
   --ink: #0c1018; --dim: #4a5260;
 }
-/* Neón claro — laguna profunda con destello magenta */
+/* Neón claro — lienzo blanco con halo cian, acento laguna profunda + magenta */
 html[data-mode="light"][data-theme="neon"] {
-  --bg: #d4edf0; --panel: #e6f6f9; --hair: #7acad4;
-  --accent: #055e6e; --accent2: #9c0f88; --chip: #bee4ea;
+  --bg: #f2fbfc; --panel: #ffffff; --hair: #78c8d4;
+  --accent: #0a5c6e; --accent2: #901080; --chip: #d8f4f8;
   --ink: #021620; --dim: #2e6a74;
 }
-/* Atardecer claro — naranja horneado sobre melocotón dorado */
+/* Atardecer claro — marfil con calor dorado, acento naranja horneado y mora */
 html[data-mode="light"][data-theme="atardecer"] {
-  --bg: #f9e4cc; --panel: #fef3e4; --hair: #e0a870;
-  --accent: #aa4c08; --accent2: #90264a; --chip: #f4d4a8;
-  --ink: #200800; --dim: #7a4018;
+  --bg: #fdf7f1; --panel: #ffffff; --hair: #d49060;
+  --accent: #923e06; --accent2: #822050; --chip: #fae6cc;
+  --ink: #1e0800; --dim: #6e3a14;
 }
-/* Neon Nights claro — lila eléctrico sobre heliotropo suave */
+/* Neon Nights claro — blanco con velo lila synthwave, acento magenta eléctrico */
 html[data-mode="light"][data-theme="neon-nights"] {
-  --bg: #f0d6f5; --panel: #faeeff; --hair: #cc88e8;
-  --accent: #8c0878; --accent2: #0868b0; --chip: #e4c2f0;
-  --ink: #1a0022; --dim: #6a1a60;
+  --bg: #fdf2ff; --panel: #ffffff; --hair: #c880e0;
+  --accent: #80066e; --accent2: #0660a8; --chip: #f4d8fc;
+  --ink: #1a0022; --dim: #68185c;
 }
-/* Cyberpunk claro — mostaza sobre cuarzo ahumado */
+/* Cyberpunk claro — crema eléctrica, acento mostaza oscura y cian abismo */
 html[data-mode="light"][data-theme="cyberpunk"] {
-  --bg: #e8e4c8; --panel: #f5f2dc; --hair: #c0b84a;
-  --accent: #6a5c00; --accent2: #005a6a; --chip: #dcd8a8;
-  --ink: #120e00; --dim: #5a5020;
+  --bg: #fdfde8; --panel: #ffffff; --hair: #b8b040;
+  --accent: #5a4e00; --accent2: #005060; --chip: #f4f0c0;
+  --ink: #120e00; --dim: #524800;
 }
-/* Aurora clara — menta glacial con acento teal y violeta */
+/* Aurora clara — lienzo borealmente blanco, acento teal nórdico y violeta */
 html[data-mode="light"][data-theme="aurora"] {
-  --bg: #cce8e4; --panel: #dff5f2; --hair: #70c4b4;
-  --accent: #066858; --accent2: #5a30b0; --chip: #b8deda;
-  --ink: #031412; --dim: #2e6a5a;
+  --bg: #f0fbf9; --panel: #ffffff; --hair: #70c0b0;
+  --accent: #056048; --accent2: #5a30b0; --chip: #d4f0ea;
+  --ink: #031412; --dim: #2a5c4c;
 }
-/* Alba clara — marfil porcelana con oro cálido y rosa durazno (IMPONENTE) */
+/* Alba clara — marfil porcelana cálido, acento oro antiguo y durazno profundo */
 html[data-mode="light"][data-theme="alba"] {
-  --bg: #f8f2e6; --panel: #fdf8ef; --hair: #d4b87a;
-  --accent: #8a5c00; --accent2: #9e3040; --chip: #f0e4c4;
-  --ink: #1c1000; --dim: #6a4a20;
+  --bg: #fdf8f0; --panel: #ffffff; --hair: #c8a86a;
+  --accent: #7a4e00; --accent2: #8a2a38; --chip: #f5e8c8;
+  --ink: #1c1000; --dim: #604018;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
