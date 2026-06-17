@@ -14,12 +14,25 @@
   --crit: #e23b3b;
 }
 
+/* ---------- niveles de temperatura (A2, contrato con el JS) ----------
+   --lvl-cold/--lvl-ok/--lvl-hot/--lvl-crit alimentan el glow (text-shadow)
+   de los números grandes (#cpu-temp/#gpu-temp) según la clase que YA pone
+   app.js: t-cold / t-normal / t-hot / t-critical. Universal: el mismo
+   azul/verde/ámbar/rojo en TODOS los temas — NUNCA --accent. Solo cambian
+   entre modo oscuro/claro para verse bien sobre cada fondo. Definidos abajo
+   en los bloques [data-mode]; consumidos en styles/neon.css. */
+
 /* ---------- palettes (dark) ---------- */
 html[data-mode="dark"] {
   --ink: #e2e6ec;
   --dim: #8b94a1;
   --glow: transparent;
   color-scheme: dark;
+  /* glow de nivel — modo oscuro: bloom saturado, máxima intensidad */
+  --lvl-cold: #4db8ff;
+  --lvl-ok:   #3ce087;
+  --lvl-hot:  #ffb13c;
+  --lvl-crit: #ff4d4d;
 }
 /* Magma — rojo volcánico sobre negro carbón (firma ROG) */
 html[data-mode="dark"][data-theme="magma"] {
@@ -104,6 +117,12 @@ html[data-mode="light"] {
   --dim: #5a636f;
   --glow: transparent;
   color-scheme: light;
+  /* glow de nivel — modo claro: más oscuro/saturado que el de noche para que
+     siga leyéndose "neón" sobre fondo claro sin perder contraste con --ink */
+  --lvl-cold: #0a6dc2;
+  --lvl-ok:   #157a3f;
+  --lvl-hot:  #b35a00;
+  --lvl-crit: #c01818;
 }
 /* Magma claro — ladrillo quemado sobre crema volcánica */
 html[data-mode="light"][data-theme="magma"] {
@@ -117,23 +136,23 @@ html[data-mode="light"][data-theme="nebula"] {
   --accent: #5c1fb8; --accent2: #3d1490; --chip: #dcd0f5;
   --ink: #1a0a30; --dim: #5a3a8a;
 }
-/* Océano claro — jade cristalino sobre espuma marina */
+/* Océano claro — turquesa profundo sobre arrecife, nada pastel */
 html[data-mode="light"][data-theme="oceano"] {
-  --bg: #cde8e4; --panel: #e0f5f2; --hair: #7dbdb4;
-  --accent: #0a6e63; --accent2: #054d44; --chip: #bbdcd7;
-  --ink: #041c1a; --dim: #3a7068;
+  --bg: #9fd6cd; --panel: #ddf3ee; --hair: #2f8f80;
+  --accent: #036358; --accent2: #02403a; --chip: #a6dcd2;
+  --ink: #031c18; --dim: #1d5a4f;
 }
-/* Glaciar claro — acero celeste sobre hielo azulado */
+/* Glaciar claro — azul ártico saturado sobre hielo, con punch */
 html[data-mode="light"][data-theme="glaciar"] {
-  --bg: #d4e6f5; --panel: #e8f3fc; --hair: #87b8e0;
-  --accent: #1656a0; --accent2: #0d3d78; --chip: #c2d8ef;
-  --ink: #060f1e; --dim: #305a80;
+  --bg: #a9cdef; --panel: #e2eefb; --hair: #2f6fb0;
+  --accent: #0b407e; --accent2: #062a56; --chip: #aecdec;
+  --ink: #04102a; --dim: #1c4878;
 }
-/* Reactor claro — verde hoja intensa sobre fondo esmeralda suave */
+/* Reactor claro — verde sala de máquinas, intenso y mineral */
 html[data-mode="light"][data-theme="reactor"] {
-  --bg: #d6edce; --panel: #ebf8e5; --hair: #7ec47a;
-  --accent: #126830; --accent2: #0a4820; --chip: #c2e4b8;
-  --ink: #041008; --dim: #3a6e38;
+  --bg: #a9dd95; --panel: #e4f6da; --hair: #3a8a3c;
+  --accent: #0a5222; --accent2: #06330f; --chip: #aedb98;
+  --ink: #03150a; --dim: #245024;
 }
 /* Grafito claro — acero frío con acento antracita, elegante y serio */
 html[data-mode="light"][data-theme="grafito"] {

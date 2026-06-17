@@ -7,6 +7,15 @@
 #   3. Al enfriar → revertir suavemente.
 #   FALLA-SEGURO: si no puede leer temperatura → sube fans, NO sube potencia.
 #
+# v11 (A1): además del techo térmico, el guardián ahora MODULA la
+# agresividad de fans según CARGA (uso CPU/GPU) + TEMPERATURA + TENDENCIA,
+# con tres modos: silence/normal/high. Antes solo reaccionaba al techo de
+# emergencia, así que en escritorio con perfil performance los fans no
+# bajaban (idle alto horneado en la curva). Ahora, si la carga y la
+# temperatura son bajas, pide agresividad "quiet" aunque el perfil activo de
+# Windows^H^H ASUS sea performance — y al terminar carga, BAJA ESCALONADO
+# con histéresis temporal (no de golpe) para no oscilar.
+#
 # Integración con rog-profile-sync:
 #   - Este daemon NUNCA escribe directamente a pwm*_auto_pointN (eso lo hace
 #     rog-profile-sync.sh). Solo modifica throttle_thermal_policy para pedir
@@ -16,13 +25,27 @@
 #     (/sys/firmware/acpi/platform_profile) — cuando el guardián quiere más
 #     ventiladores, escribe "performance" ahí y deja que rog-profile-sync haga
 #     su trabajo sin pelea de daemons por el mismo sysfs.
+#   - Publica su estado (modo silence/normal/high + motivo) en un JSON de
+#     SOLO LECTURA para la app: ~/.local/share/rog-monitor/
+#     thermal-guardian-state.json (glob de home como rog-profile-sync.sh,
+#     porque este script corre como root). La app (fans.py:guardian_status)
+#     lo lee para mostrarlo en el stream NDJSON; nunca lo escribe.
 #
 # Configuración (variables de entorno o argumentos):
-#   ROG_THERMAL_CEILING   — techo en °C (default 83, máx firmware 87)
-#   ROG_THERMAL_WARN      — umbral de alerta en °C (default ceiling-5)
-#   ROG_THERMAL_INTERVAL  — intervalo del loop en segundos (default 2)
-#   ROG_THERMAL_DB_PATH   — ruta a nv_dynamic_boost sysfs
-#   ROG_THERMAL_PL2_PATH  — ruta a ppt_pl2_sppt sysfs
+#   ROG_THERMAL_CEILING     — techo en °C (default 83, máx firmware 87)
+#   ROG_THERMAL_WARN        — umbral de alerta en °C (default ceiling-5)
+#   ROG_THERMAL_INTERVAL    — intervalo del loop en segundos (default 2)
+#   ROG_THERMAL_DB_PATH     — ruta a nv_dynamic_boost sysfs
+#   ROG_THERMAL_PL2_PATH    — ruta a ppt_pl2_sppt sysfs
+#   ROG_THERMAL_LOAD_IDLE   — % de carga (CPU o GPU) bajo el cual se considera
+#                             "idle" para entrar en modo silencio (default 15)
+#   ROG_THERMAL_LOAD_HIGH   — % de carga desde el cual se considera "carga
+#                             alta" y se pide modo alto (default 60)
+#   ROG_THERMAL_COOLDOWN    — segundos que debe mantenerse la carga/temp baja
+#                             ANTES de empezar a bajar un escalón (default 20)
+#   ROG_THERMAL_STEP_DELAY  — segundos entre cada escalón de bajada una vez
+#                             iniciada (default 10) — bajada ESCALONADA, no
+#                             de golpe, para que no "rebote" para arriba.
 #
 # Uso:
 #   rog-thermal-guardian.sh [--ceiling 83] [--warn 78] [--interval 2]
@@ -39,12 +62,20 @@ set -euo pipefail
 CEILING="${ROG_THERMAL_CEILING:-83}"
 INTERVAL="${ROG_THERMAL_INTERVAL:-2}"
 WARN_DELTA=5
+LOAD_IDLE="${ROG_THERMAL_LOAD_IDLE:-15}"
+LOAD_HIGH="${ROG_THERMAL_LOAD_HIGH:-60}"
+COOLDOWN="${ROG_THERMAL_COOLDOWN:-20}"
+STEP_DELAY="${ROG_THERMAL_STEP_DELAY:-10}"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --ceiling)  CEILING="$2";  shift 2 ;;
         --warn)     WARN_OFFSET="$2"; shift 2 ;;
         --interval) INTERVAL="$2"; shift 2 ;;
+        --load-idle) LOAD_IDLE="$2"; shift 2 ;;
+        --load-high) LOAD_HIGH="$2"; shift 2 ;;
+        --cooldown) COOLDOWN="$2"; shift 2 ;;
+        --step-delay) STEP_DELAY="$2"; shift 2 ;;
         --) shift; break ;;
         *) echo "Argumento desconocido: $1" >&2; exit 1 ;;
     esac
@@ -114,6 +145,60 @@ read_gpu_temp() {
 
     # No se pudo leer temperatura
     echo ""
+}
+
+# ------------------------------------------------------------------
+# Leer carga CPU/GPU (falla-segura: "" si no se puede → se trata como ALTA,
+# nunca como idle, para no relajar fans por error de lectura)
+# ------------------------------------------------------------------
+PREV_CPU_TOTAL=""
+PREV_CPU_IDLE=""
+
+read_cpu_load() {
+    # % de uso CPU total desde /proc/stat (delta entre dos lecturas).
+    local line rest user nice system idle iowait irq softirq steal
+    read -r line < /proc/stat 2>/dev/null || { echo ""; return; }
+    # shellcheck disable=SC2034
+    read -r _ user nice system idle iowait irq softirq steal rest <<< "$line"
+    local total=$(( user + nice + system + idle + iowait + irq + softirq + steal ))
+    local idle_all=$(( idle + iowait ))
+
+    if [[ -n "$PREV_CPU_TOTAL" && -n "$PREV_CPU_IDLE" ]]; then
+        local dtotal=$(( total - PREV_CPU_TOTAL ))
+        local didle=$(( idle_all - PREV_CPU_IDLE ))
+        PREV_CPU_TOTAL="$total"; PREV_CPU_IDLE="$idle_all"
+        if (( dtotal > 0 )); then
+            echo $(( 100 - (didle * 100 / dtotal) ))
+            return 0
+        fi
+    fi
+    PREV_CPU_TOTAL="$total"; PREV_CPU_IDLE="$idle_all"
+    echo ""
+}
+
+read_gpu_load() {
+    if command -v nvidia-smi &>/dev/null; then
+        local u
+        u=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -d ' ')
+        [[ "$u" =~ ^[0-9]+$ ]] && { echo "$u"; return 0; }
+    fi
+    echo ""
+}
+
+# ------------------------------------------------------------------
+# Publicar estado para la UI (solo lectura para la app; este script es la
+# única fuente de escritura). Falla en silencio si no hay home de usuario.
+# ------------------------------------------------------------------
+write_guardian_state() {
+    local mode="$1" reason="$2"
+    local f
+    for f in /var/home/*/.local/share/rog-monitor /home/*/.local/share/rog-monitor; do
+        [[ -d "$f" ]] || continue
+        printf '{"mode":"%s","reason":"%s","updated":%s}\n' \
+            "$mode" "$reason" "$(date +%s)" \
+            > "$f/thermal-guardian-state.json.tmp" 2>/dev/null &&
+            mv -f "$f/thermal-guardian-state.json.tmp" "$f/thermal-guardian-state.json" 2>/dev/null
+    done
 }
 
 # ------------------------------------------------------------------
@@ -188,7 +273,80 @@ set_fan_aggression() {
 }
 
 # ------------------------------------------------------------------
-# Estado del guardián (para evitar oscilaciones)
+# Modulación por carga: silence/normal/high con bajada escalonada
+# ------------------------------------------------------------------
+# Niveles ordenados de menos a más agresivo, para poder "bajar un escalón"
+# en vez de saltar directo a silencio (evita el rebote típico cuando la
+# temperatura aún no bajó aunque la carga ya terminó).
+LOAD_LEVELS=(quiet balanced performance)
+LOAD_MODE_NAMES=(silence normal high)
+
+level_index() {
+    local lvl="$1" i
+    for i in "${!LOAD_LEVELS[@]}"; do
+        [[ "${LOAD_LEVELS[$i]}" == "$lvl" ]] && { echo "$i"; return 0; }
+    done
+    echo "1"  # balanced/normal por defecto
+}
+
+CURRENT_LOAD_LEVEL=1   # índice en LOAD_LEVELS — arranca en "balanced/normal"
+LOW_SINCE=0             # epoch desde que carga+temp llevan bajas sin interrupción
+LAST_STEP_DOWN=0        # epoch del último escalón de bajada aplicado
+
+# Decide el nivel DESEADO según carga+temp (sin histéresis); la histéresis
+# de bajada se aplica en evaluate_load() comparando contra CURRENT_LOAD_LEVEL.
+desired_load_level() {
+    local cpu_load="$1" gpu_load="$2" temp="$3"
+
+    # Falla-segura: cualquier lectura ausente → pedir el nivel más agresivo.
+    if [[ -z "$cpu_load" || -z "$gpu_load" || -z "$temp" ]]; then
+        echo 2; return
+    fi
+
+    local max_load=$(( cpu_load > gpu_load ? cpu_load : gpu_load ))
+
+    if (( temp >= WARN_TEMP || max_load >= LOAD_HIGH )); then
+        echo 2   # performance/high
+    elif (( max_load <= LOAD_IDLE && temp < (WARN_TEMP - 10) )); then
+        echo 0   # quiet/silence — frío e idle de verdad
+    else
+        echo 1   # balanced/normal
+    fi
+}
+
+# evaluate_load <cpu_load> <gpu_load> <temp> — aplica histéresis temporal:
+# subir es INMEDIATO (proteger primero); bajar requiere COOLDOWN segundos
+# continuos de "podríamos bajar" y luego un escalón cada STEP_DELAY s (nunca
+# de golpe a silencio).
+evaluate_load() {
+    local cpu_load="$1" gpu_load="$2" temp="$3" now want
+    now=$(date +%s)
+    want="$(desired_load_level "$cpu_load" "$gpu_load" "$temp")"
+
+    if (( want > CURRENT_LOAD_LEVEL )); then
+        # Subir agresividad: inmediato, sin esperar.
+        CURRENT_LOAD_LEVEL="$want"
+        LOW_SINCE=0
+        LAST_STEP_DOWN="$now"
+    elif (( want < CURRENT_LOAD_LEVEL )); then
+        if (( LOW_SINCE == 0 )); then
+            LOW_SINCE="$now"
+        elif (( now - LOW_SINCE >= COOLDOWN && now - LAST_STEP_DOWN >= STEP_DELAY )); then
+            CURRENT_LOAD_LEVEL=$(( CURRENT_LOAD_LEVEL - 1 ))
+            LAST_STEP_DOWN="$now"
+            log "Carga baja sostenida ${COOLDOWN}s+ — bajando un escalón a ${LOAD_LEVELS[$CURRENT_LOAD_LEVEL]}"
+        fi
+    else
+        LOW_SINCE=0
+    fi
+
+    set_fan_aggression "${LOAD_LEVELS[$CURRENT_LOAD_LEVEL]}"
+    write_guardian_state "${LOAD_MODE_NAMES[$CURRENT_LOAD_LEVEL]}" \
+        "cpu=${cpu_load:-?}% gpu=${gpu_load:-?}% temp=${temp:-?}C"
+}
+
+# ------------------------------------------------------------------
+# Estado del guardián (emergencia térmica — para evitar oscilaciones)
 # ------------------------------------------------------------------
 GUARDIAN_STATE="normal"   # "normal" | "fans-up" | "boost-down" | "pl-down"
 ORIGINAL_DB=""
@@ -337,5 +495,16 @@ trap cleanup SIGTERM SIGINT SIGHUP
 while true; do
     TEMP="$(read_gpu_temp)"
     handle_temp "$TEMP"
+    # La modulación por carga solo decide la agresividad de fans cuando NO
+    # hay una emergencia térmica activa — durante "fans-up"/"boost-down"/
+    # "pl-down" handle_temp ya forzó "performance" y eso manda (falla-segura:
+    # nunca relajar fans mientras el techo está en juego).
+    if [[ "$GUARDIAN_STATE" == "normal" ]]; then
+        CPU_LOAD="$(read_cpu_load)"
+        GPU_LOAD="$(read_gpu_load)"
+        evaluate_load "$CPU_LOAD" "$GPU_LOAD" "$TEMP"
+    else
+        write_guardian_state "high" "emergencia térmica: ${GUARDIAN_STATE}"
+    fi
     sleep "$INTERVAL"
 done

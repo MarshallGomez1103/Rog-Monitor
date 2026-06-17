@@ -39,6 +39,10 @@
         'dash.col_left':        'Columna izquierda',
         'dash.col_right':       'Columna derecha',
         'dash.drag_here':       'Suelta aquí',
+        'dash.edit_on':         'MODO EDICIÓN: ACTIVO',
+        'dash.edit_off':        'MODO EDICIÓN',
+        'dash.edit_title_on':   'Modo edición activo: arrastra, oculta o reordena bloques. Clic para salir.',
+        'dash.edit_title_off':  'Activa el modo edición para poder arrastrar/ocultar/reordenar bloques.',
       },
       en: {
         'dash.handle_title':    'Drag to move',
@@ -53,12 +57,17 @@
         'dash.col_left':        'Left column',
         'dash.col_right':       'Right column',
         'dash.drag_here':       'Drop here',
+        'dash.edit_on':         'EDIT MODE: ON',
+        'dash.edit_off':        'EDIT MODE',
+        'dash.edit_title_on':   'Edit mode active: drag, hide or reorder blocks. Click to exit.',
+        'dash.edit_title_off':  'Turn on edit mode to drag/hide/reorder blocks.',
       },
     });
   }
 
   /* ---- constantes ---- */
   const STORAGE_KEY = 'dashboardLayout';
+  const EDIT_MODE_KEY = 'dashboardEditMode';
 
   /* Orden y columna por defecto (data-block → columna) */
   const DEFAULT_ORDER = [
@@ -90,6 +99,18 @@
   let layout = loadLayout();   // { order: [{key, col}], hidden: Set<key> }
   let dragSrc = null;          // article siendo arrastrado
   let dropIndicator = null;    // div línea de inserción
+  let editMode = loadEditMode(); // true: se puede arrastrar/ocultar/reordenar
+
+  /* ---- modo edición: persistencia ---- */
+  function loadEditMode() {
+    try { return localStorage.getItem(EDIT_MODE_KEY) === '1'; }
+    catch (_) { return false; }
+  }
+
+  function saveEditMode() {
+    try { localStorage.setItem(EDIT_MODE_KEY, editMode ? '1' : '0'); }
+    catch (_) { /* ignorar */ }
+  }
 
   /* ---- persistencia ---- */
   function loadLayout() {
@@ -164,7 +185,10 @@
       handle.setAttribute('title', t('dash.handle_title', 'Arrastrar para mover'));
       handle.setAttribute('aria-label', t('dash.handle_title', 'Arrastrar para mover'));
       handle.innerHTML = '&#9776;'; /* ≡ */
-      handle.addEventListener('mousedown', () => { art.draggable = true; });
+      handle.addEventListener('mousedown', () => {
+        if (!editMode) return; // sin modo edición, el handle no arrastra nada
+        art.draggable = true;
+      });
 
       /* Botón ocultar (×) */
       const hideBtn = document.createElement('button');
@@ -174,6 +198,7 @@
       hideBtn.innerHTML = '&#10005;'; /* × */
       hideBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (!editMode) return;
         hideBlock(key);
       });
 
@@ -323,6 +348,7 @@
   }
 
   function onDragStart(e) {
+    if (!editMode) { e.preventDefault(); return; }
     dragSrc = this;
     dragSrc.classList.add('dash-dragging');
     e.dataTransfer.effectAllowed = 'move';
@@ -523,6 +549,49 @@
     body.appendChild(list);
   }
 
+  /* ---- modo edición: aplicar / alternar ---- */
+  function applyEditModeVisual() {
+    /* Contrato CSS con A2: data-edit-mode="on|off" en <html>.
+     * Cuando está "off", .dash-block-ctrl debe permanecer oculta SIEMPRE
+     * (sin importar :hover) y los bloques no deben mostrar cursor de arrastre. */
+    document.documentElement.dataset.editMode = editMode ? 'on' : 'off';
+    const btn = document.getElementById('edit-mode-btn');
+    if (btn) {
+      btn.classList.toggle('active', editMode);
+      btn.setAttribute('aria-pressed', editMode ? 'true' : 'false');
+      btn.textContent = t(editMode ? 'dash.edit_on' : 'dash.edit_off', editMode ? 'MODO EDICIÓN: ACTIVO' : 'MODO EDICIÓN');
+      btn.title = t(editMode ? 'dash.edit_title_on' : 'dash.edit_title_off',
+        editMode ? 'Modo edición activo' : 'Activa el modo edición');
+    }
+  }
+
+  function setEditMode(on) {
+    editMode = !!on;
+    saveEditMode();
+    applyEditModeVisual();
+    if (!editMode) {
+      /* Salir de edición: cancelar cualquier draggable pendiente */
+      document.querySelectorAll('[data-block]').forEach((a) => { a.draggable = false; });
+      hideDropIndicator();
+    }
+  }
+
+  function addEditModeButton() {
+    if (document.getElementById('edit-mode-btn')) return;
+    const controls = document.querySelector('.controls');
+    if (!controls) return;
+
+    const btn = document.createElement('button');
+    btn.id = 'edit-mode-btn';
+    btn.className = 'ghost dash-edit-toggle';
+    btn.setAttribute('data-i18n', 'dash.edit_off');
+    btn.setAttribute('aria-pressed', 'false');
+
+    btn.addEventListener('click', () => setEditMode(!editMode));
+
+    controls.insertBefore(btn, controls.firstChild);
+  }
+
   /* ---- botón en topbar ---- */
   function addTopbarButton() {
     /* El botón #dash-btn lo añadimos al principio de .controls */
@@ -557,6 +626,7 @@
           b.setAttribute('title', t('dash.hide_title', 'Ocultar este bloque')));
         /* Re-renderizar panel */
         updateConfigPanel();
+        applyEditModeVisual();
       });
     }
   }
@@ -581,12 +651,14 @@
   function init() {
     sanitizeLayout();
     injectBlockControls();
+    addEditModeButton();
     addTopbarButton();
     buildConfigPanel();
     applyLayout();
     renumber();
     initDragAndDrop();
     setupI18nHook();
+    applyEditModeVisual();
   }
 
   /* Esperar a que el DOM esté listo */

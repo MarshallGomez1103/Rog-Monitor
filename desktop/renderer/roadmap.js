@@ -373,8 +373,11 @@ function openRoadmapModal() {
   const modal = document.getElementById('roadmap-modal');
   if (!modal) return;
 
-  // Rellenar y cablear la primera vez (o si se vacía)
-  if (!modal.querySelector('.modal-card')) {
+  // Defensa adicional: si por cualquier motivo (orden de scripts, render
+  // anterior fallido, etc.) el modal-card no existe o quedó vacío, lo
+  // rellenamos aquí también — no solo al cargar el script.
+  const card = modal.querySelector('.modal-card');
+  if (!card || !card.querySelector('.roadmap-timeline')) {
     _fillModal();
     _wireExpandToggle(modal);
   }
@@ -392,8 +395,11 @@ function closeRoadmapModal() {
    ============================================================ */
 
 (function initRoadmap() {
-  // Rellenar el modal inmediatamente para que el HTML sea válido desde el primer instante
-  _fillModal();
+  // Rellenar el modal inmediatamente para que el HTML sea válido desde el primer instante.
+  // Envuelto en try/catch: si algo más abajo en este IIFE lanzara una excepción
+  // (p. ej. window.i18n.register con firma distinta) no debe dejar el modal vacío
+  // ni impedir que el botón de la topbar quede cableado.
+  try { _fillModal(); } catch (e) { /* se reintenta en openRoadmapModal() */ }
 
   // Botón del topbar
   const btn = document.getElementById('roadmap-btn');

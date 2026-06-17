@@ -12,63 +12,7 @@
   // window.t/window.i18n SIEMPRE existen (stub seguro de A1 si aún no implementa).
   const t = (key, vars) => (typeof window.t === 'function' ? window.t(key, vars) : key);
 
-  /* ---- i18n: registra las claves propias (namespace power.*) ---- */
-  if (window.i18n && typeof window.i18n.register === 'function') {
-    window.i18n.register({
-      es: {
-        'power.clockOffsets': 'OFFSETS DE RELOJ GPU (NVML)',
-        'power.offsetCore': 'Offset clock núcleo GPU',
-        'power.offsetMem': 'Offset clock memoria GPU',
-        'power.factoryZero': 'fábrica: 0 MHz',
-        'power.safeRange': 'rango seguro',
-        'power.advancedRange': 'avanzado (mayor riesgo)',
-        'power.nvmlUnavailable': 'NVML no disponible: no se pueden leer/aplicar offsets de GPU en este equipo.',
-        'power.consentTitle': 'OFFSETS DE RELOJ GPU — Confirmar',
-        'power.consentOverclock': 'Subir el offset (overclock) puede causar artefactos visuales, cuelgues y, en casos extremos, DAÑAR tu GPU de forma permanente.',
-        'power.consentUndervolt': 'Bajar demasiado el offset (undervolt agresivo) puede volver el sistema INESTABLE: pantallazo, cuelgue o reinicio. Es recuperable reiniciando el equipo.',
-        'power.consentRecover': 'Si el sistema se cuelga tras aplicar, reinicia: los offsets NO persisten tras apagar — vuelven a 0 (fábrica) en el siguiente arranque salvo que los reaplique la app.',
-        'power.consentAdvanced': 'Estás fuera del rango seguro recomendado. El riesgo de daño/inestabilidad es MAYOR a estos valores.',
-        'power.consentQuestion': '¿Aplicar offsets de GPU?',
-        'power.thermalGuardian': 'GUARDIÁN TÉRMICO GPU',
-        'power.thermalGuardianDesc': 'Mantengo la GPU bajo el techo elegido: primero subo ventiladores y, si no basta, bajo potencia (Dynamic Boost y, si toca, PL2). Al enfriar, devuelvo todo a la normalidad.',
-        'power.thermalCeiling': 'Techo de temperatura',
-        'power.thermalEnable': 'ACTIVAR GUARDIÁN',
-        'power.thermalDisable': 'DESACTIVAR GUARDIÁN',
-        'power.thermalActive': 'Activo',
-        'power.thermalInactive': 'Inactivo',
-        'power.thermalNotInstalled': 'El servicio del guardián aún no está instalado. Pide a Marshall que corra el comando en docs/SUDO-PENDIENTE-v10.md.',
-        'power.thermalLoading': 'Consultando estado del guardián…',
-        'power.thermalError': 'No se pudo consultar el guardián térmico.',
-        'power.thermalApplying': 'Aplicando…',
-      },
-      en: {
-        'power.clockOffsets': 'GPU CLOCK OFFSETS (NVML)',
-        'power.offsetCore': 'GPU core clock offset',
-        'power.offsetMem': 'GPU memory clock offset',
-        'power.factoryZero': 'factory: 0 MHz',
-        'power.safeRange': 'safe range',
-        'power.advancedRange': 'advanced (higher risk)',
-        'power.nvmlUnavailable': 'NVML unavailable: cannot read/apply GPU clock offsets on this machine.',
-        'power.consentTitle': 'GPU CLOCK OFFSETS — Confirm',
-        'power.consentOverclock': 'Raising the offset (overclock) can cause visual artifacts, hangs, and in extreme cases PERMANENTLY DAMAGE your GPU.',
-        'power.consentUndervolt': 'Lowering the offset too much (aggressive undervolt) can make the system UNSTABLE: black screen, hang or reboot. Recoverable by restarting.',
-        'power.consentRecover': 'If the system hangs after applying, restart: offsets do NOT persist across power-off — they return to 0 (factory) on next boot unless the app reapplies them.',
-        'power.consentAdvanced': 'You are outside the recommended safe range. Risk of damage/instability is HIGHER at these values.',
-        'power.consentQuestion': 'Apply GPU offsets?',
-        'power.thermalGuardian': 'GPU THERMAL GUARDIAN',
-        'power.thermalGuardianDesc': 'I keep the GPU under the chosen ceiling: first I raise fans, and if that is not enough, I lower power (Dynamic Boost and, if needed, PL2). When it cools down, everything returns to normal.',
-        'power.thermalCeiling': 'Temperature ceiling',
-        'power.thermalEnable': 'ENABLE GUARDIAN',
-        'power.thermalDisable': 'DISABLE GUARDIAN',
-        'power.thermalActive': 'Active',
-        'power.thermalInactive': 'Inactive',
-        'power.thermalNotInstalled': 'The guardian service is not installed yet. Ask Marshall to run the command in docs/SUDO-PENDIENTE-v10.md.',
-        'power.thermalLoading': 'Checking guardian status…',
-        'power.thermalError': 'Could not check the thermal guardian.',
-        'power.thermalApplying': 'Applying…',
-      },
-    });
-  }
+  /* ---- i18n: claves power.* viven ahora en i18n.js CORE (8 idiomas, dueño A4) ---- */
 
   /* ---- estado del módulo ---- */
   let powerState = null;       // última respuesta de getPowerControl()
@@ -102,7 +46,7 @@
       const liveEl = document.querySelector(`[data-power-live="${key}"]`);
       if (!liveEl) continue;
       if (ctrl.value !== undefined && ctrl.value !== null) {
-        liveEl.textContent = `actual: ${ctrl.value} ${ctrl.unit || ''}`;
+        liveEl.textContent = t('power.current_value', { v: ctrl.value, u: ctrl.unit || '' });
       }
     }
   }
@@ -142,7 +86,7 @@
       defaultSpan.className = 'power-control-default';
       defaultSpan.textContent = isOffset
         ? t('power.factoryZero')
-        : `fábrica: ${ctrl.default} ${ctrl.unit || ''}`;
+        : t('power.factory_value', { v: ctrl.default, u: ctrl.unit || '' });
 
       header.appendChild(labelSpan);
       header.appendChild(unitSpan);
@@ -153,7 +97,7 @@
       const liveNote = document.createElement('span');
       liveNote.className = 'power-live-note';
       liveNote.dataset.powerLive = key;
-      liveNote.textContent = ctrl.value !== undefined ? `actual: ${ctrl.value} ${ctrl.unit || ''}` : '';
+      liveNote.textContent = ctrl.value !== undefined ? t('power.current_value', { v: ctrl.value, u: ctrl.unit || '' }) : '';
       block.appendChild(liveNote);
 
       // tooltip (descripción Armoury Crate traducida)
@@ -221,7 +165,7 @@
         const tick = document.createElement('span');
         tick.className = 'power-default-tick';
         tick.style.left = `${tickPct}%`;
-        tick.title = `fábrica: ${ctrl.default} ${ctrl.unit || ''}`;
+        tick.title = t('power.factory_value', { v: ctrl.default, u: ctrl.unit || '' });
         tick.textContent = `▲${ctrl.default}`;
         sliderWrap.appendChild(slider);
         sliderWrap.appendChild(tick);
@@ -398,17 +342,24 @@
   }
 
   /* ================================================================
-     powerTooltip — descripción Armoury Crate traducida al español.
+     powerTooltip — explicación corta de cada control (i18n, 8 idiomas).
+     La explicación larga (rango seguro + efecto) vive en power.explain.<key>.body
+     y se usa en el modal de detalle (ver explainKeyTitle/explainKeyBody).
   ================================================================= */
+  const EXPLAIN_KEYS = {
+    pl1: 'pl1', pl2: 'pl2', dynamic_boost: 'dynamic_boost',
+    thermal_target: 'thermal_target',
+    base_clock_offset: 'base_clock_offset', mem_clock_offset: 'mem_clock_offset',
+  };
+
   function powerTooltip(key) {
-    return {
-      pl1: 'Límite de potencia CPU sostenible: el procesador intenta mantenerse en este tope durante uso prolongado.',
-      pl2: 'Límite de potencia CPU en ráfaga (máx. 2 min): permite picos de rendimiento cortos antes de caer al PL1.',
-      dynamic_boost: 'Pasa vatios de CPU a la GPU cuando la carga gráfica lo demanda, hasta este máximo.',
-      thermal_target: 'La GPU se mantiene en o por debajo de esta temperatura ajustando su potencia automáticamente.',
-      base_clock_offset: 'Desplazamiento de frecuencia del núcleo gráfico vía NVML (funciona en Wayland). Subir = overclock; bajar = undervolt. Requiere tu contraseña al aplicar.',
-      mem_clock_offset: 'Desplazamiento de frecuencia de la memoria de video vía NVML (funciona en Wayland). Requiere tu contraseña al aplicar.',
-    }[key] || '';
+    const ek = EXPLAIN_KEYS[key];
+    return ek ? t(`power.explain.${ek}.body`) : '';
+  }
+
+  function explainKeyTitle(key) {
+    const ek = EXPLAIN_KEYS[key];
+    return ek ? t(`power.explain.${ek}.title`) : '';
   }
 
   /* ================================================================

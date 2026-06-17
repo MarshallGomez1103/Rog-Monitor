@@ -85,7 +85,8 @@ class App:
     def sample(self) -> dict:
         cpu = self.cpu.read()
         gpu = self.gpu.read()
-        fans = self.fans.read()
+        active_profile = asus_profile()
+        fans = self.fans.read(active_profile)
         watts = self.rapl.read_watts()
 
         self.series["cpu_temp"].push(cpu["avg"])
@@ -103,9 +104,10 @@ class App:
             "cpu": cpu,
             "gpu": gpu,
             "fans": fans,
+            "fan_meta": self.fans.meta(),
             "cpu_watts": watts,
             "rapl_available": self.rapl.available,
-            "asus_profile": asus_profile(),
+            "asus_profile": active_profile,
             "ppd_profile": ppd_profile(),
             "battery": self.battery.read(),
             "sys": self.sys.read(),

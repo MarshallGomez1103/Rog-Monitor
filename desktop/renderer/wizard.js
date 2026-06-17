@@ -16,16 +16,16 @@
 (function () {
   'use strict';
 
-  /* ---- idiomas disponibles con nombres nativos ---- */
+  /* ---- idiomas disponibles con nombres nativos (sin emoji/banderas) ---- */
   const LANG_OPTIONS = [
-    { code: 'es', label: 'Español',    flag: '🇪🇸' },
-    { code: 'en', label: 'English',    flag: '🇬🇧' },
-    { code: 'fr', label: 'Français',   flag: '🇫🇷' },
-    { code: 'it', label: 'Italiano',   flag: '🇮🇹' },
-    { code: 'pt', label: 'Português',  flag: '🇵🇹' },
-    { code: 'zh', label: '中文',       flag: '🇨🇳' },
-    { code: 'ja', label: '日本語',     flag: '🇯🇵' },
-    { code: 'ko', label: '한국어',     flag: '🇰🇷' },
+    { code: 'es', label: 'Español' },
+    { code: 'en', label: 'English' },
+    { code: 'fr', label: 'Français' },
+    { code: 'it', label: 'Italiano' },
+    { code: 'pt', label: 'Português' },
+    { code: 'zh', label: '中文' },
+    { code: 'ja', label: '日本語' },
+    { code: 'ko', label: '한국어' },
   ];
 
   /* ---- constantes de pasos ---- */
@@ -75,7 +75,6 @@
               <button class="wiz-lang-btn${l.code === activeLang ? ' active' : ''}"
                       data-lang="${l.code}"
                       type="button">
-                <span class="wiz-lang-flag">${l.flag}</span>
                 <span class="wiz-lang-name">${l.label}</span>
               </button>
             `).join('')}
@@ -85,18 +84,15 @@
       /* ---- PASO 1: Bienvenida ---- */
       case 1:
         return `
-          <h3>Bienvenido a ROG Monitor</h3>
-          <p>Esta app te da control completo sobre tu laptop: sensores de temperatura,
-          ventiladores, iluminación, benchmarks, procesos y más — todo en un panel,
-          sin tener que abrir terminales.</p>
+          <h3>${t('wizard.step1_title')}</h3>
+          <p>${t('wizard.step1_intro')}</p>
           <ul>
-            <li><span class="wiz-bullet">01</span><span>Datos en tiempo real de CPU, GPU, RAM y discos — actualizados cada segundo.</span></li>
-            <li><span class="wiz-bullet">02</span><span>Curvas y topes de ventiladores editables sin tocar el sistema manualmente.</span></li>
-            <li><span class="wiz-bullet">03</span><span>Iluminación Aura integrada con modo música en vivo.</span></li>
-            <li><span class="wiz-bullet">04</span><span>Benchmarks térmicos locales para medir el rendimiento real de tu equipo.</span></li>
+            <li><span class="wiz-bullet">01</span><span>${t('wizard.step1_b1')}</span></li>
+            <li><span class="wiz-bullet">02</span><span>${t('wizard.step1_b2')}</span></li>
+            <li><span class="wiz-bullet">03</span><span>${t('wizard.step1_b3')}</span></li>
+            <li><span class="wiz-bullet">04</span><span>${t('wizard.step1_b4')}</span></li>
           </ul>
-          <p>Este asistente te guía en 6 pasos rápidos. Puedes saltarlo o repetirlo
-          desde el botón <strong>${t('topbar.wizard')}</strong> en la barra superior.</p>`;
+          <p>${t('wizard.step1_footer', { btn: `<strong>${t('topbar.wizard')}</strong>` })}</p>`;
 
       /* ---- PASO 2: Ventiladores detectados ---- */
       case 2: {
@@ -104,92 +100,79 @@
         const fanList  = fanCount > 0
           ? detectedFans.map((f) =>
               `<li><span class="wiz-bullet">${f.label.replace('_fan','').toUpperCase().slice(0,3)}</span>` +
-              `<span><strong>${f.label.replace('_fan','').toUpperCase()}</strong> — ${f.rpm > 0 ? f.rpm + ' RPM ahora' : 'parado o en reposo'}</span></li>`
+              `<span><strong>${f.label.replace('_fan','').toUpperCase()}</strong> — ${f.rpm > 0 ? t('wizard.step2_rpm_now', { rpm: f.rpm }) : t('wizard.step2_stopped')}</span></li>`
             ).join('')
-          : '<li><span class="wiz-bullet">?</span><span>Aún sin datos — conectando con los sensores…</span></li>';
+          : `<li><span class="wiz-bullet">?</span><span>${t('wizard.step2_none')}</span></li>`;
         return `
-          <h3>Ventiladores detectados</h3>
+          <h3>${t('wizard.step2_title')}</h3>
           <div class="wizard-live-info" id="wiz-fan-live">
             ${fanCount > 0
-              ? `${fanCount} ventilador${fanCount > 1 ? 'es' : ''} encontrado${fanCount > 1 ? 's' : ''}`
-              : 'Leyendo sensores…'}
+              ? t('wizard.step2_found', { n: fanCount })
+              : t('wizard.step2_loading')}
           </div>
           <ul>${fanList}</ul>
-          <p>El bloque <strong>03 Ventiladores</strong> (izquierda) muestra las RPM en tiempo real y un ícono giratorio.
-          <strong>Haz clic en ese bloque</strong> para abrir el editor de curvas, ajustar el tope de RPM o calibrar.</p>
+          <p>${t('wizard.step2_body', { block: `<strong>${t('wizard.step2_block')}</strong>` })}</p>
           <div class="wizard-info-block">
-            <div class="wib-title">Tip: calibrar</div>
-            <div class="wib-desc">La primera vez que abras el editor de ventiladores, usa el botón
-            <strong>CALIBRAR</strong> para que la app mida los RPM reales de cada ventilador en 7 velocidades.
-            Sin esa tabla el tope de RPM es un estimado (puede quedar 200-400 RPM arriba).</div>
+            <div class="wib-title">${t('wizard.step2_tip_title')}</div>
+            <div class="wib-desc">${t('wizard.step2_tip_body', { btn: `<strong>${t('wizard.calibrate_btn')}</strong>` })}</div>
           </div>`;
       }
 
       /* ---- PASO 3: Permisos y calibración ---- */
       case 3:
         return `
-          <h3>Permisos de administrador</h3>
-          <p>Algunas acciones requieren privilegios de sistema (escribir curvas al hardware,
-          calibrar ventiladores, cambiar perfil de energía). ROG Monitor usa
-          <strong>pkexec</strong> — te pide la contraseña con una ventana segura del
-          sistema, igual que cuando instalas una app.</p>
+          <h3>${t('wizard.step3_title')}</h3>
+          <p>${t('wizard.step3_body1', { pk: '<strong>pkexec</strong>' })}</p>
           <div class="wizard-perm-note">
-            <strong>Sin contraseña hardcodeada:</strong> la app nunca guarda tu clave.
-            Solo la pide en el momento de la acción y de forma visible para ti.
+            <strong>${t('wizard.step3_note')}</strong>
           </div>
-          <p>Para configurar los ventiladores haz clic en el bloque <strong>03 Ventiladores</strong>
-          y luego pulsa <strong>CALIBRAR (1-3 min)</strong>. Pedirá la contraseña una sola vez
-          para instalar el script del sistema.</p>
+          <p>${t('wizard.step3_body2', { block: `<strong>${t('wizard.step2_block')}</strong>`, btn: `<strong>${t('wizard.step3_calib_label')}</strong>` })}</p>
           <ul>
-            <li><span class="wiz-bullet">1</span><span>Abre el bloque Ventiladores (clic en él).</span></li>
-            <li><span class="wiz-bullet">2</span><span>Pulsa CALIBRAR — los ventiladores pasarán por 7 velocidades; va a sonar fuerte.</span></li>
-            <li><span class="wiz-bullet">3</span><span>Al terminar, ajusta el tope de RPM y pulsa GUARDAR Y APLICAR.</span></li>
+            <li><span class="wiz-bullet">1</span><span>${t('wizard.step3_li1')}</span></li>
+            <li><span class="wiz-bullet">2</span><span>${t('wizard.step3_li2')}</span></li>
+            <li><span class="wiz-bullet">3</span><span>${t('wizard.step3_li3')}</span></li>
           </ul>`;
 
       /* ---- PASO 4: Benchmarks ---- */
       case 4:
         return `
-          <h3>Benchmarks térmicos</h3>
-          <p>El bloque <strong>06 Benchmarks</strong> (columna derecha) lanza cargas sintéticas
-          para medir el rendimiento real de tu CPU y GPU bajo estrés.</p>
+          <h3>${t('wizard.step4_title')}</h3>
+          <p>${t('wizard.step4_body1', { block: `<strong>${t('wizard.step4_block')}</strong>` })}</p>
           <ul>
-            <li><span class="wiz-bullet">CPU</span><span>Carga todos los núcleos 45 segundos — mide temperatura máxima, watts y eventos de throttling.</span></li>
-            <li><span class="wiz-bullet">GPU</span><span>Lanza varias instancias de vkcube o glmark2 — mide temperatura, watts y uso.</span></li>
+            <li><span class="wiz-bullet">CPU</span><span>${t('wizard.step4_cpu_desc')}</span></li>
+            <li><span class="wiz-bullet">GPU</span><span>${t('wizard.step4_gpu_desc')}</span></li>
           </ul>
           <div class="wizard-info-block">
-            <div class="wib-title">Cuándo correr el benchmark</div>
+            <div class="wib-title">${t('wizard.step4_tip_title')}</div>
             <div class="wib-desc">
-              Después de calibrar los ventiladores, corre el benchmark CPU para verificar que el
-              tope de RPM se respeta. El resumen dice <strong>respetado ✓</strong> o
-              <strong>EXCEDIDO ✗</strong> claramente.
+              ${t('wizard.step4_tip_body', { ok: `<strong>${t('wizard.step4_ok')}</strong>`, bad: `<strong>${t('wizard.step4_bad')}</strong>` })}
             </div>
           </div>
-          <p>Úsalo con el cargador conectado y el equipo en una superficie ventilada.
-          Puedes exportar los resultados en JSON desde el modal de Benchmarks.</p>`;
+          <p>${t('wizard.step4_footer')}</p>`;
 
       /* ---- PASO 5: Tour de bloques ---- */
       case 5:
         return `
-          <h3>Tour rápido — qué hace cada bloque</h3>
+          <h3>${t('wizard.step5_title')}</h3>
           <div class="wizard-info-block">
-            <div class="wib-title">01 CPU · 02 GPU</div>
-            <div class="wib-desc">Temperatura en tiempo real, watts, frecuencia, uso de VRAM. Pasa el cursor por las gráficas (05 Historial) para ver valores punto a punto.</div>
+            <div class="wib-title">${t('wizard.step5_t1')}</div>
+            <div class="wib-desc">${t('wizard.step5_d1')}</div>
           </div>
           <div class="wizard-info-block">
-            <div class="wib-title">03 Ventiladores</div>
-            <div class="wib-desc">RPM en vivo con ícono giratorio. Haz clic para editar curvas y topes.</div>
+            <div class="wib-title">${t('wizard.step5_t2')}</div>
+            <div class="wib-desc">${t('wizard.step5_d2')}</div>
           </div>
           <div class="wizard-info-block">
-            <div class="wib-title">04 Iluminación (Aura)</div>
-            <div class="wib-desc">Efectos y colores del teclado RGB. Modo música: el brillo sigue el audio del sistema en vivo.</div>
+            <div class="wib-title">${t('wizard.step5_t3')}</div>
+            <div class="wib-desc">${t('wizard.step5_d3')}</div>
           </div>
           <div class="wizard-info-block">
-            <div class="wib-title">07 Sistema · 09 Procesos</div>
-            <div class="wib-desc">RAM, discos y red. Los top-5 procesos por CPU; clic en uno para cerrarlo.</div>
+            <div class="wib-title">${t('wizard.step5_t4')}</div>
+            <div class="wib-desc">${t('wizard.step5_d4')}</div>
           </div>
           <div class="wizard-info-block">
             <div class="wib-title">${t('topbar.theme')} · ${t('topbar.alerts')} · ${t('topbar.overlay')}</div>
-            <div class="wib-desc">12 paletas de color + modo claro/oscuro. Umbrales de temperatura personalizables. Overlay flotante de stats para usar encima del juego.</div>
+            <div class="wib-desc">${t('wizard.step5_d5')}</div>
           </div>`;
 
       default:

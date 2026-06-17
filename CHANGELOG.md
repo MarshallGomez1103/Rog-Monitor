@@ -1,5 +1,32 @@
 # Changelog
 
+## 11.0.0 — 2026-06-16
+
+> Build multiagente v3: Opus 4.8 orquestó **5 instancias Sonnet** en worktrees.
+> La cuenta cortó a A3/A4 a mitad (rescatados con commit de respaldo). Merge a
+> nivel de archivo por dueño para no revertir el fix del guardián.
+
+- **Ventiladores inteligentes**: guardián consciente de carga CPU/GPU con
+  histéresis — al dejar de jugar los ventiladores **bajan escalonadamente** en
+  vez de quedarse al máximo. Curvas y tope de RPM por perfil (ahorro/balance/
+  performance); *quiet* arranca con el fan apagado hasta 40°C. Esquema
+  `fan-curves.json` v2 retrocompatible.
+- **Neón de los números por nivel de alerta** (azul→verde→amarillo→rojo
+  reactivo a la temperatura), ya no por el color del tema. Bordes neón en las
+  tarjetas.
+- **Temas con personalidad**: 11 animaciones CSS (lava, oleaje, escarcha,
+  pulso del reactor…); modos claros menos pastel.
+- **Modo edición del tablero**: botón en la barra; arrastrar/ocultar/reordenar
+  bloques solo en ese modo (se acabó el drag al pasar el cursor).
+- **Sesión de juego (nuevo)**: graba la partida, resumen mín/máx/prom con
+  gráficas (hover), compara contra la sesión *baseline* con veredicto en
+  lenguaje natural, detecta el juego en ejecución.
+- **Benchmarks**: borrar uno o todos los anteriores; defensas en el Roadmap.
+- **i18n**: tutorial/wizard reactivo al idioma, selector sin emojis,
+  explicaciones de cada control de poder.
+- Pendientes documentados en `docs/HANDOFF.md` (curvas a aplicar por pkexec,
+  overlay/TUI/6 idiomas de A4, prueba viva).
+
 ## 10.0.0 — 2026-06-15
 
 > Build multiagente v2: Opus 4.8 orquestó **6 instancias Sonnet en paralelo**

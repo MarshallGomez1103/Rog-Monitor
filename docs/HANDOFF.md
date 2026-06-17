@@ -2,6 +2,77 @@
 
 > Cada agente actualiza esta sección al terminar. El siguiente la lee primero.
 
+## Última sesión: Claude (Opus 4.8, orquestador) — 2026-06-16 (v11.0.0)
+
+Build multiagente v3: Opus orquestó **5 Sonnet en worktrees** (spec en
+`docs/build-spec-v11.md`). Como en v9/v10, **el límite de cuenta cortó a A3 y A4
+a mitad** → su trabajo se rescató con commit de respaldo en su worktree
+(`git add -A && commit`) y se fusionó. Merge hecho **a nivel de archivo** (no de
+commit) porque las 5 ramas salían de `c392eba` y un merge normal habría
+revertido el fix `ProtectHome=read-only` del guardián (commit `673d368`); con
+`git checkout <rama> -- <archivos del dueño>` se tomó solo lo de cada agente y
+el `.service` quedó intacto.
+
+### Entregado y verificado (`node --check` 11 JS OK, `py_compile` paquete OK)
+- **A1 ventiladores inteligentes** (`fans.py`, `rog-thermal-guardian.sh`,
+  `app.py` 1 línea): esquema `fan-curves.json` v2 (retrocompat) con cap_rpm Y
+  curva por perfil; guardián consciente de carga CPU/GPU con histéresis
+  (subir inmediato, **bajar tras 20s + escalón cada 10s** → los fans BAJAN al
+  dejar de jugar). Emergencia térmica intacta (siempre gana, falla-seguro).
+  Confirmó el bug en vivo (idle 6200-6300 RPM perf). Escribe estado en
+  `~/.local/share/rog-monitor/thermal-guardian-state.json`.
+- **A2 neón + temas** (`style.css`, `neon.css`): glow de números por NIVEL
+  (`--lvl-cold/ok/hot/crit` por modo) atado a `t-cold/t-normal/t-hot/t-critical`,
+  ya NO por color de tema; bordes neón; 11 animaciones de carácter por tema;
+  repaleteo de 3 claros pastel. WCAG AA verificado.
+- **A3 tablero** (`app.js`, `dashboard.js`, `roadmap.js`): **modo edición**
+  (`#edit-mode-btn`, persiste `dashboardEditMode`; drag/ocultar SOLO en ese modo,
+  `dataset.editMode='on'|'off'`); benchmarks con borrar-uno y BORRAR TODOS;
+  defensas en roadmap.
+- **A4 i18n/poder** (`i18n.js`, `wizard.js`, `power.js`, `index.html`):
+  wizard/tutorial i18n + selector sin emojis + textos de poder. **CORTADO por
+  límite**: ver pendientes.
+- **A5 sesión de juego** (NUEVOS `game_session.py`, `game-session.js`,
+  `styles/game-session.css`): grabar serie temporal, resumen min/máx/prom +
+  gráficas con hover, comparar vs baseline con veredicto, detectar juego. El
+  orquestador cableó el IPC (preload.js 8 métodos, main.js 8 handlers,
+  index.html link+script, app.js init en DOMContentLoaded).
+
+### Reconciliación del orquestador
+- **Conflicto de contrato A2↔A3**: A3 nombró la clase crítica `t-very-hot`
+  (siguió el spec), pero A2 ató el CSS a `t-critical` (el nombre real del
+  código). Unifiqué a **`t-critical`** en `tempClass()` (app.js). Sin esto el
+  número crítico quedaba sin glow.
+- i18n: A3 y A5 **auto-registran** sus claves es/en (`window.i18n.register` con
+  fallback), así que funcionan aunque A4 quedara cortado.
+
+### PENDIENTE
+1. **Marshall (pkexec, hardware)**: aplicar las curvas-default nuevas de A1 a
+   `~/Rog-Monitor-Scripts/scripts/rog-profile-sync.sh` y reinstalar. Curvas
+   exactas (formato `t1..t8|p1..p8`, idle más alto + quiet arranca en PWM 0 =
+   fan apagado hasta 40°C):
+   - `performance:gpu` `35 45 55 62 70 75 80 83|30 46 70 100 150 195 235 250`
+   - `performance:mid` `35 45 55 65 75 82 88 95|30 50 80 115 158 198 232 247`
+   - `performance:*`   `35 45 55 65 75 82 88 95|35 55 85 120 160 200 235 247`
+   - `balanced:gpu`    `35 48 58 64 71 76 80 83|15 26 46 75 112 150 185 195`
+   - `balanced:mid`    `35 48 58 68 78 84 90 95|16 30 52 85 122 158 190 200`
+   - `balanced:*`      `35 48 58 68 78 84 90 95|18 32 55 88 128 165 200 210`
+   - `quiet:gpu`       `40 52 62 68 74 78 82 85|0 14 26 46 72 98 128 140`
+   - `quiet:mid`       `40 52 62 70 80 85 90 95|0 18 32 56 84 112 140 150`
+   - `quiet:*`         `40 52 62 70 80 85 90 95|0 16 30 52 80 110 140 150`
+   Detalle completo en la rama `worktree-agent-a665aea386df2b103` (HANDOFF).
+   También: activar el guardián desde la app (GPU → guardián) para que la
+   modulación por carga actúe.
+2. **A4 quedó incompleto** (cortado): NO alcanzó `overlay.html`/`overlay.js`
+   (rediseño del overlay), NI `i18n.py` (TUI), NI traducir a fr/it/pt/zh/ja/ko
+   las claves nuevas de A3 (`dash.*`) y A5 (`gamesession.*`). Es/en funcionan.
+3. **CSS modo edición**: A3 usa `html[data-edit-mode="on"]` para el indicador
+   visual; A2 no añadió ese estilo (funciona por JS, falta el realce visual).
+4. **Prueba viva (CDP/visual)**: ningún agente abrió Electron real (worktrees
+   sin sesión gráfica). Falta reiniciar la app y revisar números/temas/modo
+   edición/roadmap/benchmarks/sesión de juego con clics reales.
+5. Worktrees v11 **sin podar** a propósito (preservan el detalle por agente).
+
 ## Última sesión: Claude (Opus 4.8, orquestador) — 2026-06-15 (v10.0.0)
 
 ### Estado: v10.0.0 — i18n 8 idiomas + tablero arrastrable + neón puro + Roadmap + offsets GPU NVML (Wayland) + guardián térmico + fixes Aura. UN commit local, SIN push.

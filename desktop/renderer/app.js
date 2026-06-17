@@ -109,6 +109,13 @@ function fmt(value, digits = 0, fallback = '--') {
     : Number(value).toFixed(digits);
 }
 
+// Contrato con CSS (Agente A2): #cpu-temp/#gpu-temp SIEMPRE deben llevar
+// exactamente una de estas 4 clases — el color lo decide el CSS por nivel,
+// nunca lo forzamos por JS (ver update()).
+//   t-cold      temp < lo
+//   t-normal    lo <= temp < mid
+//   t-hot       mid <= temp < hi
+//   t-critical  temp >= hi
 function tempClass(temp, limits) {
   if (temp == null) return '';
   const [lo, mid, hi] = limits || [70, 85, 92];
@@ -791,6 +798,7 @@ function _benchCardHtml(item) {
     <div class="bench-card-header">
       <span class="bench-card-kind">${escapeHtml(kind)}</span>
       <span class="bench-card-when">${escapeHtml(item.when || '')}</span>
+      <button type="button" class="ghost bench-card-delete" data-bid-del="${escapeHtml(item.id || '')}" title="Borrar este benchmark">&#10005;</button>
       <span class="bench-card-arrow">▼</span>
     </div>
     <div class="bench-card-summary">${badges || '<span class="bench-badge neutral">' + escapeHtml(label) + '</span>'}</div>
@@ -806,6 +814,7 @@ function renderBenchmarkHistory() {
   if (!benchmarkHistory.length) {
     host.innerHTML = '<li class="bench-empty">sin historial</li>';
     $('bench-inline-status').textContent = 'Sin benchmarks en esta sesión.';
+    updateBenchClearAllVisibility();
     return;
   }
 
@@ -824,10 +833,20 @@ function renderBenchmarkHistory() {
     _drawSparkline(canvas, item.samples, key, color);
   });
 
+  // borrar un benchmark individual
+  host.querySelectorAll('.bench-card-delete').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteBenchmarkItem(btn.dataset.bidDel);
+    });
+  });
+
+  updateBenchClearAllVisibility();
+
   // click en cabecera → expandir/colapsar
   host.querySelectorAll('.bench-card').forEach((card) => {
     card.addEventListener('click', (e) => {
-      if (e.target.closest('.bench-card-detail')) return; // clic dentro del detalle no toglea
+      if (e.target.closest('.bench-card-detail') || e.target.closest('.bench-card-delete')) return; // clic dentro del detalle/borrar no toglea
       card.classList.toggle('open');
       // si se abre, redibujar sparkline (puede que el canvas no tuviera tamaño aún)
       if (card.classList.contains('open')) {
@@ -876,6 +895,63 @@ function pushBenchmarkHistory(result) {
   renderBenchmarkHistory();
 }
 
+/* ---- borrar historial de benchmarks (persistencia legible en localStorage) ---- */
+function _saveBenchmarkHistory() {
+  localStorage.setItem('benchmarkHistoryV2', JSON.stringify(benchmarkHistory));
+}
+
+function deleteBenchmarkItem(id) {
+  if (!id) return;
+  const before = benchmarkHistory.length;
+  benchmarkHistory = benchmarkHistory.filter((i) => i.id !== id);
+  if (benchmarkHistory.length === before) return;
+  _saveBenchmarkHistory();
+  renderBenchmarkHistory();
+  toast('Benchmark borrado');
+}
+
+function clearAllBenchmarkHistory() {
+  if (!benchmarkHistory.length) return;
+  if (!window.confirm('¿Borrar TODOS los benchmarks anteriores? Esta acción no se puede deshacer.')) return;
+  benchmarkHistory = [];
+  _saveBenchmarkHistory();
+  renderBenchmarkHistory();
+  toast('Historial de benchmarks borrado');
+}
+
+/* Inyecta el botón "Borrar todos" en el bloque inline si todavía no existe */
+function _ensureBenchClearAllButton() {
+  const actions = document.querySelector('#bench-block .bench-actions');
+  if (actions && !document.getElementById('bench-clear-all-btn')) {
+    const btn = document.createElement('button');
+    btn.className = 'ghost';
+    btn.id = 'bench-clear-all-btn';
+    btn.textContent = 'BORRAR TODOS LOS ANTERIORES';
+    btn.title = 'Borra todo el historial de benchmarks guardado';
+    btn.addEventListener('click', clearAllBenchmarkHistory);
+    actions.appendChild(btn);
+  }
+  const modalActions = document.querySelector('#benchmark-modal .mode-row');
+  if (modalActions && !document.getElementById('bench-clear-all-modal-btn')) {
+    const btn = document.createElement('button');
+    btn.className = 'ghost';
+    btn.id = 'bench-clear-all-modal-btn';
+    btn.textContent = 'BORRAR TODOS';
+    btn.title = 'Borra todo el historial de benchmarks guardado';
+    btn.addEventListener('click', clearAllBenchmarkHistory);
+    modalActions.appendChild(btn);
+  }
+}
+
+function updateBenchClearAllVisibility() {
+  _ensureBenchClearAllButton();
+  const inlineBtn = document.getElementById('bench-clear-all-btn');
+  const modalBtn = document.getElementById('bench-clear-all-modal-btn');
+  const has = benchmarkHistory.length > 0;
+  if (inlineBtn) inlineBtn.classList.toggle('hidden', !has);
+  if (modalBtn) modalBtn.classList.toggle('hidden', !has);
+}
+
 /* ---------- main update ---------- */
 
 const LAMP_STATES = [
@@ -915,9 +991,12 @@ function update(stats) {
   const cpu = stats.cpu || {};
   const limits = stats.limits || {};
 
-  /* lamp */
+  /* lamp — usa nombres "bare" propios (cold/normal/hot/critical) que ya
+   * existen en el CSS de la lámpara; very-hot de tempClass() mapea a critical
+   * aquí para no romper ese contrato previo (la lámpara no es #cpu-temp/#gpu-temp). */
   const lamp = $('thermal-lamp');
-  const cls = tempClass(cpu.avg, limits.cpu).replace('t-', '') || '';
+  const rawCls = tempClass(cpu.avg, limits.cpu).replace('t-', '') || '';
+  const cls = rawCls === 'very-hot' ? 'critical' : rawCls;
   lamp.className = 'lamp ' + cls;
   const lampIdx = { cold: 0, normal: 1, hot: 2, critical: 3 }[cls];
   const label = $('thermal-label');
@@ -1786,6 +1865,11 @@ if (overlayPrefs.enabled) {
   window.addEventListener('DOMContentLoaded', pushOverlay);
   pushOverlay();
 }
+
+// game session (v11): game-session.js loads after app.js, so init on DOMContentLoaded
+window.addEventListener('DOMContentLoaded', () => {
+  window.RogGameSession && window.RogGameSession.init();
+});
 
 /* ---------- report issue ---------- */
 

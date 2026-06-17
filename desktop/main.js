@@ -757,6 +757,24 @@ ipcMain.handle('cpu-benchmark', async (_e, seconds = 45) =>
 ipcMain.handle('gpu-benchmark', async (_e, seconds = 45) =>
   runJsonModule('rog_monitor.benchmarks', ['gpu', '--seconds', String(seconds)], (seconds + 25) * 1000));
 
+/* ---------- game session (v11) ---------- */
+ipcMain.handle('game-session-start', async () =>
+  runJsonModule('rog_monitor.game_session', ['start'], 8000));
+ipcMain.handle('game-session-sample', async (_e, id) =>
+  runJsonModule('rog_monitor.game_session', ['sample', '--id', id], 8000));
+ipcMain.handle('game-session-stop', async (_e, id) =>
+  runJsonModule('rog_monitor.game_session', ['stop', '--id', id], 8000));
+ipcMain.handle('game-session-list', async () =>
+  runJsonModule('rog_monitor.game_session', ['list'], 8000));
+ipcMain.handle('game-session-get', async (_e, id) =>
+  runJsonModule('rog_monitor.game_session', ['get', '--id', id], 8000));
+ipcMain.handle('game-session-compare', async (_e, { a, b }) =>
+  runJsonModule('rog_monitor.game_session', ['compare', '--a', a, '--b', b], 8000));
+ipcMain.handle('game-session-baseline', async () =>
+  runJsonModule('rog_monitor.game_session', ['baseline'], 8000));
+ipcMain.handle('game-session-delete', async (_e, id) =>
+  runJsonModule('rog_monitor.game_session', ['delete', '--id', id], 8000));
+
 ipcMain.handle('export-benchmark', async (_e, { kind, text }) => {
   const stamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 16);
   const { canceled, filePath } = await dialog.showSaveDialog(win, {
