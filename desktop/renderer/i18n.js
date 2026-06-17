@@ -43,6 +43,9 @@
     'profile.power_saver':   { es: 'AHORRO', en: 'SAVER', fr: 'ÉCONOMIE', it: 'RISPARMIO', pt: 'ECONOMIA', zh: '省电', ja: '省エネ', ko: '절약' },
     'profile.balanced':      { es: 'BALANCED', en: 'BALANCED', fr: 'ÉQUILIBRÉ', it: 'BILANCIATO', pt: 'EQUILIBRADO', zh: '均衡', ja: 'バランス', ko: '균형' },
     'profile.performance':   { es: 'PERFORMANCE', en: 'PERFORMANCE', fr: 'PERFORMANCE', it: 'PRESTAZIONI', pt: 'PERFORMANCE', zh: '性能', ja: 'パフォーマンス', ko: '고성능' },
+    'profile.changed':       { es: 'Perfil cambiado a {p} ✓', en: 'Profile changed to {p} ✓', fr: 'Profil changé en {p} ✓', it: 'Profilo cambiato a {p} ✓', pt: 'Perfil alterado para {p} ✓', zh: '配置已切换为 {p} ✓', ja: 'プロファイルを {p} に変更 ✓', ko: '프로파일을 {p}(으)로 변경 ✓' },
+    'profile.requested':     { es: 'Perfil {p} solicitado…', en: 'Profile {p} requested…', fr: 'Profil {p} demandé…', it: 'Profilo {p} richiesto…', pt: 'Perfil {p} solicitado…', zh: '已请求 {p} 配置…', ja: '{p} プロファイルを要求中…', ko: '{p} 프로파일 요청 중…' },
+    'profile.error':         { es: 'Error: {e}', en: 'Error: {e}', fr: 'Erreur : {e}', it: 'Errore: {e}', pt: 'Erro: {e}', zh: '错误：{e}', ja: 'エラー: {e}', ko: '오류: {e}' },
 
     /* ---- títulos de los 9 bloques ---- */
     'block.cpu':             { es: 'CPU', en: 'CPU', fr: 'CPU', it: 'CPU', pt: 'CPU', zh: 'CPU', ja: 'CPU', ko: 'CPU' },
@@ -59,6 +62,17 @@
     'block.events':          { es: 'Eventos', en: 'Events', fr: 'Événements', it: 'Eventi', pt: 'Eventos', zh: '事件', ja: 'イベント', ko: '이벤트' },
     'block.procs':           { es: 'Procesos', en: 'Processes', fr: 'Processus', it: 'Processi', pt: 'Processos', zh: '进程', ja: 'プロセス', ko: '프로세스' },
     'block.procs_sub':       { es: 'top 5 por uso de CPU · clic para cerrar uno', en: 'top 5 by CPU · click to kill', fr: 'top 5 CPU · clic pour fermer', it: 'top 5 CPU · clic per chiudere', pt: 'top 5 CPU · clique para fechar', zh: 'CPU前5 · 点击关闭', ja: 'CPU上位5 · クリックして終了', ko: 'CPU 상위 5 · 클릭하여 종료' },
+    'block.procs_sub2':      { es: 'top 5 · clic para cerrar', en: 'top 5 · click to kill', fr: 'top 5 · clic pour fermer', it: 'top 5 · clic per chiudere', pt: 'top 5 · clique para fechar', zh: '前5 · 点击关闭', ja: '上位5 · クリックで終了', ko: '상위 5 · 클릭하여 종료' },
+    'block.bench_session':   { es: 'Benchmarks y sesión', en: 'Benchmarks & session', fr: 'Benchmarks & session', it: 'Benchmark & sessione', pt: 'Benchmarks & sessão', zh: '基准测试与会话', ja: 'ベンチマークとセッション', ko: '벤치마크 & 세션' },
+    'block.bench_session_sub': { es: 'carga térmica · sesión de juego', en: 'thermal load · game session', fr: 'charge thermique · session de jeu', it: 'carico termico · sessione di gioco', pt: 'carga térmica · sessão de jogo', zh: '热负载 · 游戏会话', ja: '熱負荷 · ゲームセッション', ko: '열 부하 · 게임 세션' },
+
+    /* ---- tabla de procesos (2 columnas: % total y % de 1 núcleo) ---- */
+    'procs.col_name':        { es: 'proceso', en: 'process', fr: 'processus', it: 'processo', pt: 'processo', zh: '进程', ja: 'プロセス', ko: '프로세스' },
+    'procs.col_cpu':         { es: '% CPU', en: '% CPU', fr: '% CPU', it: '% CPU', pt: '% CPU', zh: '% CPU', ja: '% CPU', ko: '% CPU' },
+    'procs.col_core':        { es: '% NÚCLEO', en: '% CORE', fr: '% CŒUR', it: '% CORE', pt: '% NÚCLEO', zh: '% 单核', ja: '% コア', ko: '% 코어' },
+    'procs.col_ram':         { es: 'RAM', en: 'RAM', fr: 'RAM', it: 'RAM', pt: 'RAM', zh: '内存', ja: 'RAM', ko: 'RAM' },
+    'procs.kill':            { es: 'Clic para cerrar {name}', en: 'Click to close {name}', fr: 'Cliquer pour fermer {name}', it: 'Clic per chiudere {name}', pt: 'Clique para fechar {name}', zh: '点击关闭 {name}', ja: 'クリックで {name} を終了', ko: '클릭하여 {name} 종료' },
+    'cores.btn':             { es: 'NÚCLEOS', en: 'CORES', fr: 'CŒURS', it: 'CORE', pt: 'NÚCLEOS', zh: '核心', ja: 'コア', ko: '코어' },
 
     /* ---- labels comunes de estadísticas ---- */
     'common.max':            { es: 'Máx', en: 'Max', fr: 'Max', it: 'Max', pt: 'Máx', zh: '最大', ja: '最大', ko: '최대' },

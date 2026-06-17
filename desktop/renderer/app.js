@@ -4,6 +4,18 @@ const $ = (id) => document.getElementById(id);
 
 let lastStats = null;
 let gpuBusy = false;
+// Perfil de energía "pendiente": al hacer clic mantenemos resaltado el perfil
+// elegido hasta que el stream del sistema confirme el cambio (o expire). Sin
+// esto, el refresco 1 Hz pisaba el resaltado con el perfil viejo mientras el
+// daemon aplicaba el cambio → el botón "rebotaba" al anterior y luego saltaba.
+let pendingProfile = null;
+let pendingProfileTs = 0;
+const PENDING_PROFILE_MS = 8000;
+// PowerProfilesDaemon usa power-saver/balanced/performance; algunos equipos
+// reportan el perfil ASUS "quiet". Normalizamos para comparar contra los botones.
+function normalizeProfile(p) {
+  return p === 'quiet' ? 'power-saver' : p;
+}
 let auraState = null;
 let auraBootstrapped = false;
 let auraProfileSelection = '';
@@ -1096,8 +1108,17 @@ function update(stats) {
   }
 
   /* segmented controls */
+  const sysProfile = normalizeProfile(stats.ppd_profile);
+  let shownProfile = sysProfile;
+  if (pendingProfile) {
+    if (sysProfile === pendingProfile || Date.now() - pendingProfileTs > PENDING_PROFILE_MS) {
+      pendingProfile = null;            // confirmado por el sistema, o expiró
+    } else {
+      shownProfile = pendingProfile;    // mantener el elegido mientras se aplica
+    }
+  }
   document.querySelectorAll('#profile-seg button').forEach((b) =>
-    b.classList.toggle('active', b.dataset.profile === stats.ppd_profile));
+    b.classList.toggle('active', b.dataset.profile === shownProfile));
   document.querySelectorAll('#gpu-seg button').forEach((b) => {
     b.classList.toggle('active', b.dataset.gpu === gpu.mode);
     b.classList.toggle('busy', gpuBusy);
@@ -1150,13 +1171,19 @@ function update(stats) {
         `<li class="${level}"><time>${ts}</time>${msg}</li>`).join('')
     : '<li class="dim">sin eventos</li>';
 
-  /* processes — muestra cpu (% total) y cpu_core (% de 1 núcleo, estilo top) */
+  /* processes — DOS columnas separadas: % CPU total (todos los núcleos) y
+     % NÚCLEO (uso de un solo núcleo, estilo `top`). Antes iban pegados. */
   $('procs-body').innerHTML = (stats.procs || []).map((p) => {
-    const coreVal = p.cpu_core != null ? `<span class="procs-core" title="% de 1 núcleo (${p.cpu_core.toFixed(1)}% = ${p.cpu_core >= 100 ? Math.floor(p.cpu_core / 100) + ' núcleo(s) completo(s)' : 'fracción de núcleo'})">${p.cpu_core.toFixed(0)}%</span>` : '';
-    return `<tr data-pid="${p.pid}" data-name="${p.name}" title="Clic para cerrar ${p.name}">
+    const core = p.cpu_core != null
+      ? `<span class="procs-core" title="${p.cpu_core >= 100
+            ? Math.floor(p.cpu_core / 100) + ' núcleo(s) completo(s)'
+            : 'fracción de un núcleo'}">${p.cpu_core.toFixed(0)}%</span>`
+      : '<span class="dim">—</span>';
+    return `<tr data-pid="${p.pid}" data-name="${p.name}" title="${t('procs.kill', { name: p.name })}">
         <td class="pid">${p.pid}</td><td>${p.name}</td>
-        <td class="cpu" title="% del CPU total (todos los núcleos)">${p.cpu.toFixed(1)}%${coreVal}</td>
-        <td class="mem">${p.mem_mb} MB</td></tr>`;
+        <td class="cpu r">${p.cpu.toFixed(1)}%</td>
+        <td class="cpu-core r">${core}</td>
+        <td class="mem r">${p.mem_mb} MB</td></tr>`;
   }).join('');
 
   $('backend-state').textContent =
@@ -1165,20 +1192,32 @@ function update(stats) {
 
 /* ---------- actions ---------- */
 
+const PROFILE_KEY = {
+  'power-saver': 'profile.power_saver',
+  'balanced':    'profile.balanced',
+  'performance': 'profile.performance',
+};
 document.querySelectorAll('#profile-seg button').forEach((btn) => {
   btn.addEventListener('click', async () => {
-    // optimistic highlight: the 1 Hz stats refresh made it feel ignored
+    const profile = btn.dataset.profile;
+    // Marcar como PENDIENTE: el resaltado se mantiene en este perfil hasta que el
+    // sistema lo confirme (ver bloque en update()). Esto elimina el "rebote" que
+    // ocurría cuando el refresco 1 Hz pisaba el resaltado con el perfil viejo.
+    pendingProfile = profile;
+    pendingProfileTs = Date.now();
     document.querySelectorAll('#profile-seg button').forEach((b) =>
       b.classList.toggle('active', b === btn));
-    const res = await window.rog.setProfile(btn.dataset.profile);
+    const label = t(PROFILE_KEY[profile] || 'profile.balanced');
+    const res = await window.rog.setProfile(profile);
     if (!res.ok) {
-      toast(`Error: ${res.err}`);
-      if (lastStats) update(lastStats); // revert highlight to reality
+      pendingProfile = null;            // falló: volver a reflejar la realidad
+      toast(t('profile.error', { e: res.err }));
+      if (lastStats) update(lastStats);
       return;
     }
     toast(res.applied
-      ? `Perfil cambiado a ${btn.dataset.profile} ✓`
-      : `Perfil ${btn.dataset.profile} solicitado…`);
+      ? t('profile.changed', { p: label })
+      : t('profile.requested', { p: label }));
   });
 });
 

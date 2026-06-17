@@ -84,7 +84,7 @@
           <div class="error-badge">&#x26A0; BACKEND CAIDO</div>
           <div class="error-detail">Reconectando con los sensores…</div>
         </div>
-        <h2><i class="dash-num"></i> CPU <small id="cpu-model"></small></h2>
+        <h2><i class="dash-num"></i> <span data-i18n="block.cpu">CPU</span> <small id="cpu-model"></small></h2>
         <div class="bignum"><span id="cpu-temp">--</span><em>°C</em></div>
         <div class="statgrid">
           <div><label>Máx</label><b id="cpu-max">--</b></div>
@@ -123,7 +123,7 @@
           <div class="error-badge">&#x26A0; BACKEND CAIDO</div>
           <div class="error-detail">Reconectando con los sensores…</div>
         </div>
-        <h2><i class="dash-num"></i> GPU <small id="gpu-name"></small></h2>
+        <h2><i class="dash-num"></i> <span data-i18n="block.gpu">GPU</span> <small id="gpu-name"></small></h2>
         <div class="bignum"><span id="gpu-temp">--</span><em>°C</em></div>
         <div class="statgrid">
           <div><label>Uso</label><b id="gpu-util">--</b></div>
@@ -137,12 +137,12 @@
       </article>
 
       <article class="block clickable" id="fans-block" data-block="fans" title="Clic para configurar caps y curvas de ventilación">
-        <h2><i class="dash-num"></i> Ventiladores <small>clic para configurar</small></h2>
+        <h2><i class="dash-num"></i> <span data-i18n="block.fans">Ventiladores</span> <small data-i18n="block.fans_sub">clic para configurar</small></h2>
         <div class="fans" id="fans"></div>
       </article>
 
       <article class="block" id="aura-block" data-block="aura">
-        <h2><i class="dash-num"></i> Iluminación <small>Aura ASUS y modo música</small></h2>
+        <h2><i class="dash-num"></i> <span data-i18n="block.aura">Iluminación</span> <small data-i18n="block.aura_sub">Aura ASUS y modo música</small></h2>
 
         <!-- Cuadrícula de 9 modos estilo Armoury Crate.
              Nota: div, no <label> — ver .aura-effect-box en style.css (el label
@@ -205,7 +205,7 @@
 
     <section class="col col-right">
       <article class="block charts" id="history-block" data-block="history">
-        <h2><i class="dash-num"></i> Historial <small>pasa el cursor por una gráfica para ver cada punto</small></h2>
+        <h2><i class="dash-num"></i> <span data-i18n="block.history">Historial</span> <small data-i18n="block.history_sub">pasa el cursor por una gráfica para ver cada punto</small></h2>
         <div class="chart-row grid2">
           <div class="chart"><label>CPU · Temperatura °C</label><canvas id="chart-cpu"></canvas></div>
           <div class="chart"><label>CPU · Consumo W</label><canvas id="chart-power"></canvas></div>
@@ -215,7 +215,7 @@
       </article>
 
       <article class="block" id="bench-block" data-block="bench">
-        <h2><i class="dash-num"></i> Benchmarks &amp; Sesión <small>carga térmica · sesión de juego</small></h2>
+        <h2><i class="dash-num"></i> <span data-i18n="block.bench_session">Benchmarks y sesión</span> <small data-i18n="block.bench_session_sub">carga térmica · sesión de juego</small></h2>
         <div class="bench-actions">
           <button class="ghost" id="benchmark-btn">ABRIR BENCHMARKS</button>
           <button class="ghost" id="bench-run-cpu-quick">CPU 45 s</button>
@@ -230,7 +230,7 @@
       </article>
 
       <article class="block" id="system-block" data-block="system">
-        <h2><i class="dash-num"></i> Sistema</h2>
+        <h2><i class="dash-num"></i> <span data-i18n="block.system">Sistema</span></h2>
         <div class="sysrow">
           <div class="meter clickable" id="ram-meter" title="Clic para ver qué está consumiendo la RAM"><label>RAM <span id="ram-label"></span></label><div class="track"><div id="ram-bar"></div></div></div>
           <div id="disks"></div>
@@ -247,8 +247,8 @@
 
       <div class="split">
         <article class="block" id="events-block" data-block="events">
-          <h2><i class="dash-num"></i> Eventos
-            <button id="export-events" class="ghost" title="Guardar el registro de eventos como .txt">EXPORTAR</button>
+          <h2><i class="dash-num"></i> <span data-i18n="block.events">Eventos</span>
+            <button id="export-events" class="ghost" data-i18n="common.export" title="Guardar el registro de eventos como .txt">EXPORTAR</button>
           </h2>
           <ul id="events"><li class="dim">sin eventos</li></ul>
           <p class="note dim" id="events-help">🌡 <b>Thermal throttling</b> = la CPU
@@ -259,14 +259,15 @@
         </article>
 
         <article class="block" id="procs-block" data-block="procs">
-          <h2><i class="dash-num"></i> Procesos
-            <small>top 5 · clic para cerrar · <button id="procs-cores-btn" class="ghost procs-cores-link" title="Ver uso por núcleo individual">NÚCLEOS</button></small>
+          <h2><i class="dash-num"></i> <span data-i18n="block.procs">Procesos</span>
+            <small><span data-i18n="block.procs_sub2">top 5 · clic para cerrar</span> · <button id="procs-cores-btn" class="ghost procs-cores-link" data-i18n="cores.btn" title="Ver uso por núcleo individual">NÚCLEOS</button></small>
           </h2>
           <table id="procs">
             <thead>
-              <tr><th>PID</th><th>proceso</th>
-                  <th class="r" title="% total (todos los núcleos) · en gris: % de 1 núcleo (estilo top)">% CPU</th>
-                  <th class="r" title="Memoria RAM residente">RAM</th></tr>
+              <tr><th>PID</th><th data-i18n="procs.col_name">proceso</th>
+                  <th class="r" data-i18n="procs.col_cpu" title="% del CPU total (todos los núcleos)">% CPU</th>
+                  <th class="r" data-i18n="procs.col_core" title="% de un solo núcleo (estilo top)">% NÚCLEO</th>
+                  <th class="r" data-i18n="procs.col_ram" title="Memoria RAM residente">RAM</th></tr>
             </thead>
             <tbody id="procs-body"></tbody>
           </table>
