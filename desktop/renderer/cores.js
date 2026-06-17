@@ -87,7 +87,13 @@
   let legendEl = null;
   let isOpen = false;
   let latest = null;          // stats.cpu del último frame
-  let latestProcs = null;     // stats.procs del último frame
+  let latestProcs = null;     // stats.procs del último frame (top global)
+  let latestByCore = null;    // stats.procs_by_core: {cpuLogico: [procs...]}
+  // Huella de la última estructura pintada en la rejilla. Si no cambia (mismos
+  // cpus + mismo modo hetero), parcheamos las celdas EN SITIO en vez de
+  // reconstruir innerHTML cada segundo: así no se pierde el hover/foco ni
+  // reaparece el "hint", y gastamos menos CPU.
+  let gridKey = '';
 
   // --- modal de detalle por núcleo ---
   let detail = null;
@@ -158,10 +164,18 @@
     modal.querySelector('#cores-close').addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
-    // Delegación: clic en una celda abre el detalle del núcleo.
+    // Delegación: clic (o Enter/Espacio con foco) en una celda abre el detalle.
     gridEl.addEventListener('click', (e) => {
       const tile = e.target.closest('.core-tile');
       if (!tile) return;
+      const cpu = parseInt(tile.dataset.cpu, 10);
+      if (!Number.isNaN(cpu)) openDetail(cpu);
+    });
+    gridEl.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+      const tile = e.target.closest('.core-tile');
+      if (!tile) return;
+      e.preventDefault();
       const cpu = parseInt(tile.dataset.cpu, 10);
       if (!Number.isNaN(cpu)) openDetail(cpu);
     });
@@ -216,6 +230,7 @@
     const grid = latest && latest.core_grid;
     if (!grid || !grid.length) {
       gridEl.innerHTML = `<p class="sub">${t('cores.none', 'Sin datos de núcleos todavía…')}</p>`;
+      gridKey = '';
       if (legendEl) legendEl.textContent = '';
       return;
     }
@@ -242,26 +257,46 @@
         : t('cores.legend.flat', '');
     }
 
-    gridEl.innerHTML = grid.map((c) => {
-      const isP = isPCore(counts, c.core_id);
-      // Clase de tipo solo si la CPU distingue (degradación elegante).
-      const typeClass = hetero ? (isP ? 'core-p' : 'core-e') : 'core-flat';
-      const badge = hetero
-        ? `<span class="core-badge ${isP ? 'badge-p' : 'badge-e'}" aria-hidden="true">${isP ? '⚡' : '🌿'}<i>${isP ? 'P' : 'E'}</i></span>`
-        : '';
-      return `
-        <div class="core-tile ${tempClass(c.temp)} ${typeClass}" data-cpu="${c.cpu}" role="button" tabindex="0">
-          ${badge}
-          <span class="core-temp">${c.temp != null ? c.temp + '°' : '--'}</span>
-          <span class="core-num">cpu ${c.cpu}</span>
-          <div class="core-bar"><div class="core-bar-fill" style="width:${c.usage}%"></div></div>
-          <div class="core-foot">
-            <span class="core-usage">${c.usage}%</span>
-            <span class="core-ghz">${ghzText(c)}<small>${t('cores.ghz', 'GHz')}</small></span>
-          </div>
-          <span class="core-hint">${t('cores.hint', 'Clic para ver detalle')}</span>
-        </div>`;
-    }).join('');
+    // ¿Cambió la estructura (cpus o modo hetero)? Solo entonces reconstruimos.
+    const key = (hetero ? 'h:' : 'f:') + grid.map((c) => c.cpu).join(',');
+    if (key !== gridKey) {
+      gridEl.innerHTML = grid.map((c) => {
+        const isP = isPCore(counts, c.core_id);
+        // Clase de tipo solo si la CPU distingue (degradación elegante).
+        const typeClass = hetero ? (isP ? 'core-p' : 'core-e') : 'core-flat';
+        const badge = hetero
+          ? `<span class="core-badge ${isP ? 'badge-p' : 'badge-e'}" aria-hidden="true">${isP ? '⚡' : '🌿'}<i>${isP ? 'P' : 'E'}</i></span>`
+          : '';
+        return `
+          <div class="core-tile ${typeClass}" data-cpu="${c.cpu}" role="button" tabindex="0">
+            ${badge}
+            <span class="core-temp"></span>
+            <span class="core-num">cpu ${c.cpu}</span>
+            <div class="core-bar"><div class="core-bar-fill"></div></div>
+            <div class="core-foot">
+              <span class="core-usage"></span>
+              <span class="core-ghz"><b></b><small>${t('cores.ghz', 'GHz')}</small></span>
+            </div>
+            <span class="core-hint">${t('cores.hint', 'Clic para ver detalle')}</span>
+          </div>`;
+      }).join('');
+      gridKey = key;
+    }
+
+    // Parcheo EN SITIO de los valores dinámicos (no destruye hover/foco).
+    const tiles = gridEl.children;
+    for (let i = 0; i < grid.length; i++) {
+      const c = grid[i];
+      const tile = tiles[i];
+      if (!tile || tile.dataset.cpu !== String(c.cpu)) { gridKey = ''; return render(); }
+      const tc = tempClass(c.temp);
+      tile.classList.remove('c-cold', 'c-normal', 'c-hot', 'c-crit', 'c-na');
+      tile.classList.add(tc);
+      tile.querySelector('.core-temp').textContent = c.temp != null ? c.temp + '°' : '--';
+      tile.querySelector('.core-bar-fill').style.width = c.usage + '%';
+      tile.querySelector('.core-usage').textContent = c.usage + '%';
+      tile.querySelector('.core-ghz b').textContent = ghzText(c);
+    }
   }
 
   function renderDetail() {
@@ -313,10 +348,16 @@
     }
 
     if (procsEl) {
-      // Procesos cuyo last_cpu == este núcleo (de la lista top del stream).
-      const procs = (latestProcs || [])
-        .filter((p) => p.last_cpu === detailCpu)
-        .sort((a, b) => (b.cpu || 0) - (a.cpu || 0));
+      // Preferimos procs_by_core (agrupado en backend sobre TODOS los procesos
+      // activos). Si el backend no lo emite (contrato viejo), degradamos a
+      // filtrar la lista top global por last_cpu. Las claves JSON son strings.
+      let procs = null;
+      if (latestByCore) {
+        procs = latestByCore[detailCpu] || latestByCore[String(detailCpu)] || [];
+      } else {
+        procs = (latestProcs || []).filter((p) => p.last_cpu === detailCpu);
+      }
+      procs = procs.slice().sort((a, b) => (b.cpu || 0) - (a.cpu || 0));
       if (!procs.length) {
         procsEl.innerHTML = `<p class="sub cd-empty">${t('cores.detail.procs.none', 'Sin procesos activos detectados en este núcleo ahora mismo.')}</p>`;
       } else {
@@ -340,12 +381,16 @@
   function onStats(stats) {
     if (stats && stats.cpu && stats.cpu.core_grid) latest = stats.cpu;
     if (stats && stats.procs) latestProcs = stats.procs;
+    if (stats && stats.procs_by_core) latestByCore = stats.procs_by_core;
     if (isOpen) render();
     if (detailOpen) renderDetail();
   }
 
   // Re-traducir textos estáticos al cambiar idioma con un modal abierto.
+  // Forzamos rebuild de la rejilla (gridKey='') para re-traducir las etiquetas
+  // estáticas de cada celda (unidad GHz, hint), no solo los valores dinámicos.
   function onLangChange() {
+    gridKey = '';
     if (isOpen) render();
     if (detailOpen) renderDetail();
   }
@@ -358,6 +403,12 @@
     if (window.i18n && typeof window.i18n.onChange === 'function') {
       window.i18n.onChange(onLangChange);
     }
+    // Escape: cierra primero el detalle, luego la rejilla. Sin tocar app.js.
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (detailOpen) { closeDetail(); return; }
+      if (isOpen) closeModal();
+    });
   }
 
   if (document.readyState === 'loading') {

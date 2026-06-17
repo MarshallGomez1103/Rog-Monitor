@@ -16,6 +16,24 @@
   width: min(720px, 94vw);
   max-height: 88vh;
 }
+/* Título del modal con acento neón (más legible / vistoso). */
+#cores-modal .cores-card h3 {
+  color: var(--accent);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent);
+  letter-spacing: .01em;
+}
+
+/* Botón Cerrar con borde neón (legibilidad pedida en §A-CORES). */
+#cores-modal .cores-close-row .modal-close,
+#core-detail-modal .cores-close-row .modal-close {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--hair));
+  color: var(--ink);
+}
+#cores-modal .cores-close-row .modal-close:hover,
+#core-detail-modal .cores-close-row .modal-close:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent);
+}
 
 .cores-grid {
   display: grid;
@@ -80,6 +98,7 @@
   font-variant-numeric: tabular-nums;
   text-shadow: 0 0 6px color-mix(in srgb, var(--accent2) 35%, transparent);
 }
+.core-ghz b { font-weight: 700; }
 .core-ghz small { font-size: .56rem; font-weight: 600; opacity: .7; margin-left: 1px; }
 
 /* ---- barra de uso ---- */
@@ -161,6 +180,18 @@
 .core-tile.core-e:focus-visible {
   border-color: color-mix(in srgb, var(--e-core) 50%, var(--hair));
   box-shadow: 0 0 14px color-mix(in srgb, var(--e-core) 34%, transparent);
+}
+
+/* La barra de uso también tinta por tipo: P deportivo, E ecológico. Refuerza
+   la lectura P/E de un vistazo. En CPUs homogéneas (.core-flat) queda el
+   degradado de acento por defecto. */
+.core-tile.core-p .core-bar-fill {
+  background: linear-gradient(90deg, var(--p-core), var(--p-core-2));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--p-core) 55%, transparent);
+}
+.core-tile.core-e .core-bar-fill {
+  background: linear-gradient(90deg, var(--e-core), var(--e-core-2));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--e-core) 50%, transparent);
 }
 
 .cores-legend {
