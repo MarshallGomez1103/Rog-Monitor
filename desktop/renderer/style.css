@@ -799,9 +799,19 @@ input[type="color"] {
   text-transform: uppercase;
   color: var(--dim);
 }
+/* La etiqueta reserva alto para 2 líneas: así, aunque un texto sea más largo y
+   envuelva, TODOS los campos de una fila quedan alineados (antes se veían
+   "escalonados" según el largo del texto). */
+.settings-grid label > span {
+  display: flex;
+  align-items: flex-start;
+  min-height: 2.6em;
+  line-height: 1.25;
+}
 .settings-grid input {
   width: 100%;
   min-height: 32px;
+  margin-top: auto;   /* pega el campo al fondo de la celda → fila alineada */
 }
 .note.status-dirty { color: var(--hot); }
 .note.status-ok { color: var(--okstate); }

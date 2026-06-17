@@ -440,8 +440,8 @@
 
   <div id="alerts-modal" class="modal hidden">
     <div class="modal-card">
-      <h3>Umbrales y alertas</h3>
-      <p class="sub">Ajusta cuándo avisa el monitor y a qué temperaturas cambian los colores. Se guarda y se aplica al instante.</p>
+      <h3 data-i18n="alerts.title">Umbrales y alertas</h3>
+      <p class="sub" data-i18n="alerts.sub">Ajusta cuándo avisa el monitor y a qué temperaturas cambian los colores. Se guarda y se aplica al instante.</p>
       <div class="settings-grid">
         <label class="f-temp"><span>🌡 Alerta temp CPU (°C)</span><input type="number" id="set-cpu-temp-warn" min="50" max="110" step="1"></label>
         <label class="f-temp"><span>🌡 Alerta temp GPU (°C)</span><input type="number" id="set-gpu-temp-warn" min="45" max="105" step="1"></label>
@@ -466,8 +466,8 @@
       </label>
       <p id="alerts-status" class="note hidden"></p>
       <div class="mode-row">
-        <button class="ghost aura-primary" id="alerts-save">GUARDAR Y APLICAR</button>
-        <button class="ghost modal-close" id="alerts-close">Cerrar</button>
+        <button class="ghost aura-primary" id="alerts-save" data-i18n="common.save_apply">GUARDAR Y APLICAR</button>
+        <button class="ghost modal-close" id="alerts-close" data-i18n="common.close">Cerrar</button>
       </div>
     </div>
   </div>

@@ -66,6 +66,10 @@
     'block.bench_session':   { es: 'Benchmarks y sesión', en: 'Benchmarks & session', fr: 'Benchmarks & session', it: 'Benchmark & sessione', pt: 'Benchmarks & sessão', zh: '基准测试与会话', ja: 'ベンチマークとセッション', ko: '벤치마크 & 세션' },
     'block.bench_session_sub': { es: 'carga térmica · sesión de juego', en: 'thermal load · game session', fr: 'charge thermique · session de jeu', it: 'carico termico · sessione di gioco', pt: 'carga térmica · sessão de jogo', zh: '热负载 · 游戏会话', ja: '熱負荷 · ゲームセッション', ko: '열 부하 · 게임 세션' },
 
+    /* ---- modal de alertas ---- */
+    'alerts.title':          { es: 'Umbrales y alertas', en: 'Thresholds & alerts', fr: 'Seuils et alertes', it: 'Soglie e avvisi', pt: 'Limiares e alertas', zh: '阈值与警报', ja: 'しきい値とアラート', ko: '임계값 및 알림' },
+    'alerts.sub':            { es: 'Ajusta cuándo avisa el monitor y a qué temperaturas cambian los colores. Se guarda y se aplica al instante.', en: 'Set when the monitor warns you and at which temperatures the colors change. Saved and applied instantly.', fr: 'Définissez quand le moniteur alerte et à quelles températures les couleurs changent. Enregistré et appliqué instantanément.', it: 'Imposta quando il monitor avvisa e a quali temperature cambiano i colori. Salvato e applicato subito.', pt: 'Defina quando o monitor avisa e em que temperaturas as cores mudam. Guardado e aplicado na hora.', zh: '设置监视器何时警告以及颜色在哪些温度下变化。即时保存并应用。', ja: 'モニターが警告するタイミングと色が変わる温度を設定します。即座に保存・適用されます。', ko: '모니터가 경고하는 시점과 색이 바뀌는 온도를 설정합니다. 즉시 저장·적용됩니다.' },
+
     /* ---- tabla de procesos (2 columnas: % total y % de 1 núcleo) ---- */
     'procs.col_name':        { es: 'proceso', en: 'process', fr: 'processus', it: 'processo', pt: 'processo', zh: '进程', ja: 'プロセス', ko: '프로세스' },
     'procs.col_cpu':         { es: '% CPU', en: '% CPU', fr: '% CPU', it: '% CPU', pt: '% CPU', zh: '% CPU', ja: '% CPU', ko: '% CPU' },
