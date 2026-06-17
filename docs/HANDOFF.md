@@ -2,6 +2,33 @@
 
 > Cada agente actualiza esta sección al terminar. El siguiente la lee primero.
 
+## Sesión: Claude (Opus 4.8) — 2026-06-16 — fix roadmap vacío + modal de benchmark
+
+Dos arreglos pedidos por Marshall (`node --check` OK en los 2 JS tocados):
+
+1. **Roadmap abría vacío** (cuadrito de ~1cm scrolleable, sin texto). Causa:
+   bug clásico de flexbox — `.roadmap-scroll` tenía `overflow-y:auto` + `flex:
+   1 1 0` dentro de `#roadmap-modal .modal-card` que es `display:flex` column
+   con solo `max-height` (alto indefinido) → `min-height:auto` se vuelve 0 y el
+   área scrolleable colapsa a 0px. El contenido SÍ se generaba (19 KB de HTML).
+   Fix en `styles/extras.css`: `.roadmap-scroll` ahora `flex: 1 1 auto;
+   min-height: 0;` → toma alto del contenido, scrollea solo si supera max-height.
+
+2. **Benchmarks**: antes la tarjeta del historial se expandía en línea
+   ("chiquitico"). Ahora al clicar una tarjeta se abre un **modal dedicado
+   estilo NÚCLEOS** con botón Cerrar (`bench-detail.js` nuevo, autocontenido,
+   `window.RogBenchDetail.open(item)`). Muestra: lista de **eventos importantes**
+   (throttling, tope de RPM, pico de temp con su segundo, antes→después de temp
+   y consumo), **gráficas grandes con ejes** de la serie de tiempo (`item.samples`
+   → CPU: núcleos avg + paquete + watts RAPL; GPU: temp + watts + uso), y grilla
+   de resumen. Si el item no tiene `samples` (resultados viejos) avisa y muestra
+   solo el resumen. Registrado en `index.html` tras `cores.js`. El clic de la
+   tarjeta en `app.js` (`renderBenchmarkHistory`) ahora llama al modal con
+   fallback al viejo expandir-en-línea si `RogBenchDetail` no existiera. CSS
+   `.benchd-*` al final de `styles/extras.css`.
+
+   Pendiente de prueba en vivo por Marshall (no pude lanzar Electron aquí).
+
 ## Última sesión: Claude (Opus 4.8, orquestador) — 2026-06-16 (v11.0.0)
 
 Build multiagente v3: Opus orquestó **5 Sonnet en worktrees** (spec en

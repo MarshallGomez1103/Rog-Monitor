@@ -879,21 +879,26 @@ function renderBenchmarkHistory() {
 
   updateBenchClearAllVisibility();
 
-  // click en cabecera → expandir/colapsar
+  // click en la tarjeta → abrir el modal de detalle dedicado (gráficas grandes,
+  // eventos, antes→después). Fallback al viejo expandir-en-línea si el modal
+  // no estuviera disponible por algún motivo.
   host.querySelectorAll('.bench-card').forEach((card) => {
     card.addEventListener('click', (e) => {
-      if (e.target.closest('.bench-card-detail') || e.target.closest('.bench-card-delete')) return; // clic dentro del detalle/borrar no toglea
+      if (e.target.closest('.bench-card-delete')) return; // borrar no abre
+      const bid = card.dataset.bid;
+      const item = benchmarkHistory.find((i) => i.id === bid);
+      if (item && window.RogBenchDetail && typeof window.RogBenchDetail.open === 'function') {
+        window.RogBenchDetail.open(item);
+        return;
+      }
+      // fallback: comportamiento previo de expandir en línea
+      if (e.target.closest('.bench-card-detail')) return;
       card.classList.toggle('open');
-      // si se abre, redibujar sparkline (puede que el canvas no tuviera tamaño aún)
-      if (card.classList.contains('open')) {
-        const bid = card.dataset.bid;
-        const item = benchmarkHistory.find((i) => i.id === bid);
-        if (item?.samples?.length > 1) {
-          const canvas = card.querySelector('.bench-sparkline');
-          if (canvas) {
-            const key = item.kind === 'gpu' ? 'gpu_temp' : 'cpu_temp';
-            _drawSparkline(canvas, item.samples, key, cssVar('--accent'));
-          }
+      if (card.classList.contains('open') && item?.samples?.length > 1) {
+        const canvas = card.querySelector('.bench-sparkline');
+        if (canvas) {
+          const key = item.kind === 'gpu' ? 'gpu_temp' : 'cpu_temp';
+          _drawSparkline(canvas, item.samples, key, cssVar('--accent'));
         }
       }
     });
