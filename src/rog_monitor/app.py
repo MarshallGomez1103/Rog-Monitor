@@ -112,6 +112,9 @@ class App:
             "battery": self.battery.read(),
             "sys": self.sys.read(),
             "procs": self.procs.read(),
+            # Procesos agrupados por núcleo lógico (vista de detalle por núcleo,
+            # cores.js). Aditivo y opcional; reusa el ciclo de read() de arriba.
+            "procs_by_core": self.procs.by_core(),
             "procs_mem": self.procs.top_memory(),
             "aura": self.aura.snapshot(),
             "power_control": self.power.snapshot(),
