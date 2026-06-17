@@ -325,15 +325,18 @@
 }
 
 /* Línea de tiempo */
+/* Timeline: el CENTRO de la línea y el CENTRO de las bolitas se calculan en px
+   para que coincidan exactamente (antes la bolita quedaba a la derecha de la
+   línea). El padding deja sitio para que el glow no se corte por la izquierda. */
 .roadmap-timeline {
   position: relative;
-  padding-left: 1.6rem;
+  padding-left: 32px;
 }
 
 .roadmap-timeline::before {
   content: '';
   position: absolute;
-  left: 0.45rem;
+  left: 15px;            /* centro de la línea = 16px */
   top: 0.2rem;
   bottom: 0.2rem;
   width: 2px;
@@ -352,19 +355,20 @@
 .roadmap-item::before {
   content: '';
   position: absolute;
-  left: -1.2rem;
+  left: -21px;           /* 32 (padding) - 21 + 5 (radio) = 16px → centrado en la línea */
   top: 0.4rem;
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--panel);
   border: 2px solid var(--accent);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
 .roadmap-item.done::before {
   background: var(--accent);
-  box-shadow: 0 0 8px var(--accent), 0 0 16px color-mix(in srgb, var(--accent) 40%, transparent);
+  /* glow contenido (≤12px) para que no se recorte contra el borde izquierdo */
+  box-shadow: 0 0 6px var(--accent), 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .roadmap-item.todo::before {
