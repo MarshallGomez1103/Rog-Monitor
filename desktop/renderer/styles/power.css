@@ -362,3 +362,292 @@
 .power-thermal-toggle {
   width: 100%;
 }
+
+/* ===================================================================
+   v13 A-POWER-UI — color de PELIGRO, cabecera con botón Avanzado,
+   rieles de seguridad, franja de peligro por-cambio y panel Avanzado.
+   --danger se define localmente con fallback para que exista aunque el
+   tema activo no lo declare (los temas lo pueden sobrescribir).
+   =================================================================== */
+
+#power-modal .modal-card {
+  /* fallback del token de peligro: rojo cálido legible sobre paneles oscuros */
+  --danger: var(--hot, #ff5a5f);
+  --danger-ink: #ff8a8e;
+}
+
+/* ---------- cabecera: título a la izquierda, "Avanzado" a la derecha ---------- */
+
+#power-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+#power-title-row h3 {
+  margin: 0;
+}
+
+#power-advanced-btn {
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.7rem;
+  white-space: nowrap;
+}
+
+#power-advanced-btn.active {
+  background: color-mix(in srgb, var(--accent) 18%, var(--panel));
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---------- rieles de seguridad (tranquilizador pero honesto) ---------- */
+
+#power-safety-rails {
+  font-size: 0.7rem;
+  line-height: 1.45;
+  color: var(--dim);
+  border-left: 2px solid var(--accent2, var(--accent));
+  padding: 0.4rem 0.6rem;
+  margin: 0.2rem 0 0.9rem;
+  background: color-mix(in srgb, var(--accent2, var(--accent)) 8%, transparent);
+}
+
+/* ===================================================================
+   FRANJA DE PELIGRO por-cambio (#power-danger-strip)
+   Solo se muestra cuando hay cambios pendientes; lista lo que se movió y
+   la consecuencia concreta. Usa el token --danger.
+   =================================================================== */
+
+#power-danger-strip {
+  margin: 1rem 0 0.4rem;
+  border: 1px solid var(--danger);
+  border-left-width: 3px;
+  background: color-mix(in srgb, var(--danger) 9%, transparent);
+  padding: 0.6rem 0.75rem;
+}
+
+#power-danger-strip.hidden {
+  display: none;
+}
+
+.power-danger-head {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--danger);
+  margin-bottom: 0.5rem;
+}
+
+.power-danger-head::before {
+  content: '⚠';
+  margin-right: 0.4rem;
+}
+
+.power-danger-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.power-danger-item {
+  padding: 0.4rem 0 0.45rem;
+  border-top: 1px solid color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
+.power-danger-item:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.power-danger-move {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.power-danger-consequence {
+  font-size: 0.69rem;
+  line-height: 1.4;
+  color: var(--dim);
+  margin-top: 0.15rem;
+}
+
+.power-danger-item.beyond-safe {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  margin: 0 -0.3rem;
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+}
+
+.power-danger-beyond {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--danger-ink, var(--danger));
+  margin-top: 0.2rem;
+}
+
+.power-danger-beyond::before {
+  content: '⛔ ';
+}
+
+.power-danger-rails {
+  font-size: 0.66rem;
+  line-height: 1.4;
+  color: var(--dim);
+  margin-top: 0.55rem;
+  padding-top: 0.45rem;
+  border-top: 1px dashed color-mix(in srgb, var(--danger) 28%, transparent);
+}
+
+/* ===================================================================
+   PANEL AVANZADO (#power-advanced-panel) — marca + componente, docs y
+   rangos seguros + check "Entiendo los riesgos".
+   =================================================================== */
+
+#power-advanced-panel {
+  border: 1px solid var(--hair);
+  background: color-mix(in srgb, var(--panel) 70%, var(--chip));
+  padding: 0.7rem 0.8rem;
+  margin: 0.2rem 0 1rem;
+}
+
+#power-advanced-panel.hidden {
+  display: none;
+}
+
+.power-advanced-intro {
+  font-size: 0.7rem;
+  line-height: 1.45;
+  color: var(--dim);
+  margin: 0 0 0.7rem;
+}
+
+.power-advanced-selrow {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+
+.power-advanced-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 130px;
+}
+
+.power-advanced-fieldlabel {
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--dim);
+}
+
+.power-advanced-select {
+  padding: 0.32rem 0.4rem;
+  background: var(--chip);
+  border: 1px solid var(--hair);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.power-advanced-select:focus {
+  outline: 1px solid var(--accent);
+  border-color: var(--accent);
+}
+
+.power-advanced-select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.power-advanced-result {
+  margin-top: 0.2rem;
+}
+
+.power-advanced-entry {
+  border-top: 1px solid var(--hair);
+  padding-top: 0.55rem;
+  margin-top: 0.3rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.power-advanced-rules {
+  margin-bottom: 0.5rem;
+  color: var(--ink);
+}
+
+.power-advanced-rules strong {
+  color: var(--accent2, var(--accent));
+}
+
+.power-advanced-doclabel {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+  margin: 0.3rem 0 0.2rem;
+}
+
+.power-advanced-links {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+}
+
+.power-advanced-links li {
+  margin: 0.12rem 0;
+}
+
+.power-advanced-links a {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.74rem;
+  border-bottom: 1px dotted color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.power-advanced-links a:hover {
+  color: color-mix(in srgb, var(--accent) 80%, #fff);
+  border-bottom-color: var(--accent);
+}
+
+.power-advanced-links a::after {
+  content: ' ↗';
+  font-size: 0.66rem;
+  opacity: 0.7;
+}
+
+.power-advanced-source {
+  font-size: 0.64rem;
+  color: var(--dim);
+  font-style: italic;
+}
+
+/* check "Entiendo los riesgos" — deshabilita el Aplicar hasta marcarlo */
+
+.power-advanced-ack {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--hair);
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--danger-ink, var(--danger));
+  cursor: pointer;
+  user-select: none;
+}
+
+.power-advanced-ack input[type='checkbox'] {
+  accent-color: var(--danger);
+  cursor: pointer;
+}
