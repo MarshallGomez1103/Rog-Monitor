@@ -414,20 +414,17 @@ html[data-mode="light"] .aura-actions .aura-primary {
      Tope global de opacidad bajo para que sea translúcido en todos. */
   .block::after { opacity: .28; }
 
-  @keyframes fx-breathe { 0%, 100% { opacity: .16; } 50% { opacity: .42; } }
 
   /* --- Magma: rescoldo cálido subiendo desde abajo --- */
   html[data-theme="magma"] .block::after {
     background: linear-gradient(0deg,
       color-mix(in srgb, var(--accent) 11%, transparent) 0%, transparent 45%);
-    animation: fx-breathe 12s ease-in-out infinite;
   }
 
   /* --- Océano: brillo de agua suave (sin rayas que se deslicen) --- */
   html[data-theme="oceano"] .block::after {
     background: radial-gradient(120% 80% at 30% 0%,
       color-mix(in srgb, var(--accent2) 10%, transparent), transparent 70%);
-    animation: fx-breathe 14s ease-in-out infinite;
   }
 
   /* --- Glaciar: escarcha en las esquinas --- */
@@ -435,14 +432,12 @@ html[data-mode="light"] .aura-actions .aura-primary {
     background:
       radial-gradient(120px 80px at 0% 0%, color-mix(in srgb, var(--accent2) 14%, transparent), transparent 70%),
       radial-gradient(120px 80px at 100% 100%, color-mix(in srgb, var(--accent2) 10%, transparent), transparent 70%);
-    animation: fx-breathe 11s ease-in-out infinite;
   }
 
   /* --- Reactor: pulso de energía (sin escala, solo brillo) --- */
   html[data-theme="reactor"] .block::after {
     background: radial-gradient(60% 60% at 50% 0%,
       color-mix(in srgb, var(--accent) 12%, transparent), transparent 75%);
-    animation: fx-breathe 4.5s ease-in-out infinite;
   }
 
   /* --- Nébula: tres motas tenues, latido muy lento --- */
@@ -451,14 +446,12 @@ html[data-mode="light"] .aura-actions .aura-primary {
       radial-gradient(2px 2px at 22% 30%, color-mix(in srgb, var(--accent2) 50%, transparent), transparent 60%),
       radial-gradient(2px 2px at 70% 62%, color-mix(in srgb, var(--accent) 50%, transparent), transparent 60%),
       radial-gradient(1.5px 1.5px at 45% 85%, color-mix(in srgb, var(--accent2) 40%, transparent), transparent 60%);
-    animation: fx-breathe 16s ease-in-out infinite;
   }
 
   /* --- Neón (arcade): resplandor lateral tenue (sin parpadeo brusco) --- */
   html[data-theme="neon"] .block::after {
     background: linear-gradient(90deg,
       color-mix(in srgb, var(--accent) 10%, transparent), transparent 60%);
-    animation: fx-breathe 9s ease-in-out infinite;
   }
 
   /* --- Atardecer: brillo cálido (sin rectángulo que se desliza) --- */
@@ -466,7 +459,6 @@ html[data-mode="light"] .aura-actions .aura-primary {
     background: radial-gradient(100% 80% at 80% 100%,
       color-mix(in srgb, var(--accent) 11%, transparent),
       color-mix(in srgb, var(--accent2) 7%, transparent) 50%, transparent 80%);
-    animation: fx-breathe 13s ease-in-out infinite;
   }
 
   /* --- Neon Nights: doble tinte cian/magenta tenue (atenuado, era brillante) --- */
@@ -474,14 +466,12 @@ html[data-mode="light"] .aura-actions .aura-primary {
     background:
       radial-gradient(90% 70% at 15% 0%, color-mix(in srgb, var(--accent2) 9%, transparent), transparent 65%),
       radial-gradient(90% 70% at 100% 100%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 65%);
-    animation: fx-breathe 12s ease-in-out infinite;
   }
 
   /* --- Cyberpunk: brillo eléctrico (sin glitch brusco) --- */
   html[data-theme="cyberpunk"] .block::after {
     background: linear-gradient(180deg,
       color-mix(in srgb, var(--accent) 10%, transparent), transparent 50%);
-    animation: fx-breathe 8s ease-in-out infinite;
   }
 
   /* --- Aurora: cortinas boreales tenues --- */
@@ -489,14 +479,12 @@ html[data-mode="light"] .aura-actions .aura-primary {
     background:
       linear-gradient(200deg, color-mix(in srgb, var(--accent) 10%, transparent) 0%, transparent 45%),
       linear-gradient(160deg, color-mix(in srgb, var(--accent2) 8%, transparent) 20%, transparent 65%);
-    animation: fx-breathe 15s ease-in-out infinite;
   }
 
   /* --- Alba: amanecer cálido creciendo despacio --- */
   html[data-theme="alba"] .block::after {
     background: radial-gradient(80% 60% at 50% 100%,
       color-mix(in srgb, var(--accent) 10%, transparent), transparent 75%);
-    animation: fx-breathe 13s ease-in-out infinite;
   }
 
   /* --- Grafito: sin animación de color (acero frío, sobrio a propósito) ---
