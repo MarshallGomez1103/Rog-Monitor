@@ -741,6 +741,172 @@
   display: none;
 }
 
+.fan-profile-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin: 0.65rem 0 0.8rem;
+}
+
+.fan-profile-card {
+  border: 1px solid var(--hair);
+  background: color-mix(in srgb, var(--chip) 82%, transparent);
+  padding: 0.55rem 0.65rem;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+}
+
+.fan-profile-card.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 25%, transparent),
+              inset 0 0 10px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.fan-profile-card span {
+  display: block;
+  color: var(--dim);
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.fan-profile-card b {
+  display: block;
+  color: var(--ink);
+  font-size: 1rem;
+  margin-top: 0.18rem;
+}
+
+.fan-profile-card small {
+  display: block;
+  color: var(--dim);
+  font-size: 0.64rem;
+  margin-top: 0.15rem;
+}
+
+.curve-fan {
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--hair));
+  background: color-mix(in srgb, var(--panel) 76%, transparent);
+  padding: 0.85rem;
+  margin: 0.75rem 0;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%);
+}
+
+.fan-curve-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.55rem;
+}
+
+.fan-curve-head h4 {
+  margin: 0;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fan-curve-head span {
+  color: var(--dim);
+  font-size: 0.68rem;
+}
+
+.fan-curve-metrics {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.fan-curve-metrics b {
+  border: 1px solid var(--hair);
+  background: var(--chip);
+  color: var(--ink);
+  padding: 0.25rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.fan-curve-dba {
+  color: var(--accent2, var(--accent)) !important;
+}
+
+.fan-curve-graph {
+  width: 100%;
+  min-height: 210px;
+  margin-bottom: 0.65rem;
+}
+
+.fan-curve-graph svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.fan-grid line {
+  stroke: color-mix(in srgb, var(--hair) 70%, transparent);
+  stroke-width: 1;
+}
+
+.fan-axis text {
+  fill: var(--dim);
+  font-size: 11px;
+  font-family: var(--mono);
+}
+
+.fan-curve-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.4;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 60%, transparent));
+}
+
+.fan-curve-points circle {
+  fill: var(--ink);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.fan-cap-line {
+  stroke: var(--accent2, var(--accent));
+  stroke-width: 1.5;
+  stroke-dasharray: 7 5;
+  opacity: 0.9;
+}
+
+.curve-table {
+  display: grid;
+  grid-template-columns: 44px repeat(8, minmax(42px, 1fr));
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.curve-table span {
+  color: var(--dim);
+  font-size: 0.7rem;
+  font-family: var(--mono);
+}
+
+.curve-table input {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--hair);
+  background: var(--chip);
+  color: var(--ink);
+  padding: 0.28rem 0.2rem;
+  text-align: center;
+  font: 0.72rem var(--mono);
+}
+
+@media (max-width: 760px) {
+  .fan-profile-summary {
+    grid-template-columns: 1fr;
+  }
+  .curve-table {
+    grid-template-columns: 38px repeat(4, minmax(40px, 1fr));
+  }
+}
+
 /* =========================================================
    TOPBAR CONSOLIDATION (Task 4)
    El botón de sesión de juego (#game-session-btn) lo inyecta game-session.js

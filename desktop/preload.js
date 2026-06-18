@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld('rog', {
   setFanConfig: (cfg) => ipcRenderer.invoke('set-fan-config', cfg),
   fanBenchmark: () => ipcRenderer.invoke('fan-benchmark'),
   reportIssue: (body) => ipcRenderer.invoke('report-issue', body),
+  recordError: (payload) => ipcRenderer.invoke('record-error', payload),
+  getErrorLog: () => ipcRenderer.invoke('get-error-log'),
   diskHealth: () => ipcRenderer.invoke('disk-health'),
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (payload) => ipcRenderer.invoke('save-settings', payload),
@@ -63,7 +65,7 @@ contextBridge.exposeInMainWorld('rog', {
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   setPowerControl: (payload) => ipcRenderer.invoke('set-power-control', payload),
   resetPowerControl: () => ipcRenderer.invoke('reset-power-control'),
-  // --- guardián térmico GPU (A6) ---
+  // --- guardián térmico CPU/GPU ---
   getThermalGuardian: () => ipcRenderer.invoke('get-thermal-guardian'),
   setThermalGuardian: (payload) => ipcRenderer.invoke('set-thermal-guardian', payload),
 });

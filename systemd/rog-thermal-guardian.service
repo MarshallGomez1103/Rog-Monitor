@@ -1,5 +1,5 @@
 [Unit]
-Description=ROG Monitor — Guardian Termico GPU (fans primero, potencia despues)
+Description=ROG Monitor — Guardian Termico CPU/GPU (fans primero, potencia despues)
 Documentation=https://github.com/rog-monitor/rog-monitor
 After=multi-user.target nvidia-persistenced.service
 Wants=nvidia-persistenced.service
@@ -7,15 +7,17 @@ Wants=nvidia-persistenced.service
 [Service]
 Type=simple
 # Ruta absoluta al script: ajustar si el repo vive en otra ubicacion.
-# El instalador (ver docs/SUDO-PENDIENTE-v10.md) sustituye __ROG_MONITOR_REPO__
-# por la ruta real antes de copiar esta unidad a /etc/systemd/system/.
+# La app sustituye __ROG_MONITOR_REPO__ por la ruta real antes de copiar esta
+# unidad a /etc/systemd/system/.
 ExecStart=/usr/bin/env bash __ROG_MONITOR_REPO__/scripts/rog-thermal-guardian.sh
 # Techo configurable sin editar esta unidad: usar un override.conf
 # en /etc/systemd/system/rog-thermal-guardian.service.d/override.conf
-# con Environment="ROG_THERMAL_CEILING=83" (75..87). La app (main.js)
-# escribe ese override.conf via pkexec cuando el usuario cambia el techo
+# con Environment="ROG_THERMAL_CPU_CEILING=92" y
+# Environment="ROG_THERMAL_GPU_CEILING=83". La app (main.js) escribe ese
+# override.conf via pkexec cuando el usuario cambia los techos
 # desde el modal de Centro de Poder.
-Environment="ROG_THERMAL_CEILING=83"
+Environment="ROG_THERMAL_CPU_CEILING=92"
+Environment="ROG_THERMAL_GPU_CEILING=83"
 Environment="ROG_THERMAL_INTERVAL=2"
 Restart=on-failure
 RestartSec=5
@@ -26,11 +28,10 @@ Group=root
 # Endurecimiento conservador: no aislamos /sys porque el script necesita
 # escribir varias rutas sysfs reales del firmware ASUS y NVIDIA.
 NoNewPrivileges=true
-# read-only (NO true): el script vive en el home del usuario (dentro del repo),
-# asi que el servicio necesita poder LEERLO/ejecutarlo. read-only mantiene el
-# home protegido contra escritura sin ocultarlo; con "true" systemd montaria
-# /home vacio y el ExecStart fallaria con "No such file or directory".
-ProtectHome=read-only
+# false: el script vive en el home del usuario (dentro del repo) y publica
+# estado para la UI en ~/.local/share/rog-monitor/thermal-guardian-state.json.
+# Con true/read-only systemd puede ocultar el repo o bloquear ese archivo.
+ProtectHome=false
 ProtectSystem=false
 
 [Install]

@@ -2,6 +2,36 @@
 
 const $ = (id) => document.getElementById(id);
 
+function recordLocalError(kind, payload = {}) {
+  try {
+    if (window.rog && typeof window.rog.recordError === 'function') {
+      window.rog.recordError({
+        kind,
+        url: location.href,
+        ...payload,
+      });
+    }
+  } catch (_) { /* logging must never break UI */ }
+}
+
+window.addEventListener('error', (event) => {
+  recordLocalError('window-error', {
+    message: event.message,
+    source: event.filename,
+    line: event.lineno,
+    column: event.colno,
+    stack: event.error && event.error.stack,
+  });
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  const reason = event.reason;
+  recordLocalError('unhandled-rejection', {
+    message: reason && reason.message ? reason.message : String(reason),
+    stack: reason && reason.stack,
+  });
+});
+
 let lastStats = null;
 let gpuBusy = false;
 // Perfil de energía "pendiente": al hacer clic mantenemos resaltado el perfil
@@ -1387,6 +1417,7 @@ wireChartHover('chart-gpu-power', 'W');
 window.rog.onStats(update);
 window.rog.onBackendDown(() => {
   $('backend-state').textContent = 'backend caído — reiniciando…';
+  recordLocalError('backend-down', { message: 'backend caído — reiniciando' });
 });
 window.rog.onMusicStopped(() => {
   musicModeActive = false;
@@ -1395,7 +1426,7 @@ window.rog.onMusicStopped(() => {
   refreshAuraState();
 });
 window.rog.appInfo().then((info) => {
-  $('versions').textContent = `app v${info.appVersion} · ${info.repo}`;
+  $('versions').textContent = `ROG Monitor v${info.appVersion} · ${info.repo}`;
 });
 window.addEventListener('resize', () => lastStats && update(lastStats));
 
@@ -1781,6 +1812,11 @@ const FAN_PROFILE_LABELS = {
   'performance': 'PERFORMANCE',
   'power-saver': 'AHORRO',
 };
+const FAN_PROFILE_RECOMMENDED_CAP = {
+  quiet: 4500,
+  balanced: 5500,
+  performance: 6500,
+};
 
 localStorage.removeItem('fanMax'); // legado: vivía aquí y nunca era real
 
@@ -1816,6 +1852,44 @@ function capToPwm(cap, fan) {
   return Math.min(255, Math.round(target * 255 / fanMaxRpm(fan)));
 }
 
+function pwmToRpm(pwm, fan) {
+  const pts = (fanCfg?.calibration?.[fan] || [])
+    .filter(([p, r]) => r > 0).sort((a, b) => a[0] - b[0]);
+  if (pts.length >= 2) {
+    if (pwm <= pts[0][0]) return Math.round(pts[0][1] * (pwm / Math.max(1, pts[0][0])));
+    let prev = pts[0];
+    for (const point of pts.slice(1)) {
+      const [p, r] = point;
+      if (pwm <= p) {
+        const frac = (pwm - prev[0]) / Math.max(1, p - prev[0]);
+        return Math.round(prev[1] + frac * (r - prev[1]));
+      }
+      prev = point;
+    }
+    return pts[pts.length - 1][1];
+  }
+  return Math.round((pwm / 255) * fanMaxRpm(fan));
+}
+
+function estimateFanDba(fan, rpm) {
+  const max = Math.max(1, fanMaxRpm(fan));
+  const ratio = Math.max(0, Math.min(1, rpm / max));
+  return 24 + 24 * Math.pow(ratio, 2.15);
+}
+
+function combinedDba(values) {
+  const valid = values.filter((v) => Number.isFinite(v) && v > 0);
+  if (!valid.length) return null;
+  const power = valid.reduce((sum, db) => sum + Math.pow(10, db / 10), 0);
+  return 10 * Math.log10(power);
+}
+
+function profileCapValue(profile, cfg = fanCfg) {
+  const caps = cfg?.profile_caps?.[profile] || (profile === fanEditingProfile ? cfg?.cap : {}) || {};
+  const values = Object.values(caps || {}).filter((v) => Number.isFinite(+v) && +v > 0);
+  return values.length ? Math.round(+values[0]) : null;
+}
+
 function currentCap() {
   const cap = Math.round(+$('fan-cap').value);
   return cap >= 2000 ? cap : null;
@@ -1828,6 +1902,8 @@ function updateCapPreview() {
   if (!fanCfg) return;
   if (!cap) {
     note.textContent = 'Sin tope: cada ventilador puede llegar a su máximo real.';
+    renderFanProfileSummary();
+    updateFanAcousticNote();
     return;
   }
   const parts = Object.keys(fanCfg.curves).map((fan) => {
@@ -1838,19 +1914,137 @@ function updateCapPreview() {
     `Tope ${cap} RPM: al aplicar, los puntos de curva que lo superen se recortan a ` +
     parts.join(' · ') + (Object.keys(fanCfg.curves).some(fanCalibrated)
       ? ' (con calibración real).' : ' (estimado — mide los máximos para precisión).');
+  renderFanProfileSummary();
+  updateFanAcousticNote();
 }
 
 function renderCurves() {
-  $('fan-curves').innerHTML = Object.entries(fanCfg.curves).map(([fan, c]) => `
-    <div class="curve-fan" data-fan="${fan}">
-      <h4>${fanName(fan)} — máx ${fanCalibrated(fan) ? 'medido' : 'estimado'} ${fanMaxRpm(fan)} RPM</h4>
-      <div class="curve-table">
-        <span title="A esta temperatura…">°C</span>
-        ${c.temps.map((v, i) => `<input type="number" min="0" max="110" data-kind="temps" data-i="${i}" value="${v}">`).join('')}
-        <span title="…el ventilador gira a este porcentaje de su máximo">% vel</span>
-        ${c.pwms.map((v, i) => `<input type="number" min="0" max="100" data-kind="pwms" data-i="${i}" value="${Math.round(v / 255 * 100)}">`).join('')}
-      </div>
-    </div>`).join('');
+  $('fan-curves').innerHTML = Object.entries(fanCfg.curves).map(([fan, c]) => {
+    const maxPwm = Math.max(...c.pwms);
+    const maxRpm = pwmToRpm(maxPwm, fan);
+    const dba = estimateFanDba(fan, maxRpm);
+    return `
+      <div class="curve-fan" data-fan="${fan}">
+        <div class="fan-curve-head">
+          <div>
+            <h4>${fanName(fan)}</h4>
+            <span>${fanCalibrated(fan) ? 'máximo medido' : 'máximo estimado'} ${fanMaxRpm(fan)} RPM</span>
+          </div>
+          <div class="fan-curve-metrics">
+            <b class="fan-curve-rpm">${maxRpm} RPM</b>
+            <b class="fan-curve-dba">${dba.toFixed(1)} dBA est.</b>
+          </div>
+        </div>
+        <div class="fan-curve-graph">${renderFanCurveSvg(fan, c)}</div>
+        <div class="curve-table">
+          <span title="A esta temperatura…">°C</span>
+          ${c.temps.map((v, i) => `<input type="number" min="0" max="110" data-kind="temps" data-i="${i}" value="${v}">`).join('')}
+          <span title="…el ventilador gira a este porcentaje de su máximo">% vel</span>
+          ${c.pwms.map((v, i) => `<input type="number" min="0" max="100" data-kind="pwms" data-i="${i}" value="${Math.round(v / 255 * 100)}">`).join('')}
+        </div>
+      </div>`;
+  }).join('');
+  document.querySelectorAll('.curve-fan input').forEach((input) => {
+    input.addEventListener('input', () => updateFanCurveCard(input.closest('.curve-fan')));
+  });
+}
+
+function renderFanCurveSvg(fan, curve) {
+  const temps = curve.temps || [];
+  const pwms = curve.pwms || [];
+  const points = temps.map((temp, i) => {
+    const x = 36 + (Math.max(30, Math.min(110, temp)) - 30) / 80 * 500;
+    const y = 210 - (Math.max(0, Math.min(255, pwms[i] || 0)) / 255) * 170;
+    return [x, y];
+  });
+  const poly = points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const cap = currentCap();
+  const capPct = cap ? Math.min(100, capToPwm(cap, fan) / 255 * 100) : null;
+  const capY = capPct === null ? null : 210 - capPct / 100 * 170;
+  const pointEls = points.map(([x, y], i) =>
+    `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" data-i="${i}"></circle>`).join('');
+  const tempTicks = [30, 50, 70, 90, 110].map((t) => {
+    const x = 36 + (t - 30) / 80 * 500;
+    return `<text x="${x}" y="232">${t}</text>`;
+  }).join('');
+  const speedTicks = [0, 50, 100].map((s) => {
+    const y = 210 - s / 100 * 170;
+    return `<text x="8" y="${y + 4}">${s}</text>`;
+  }).join('');
+  return `
+    <svg viewBox="0 0 560 245" role="img" aria-label="Curva de ventilador ${fanName(fan)}">
+      <g class="fan-grid">
+        ${[40, 82.5, 125, 167.5, 210].map((y) => `<line x1="36" y1="${y}" x2="536" y2="${y}"></line>`).join('')}
+        ${[30, 50, 70, 90, 110].map((t) => {
+          const x = 36 + (t - 30) / 80 * 500;
+          return `<line x1="${x}" y1="40" x2="${x}" y2="210"></line>`;
+        }).join('')}
+      </g>
+      ${capY === null ? '' : `<line class="fan-cap-line" x1="36" y1="${capY.toFixed(1)}" x2="536" y2="${capY.toFixed(1)}"></line>`}
+      <polyline class="fan-curve-line" points="${poly}"></polyline>
+      <g class="fan-curve-points">${pointEls}</g>
+      <g class="fan-axis">${tempTicks}${speedTicks}<text x="540" y="232">°C</text><text x="8" y="28">%</text></g>
+    </svg>`;
+}
+
+function singleCurveFromBox(box) {
+  const curve = { temps: Array(8).fill(0), pwms: Array(8).fill(0) };
+  box.querySelectorAll('input').forEach((inp) => {
+    const raw = Math.round(+inp.value);
+    curve[inp.dataset.kind][+inp.dataset.i] =
+      inp.dataset.kind === 'pwms' ? Math.round(raw * 255 / 100) : raw;
+  });
+  return curve;
+}
+
+function updateFanCurveCard(box) {
+  if (!box) return;
+  const fan = box.dataset.fan;
+  const curve = singleCurveFromBox(box);
+  const maxPwm = Math.max(...curve.pwms);
+  const maxRpm = pwmToRpm(maxPwm, fan);
+  const dba = estimateFanDba(fan, maxRpm);
+  const graph = box.querySelector('.fan-curve-graph');
+  if (graph) graph.innerHTML = renderFanCurveSvg(fan, curve);
+  const rpm = box.querySelector('.fan-curve-rpm');
+  const noise = box.querySelector('.fan-curve-dba');
+  if (rpm) rpm.textContent = `${maxRpm} RPM`;
+  if (noise) noise.textContent = `${dba.toFixed(1)} dBA est.`;
+  updateFanAcousticNote();
+}
+
+function updateFanAcousticNote() {
+  const note = $('fan-acoustic-note');
+  if (!note || !fanCfg) return;
+  const hasForm = document.querySelectorAll('.curve-fan').length > 0;
+  const curves = hasForm ? readCurvesFromForm() : fanCfg.curves;
+  const cap = currentCap();
+  const dbas = Object.entries(curves).map(([fan, curve]) => {
+    const maxCurvePwm = Math.max(...curve.pwms);
+    const effectivePwm = cap ? Math.min(maxCurvePwm, capToPwm(cap, fan)) : maxCurvePwm;
+    return estimateFanDba(fan, pwmToRpm(effectivePwm, fan));
+  });
+  const total = combinedDba(dbas);
+  note.textContent = total === null
+    ? 'Acústica: sin estimación disponible.'
+    : `Acústica estimada del perfil editado: ${total.toFixed(1)} dBA. Si el firmware expone un sensor real de ruido, esta lectura puede reemplazar la estimación.`;
+}
+
+function renderFanProfileSummary() {
+  const host = $('fan-profile-summary');
+  if (!host || !fanCfg) return;
+  const profiles = ['quiet', 'balanced', 'performance'];
+  host.innerHTML = profiles.map((profile) => {
+    const label = FAN_PROFILE_LABELS[profile];
+    const cap = profile === fanEditingProfile ? currentCap() : profileCapValue(profile);
+    const recommended = FAN_PROFILE_RECOMMENDED_CAP[profile];
+    const active = profile === fanEditingProfile ? ' active' : '';
+    return `<div class="fan-profile-card${active}">
+      <span>${label}</span>
+      <b>${cap ? `${cap} RPM` : 'sin tope'}</b>
+      <small>${cap ? 'cap guardado/editado' : `recomendado ${recommended} RPM`}</small>
+    </div>`;
+  }).join('');
 }
 
 function readCurvesFromForm() {
@@ -1905,9 +2099,10 @@ async function loadFanProfile(profile) {
     || (profile === 'quiet' && fanActiveProfile === 'power-saver');
   const indicator = $('fan-active-indicator');
   if (indicator) indicator.classList.toggle('hidden', !isActive);
-  // Cap: usar el del perfil cargado (compartido globalmente, mismo JSON)
+  // Cap: usar el del perfil cargado (compartido entre ventiladores de ese perfil)
   const savedCap = res.cap && Object.values(res.cap).find((v) => v > 0);
   $('fan-cap').value = savedCap || '';
+  $('fan-cap').placeholder = `recomendado ${FAN_PROFILE_RECOMMENDED_CAP[profile] || 5500}`;
   // Resaltar tab activa
   document.querySelectorAll('.fan-ptab').forEach((t) => {
     const tabProfile = t.dataset.pfan;
@@ -2143,7 +2338,9 @@ $('report-btn').addEventListener('click', async () => {
     `- Perfil: ${s.asus_profile || '?'} / ${s.ppd_profile || '?'}`,
   ].join('\n');
   const res = await window.rog.reportIssue(body);
-  toast(res.ok ? 'Abriendo GitHub para crear el issue…' : `No se pudo: ${res.err}`);
+  toast(res.ok
+    ? `Abriendo GitHub para crear el issue… TXT local: ${res.logPath || 'generado'}`
+    : `No se pudo: ${res.err}`);
 });
 
 /* ---------- RAM detail ---------- */

@@ -22,7 +22,7 @@ import time
 from . import hwmon
 from .config import CONFIG_DIR, DATA_DIR
 
-# Sensible startup maximums for ROG Strix; auto-raised when exceeded.
+# Sensible startup maximums for ASUS gaming laptops; auto-raised when exceeded.
 DEFAULT_MAX = {"cpu_fan": 7100, "gpu_fan": 7000, "mid_fan": 7600}
 FALLBACK_MAX = 6000
 FAN_CURVES_FILE = CONFIG_DIR / "fan-curves.json"

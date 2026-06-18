@@ -5,35 +5,33 @@
   "_profile_power_note": "profile_power maps each system profile (quiet/balanced/performance) to a set of power limits {pl1, pl2, dynamic_boost, thermal_target}. These are applied automatically when the profile changes (alongside the fan curve), via the same pkexec path as manual changes (apply-power-control.sh), which re-clamps every value to the live firmware min/max (DOUBLE CLAMP). All values here are already inside each control's safe min..max in this file; quiet is the lowest (cool & silent), performance is the factory safe ceiling. 'power-saver' is accepted as an alias of 'quiet' (PPD naming). The 'est_thermal' field per profile documents the estimated steady-state temperature band under sustained gaming load on this model; it is informational only and not enforced.",
   "devices": [
     {
-      "id": "asus-rog-strix-g16-g614jv",
-      "name": "ASUS ROG Strix G16 (G614JV)",
-      "friendly_name": "ROG Strix G16 2023",
+      "id": "asus-2023-hx-rtx4060-16",
+      "name": "ASUS 2023 16-inch HX/RTX laptop profile",
+      "friendly_name": "ASUS calibrated gaming laptop",
       "dmi_match": "G614JV",
       "dmi_field": "/sys/class/dmi/id/product_name",
       "calibrated": true,
-      "calibrated_date": "2026-06-15",
       "profile_power": {
-        "_comment": "Per-profile power sets. Every value is within this device's safe control ranges (pl1 28-140 W, pl2 28-175 W, dynamic_boost 5-25 W, thermal_target 75-87 C). Applied via apply-power-control.sh (double clamp to live firmware min/max). quiet < balanced < performance for every knob that raises heat.",
         "quiet": {
           "pl1": 35,
           "pl2": 45,
           "dynamic_boost": 5,
           "thermal_target": 75,
-          "est_thermal": "CPU ~60-72 C / GPU ~62-72 C under sustained gaming. Lowest heat & noise; capped so the machine physically cannot run as hot as performance."
+          "est_thermal": "Conservative quiet profile for lower fan noise and battery use."
         },
         "balanced": {
           "pl1": 80,
           "pl2": 110,
           "dynamic_boost": 15,
           "thermal_target": 82,
-          "est_thermal": "CPU ~72-84 C / GPU ~72-82 C under sustained gaming. Middle ground between heat/noise and performance."
+          "est_thermal": "Balanced local profile for mixed desktop/gaming use."
         },
         "performance": {
           "pl1": 140,
           "pl2": 175,
           "dynamic_boost": 25,
           "thermal_target": 87,
-          "est_thermal": "CPU ~85-95 C / GPU ~82-87 C under sustained gaming. Factory safe ceiling; firmware throttles at thermal_target."
+          "est_thermal": "Firmware ceiling profile for AC power and maximum performance."
         }
       },
       "controls": [
@@ -47,9 +45,7 @@
           "max": 140,
           "default": 140,
           "writable": true,
-          "reason": null,
-          "description_es": "Potencia CPU sostenida (TDP largo plazo). Reducir protege batería/temperatura a costa de rendimiento base.",
-          "description_en": "Sustained CPU power limit (long-term TDP). Lowering saves battery/temperature at the cost of sustained performance."
+          "reason": null
         },
         {
           "key": "pl2",
@@ -61,9 +57,7 @@
           "max": 175,
           "default": 175,
           "writable": true,
-          "reason": null,
-          "description_es": "Potencia CPU en ráfaga (~2 min). Controla picos de carga cortos.",
-          "description_en": "CPU burst power limit (~2 min). Controls short load spikes."
+          "reason": null
         },
         {
           "key": "dynamic_boost",
@@ -75,9 +69,7 @@
           "max": 25,
           "default": 25,
           "writable": true,
-          "reason": null,
-          "description_es": "Vatios extra que la GPU puede tomar del presupuesto de la CPU cuando el CPU está subutilizado.",
-          "description_en": "Extra watts the GPU can take from CPU budget when CPU is underutilised."
+          "reason": null
         },
         {
           "key": "thermal_target",
@@ -89,9 +81,7 @@
           "max": 87,
           "default": 87,
           "writable": true,
-          "reason": null,
-          "description_es": "Temperatura máxima permitida para la GPU. El firmware hace throttling al alcanzarla. 87 °C es el límite del firmware.",
-          "description_en": "Maximum allowed GPU temperature. Firmware throttles at this point. 87 °C is the firmware hard ceiling."
+          "reason": null
         },
         {
           "key": "base_clock_offset",
@@ -99,16 +89,13 @@
           "label_es": "Offset clock base GPU",
           "label_en": "GPU base clock offset",
           "unit": "MHz",
-          "_safe_range_note": "Safe UI range: -200..+200 MHz. NVML absolute: -1000..+1000. Values beyond safe range require double consent.",
           "min": -200,
           "max": 200,
           "abs_min": -1000,
           "abs_max": 1000,
           "default": 0,
           "writable": true,
-          "reason": null,
-          "description_es": "Offset de frecuencia del núcleo GPU vía NVML. Funciona en Wayland. Rango seguro: -200..+200 MHz; rango absoluto del driver: -1000..+1000 MHz. El SET requiere contraseña (pkexec).",
-          "description_en": "GPU core clock offset via NVML. Works on Wayland. Safe range: -200..+200 MHz; driver absolute range: -1000..+1000 MHz. SET requires root (pkexec)."
+          "reason": null
         },
         {
           "key": "mem_clock_offset",
@@ -116,16 +103,13 @@
           "label_es": "Offset clock memoria GPU",
           "label_en": "GPU memory clock offset",
           "unit": "MHz",
-          "_safe_range_note": "Safe UI range: -500..+1000 MHz. NVML absolute: -2000..+6000. Values beyond safe range require double consent.",
           "min": -500,
           "max": 1000,
           "abs_min": -2000,
           "abs_max": 6000,
           "default": 0,
           "writable": true,
-          "reason": null,
-          "description_es": "Offset de frecuencia de memoria GPU vía NVML. Funciona en Wayland. Rango seguro: -500..+1000 MHz; rango absoluto del driver: -2000..+6000 MHz. El SET requiere contraseña (pkexec).",
-          "description_en": "GPU memory clock offset via NVML. Works on Wayland. Safe range: -500..+1000 MHz; driver absolute range: -2000..+6000 MHz. SET requires root (pkexec)."
+          "reason": null
         }
       ]
     },

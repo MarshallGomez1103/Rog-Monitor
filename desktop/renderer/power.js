@@ -104,6 +104,26 @@
       'power.advanced.cc.cpuDesktop': { es: 'CPU (escritorio)', en: 'CPU (desktop)' },
       'power.advanced.cc.gpuLaptop': { es: 'GPU (portátil)', en: 'GPU (laptop)' },
       'power.advanced.cc.gpuDesktop': { es: 'GPU (escritorio)', en: 'GPU (desktop)' },
+      'power.advanced.model': { es: 'Modelo / SKU', en: 'Model / SKU' },
+      'power.advanced.modelPlaceholder': { es: 'Buscar: RTX 4080, 14900HX, Legion...', en: 'Search: RTX 4080, 14900HX, Legion...' },
+      'power.advanced.matches': { es: 'Coincidencias', en: 'Matches' },
+      'power.advanced.noMatches': { es: 'Sin coincidencias. Usa marca/componente o agrega una entrada oficial a device_docs.json.', en: 'No matches. Use brand/component or add an official entry to device_docs.json.' },
+      'power.advanced.showSupported': { es: 'Ver soportados', en: 'Show supported' },
+      'power.advanced.hideSupported': { es: 'Ocultar soportados', en: 'Hide supported' },
+      'power.advanced.supportedSummary': { es: '{count} entradas actuales en la base de documentación.', en: '{count} current entries in the documentation database.' },
+      'power.advanced.models': { es: 'Modelos / familias', en: 'Models / families' },
+      'power.advanced.allVendors': { es: 'Todas las marcas', en: 'All brands' },
+      'power.guardian.title': { es: 'GUARDIÁN CPU/GPU', en: 'CPU/GPU GUARDIAN' },
+      'power.guardian.desc': {
+        es: 'Automático conservador: mantiene CPU y GPU bajo los techos elegidos. Primero sube ventiladores/perfil térmico; si no basta, baja Dynamic Boost y PL2. Respeta el cap de ventiladores configurado en Ventiladores.',
+        en: 'Conservative automatic mode: keeps CPU and GPU under your chosen ceilings. It raises fans/thermal profile first; if that is not enough, it lowers Dynamic Boost and PL2. It respects the fan cap configured in Fans.',
+      },
+      'power.guardian.cpuCeiling': { es: 'Techo CPU', en: 'CPU ceiling' },
+      'power.guardian.gpuCeiling': { es: 'Techo GPU', en: 'GPU ceiling' },
+      'power.guardian.fanCap': { es: 'Tope de ventiladores', en: 'Fan cap' },
+      'power.guardian.fanCapBody': { es: 'El guardián usa el cap global que ya configuraste en Ventiladores. Si quieres menos ruido, baja ese cap; si quieres más protección térmica, súbelo.', en: 'The guardian uses the global cap already configured in Fans. Lower that cap for less noise; raise it for more thermal protection.' },
+      'power.guardian.cost': { es: 'Costo estimado', en: 'Estimated cost' },
+      'power.guardian.costBody': { es: 'Con los watts actuales del stream, una hora costaría aprox. {cost}. Edita el precio por kWh si tu tarifa es distinta.', en: 'Using the current watts in the stream, one hour would cost about {cost}. Edit the kWh price if your tariff is different.' },
       // --- reset / errores / acciones (fallbacks; pueden ya existir en CORE) ---
       'power.reset.title': { es: 'RESET A FÁBRICA', en: 'FACTORY RESET' },
       'power.reset.body': {
@@ -130,17 +150,19 @@
   /* ---- estado del módulo ---- */
   let powerState = null;       // última respuesta de getPowerControl()
   let pendingChanges = {};     // { pl1: 120, pl2: 160, … }
-  let activeTab = 'cpu';       // 'cpu' | 'gpu'
+  let activeTab = 'guardian';  // 'guardian' | 'cpu' | 'gpu'
   let advancedConsent = {};    // { base_clock_offset: true, … } — consentimiento avanzado por clave
   let thermalState = null;     // última respuesta de getThermalGuardian()
   let deviceDocs = null;       // device_docs.json cargado (lazy)
   let advancedAck = false;     // check "Entiendo los riesgos" del panel Avanzado
+  let latestStats = null;      // última muestra live para costo estimado/guardián
 
   /* ================================================================
      SUSCRIPTOR LIVE: se registra UNA sola vez y actualiza las cabeceras
      con los valores actuales sin reconstruir los sliders.
   ================================================================= */
   window.rog.onStats((stats) => {
+    latestStats = stats;
     if (!stats.power_control) return;
     renderPowerLive(stats.power_control);
   });
@@ -669,9 +691,11 @@
     // mostrar estado de carga
     const cpuPanel = $('power-cpu-panel');
     const gpuPanel = $('power-gpu-panel');
+    const guardianPanel = $('power-guardian-panel');
     const unavail = $('power-unavail');
     if (cpuPanel) cpuPanel.innerHTML = `<p class="dim" style="padding:1rem">${t('power.loading')}</p>`;
     if (gpuPanel) gpuPanel.innerHTML = '';
+    if (guardianPanel) guardianPanel.innerHTML = '';
     if (unavail) unavail.style.display = 'none';
 
     let result;
@@ -709,18 +733,17 @@
       const gpuContent = buildSliders(controls,
         ['dynamic_boost', 'thermal_target', 'base_clock_offset', 'mem_clock_offset']);
       gpuPanel.appendChild(gpuContent);
+    }
 
-      // separador + sección del guardián térmico (debajo de los sliders GPU)
-      const hr = document.createElement('hr');
-      hr.className = 'power-divider';
-      gpuPanel.appendChild(hr);
-
+    // reconstruir tab GUARDIÁN
+    if (guardianPanel) {
+      guardianPanel.innerHTML = '';
       const guardianSection = document.createElement('div');
       guardianSection.id = 'power-thermal-guardian';
       guardianSection.className = 'power-thermal-guardian';
       guardianSection.innerHTML = `<p class="dim" style="padding:0.5rem 0">${t('power.thermalLoading')}</p>`;
-      gpuPanel.appendChild(guardianSection);
-      renderThermalGuardian(); // async, pinta cuando llegue la respuesta
+      guardianPanel.appendChild(guardianSection);
+      renderThermalGuardian();
     }
 
     // resetear advertencia PL y botón aplicar
@@ -732,7 +755,7 @@
   }
 
   /* ================================================================
-     renderThermalGuardian — pinta la sección del guardián térmico GPU.
+     renderThermalGuardian — pinta la sección del guardián CPU/GPU.
   ================================================================= */
   async function renderThermalGuardian() {
     const section = $('power-thermal-guardian');
@@ -758,7 +781,7 @@
     header.className = 'power-control-header';
     const labelSpan = document.createElement('span');
     labelSpan.className = 'power-control-label';
-    labelSpan.textContent = t('power.thermalGuardian');
+    labelSpan.textContent = tf('power.guardian.title', 'GUARDIÁN CPU/GPU');
     const statusBadge = document.createElement('span');
     statusBadge.className = 'power-thermal-status' + (result.active ? ' active' : '');
     statusBadge.textContent = result.active ? t('power.thermalActive') : t('power.thermalInactive');
@@ -768,7 +791,8 @@
 
     const desc = document.createElement('span');
     desc.className = 'power-control-tooltip';
-    desc.textContent = t('power.thermalGuardianDesc');
+    desc.textContent = tf('power.guardian.desc',
+      'Automático conservador: mantiene CPU y GPU bajo los techos elegidos. Primero sube ventiladores/perfil térmico; si no basta, baja Dynamic Boost y PL2. Respeta el cap de ventiladores configurado en Ventiladores.');
     section.appendChild(desc);
 
     if (!result.scriptExists) {
@@ -779,45 +803,29 @@
       return;
     }
 
-    // fila: techo (slider) + botón activar/desactivar
-    const rowEl = document.createElement('div');
-    rowEl.className = 'power-control-row power-thermal-row';
+    const cpuRow = buildGuardianTempRow(
+      tf('power.guardian.cpuCeiling', 'Techo CPU'),
+      result.cpuCeiling || 92,
+      70,
+      100
+    );
+    const gpuRow = buildGuardianTempRow(
+      tf('power.guardian.gpuCeiling', 'Techo GPU'),
+      result.gpuCeiling || result.ceiling || 83,
+      70,
+      87
+    );
+    section.appendChild(cpuRow.row);
+    section.appendChild(gpuRow.row);
 
-    const ceilLabel = document.createElement('span');
-    ceilLabel.className = 'power-control-unit';
-    ceilLabel.textContent = t('power.thermalCeiling') + ':';
-    rowEl.appendChild(ceilLabel);
+    const fanNote = document.createElement('p');
+    fanNote.className = 'power-guardian-note';
+    fanNote.innerHTML = `<b>${tf('power.guardian.fanCap', 'Tope de ventiladores')}:</b> ` +
+      escapeHtmlLocal(tf('power.guardian.fanCapBody',
+        'El guardián usa el cap global que ya configuraste en Ventiladores. Si quieres menos ruido, baja ese cap; si quieres más protección térmica, súbelo.'));
+    section.appendChild(fanNote);
 
-    const ceilSlider = document.createElement('input');
-    ceilSlider.type = 'range';
-    ceilSlider.className = 'power-slider';
-    ceilSlider.min = 75;
-    ceilSlider.max = 87;
-    ceilSlider.step = 1;
-    ceilSlider.value = result.ceiling || 83;
-    rowEl.appendChild(ceilSlider);
-
-    const ceilNum = document.createElement('input');
-    ceilNum.type = 'number';
-    ceilNum.className = 'power-numbox';
-    ceilNum.min = 75;
-    ceilNum.max = 87;
-    ceilNum.value = ceilSlider.value;
-    rowEl.appendChild(ceilNum);
-
-    const ceilUnit = document.createElement('span');
-    ceilUnit.className = 'power-control-unit';
-    ceilUnit.textContent = '°C';
-    rowEl.appendChild(ceilUnit);
-
-    ceilSlider.addEventListener('input', () => { ceilNum.value = ceilSlider.value; });
-    ceilNum.addEventListener('input', () => {
-      const clamped = Math.max(75, Math.min(87, Number(ceilNum.value) || 83));
-      ceilNum.value = clamped;
-      ceilSlider.value = clamped;
-    });
-
-    section.appendChild(rowEl);
+    section.appendChild(renderGuardianCost());
 
     const toggleBtn = document.createElement('button');
     toggleBtn.className = 'ghost power-thermal-toggle';
@@ -830,7 +838,8 @@
       try {
         res = await window.rog.setThermalGuardian({
           enabled: enabling,
-          ceiling: Number(ceilSlider.value),
+          cpuCeiling: Number(cpuRow.slider.value),
+          gpuCeiling: Number(gpuRow.slider.value),
         });
       } catch (err) {
         powerToast(`${t('power.thermalError')}: ${err.message}`);
@@ -844,10 +853,95 @@
         toggleBtn.textContent = result.active ? t('power.thermalDisable') : t('power.thermalEnable');
         return;
       }
-      powerToast(enabling ? `${t('power.thermalGuardian')}: ${t('power.thermalActive')} ✓` : `${t('power.thermalGuardian')}: ${t('power.thermalInactive')} ✓`);
+      powerToast(enabling ? `${tf('power.guardian.title', 'GUARDIÁN CPU/GPU')}: ${t('power.thermalActive')} ✓` : `${tf('power.guardian.title', 'GUARDIÁN CPU/GPU')}: ${t('power.thermalInactive')} ✓`);
       await renderThermalGuardian(); // refresca con el estado real
     });
     section.appendChild(toggleBtn);
+  }
+
+  function buildGuardianTempRow(label, value, min, max) {
+    const row = document.createElement('div');
+    row.className = 'power-control-row power-thermal-row';
+
+    const rowLabel = document.createElement('span');
+    rowLabel.className = 'power-control-unit power-guardian-row-label';
+    rowLabel.textContent = label + ':';
+    row.appendChild(rowLabel);
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.className = 'power-slider';
+    slider.min = min;
+    slider.max = max;
+    slider.step = 1;
+    slider.value = Math.max(min, Math.min(max, Number(value) || Math.round((min + max) / 2)));
+    row.appendChild(slider);
+
+    const num = document.createElement('input');
+    num.type = 'number';
+    num.className = 'power-numbox';
+    num.min = min;
+    num.max = max;
+    num.value = slider.value;
+    row.appendChild(num);
+
+    const unit = document.createElement('span');
+    unit.className = 'power-control-unit';
+    unit.textContent = '°C';
+    row.appendChild(unit);
+
+    slider.addEventListener('input', () => { num.value = slider.value; });
+    num.addEventListener('input', () => {
+      const clamped = Math.max(min, Math.min(max, Number(num.value) || Number(slider.value)));
+      num.value = clamped;
+      slider.value = clamped;
+    });
+
+    return { row, slider, num };
+  }
+
+  function renderGuardianCost() {
+    const box = document.createElement('div');
+    box.className = 'power-guardian-cost';
+    const priceKey = 'rogPowerKwhPrice';
+    const defaultPrice = 0.18;
+    let price = Number(localStorage.getItem(priceKey));
+    if (!Number.isFinite(price) || price <= 0) price = defaultPrice;
+    const cpuW = Number(latestStats?.cpu_watts || 0);
+    const gpuW = Number(latestStats?.gpu?.active?.power || 0);
+    const totalW = Math.max(0, cpuW + gpuW);
+    const hourly = (totalW / 1000) * price;
+
+    const label = document.createElement('span');
+    label.className = 'power-control-label';
+    label.textContent = tf('power.guardian.cost', 'Costo estimado');
+    box.appendChild(label);
+
+    const row = document.createElement('div');
+    row.className = 'power-guardian-cost-row';
+    const body = document.createElement('span');
+    body.className = 'power-control-tooltip';
+    body.textContent = tf('power.guardian.costBody',
+      'Con los watts actuales del stream, una hora costaría aprox. {cost}. Edita el precio por kWh si tu tarifa es distinta.',
+      { cost: `$${hourly.toFixed(3)}/h` });
+    row.appendChild(body);
+
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.className = 'power-numbox';
+    input.min = '0.01';
+    input.step = '0.01';
+    input.value = price.toFixed(2);
+    input.title = 'USD/kWh';
+    input.addEventListener('change', () => {
+      const next = Number(input.value);
+      if (Number.isFinite(next) && next > 0) localStorage.setItem(priceKey, String(next));
+      renderThermalGuardian();
+    });
+    row.appendChild(input);
+    box.appendChild(row);
+
+    return box;
   }
 
   function escapeHtmlLocal(s) {
@@ -879,8 +973,10 @@
     });
     const cpuPanel = $('power-cpu-panel');
     const gpuPanel = $('power-gpu-panel');
+    const guardianPanel = $('power-guardian-panel');
     if (cpuPanel) cpuPanel.classList.toggle('active', tab === 'cpu');
     if (gpuPanel) gpuPanel.classList.toggle('active', tab === 'gpu');
+    if (guardianPanel) guardianPanel.classList.toggle('active', tab === 'guardian');
   }
 
   /* ================================================================
@@ -967,6 +1063,8 @@
       official_docs: Array.isArray(e.official_docs) ? e.official_docs
         : (Array.isArray(e.docs) ? e.docs
         : (Array.isArray(e.links) ? e.links : [])),
+      models: Array.isArray(e.models) ? e.models : [],
+      safe_range_rules_i18n: e.safe_range_rules_i18n || e.i18n || null,
       source: e.source || e.cite || '',
     })).filter((e) => e.vendor && e.component_class);
   }
@@ -1034,13 +1132,43 @@
     addPlaceholderOption(compSel, tf('power.advanced.component', 'Componente'));
     compSel.disabled = true;
 
+    const modelInput = document.createElement('input');
+    modelInput.className = 'power-advanced-select power-advanced-search';
+    modelInput.type = 'search';
+    modelInput.placeholder = tf('power.advanced.modelPlaceholder', 'Buscar: RTX 4080, 14900HX, Legion...');
+    modelInput.setAttribute('aria-label', tf('power.advanced.model', 'Modelo / SKU'));
+    modelInput.setAttribute('list', 'power-advanced-model-list');
+
+    const modelList = document.createElement('datalist');
+    modelList.id = 'power-advanced-model-list';
+    Array.from(new Set(docs.flatMap((d) => d.models || [])))
+      .sort((a, b) => String(a).localeCompare(String(b)))
+      .forEach((m) => modelList.appendChild(option(m, m)));
+
     selRow.appendChild(labeled(tf('power.advanced.brand', 'Marca'), vendorSel));
     selRow.appendChild(labeled(tf('power.advanced.component', 'Componente'), compSel));
+    selRow.appendChild(labeled(tf('power.advanced.model', 'Modelo / SKU'), modelInput));
     panel.appendChild(selRow);
+    panel.appendChild(modelList);
+
+    const tools = document.createElement('div');
+    tools.className = 'power-advanced-tools';
+    const supportedBtn = document.createElement('button');
+    supportedBtn.type = 'button';
+    supportedBtn.className = 'ghost';
+    supportedBtn.textContent = tf('power.advanced.showSupported', 'Ver soportados');
+    const supportedMeta = document.createElement('span');
+    supportedMeta.className = 'power-advanced-supported-meta';
+    supportedMeta.textContent = tf('power.advanced.supportedSummary',
+      '{count} entradas actuales en la base de documentación.', { count: docs.length });
+    tools.appendChild(supportedBtn);
+    tools.appendChild(supportedMeta);
+    panel.appendChild(tools);
 
     const result = document.createElement('div');
     result.className = 'power-advanced-result';
     panel.appendChild(result);
+    let showSupported = false;
 
     function refreshComponents() {
       const v = vendorSel.value;
@@ -1056,22 +1184,73 @@
     function refreshResult() {
       const v = vendorSel.value;
       const c = compSel.value;
+      const q = modelInput.value.trim();
       result.innerHTML = '';
-      if (!v || !c) return;
-      const entry = docs.find((d) => d.vendor === v && d.component_class === c);
-      if (!entry) return;
-      result.appendChild(renderDocEntry(entry));
+      const matches = showSupported ? filterDocEntries(docs, v, c, q || '') : filterDocEntries(docs, v, c, q);
+      if (!matches.length) {
+        if (v || c || q) {
+          const empty = document.createElement('p');
+          empty.className = 'power-control-reason';
+          empty.textContent = tf('power.advanced.noMatches',
+            'Sin coincidencias. Usa marca/componente o agrega una entrada oficial a device_docs.json.');
+          result.appendChild(empty);
+        }
+        return;
+      }
+
+      const title = document.createElement('div');
+      title.className = 'power-advanced-doclabel';
+      title.textContent = `${tf('power.advanced.matches', 'Coincidencias')}: ${matches.length}`;
+      result.appendChild(title);
+      matches.slice(0, 8).forEach((entry) => result.appendChild(renderDocEntry(entry)));
     }
 
     vendorSel.addEventListener('change', () => { refreshComponents(); refreshResult(); });
     compSel.addEventListener('change', refreshResult);
+    modelInput.addEventListener('input', refreshResult);
+    supportedBtn.addEventListener('click', () => {
+      showSupported = !showSupported;
+      supportedBtn.textContent = showSupported
+        ? tf('power.advanced.hideSupported', 'Ocultar soportados')
+        : tf('power.advanced.showSupported', 'Ver soportados');
+      refreshResult();
+    });
 
     appendAdvancedAck(panel);
+  }
+
+  function filterDocEntries(docs, vendor, component, query) {
+    const q = String(query || '').trim().toLowerCase();
+    return docs.filter((entry) => {
+      if (vendor && entry.vendor !== vendor) return false;
+      if (component && entry.component_class !== component) return false;
+      if (!q) return true;
+      return docSearchText(entry).includes(q);
+    });
+  }
+
+  function docSearchText(entry) {
+    const parts = [
+      entry.vendor,
+      entry.component_class,
+      entry.source,
+      typeof entry.safe_range_rules === 'string'
+        ? entry.safe_range_rules
+        : JSON.stringify(entry.safe_range_rules || ''),
+      ...(entry.models || []),
+      ...((entry.official_docs || []).flatMap((d) => [d.title, d.url, d.name])),
+    ];
+    return parts.filter(Boolean).join(' ').toLowerCase();
   }
 
   function renderDocEntry(entry) {
     const box = document.createElement('div');
     box.className = 'power-advanced-entry';
+
+    const heading = document.createElement('div');
+    heading.className = 'power-advanced-entry-title';
+    heading.textContent = `${entry.vendor} · ${componentLabel(entry.component_class)}`;
+    box.appendChild(heading);
 
     if (entry.safe_range_rules) {
       const rules = document.createElement('div');
@@ -1080,11 +1259,30 @@
       rlabel.textContent = tf('power.advanced.safeRangeRules', 'Rangos seguros') + ': ';
       rules.appendChild(rlabel);
       const rtext = document.createElement('span');
-      rtext.textContent = typeof entry.safe_range_rules === 'string'
-        ? entry.safe_range_rules
-        : JSON.stringify(entry.safe_range_rules);
+      rtext.textContent = safeRuleText(entry);
       rules.appendChild(rtext);
       box.appendChild(rules);
+    }
+
+    if (entry.models && entry.models.length) {
+      const models = document.createElement('div');
+      models.className = 'power-advanced-models';
+      const label = document.createElement('strong');
+      label.textContent = tf('power.advanced.models', 'Modelos / familias') + ': ';
+      models.appendChild(label);
+      entry.models.slice(0, 18).forEach((m) => {
+        const chip = document.createElement('span');
+        chip.className = 'power-advanced-model-chip';
+        chip.textContent = m;
+        models.appendChild(chip);
+      });
+      if (entry.models.length > 18) {
+        const more = document.createElement('span');
+        more.className = 'power-advanced-model-chip muted';
+        more.textContent = `+${entry.models.length - 18}`;
+        models.appendChild(more);
+      }
+      box.appendChild(models);
     }
 
     const docs = entry.official_docs || [];
@@ -1121,6 +1319,24 @@
       box.appendChild(src);
     }
     return box;
+  }
+
+  function currentLang() {
+    return window.i18n && typeof window.i18n.get === 'function' ? window.i18n.get() : 'es';
+  }
+
+  function safeRuleText(entry) {
+    const lang = currentLang();
+    const localized = entry.safe_range_rules_i18n;
+    if (localized && typeof localized === 'object') {
+      return localized[lang] || localized.es || localized.en || '';
+    }
+    const rules = entry.safe_range_rules;
+    if (typeof rules === 'string') return rules;
+    if (rules && typeof rules === 'object') {
+      return rules[`text_${lang}`] || rules.text_es || rules.text || JSON.stringify(rules);
+    }
+    return '';
   }
 
   function openExternal(url) {

@@ -45,8 +45,8 @@ principales.
 ### App de escritorio (Electron + Python)
 - 9 bloques numerados: 01 CPU, 02 GPU, 03 Ventiladores, 04 Iluminación,
   05 Historial, 06 Benchmarks, 07 Sistema, 08 Eventos, 09 Procesos.
-- **Centro de Poder** (nuevo en v9): control calibrado de límites de potencia
-  para el G614JV — ver [sección más abajo](#centro-de-poder).
+- **Centro de Poder**: control calibrado de límites de potencia CPU/GPU,
+  con doble recorte contra firmware — ver [sección más abajo](#centro-de-poder).
 - **12 temas** × claro/oscuro con identidad visual propia (Magma, Nébula,
   Océano, Glaciar, Reactor, Grafito, Neón, Atardecer, Neon Nights, Cyberpunk,
   Aurora, Alba). Sin tarjetas genéricas: esquinas cortadas, números en placas
@@ -63,7 +63,7 @@ principales.
 - Tamaño de letra configurable (A−/Normal/A+/A++).
 
 ### Iluminación RGB (Aura + periféricos)
-- Grid de 9 modos Aura: 5 modos hardware soportados por el G614JV
+- Grid de 9 modos Aura: modos hardware detectados cuando el firmware los expone
   (Estático, Respirar, Rainbow Cycle, Rainbow Wave, Pulso) + Música funcional
   + 3 modos visibles pero honestos sobre su estado de soporte.
 - **Modo Música**: captura el audio del sistema (PipeWire, `pw-record --target
@@ -74,20 +74,18 @@ principales.
 
 ### Centro de Poder
 
-> **Este módulo está calibrado para el ASUS ROG Strix G614JV (i7-13650HX +
-> RTX 4060 Mobile).** En otros modelos la app lee los rangos seguros
-> directamente desde `asus-armoury` en sysfs o desde un perfil de dispositivo
-> (`~/.config/rog-monitor/device.json`); nunca escribe un valor fuera de los
-> mínimos y máximos que el firmware del equipo declara.
+> ROG Monitor lee los rangos seguros directamente desde `asus-armoury` en
+> sysfs o desde un perfil de dispositivo (`~/.config/rog-monitor/device.json`).
+> Nunca escribe un valor fuera de los mínimos y máximos que el firmware declara.
 
-Parámetros controlables en el G614JV:
+Parámetros controlables cuando el firmware ASUS los expone:
 
-| Parámetro            | Rango (G614JV)  | Sysfs (`asus-armoury`)        |
-|----------------------|-----------------|-------------------------------|
-| CPU PL1 (sostenido)  | 28–140 W        | `ppt_pl1_spl`                 |
-| CPU PL2 (ráfaga)     | 28–175 W        | `ppt_pl2_sppt`                |
-| GPU Dynamic Boost    | 5–25 W          | `nv_dynamic_boost`            |
-| Thermal Target       | 75–87 °C        | `nv_temp_target`              |
+| Parámetro            | Sysfs (`asus-armoury`)        |
+|----------------------|-------------------------------|
+| CPU PL1 (sostenido)  | `ppt_pl1_spl`                 |
+| CPU PL2 (ráfaga)     | `ppt_pl2_sppt`                |
+| GPU Dynamic Boost    | `nv_dynamic_boost`            |
+| Thermal Target       | `nv_temp_target`              |
 
 **Garantías de seguridad:**
 1. Cada escritura se valida contra los `_max` / `_min` que el firmware declara
@@ -99,9 +97,8 @@ Parámetros controlables en el G614JV:
 4. Por defecto, la app no toca nada y arranca con los valores que el firmware
    ya tiene.
 
-GPU Base Clock Offset y Memory Clock Offset se muestran pero están deshabilitados
-en Wayland (Wayland no permite sobreescribir los relojes de la GPU sin extensiones
-privativas aún no disponibles en Bazzite/KDE).
+GPU Base Clock Offset y Memory Clock Offset se aplican por NVML cuando el driver
+lo permite. Requieren confirmación adicional porque pueden causar inestabilidad.
 
 Para agregar tu propio equipo o ajustar rangos, ver
 [docs/supported-devices.md](docs/supported-devices.md).
@@ -133,8 +130,33 @@ sudo bash scripts/enable-cpu-power.sh
 App de escritorio (requiere Node.js/npm):
 
 ```bash
+bash scripts/install-all.sh      # terminal + escritorio si npm está disponible
 bash scripts/install-desktop.sh   # dependencias npm + entrada en el menú de apps
 monitor --desktop                 # o lanzar desde el menú
+```
+
+### Rescate / desinstalación segura
+
+Si algo del stack de servicios root causa problemas y solo puedes entrar por
+TTY (`Ctrl+Alt+F3`), desactiva todo lo automático con:
+
+```bash
+cd ~/MyFiles/Dev/Rog-Monitor
+sudo bash scripts/rog-monitor-safe-mode.sh disable
+sudo reboot
+```
+
+Para quitar las integraciones root instaladas sin borrar tu configuración de
+usuario:
+
+```bash
+sudo bash scripts/rog-monitor-safe-mode.sh uninstall
+```
+
+Para quitar solo lanzadores de usuario:
+
+```bash
+bash scripts/uninstall.sh
 ```
 
 ---
@@ -202,11 +224,12 @@ la app de escritorio.
 
 ## Hardware soportado
 
-### Equipo de referencia calibrado
+### Perfiles calibrados
 
-| Modelo | CPU | GPU | Estado |
-|--------|-----|-----|--------|
-| ASUS ROG Strix G614JV | Intel Core i7-13650HX | RTX 4060 Mobile | Referencia calibrada (v9) |
+El repo incluye perfiles calibrados comunitarios y también puede leer rangos en
+vivo desde sysfs. Para publicar un perfil nuevo, evita datos personales y usa
+solo identificadores técnicos de firmware cuando sean necesarios para detectar
+el dispositivo.
 
 ### Sensores genéricos
 

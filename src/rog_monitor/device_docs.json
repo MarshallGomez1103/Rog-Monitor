@@ -17,6 +17,7 @@
     {
       "vendor": "Intel",
       "component_class": "CPU-laptop",
+      "models": ["Core i9-14900HX", "Core i9-13900HX", "Core i7-13650HX", "Core Ultra H", "Core HX"],
       "safe_range_rules": {
         "text": "Look up your exact CPU on Intel ARK. The two power knobs are Processor Base Power (PL1, sustained) and Maximum Turbo Power (PL2, burst). Safe range: never set PL1/PL2 above the Maximum Turbo Power that ARK lists for your SKU; the firmware will refuse or throttle beyond it. Lowering PL1 reduces sustained heat and fan noise with little gaming impact (games are usually GPU-bound). Raising PL2 only helps short bursts and adds heat. Example mobile H/HX-class figures: i9-14900HX = 55 W base / 157 W turbo; i9-13900H = 45 W base / 115 W turbo. Use YOUR SKU's numbers from ARK as the ceiling.",
         "limits": {
@@ -33,6 +34,7 @@
     {
       "vendor": "Intel",
       "component_class": "CPU-desktop",
+      "models": ["Core i9-14900K", "Core i7-14700K", "Core i5-14600K", "Core K-series"],
       "safe_range_rules": {
         "text": "Desktop K-series CPUs expose Processor Base Power and Maximum Turbo Power on Intel ARK; many boards run an 'unlimited' PL1=PL2 profile that can cause thermal/voltage stress. Intel's recommended baseline is to keep PL1/PL2 at the values ARK lists for the SKU (e.g. i9-14900K = 125 W base / 253 W turbo) unless you have the cooling and have read Intel's default-settings guidance. Use the Intel Default Settings profile if your motherboard offers it.",
         "limits": {
@@ -46,8 +48,43 @@
       ]
     },
     {
+      "vendor": "Intel",
+      "component_class": "GPU-desktop",
+      "models": ["Arc A770", "Arc A750", "Arc A580", "Arc B580", "Arc desktop"],
+      "safe_range_rules_i18n": {
+        "es": "Las GPUs Intel Arc se deben ajustar con los limites oficiales de Intel Graphics Software o firmware del board. ROG Monitor no debe asumir power/temperature limits hasta tener backend verificado por plataforma. Para uso seguro: mantener limites de fabrica, actualizar driver/firmware desde Intel y validar estabilidad despues de cualquier cambio.",
+        "en": "Intel Arc GPUs should be tuned only within limits exposed by Intel Graphics Software or the board firmware. ROG Monitor must not assume power/temperature limits until a verified backend exists. Safe practice: keep factory limits, update driver/firmware from Intel and validate stability after changes."
+      },
+      "safe_range_rules": {
+        "text": "Intel Arc desktop GPUs should be treated as vendor/driver-bounded. Use Intel's official software and product pages for exact board limits; ROG Monitor keeps this documentation-only until a safe Linux write backend is verified.",
+        "limits": null
+      },
+      "official_docs": [
+        {"title": "Intel Arc Graphics", "url": "https://www.intel.com/content/www/us/en/products/details/discrete-gpus/arc.html"},
+        {"title": "Intel Graphics Software", "url": "https://www.intel.com/content/www/us/en/support/articles/000090168/graphics.html"}
+      ]
+    },
+    {
+      "vendor": "Intel",
+      "component_class": "GPU-laptop",
+      "models": ["Arc Laptop", "Iris Xe", "Intel integrated graphics", "Core Ultra graphics"],
+      "safe_range_rules_i18n": {
+        "es": "En portatiles con graficos Intel integrados o Arc, los limites dependen del OEM, firmware y perfil de energia. ROG Monitor debe preferir modo solo lectura o platform_profile generico hasta tener controles seguros reportados por el sistema.",
+        "en": "On laptops with Intel integrated or Arc graphics, limits depend on the OEM, firmware and power profile. ROG Monitor should prefer read-only or generic platform_profile behavior until safe controls are reported by the system."
+      },
+      "safe_range_rules": {
+        "text": "Laptop Intel GPU behavior is OEM/firmware-bound. Use read-only telemetry unless the system exposes safe, writable controls.",
+        "limits": null
+      },
+      "official_docs": [
+        {"title": "Intel Graphics product support", "url": "https://www.intel.com/content/www/us/en/support/products/80939/graphics.html"},
+        {"title": "Intel Arc laptop graphics", "url": "https://www.intel.com/content/www/us/en/products/details/discrete-gpus/arc/mobile.html"}
+      ]
+    },
+    {
       "vendor": "AMD",
       "component_class": "CPU-laptop",
+      "models": ["Ryzen 9 7945HX", "Ryzen 9 7845HX", "Ryzen 7 8845HS", "Ryzen AI HX", "Ryzen mobile"],
       "safe_range_rules": {
         "text": "Find your Ryzen mobile SKU on AMD's product pages; the relevant numbers are Default TDP and AMD Configurable TDP (cTDP) range. Stay within the cTDP window the OEM allows for your chassis — e.g. Ryzen 9 7945HX = 55 W default, 55-75 W cTDP. Lowering toward the bottom of cTDP cuts heat and noise; raising above the top is not supported and the firmware will cap it.",
         "limits": {
@@ -63,6 +100,7 @@
     {
       "vendor": "AMD",
       "component_class": "CPU-desktop",
+      "models": ["Ryzen 9 7950X", "Ryzen 9 7900X", "Ryzen 7 7800X3D", "Ryzen desktop", "AM5"],
       "safe_range_rules": {
         "text": "Desktop Ryzen CPUs are tuned mainly through PPT (Package Power Tracking), TDC and EDC limits in BIOS / Ryzen Master, plus Precision Boost Overdrive (PBO). The conservative path is to leave PPT at the AMD default for the socket and use Curve Optimizer for undervolting rather than raising PPT. Check the product page for the SKU's Default TDP.",
         "limits": {
@@ -75,8 +113,43 @@
       ]
     },
     {
+      "vendor": "AMD",
+      "component_class": "GPU-desktop",
+      "models": ["Radeon RX 7900 XTX", "Radeon RX 7900 XT", "Radeon RX 7800 XT", "Radeon RX 7700 XT", "Radeon RX 7600", "RDNA 3", "Radeon RX desktop"],
+      "safe_range_rules_i18n": {
+        "es": "Las Radeon RX de escritorio exponen limites por driver, VBIOS y ensamblador. Usa la pagina oficial del SKU y AMD Software: Adrenalin para power limit, temperatura y tuning. En Linux, ROG Monitor debe mantener esto como documentacion hasta tener un backend amdgpu seguro y probado.",
+        "en": "Desktop Radeon RX limits are bounded by driver, VBIOS and board vendor. Use the exact SKU page and AMD Software: Adrenalin for power limit, temperature and tuning. On Linux, ROG Monitor keeps this documentation-only until a safe tested amdgpu backend exists."
+      },
+      "safe_range_rules": {
+        "text": "Desktop Radeon RX tuning is board-specific. Use official AMD and board-vendor pages for exact limits; do not assume one RX model has the same safe range across every manufacturer.",
+        "limits": null
+      },
+      "official_docs": [
+        {"title": "AMD Radeon RX graphics cards", "url": "https://www.amd.com/en/products/graphics/desktops/radeon.html"},
+        {"title": "AMD Software: Adrenalin Edition", "url": "https://www.amd.com/en/products/software/adrenalin.html"}
+      ]
+    },
+    {
+      "vendor": "AMD",
+      "component_class": "GPU-laptop",
+      "models": ["Radeon RX 7900M", "Radeon RX 7800M", "Radeon RX 7600M XT", "Radeon mobile", "RDNA laptop"],
+      "safe_range_rules_i18n": {
+        "es": "En GPUs Radeon moviles, el TGP y la curva termica los fija el fabricante del portatil. ROG Monitor debe leer telemetria y usar perfiles de plataforma; los cambios de potencia solo deben habilitarse si el firmware/driver expone limites seguros.",
+        "en": "For mobile Radeon GPUs, TGP and thermal behavior are set by the laptop maker. ROG Monitor should read telemetry and use platform profiles; power writes should be enabled only if firmware/driver exposes safe limits."
+      },
+      "safe_range_rules": {
+        "text": "Mobile Radeon GPU limits are laptop-OEM-specific. Keep writes disabled unless safe live limits are exposed by firmware or driver.",
+        "limits": null
+      },
+      "official_docs": [
+        {"title": "AMD Radeon laptop graphics", "url": "https://www.amd.com/en/products/graphics/laptops.html"},
+        {"title": "AMD Software: Adrenalin Edition", "url": "https://www.amd.com/en/products/software/adrenalin.html"}
+      ]
+    },
+    {
       "vendor": "NVIDIA",
       "component_class": "GPU-laptop",
+      "models": ["RTX 4090 Laptop", "RTX 4080 Laptop", "RTX 4070 Laptop", "RTX 4060 Laptop", "Max-Q", "Dynamic Boost"],
       "safe_range_rules": {
         "text": "Laptop GeForce RTX power is set by the laptop maker as TGP (Total Graphics Power) plus Dynamic Boost (extra watts shifted from the CPU when the CPU is idle, up to 25 W on RTX 40). You do NOT raise TGP past what the OEM ships; you only lower it (quieter/cooler) or use the OEM's max. Core/memory clock OFFSETS are the only true overclock you control: small offsets (roughly +100 to +200 MHz core, +200 to +500 MHz memory) are commonly stable, larger ones risk artifacts, crashes or driver resets. Always stress-test after a change and back off if you see instability. The GPU thermal ceiling on RTX 40 laptops is firmware-capped (commonly ~87 C); it cannot be pushed past the firmware limit.",
         "limits": {
@@ -95,6 +168,7 @@
     {
       "vendor": "NVIDIA",
       "component_class": "GPU-desktop",
+      "models": ["RTX 4090", "RTX 4080", "RTX 4080 SUPER", "RTX 4070 Ti SUPER", "RTX 4070", "Ada Lovelace"],
       "safe_range_rules": {
         "text": "Desktop GeForce cards are tuned via Power Limit (% of TDP), Temperature Limit, and core/memory clock offsets, typically in a tool like the NVIDIA app or third-party utilities. Conservative practice: keep the temperature limit at or below the board's default (often ~83-88 C), use small clock offsets and stress-test. Raising the power limit above 100% only helps if cooling allows; it never exceeds the board's hardware power ceiling.",
         "limits": {
@@ -109,8 +183,27 @@
       ]
     },
     {
+      "vendor": "Gigabyte",
+      "component_class": "GPU-desktop",
+      "models": ["GeForce RTX 4080", "GeForce RTX 4080 SUPER", "Gaming OC", "AORUS Master", "AERO OC", "Windforce"],
+      "safe_range_rules": {
+        "text": "Para una tarjeta Gigabyte/AORUS concreta, usa siempre la pagina oficial del SKU: ahi estan BIOS, firmware, utilidades y especificaciones de boost/power target. ROG Monitor no debe asumir limites de una RTX 4080 generica para todas las ensambladoras. Practica conservadora: mantener power/temperature limit dentro del valor de fabrica del board, usar offsets pequenos y hacer benchmark despues de cada cambio.",
+        "limits": {
+          "thermal_target": {"min": 70, "max": 88, "unit": "C", "note": "Usa el limite de temperatura de fabrica del SKU Gigabyte concreto."},
+          "base_clock_offset": {"min": -200, "max": 200, "unit": "MHz", "note": "Rango conservador; validar estabilidad."},
+          "mem_clock_offset": {"min": -500, "max": 1500, "unit": "MHz", "note": "Rango conservador; validar estabilidad."}
+        }
+      },
+      "official_docs": [
+        {"title": "GIGABYTE Graphics Cards — catalogo oficial", "url": "https://www.gigabyte.com/Graphics-Card"},
+        {"title": "AORUS Graphics Cards — catalogo oficial", "url": "https://www.aorus.com/graphics-cards"},
+        {"title": "GIGABYTE Control Center — utilidades oficiales", "url": "https://www.gigabyte.com/Consumer/Software/GIGABYTE-Control-Center/global/"}
+      ]
+    },
+    {
       "vendor": "ASUS",
       "component_class": "chassis-laptop",
+      "models": ["ROG", "TUF", "Zephyrus", "Armoury Crate", "Manual Mode", "Silent", "Performance", "Turbo"],
       "safe_range_rules": {
         "text": "ASUS ROG/TUF laptops switch power through Armoury Crate operating modes: Silent (limits CPU & GPU power, very quiet), Performance (balances power/temp/acoustics) and Turbo (maximum CPU+GPU power and fan speed, AC only). Manual mode exposes per-component limits and, on supported machines, GPU base/memory clock offsets — ASUS warns these can reduce stability and recommends benchmarking after each change. Stay on AC power for the higher modes. ROG Monitor mirrors this: quiet = lowest safe limits, performance = factory safe ceiling, all re-clamped to the firmware's own min/max.",
         "limits": null
@@ -122,8 +215,43 @@
       ]
     },
     {
+      "vendor": "ASUS",
+      "component_class": "GPU-desktop",
+      "models": ["ROG Strix graphics cards", "TUF Gaming graphics cards", "ASUS Dual graphics cards", "RTX 4090", "RTX 4080", "RTX 4070", "Radeon RX 7900 XTX", "Radeon RX 7800 XT"],
+      "safe_range_rules_i18n": {
+        "es": "ASUS fabrica tarjetas graficas con GPU NVIDIA y AMD. Los limites seguros salen del SKU exacto, su VBIOS y GPU Tweak/driver oficial. ROG Monitor no debe mezclar limites de una ensambladora con otra ni asumir que todas las RTX/RX comparten el mismo techo.",
+        "en": "ASUS makes graphics cards using NVIDIA and AMD GPUs. Safe limits come from the exact SKU, its VBIOS and GPU Tweak/official driver. ROG Monitor must not mix board-vendor limits or assume all RTX/RX cards share the same ceiling."
+      },
+      "safe_range_rules": {
+        "text": "ASUS desktop GPUs are board-specific. Use the exact ASUS SKU support page for BIOS, utilities and default limits.",
+        "limits": null
+      },
+      "official_docs": [
+        {"title": "ASUS graphics cards", "url": "https://www.asus.com/motherboards-components/graphics-cards/"},
+        {"title": "ASUS GPU Tweak III", "url": "https://www.asus.com/campaign/GPU-Tweak-III/"}
+      ]
+    },
+    {
+      "vendor": "ASUS",
+      "component_class": "GPU-laptop",
+      "models": ["ROG laptop GPU", "TUF laptop GPU", "RTX Laptop GPU", "Radeon laptop GPU", "Advanced Optimus", "MUX"],
+      "safe_range_rules_i18n": {
+        "es": "En portatiles ASUS, la GPU movil se controla por firmware del chasis, Armoury Crate/asus-armoury y el driver. ROG Monitor puede aplicar solo los controles que el firmware expone con min/max seguros.",
+        "en": "On ASUS laptops, the mobile GPU is controlled by chassis firmware, Armoury Crate/asus-armoury and the driver. ROG Monitor may apply only controls exposed by firmware with safe min/max values."
+      },
+      "safe_range_rules": {
+        "text": "ASUS laptop GPU behavior is chassis-specific. ROG Monitor writes only live firmware-exposed controls such as Dynamic Boost and GPU thermal target where available.",
+        "limits": null
+      },
+      "official_docs": [
+        {"title": "ASUS ROG laptop performance modes", "url": "https://rog.asus.com/articles/guides/armoury-crate-performance-modes-explained-silent-vs-performance-vs-turbo-vs-windows/"},
+        {"title": "ASUS Manual Mode guide", "url": "https://rog.asus.com/articles/guides/how-to-tweak-your-rog-laptops-performance-with-armoury-crates-manual-mode/"}
+      ]
+    },
+    {
       "vendor": "Lenovo",
       "component_class": "chassis-laptop",
+      "models": ["Legion", "Legion Pro", "Legion Slim", "Lenovo Vantage", "Fn+Q", "Quiet", "Balanced", "Performance"],
       "safe_range_rules": {
         "text": "Lenovo Legion laptops switch power via Lenovo Vantage / Legion Space or the Fn+Q hotkey: Quiet (lowest power & noise), Balanced (dynamically shifts CPU/GPU power for everyday use) and Performance (maximum power, more noise and heat). Custom mode on some models exposes TDP and GPU overclock sliders. Use Quiet to keep the machine cool, Performance only on AC power; the firmware caps each mode.",
         "limits": null
@@ -136,6 +264,7 @@
     {
       "vendor": "Gigabyte",
       "component_class": "chassis-laptop",
+      "models": ["AORUS", "AERO", "GIGABYTE Control Center", "Quiet", "Power Saving", "Performance", "Turbo"],
       "safe_range_rules": {
         "text": "Gigabyte AORUS/AERO laptops use GIGABYTE Control Center (Fn+ESC) with QUIET, POWER SAVING, PERFORMANCE and ENTERTAINMENT modes. Gaming/Turbo modes raise system power and enable Dynamic Boost 2.0 with automatic CPU/GPU overclock and full fan speed. Use Quiet/Power Saving for low heat, Turbo only on AC; the firmware bounds each mode.",
         "limits": null
@@ -148,6 +277,7 @@
     {
       "vendor": "MSI",
       "component_class": "chassis-laptop",
+      "models": ["MSI Center", "Dragon Center", "Stealth", "Raider", "Vector", "Titan", "Extreme Performance", "Super Battery"],
       "safe_range_rules": {
         "text": "MSI gaming laptops switch power through MSI Center > Features > User Scenario: typically Super Battery / Balanced / Extreme Performance. Extreme Performance gives the highest CPU/GPU limits and exposes a GPU OC option (gear icon) on supported parts. Keep the AC adapter connected for the higher scenarios; lower scenarios reduce heat and noise. Firmware caps each scenario.",
         "limits": null
@@ -160,6 +290,7 @@
     {
       "vendor": "HP",
       "component_class": "chassis-laptop",
+      "models": ["OMEN", "Victus", "OMEN Gaming Hub", "Performance Control"],
       "safe_range_rules": {
         "text": "HP OMEN/Victus laptops use OMEN Gaming Hub for performance control; Performance mode raises CPU/GPU power and is most useful on higher-TDP GPUs with a sufficient power adapter (availability varies by model). Use the default/balanced mode for cooler, quieter operation. Firmware and adapter wattage bound what each mode can do.",
         "limits": null
@@ -172,6 +303,7 @@
     {
       "vendor": "Dell",
       "component_class": "chassis-laptop",
+      "models": ["Alienware", "Dell G", "Alienware Command Center", "AWCC", "High Performance"],
       "safe_range_rules": {
         "text": "Dell/Alienware laptops manage power through Alienware Command Center (AWCC) or Dell Power Manager, including a High Performance mode for Alienware laptops and quieter balanced/battery modes. Use balanced modes for low heat; High Performance on AC. Firmware and the thermal table bound each mode.",
         "limits": null
@@ -183,6 +315,7 @@
     {
       "vendor": "Acer",
       "component_class": "chassis-laptop",
+      "models": ["Predator", "Nitro", "PredatorSense", "NitroSense", "Turbo", "Extreme", "Performance"],
       "safe_range_rules": {
         "text": "Acer Predator/Nitro laptops use PredatorSense (or NitroSense) with modes such as Quiet/Default, Balanced, Performance/Extreme and Turbo, plus Auto thermal management. Turbo/Extreme push CPU/GPU to maximum (AC only) and may overclock; lower modes reduce heat and noise. Firmware bounds each mode.",
         "limits": null

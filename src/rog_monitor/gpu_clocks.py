@@ -1,7 +1,7 @@
 """gpu_clocks.py — Helper NVML para offsets de reloj GPU en Wayland.
 
 Usa ctypes directo a libnvidia-ml.so.1 (sin pip, sin nvidia-ml-py).
-Funciona en Wayland con el driver 610.43.02+ en la RTX 4060 del G614JV.
+Funciona en Wayland con drivers NVIDIA recientes cuando NVML expone offsets.
 
 Uso sin root (lectura):
     python3 -m rog_monitor.gpu_clocks read

@@ -26,8 +26,8 @@ Design notes
 - GPU clock offset READ is unprivileged (NVML, libnvidia-ml.so.1). SET needs root.
 - Reads are always unprivileged (sysfs / NVML are world-readable).
 - ROG_FW_ATTRS_DIR env override lets tests use a fake sysfs.
-- GPU clock offsets: NO LONGER blocked by Wayland. NVML works in Wayland
-  (verified: driver 610.43.02, RTX 4060, G614JV). SET still needs root (pkexec).
+- GPU clock offsets: NO LONGER blocked by Wayland. NVML works in Wayland on
+  supported NVIDIA drivers. SET still needs root (pkexec).
 - Device detection: product_name DMI string matched against device_profiles.json.
 - Fallback: if device not in DB, use 'auto' profile with live sysfs ranges.
 - Custom override: ~/.config/rog-monitor/device.json (same structure as DB entry).
@@ -120,7 +120,7 @@ def _is_wayland() -> bool:
 def _read_nvml_offsets() -> dict | None:
     """Try to read GPU clock offsets from NVML (gpu_clocks.py). Returns None on failure.
 
-    NVML works unprivileged in Wayland (verified: driver 610.43.02, RTX 4060, G614JV).
+    NVML works unprivileged in Wayland on supported NVIDIA drivers.
     This is read-only and never raises — failures are silently ignored for resilience.
     """
     try:

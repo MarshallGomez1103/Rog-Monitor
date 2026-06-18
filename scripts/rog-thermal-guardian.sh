@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# rog-thermal-guardian.sh — Guardián térmico GPU: VENTILADORES PRIMERO
+# rog-thermal-guardian.sh — Guardián térmico CPU/GPU: VENTILADORES PRIMERO
 #
 # Filosofía de diseño:
-#   1. GPU demasiado caliente → subir ventiladores primero.
+#   1. CPU/GPU demasiado caliente → subir ventiladores primero.
 #   2. Si sigue subiendo → recortar nv_dynamic_boost y, si hace falta, PL.
 #   3. Al enfriar → revertir suavemente.
 #   FALLA-SEGURO: si no puede leer temperatura → sube fans, NO sube potencia.
@@ -40,8 +40,10 @@
 #     lo lee para mostrarlo en el stream NDJSON; nunca lo escribe.
 #
 # Configuración (variables de entorno o argumentos):
-#   ROG_THERMAL_CEILING     — techo en °C (default 83, máx firmware 87)
-#   ROG_THERMAL_WARN        — umbral de alerta en °C (default ceiling-5)
+#   ROG_THERMAL_CPU_CEILING — techo CPU en °C (default 92, rango UI 70-100)
+#   ROG_THERMAL_GPU_CEILING — techo GPU en °C (default 83, máx firmware 87)
+#   ROG_THERMAL_CEILING     — alias legacy para GPU ceiling
+#   ROG_THERMAL_WARN        — umbral GPU legacy (default gpu_ceiling-5)
 #   ROG_THERMAL_INTERVAL    — intervalo del loop en segundos (default 2)
 #   ROG_THERMAL_DB_PATH     — ruta a nv_dynamic_boost sysfs
 #   ROG_THERMAL_PL2_PATH    — ruta a ppt_pl2_sppt sysfs
@@ -56,18 +58,19 @@
 #                             de golpe, para que no "rebote" para arriba.
 #
 # Uso:
-#   rog-thermal-guardian.sh [--ceiling 83] [--warn 78] [--interval 2]
+#   rog-thermal-guardian.sh [--cpu-ceiling 92] [--gpu-ceiling 83] [--interval 2]
 #
 # Instalación:
 #   Ver systemd/rog-thermal-guardian.service — instalar con pkexec.
-#   El orquestador documenta los comandos sudo en docs/SUDO-PENDIENTE-v10.md.
+#   Para recuperación desde TTY: scripts/rog-monitor-safe-mode.sh.
 
 set -euo pipefail
 
 # ------------------------------------------------------------------
 # Parseo de argumentos
 # ------------------------------------------------------------------
-CEILING="${ROG_THERMAL_CEILING:-83}"
+CPU_CEILING="${ROG_THERMAL_CPU_CEILING:-92}"
+GPU_CEILING="${ROG_THERMAL_GPU_CEILING:-${ROG_THERMAL_CEILING:-83}}"
 INTERVAL="${ROG_THERMAL_INTERVAL:-2}"
 WARN_DELTA=5
 LOAD_IDLE="${ROG_THERMAL_LOAD_IDLE:-15}"
@@ -77,7 +80,8 @@ STEP_DELAY="${ROG_THERMAL_STEP_DELAY:-10}"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --ceiling)  CEILING="$2";  shift 2 ;;
+        --ceiling|--gpu-ceiling)  GPU_CEILING="$2";  shift 2 ;;
+        --cpu-ceiling) CPU_CEILING="$2"; shift 2 ;;
         --warn)     WARN_OFFSET="$2"; shift 2 ;;
         --interval) INTERVAL="$2"; shift 2 ;;
         --load-idle) LOAD_IDLE="$2"; shift 2 ;;
@@ -89,7 +93,12 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-WARN_TEMP="${WARN_OFFSET:-$(( CEILING - WARN_DELTA ))}"
+(( CPU_CEILING < 70 )) && CPU_CEILING=70
+(( CPU_CEILING > 100 )) && CPU_CEILING=100
+(( GPU_CEILING < 70 )) && GPU_CEILING=70
+(( GPU_CEILING > 87 )) && GPU_CEILING=87
+GPU_WARN_TEMP="${WARN_OFFSET:-$(( GPU_CEILING - WARN_DELTA ))}"
+CPU_WARN_TEMP="${ROG_THERMAL_CPU_WARN:-$(( CPU_CEILING - 8 ))}"
 
 # ------------------------------------------------------------------
 # Rutas sysfs con overrides por entorno (facilita testing)
@@ -155,6 +164,33 @@ read_gpu_temp() {
     echo ""
 }
 
+read_cpu_temp() {
+    local best=""
+    local hwmon_dir name_file hw_name temp_file raw c
+
+    for hwmon_dir in /sys/class/hwmon/hwmon*; do
+        name_file="$hwmon_dir/name"
+        [[ -f "$name_file" ]] || continue
+        hw_name=$(cat "$name_file" 2>/dev/null || echo "")
+        case "$hw_name" in
+            coretemp|k10temp|zenpower|cpu_thermal|acpitz) ;;
+            *) continue ;;
+        esac
+        for temp_file in "$hwmon_dir"/temp*_input; do
+            [[ -f "$temp_file" ]] || continue
+            raw=$(cat "$temp_file" 2>/dev/null || echo "")
+            if [[ "$raw" =~ ^[0-9]+$ ]] && (( raw > 1000 )); then
+                c=$(( raw / 1000 ))
+                if [[ -z "$best" || "$c" -gt "$best" ]]; then
+                    best="$c"
+                fi
+            fi
+        done
+    done
+
+    echo "$best"
+}
+
 # ------------------------------------------------------------------
 # Leer carga CPU/GPU (falla-segura: "" si no se puede → se trata como ALTA,
 # nunca como idle, para no relajar fans por error de lectura)
@@ -214,18 +250,20 @@ write_guardian_state() {
     fi
     local payload
     printf -v payload \
-        '{"mode":"%s","reason":"%s","updated":%s,"aggression":"%s","thermal_state":"%s","cooldown_remaining":%s,"interventions":%s}' \
+        '{"mode":"%s","reason":"%s","updated":%s,"aggression":"%s","thermal_state":"%s","cooldown_remaining":%s,"interventions":%s,"cpu_ceiling":%s,"gpu_ceiling":%s,"cpu_temp":"%s","gpu_temp":"%s"}' \
         "$mode" "$reason" "$now" \
         "${LOAD_LEVELS[$CURRENT_LOAD_LEVEL]:-balanced}" \
         "${GUARDIAN_STATE:-normal}" \
         "$remaining" \
-        "${INTERVENTION_COUNT:-0}"
+        "${INTERVENTION_COUNT:-0}" \
+        "$CPU_CEILING" "$GPU_CEILING" \
+        "${CPU_TEMP:-}" "${GPU_TEMP:-}"
     local f
     for f in /var/home/*/.local/share/rog-monitor /home/*/.local/share/rog-monitor; do
         [[ -d "$f" ]] || continue
-        printf '%s\n' "$payload" \
-            > "$f/thermal-guardian-state.json.tmp" 2>/dev/null &&
-            mv -f "$f/thermal-guardian-state.json.tmp" "$f/thermal-guardian-state.json" 2>/dev/null
+        if printf '%s\n' "$payload" > "$f/thermal-guardian-state.json.tmp" 2>/dev/null; then
+            mv -f "$f/thermal-guardian-state.json.tmp" "$f/thermal-guardian-state.json" 2>/dev/null || true
+        fi
     done
 }
 
@@ -324,32 +362,32 @@ LAST_STEP_DOWN=0        # epoch del último escalón de bajada aplicado
 # Decide el nivel DESEADO según carga+temp (sin histéresis); la histéresis
 # de bajada se aplica en evaluate_load() comparando contra CURRENT_LOAD_LEVEL.
 desired_load_level() {
-    local cpu_load="$1" gpu_load="$2" temp="$3"
+    local cpu_load="$1" gpu_load="$2" cpu_temp="$3" gpu_temp="$4"
 
     # Falla-segura: cualquier lectura ausente → pedir el nivel más agresivo.
-    if [[ -z "$cpu_load" || -z "$gpu_load" || -z "$temp" ]]; then
+    if [[ -z "$cpu_load" || -z "$gpu_load" || -z "$cpu_temp" || -z "$gpu_temp" ]]; then
         echo 2; return
     fi
 
     local max_load=$(( cpu_load > gpu_load ? cpu_load : gpu_load ))
 
-    if (( temp >= WARN_TEMP || max_load >= LOAD_HIGH )); then
+    if (( cpu_temp >= CPU_WARN_TEMP || gpu_temp >= GPU_WARN_TEMP || max_load >= LOAD_HIGH )); then
         echo 2   # performance/high
-    elif (( max_load <= LOAD_IDLE && temp < (WARN_TEMP - 10) )); then
+    elif (( max_load <= LOAD_IDLE && cpu_temp < (CPU_WARN_TEMP - 10) && gpu_temp < (GPU_WARN_TEMP - 10) )); then
         echo 0   # quiet/silence — frío e idle de verdad
     else
         echo 1   # balanced/normal
     fi
 }
 
-# evaluate_load <cpu_load> <gpu_load> <temp> — aplica histéresis temporal:
+# evaluate_load <cpu_load> <gpu_load> <cpu_temp> <gpu_temp> — aplica histéresis temporal:
 # subir es INMEDIATO (proteger primero); bajar requiere COOLDOWN segundos
 # continuos de "podríamos bajar" y luego un escalón cada STEP_DELAY s (nunca
 # de golpe a silencio).
 evaluate_load() {
-    local cpu_load="$1" gpu_load="$2" temp="$3" now want
+    local cpu_load="$1" gpu_load="$2" cpu_temp="$3" gpu_temp="$4" now want
     now=$(date +%s)
-    want="$(desired_load_level "$cpu_load" "$gpu_load" "$temp")"
+    want="$(desired_load_level "$cpu_load" "$gpu_load" "$cpu_temp" "$gpu_temp")"
 
     if (( want > CURRENT_LOAD_LEVEL )); then
         # Subir agresividad: inmediato, sin esperar.
@@ -379,7 +417,7 @@ evaluate_load() {
 
     set_fan_aggression "${LOAD_LEVELS[$CURRENT_LOAD_LEVEL]}"
     write_guardian_state "${LOAD_MODE_NAMES[$CURRENT_LOAD_LEVEL]}" \
-        "cpu=${cpu_load:-?}% gpu=${gpu_load:-?}% temp=${temp:-?}C"
+        "load cpu=${cpu_load:-?}% gpu=${gpu_load:-?}% temp cpu=${cpu_temp:-?}C gpu=${gpu_temp:-?}C"
 }
 
 # ------------------------------------------------------------------
@@ -412,21 +450,28 @@ save_originals_once() {
 # Lógica principal por ciclo
 # ------------------------------------------------------------------
 handle_temp() {
-    local temp="$1"
+    local cpu_temp="$1"
+    local gpu_temp="$2"
 
-    if [[ -z "$temp" ]]; then
-        # FALLA-SEGURO: sin temperatura → subir fans, NO tocar potencia
-        warn_log "No se pudo leer temp GPU → modo falla-seguro (fans max)"
+    if [[ -z "$cpu_temp" && -z "$gpu_temp" ]]; then
+        # FALLA-SEGURO: sin temperaturas → subir fans, NO tocar potencia
+        warn_log "No se pudo leer temp CPU/GPU → modo falla-seguro (fans max)"
         set_fan_aggression "performance"
         FAN_PROFILE_PUSHED=true
         GUARDIAN_STATE="fans-up"
         return
     fi
 
-    if (( temp >= CEILING )); then
+    local cpu_over=0 gpu_over=0 cpu_warn=0 gpu_warn=0
+    [[ -n "$cpu_temp" ]] && (( cpu_temp >= CPU_CEILING )) && cpu_over=1
+    [[ -n "$gpu_temp" ]] && (( gpu_temp >= GPU_CEILING )) && gpu_over=1
+    [[ -n "$cpu_temp" ]] && (( cpu_temp >= CPU_WARN_TEMP )) && cpu_warn=1
+    [[ -n "$gpu_temp" ]] && (( gpu_temp >= GPU_WARN_TEMP )) && gpu_warn=1
+
+    if (( cpu_over == 1 || gpu_over == 1 )); then
         # EMERGENCIA: al techo
         save_originals_once
-        log "Temp ${temp}°C >= techo ${CEILING}°C — subir fans + recortar boost"
+        log "Temp cpu=${cpu_temp:-?}°C/gpu=${gpu_temp:-?}°C >= techo cpu=${CPU_CEILING}°C/gpu=${GPU_CEILING}°C — subir fans + recortar boost"
         set_fan_aggression "performance"
         FAN_PROFILE_PUSHED=true
 
@@ -460,11 +505,11 @@ handle_temp() {
         fi
         INTERVENTION_COUNT=$(( INTERVENTION_COUNT + 1 ))
 
-    elif (( temp >= WARN_TEMP )); then
+    elif (( cpu_warn == 1 || gpu_warn == 1 )); then
         # ADVERTENCIA: acercándose al techo → solo fans
         save_originals_once
         if [[ "$GUARDIAN_STATE" == "normal" ]]; then
-            log "Temp ${temp}°C >= umbral alerta ${WARN_TEMP}°C — subir fans"
+            log "Temp cpu=${cpu_temp:-?}°C/gpu=${gpu_temp:-?}°C >= umbral alerta cpu=${CPU_WARN_TEMP}°C/gpu=${GPU_WARN_TEMP}°C — subir fans"
             set_fan_aggression "performance"
             FAN_PROFILE_PUSHED=true
             GUARDIAN_STATE="fans-up"
@@ -474,10 +519,12 @@ handle_temp() {
     else
         # NORMAL: por debajo del umbral → revertir suavemente
         if [[ "$GUARDIAN_STATE" != "normal" ]]; then
-            local margin=$(( CEILING - temp ))
-            if (( margin >= 8 )); then
+            local cpu_margin=99 gpu_margin=99
+            [[ -n "$cpu_temp" ]] && cpu_margin=$(( CPU_CEILING - cpu_temp ))
+            [[ -n "$gpu_temp" ]] && gpu_margin=$(( GPU_CEILING - gpu_temp ))
+            if (( cpu_margin >= 8 && gpu_margin >= 8 )); then
                 # Suficiente margen: restaurar
-                log "Temp ${temp}°C — margen ${margin}°C — restaurando configuración"
+                log "Temp cpu=${cpu_temp:-?}°C/gpu=${gpu_temp:-?}°C — margen suficiente — restaurando configuración"
 
                 # Restaurar dynamic_boost
                 if [[ -n "$ORIGINAL_DB" && -d "$DB_PATH" ]]; then
@@ -511,7 +558,7 @@ handle_temp() {
 # ------------------------------------------------------------------
 # Loop principal
 # ------------------------------------------------------------------
-log "Iniciando guardián térmico GPU (techo=${CEILING}°C, alerta=${WARN_TEMP}°C, intervalo=${INTERVAL}s)"
+log "Iniciando guardián térmico CPU/GPU (cpu=${CPU_CEILING}°C, gpu=${GPU_CEILING}°C, intervalo=${INTERVAL}s)"
 
 # Trap para limpieza al detener el servicio
 cleanup() {
@@ -530,8 +577,9 @@ cleanup() {
 trap cleanup SIGTERM SIGINT SIGHUP
 
 while true; do
-    TEMP="$(read_gpu_temp)"
-    handle_temp "$TEMP"
+    CPU_TEMP="$(read_cpu_temp)"
+    GPU_TEMP="$(read_gpu_temp)"
+    handle_temp "$CPU_TEMP" "$GPU_TEMP"
     # La modulación por carga solo decide la agresividad de fans cuando NO
     # hay una emergencia térmica activa — durante "fans-up"/"boost-down"/
     # "pl-down" handle_temp ya forzó "performance" y eso manda (falla-segura:
@@ -539,7 +587,7 @@ while true; do
     if [[ "$GUARDIAN_STATE" == "normal" ]]; then
         CPU_LOAD="$(read_cpu_load)"
         GPU_LOAD="$(read_gpu_load)"
-        evaluate_load "$CPU_LOAD" "$GPU_LOAD" "$TEMP"
+        evaluate_load "$CPU_LOAD" "$GPU_LOAD" "$CPU_TEMP" "$GPU_TEMP"
     else
         write_guardian_state "high" "emergencia térmica: ${GUARDIAN_STATE}"
     fi

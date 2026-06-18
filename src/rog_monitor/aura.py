@@ -114,12 +114,10 @@ OPENRGB_CANDIDATES = [
 ]
 
 # Periféricos RGB conocidos que OpenRGB NO soporta (detección por VID:PID en
-# /sys/class/hidraw — solo LECTURA de sysfs, jamás se le escribe al equipo:
-# los teclados Sinowealth/BY Tech se han brickeado con comandos adivinados,
-# por eso OpenRGB deshabilitó su controlador. Ver docs/redragon-protocol.md).
+# /sys/class/hidraw — solo LECTURA de sysfs, jamás se le escribe al equipo).
 KNOWN_PERIPHERALS = {
-    ("258A", "010C"): ("Redragon K734WCG-RGB-PRO", "cable"),
-    ("3554", "FA09"): ("Redragon K734WCG-RGB-PRO", "dongle 2.4G"),
+    ("258A", "010C"): ("Unsupported Sinowealth RGB keyboard", "cable"),
+    ("3554", "FA09"): ("Unsupported Sinowealth RGB keyboard", "dongle 2.4G"),
 }
 
 DEFAULTS = {
@@ -166,12 +164,12 @@ EFFECT_META = {
 }
 
 
-# Overrides de realidad-hardware para el teclado de ESTE equipo (G614JV,
-# placa interna de 4 zonas). `asusctl aura effect breathe --help` anuncia
+# Overrides de realidad-hardware para teclados ASUS internos de 4 zonas.
+# `asusctl aura effect breathe --help` anuncia
 # --colour2, pero el firmware IGNORA el segundo color (respira un solo color).
 # El firmware de este teclado ignora el segundo color, así que se oculta. Forzar
 # colours=1 aquí elimina el selector de color2 (UI) y el arg --colour2
-# (apply_state) para breathe. NO subir esto a 2 sin reprobar en el teclado real.
+# (apply_state) para breathe. NO subir esto a 2 sin reprobar en hardware real.
 HARDWARE_CAP_OVERRIDE = {
     "breathe": {"colours": 1},
 }

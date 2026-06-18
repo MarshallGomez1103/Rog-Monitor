@@ -31,31 +31,47 @@
     </div>
 
     <div class="controls">
-      <div class="segment" id="profile-seg" data-i18n-attr="title:topbar.profiles">
-        <button data-profile="power-saver" data-i18n="profile.power_saver">AHORRO</button>
-        <button data-profile="balanced" data-i18n="profile.balanced">BALANCED</button>
-        <button data-profile="performance" data-i18n="profile.performance">PERFORMANCE</button>
+      <div class="control-group control-group-performance">
+        <span class="control-group-label">Rendimiento</span>
+        <div class="segment" id="profile-seg" data-i18n-attr="title:topbar.profiles">
+          <button data-profile="power-saver" data-i18n="profile.power_saver">AHORRO</button>
+          <button data-profile="balanced" data-i18n="profile.balanced">BALANCED</button>
+          <button data-profile="performance" data-i18n="profile.performance">PERFORMANCE</button>
+        </div>
       </div>
 
       <!-- Los títulos se completan en JS con el nombre real de la dGPU detectada -->
-      <div class="segment" id="gpu-seg" data-i18n-attr="title:topbar.gpu_seg">
-        <button data-gpu="Integrated">iGPU</button>
-        <button data-gpu="Hybrid">HYBRID</button>
-        <button data-gpu="AsusMuxDgpu">dGPU</button>
+      <div class="control-group control-group-gpu">
+        <span class="control-group-label">GPU</span>
+        <div class="segment" id="gpu-seg" data-i18n-attr="title:topbar.gpu_seg">
+          <button data-gpu="Integrated">iGPU</button>
+          <button data-gpu="Hybrid">HYBRID</button>
+          <button data-gpu="AsusMuxDgpu">dGPU</button>
+        </div>
       </div>
 
-      <button id="update-btn" class="ghost" title="Buscar actualizaciones del repositorio">
-        <span id="update-label" data-i18n="topbar.update">ACTUALIZAR</span>
-      </button>
+      <div class="control-group control-group-tools">
+        <span class="control-group-label">Herramientas</span>
+        <button id="power-btn" class="ghost primary-action" data-i18n="topbar.power" title="Centro de Poder: limites de potencia CPU/GPU (requiere contraseña para aplicar)">PODER</button>
+        <button id="overlay-btn" class="ghost" data-i18n="topbar.overlay" title="Overlay de stats siempre encima para jugar (elige el monitor)">OVERLAY</button>
+        <button id="alerts-btn" class="ghost" data-i18n="topbar.alerts" title="Editar los umbrales de temperatura, potencia y alertas">ALERTAS</button>
+        <button id="theme-btn" class="ghost" data-i18n="topbar.theme" title="Apariencia: tema, modo claro/oscuro y tamaño">TEMA</button>
+      </div>
 
-      <button id="report-btn" class="ghost" data-i18n="topbar.report" title="Abre un issue en el repositorio de GitHub con la información del sistema ya escrita">REPORTAR ERROR</button>
-      <button id="alerts-btn" class="ghost" data-i18n="topbar.alerts" title="Editar los umbrales de temperatura, potencia y alertas">ALERTAS</button>
-      <button id="overlay-btn" class="ghost" data-i18n="topbar.overlay" title="Overlay de stats siempre encima para jugar (elige el monitor)">OVERLAY</button>
-      <button id="theme-btn" class="ghost" data-i18n="topbar.theme" title="Apariencia: tema, modo claro/oscuro y tamaño">TEMA</button>
-      <button id="power-btn" class="ghost" data-i18n="topbar.power" title="Centro de Poder: limites de potencia CPU/GPU (requiere contraseña para aplicar)">PODER</button>
-      <button id="wizard-btn" class="ghost" data-i18n="topbar.wizard" title="Volver a ver el asistente de primera vez">VER TUTORIAL</button>
-      <button id="roadmap-btn" class="ghost" data-i18n="topbar.roadmap" title="Roadmap: lo hecho y lo que viene">ROADMAP</button>
-      <button id="lang-btn" class="ghost" data-i18n-attr="title:topbar.lang,aria-label:topbar.lang" title="Idioma / Language" aria-label="Idioma / Language">A文</button>
+      <div class="control-group control-group-system">
+        <span class="control-group-label">Sistema</span>
+        <button id="update-btn" class="ghost" title="Buscar actualizaciones del repositorio">
+          <span id="update-label" data-i18n="topbar.update">ACTUALIZAR</span>
+        </button>
+        <button id="report-btn" class="ghost" data-i18n="topbar.report" title="Abre un issue en el repositorio de GitHub con la información del sistema ya escrita">REPORTAR ERROR</button>
+      </div>
+
+      <div class="control-group control-group-help">
+        <span class="control-group-label">Ayuda</span>
+        <button id="wizard-btn" class="ghost" data-i18n="topbar.wizard" title="Volver a ver el asistente de primera vez">VER TUTORIAL</button>
+        <button id="roadmap-btn" class="ghost" data-i18n="topbar.roadmap" title="Roadmap: lo hecho y lo que viene">ROADMAP</button>
+        <button id="lang-btn" class="ghost" data-i18n-attr="title:topbar.lang,aria-label:topbar.lang" title="Idioma / Language" aria-label="Idioma / Language">A文</button>
+      </div>
     </div>
   </header>
 
@@ -361,6 +377,7 @@
       <p class="sub fan-editing-note">Editando perfil: <b id="fan-editing-label">AHORRO</b>
         <span class="fan-active-indicator hidden" id="fan-active-indicator">(perfil activo del sistema)</span>
       </p>
+      <div id="fan-profile-summary" class="fan-profile-summary"></div>
 
       <p class="sub warn-note hidden" id="fan-calib-banner">
         ⚙ <b>Primera vez:</b> calibra los ventiladores (botón CALIBRAR). La app
@@ -369,7 +386,7 @@
       </p>
       <div class="fan-cap-row">
         <div>
-          <label>Tope de RPM — perfil <span id="fan-cap-label">AHORRO</span> (compartido entre ventiladores)</label>
+          <label>Tope de RPM — perfil <span id="fan-cap-label">AHORRO</span> (compartido entre ventiladores de este perfil)</label>
           <input type="number" id="fan-cap" min="2000" max="8000" step="100" placeholder="sin tope">
         </div>
         <button class="ghost" id="fan-clear-cap" title="Borra el tope: cada ventilador vuelve a poder llegar a su máximo">QUITAR CAP</button>
@@ -377,6 +394,7 @@
       </div>
       <p class="sub" id="fan-cap-preview"></p>
       <p class="sub" id="fan-max-note"></p>
+      <p class="sub" id="fan-acoustic-note"></p>
       <p class="sub">Las velocidades se editan en <b>% del máximo de cada ventilador</b>.
         La curva se guarda <b>completa (sin recortar)</b>: el tope se aplica al
         momento de mandarla al hardware. Cada perfil puede tener curvas distintas.</p>
@@ -533,17 +551,21 @@
       <div id="power-advanced-panel" class="hidden"></div>
       <!-- /v13 POWER-UI -->
 
-      <!-- pestañas CPU / GPU -->
+      <!-- pestañas Guardián / CPU / GPU -->
       <div class="segment" id="power-tabs">
-        <button data-tab="cpu" class="active">CPU</button>
+        <button data-tab="guardian" class="active">GUARDIÁN</button>
+        <button data-tab="cpu">CPU</button>
         <button data-tab="gpu">GPU</button>
       </div>
 
       <!-- advertencia PL1 > PL2 -->
       <p id="power-pl-warn">PL2 debe ser mayor o igual a PL1 para que la ráfaga funcione correctamente.</p>
 
+      <!-- panel GUARDIÁN -->
+      <div id="power-guardian-panel" class="power-tab-panel active"></div>
+
       <!-- panel CPU -->
-      <div id="power-cpu-panel" class="power-tab-panel active">
+      <div id="power-cpu-panel" class="power-tab-panel">
         <p class="dim" style="padding:1rem">Cargando…</p>
       </div>
 

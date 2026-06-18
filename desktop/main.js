@@ -10,6 +10,7 @@ const os = require('os');
 const REPO = path.resolve(__dirname, '..');
 const VENV_PY = path.join(REPO, '.venv', 'bin', 'python');
 const PYTHON = fs.existsSync(VENV_PY) ? VENV_PY : 'python3';
+const VERSION_FILE = path.join(REPO, 'VERSION');
 const PATH_HINTS = [
   path.join(os.homedir(), '.local', 'bin'),
   path.join(os.homedir(), '.linuxbrew', 'bin'),
@@ -36,6 +37,47 @@ function augmentEnv(base = process.env) {
 const APP_ENV = augmentEnv(process.env);
 process.env.PATH = APP_ENV.PATH;
 const PY_ENV = { ...APP_ENV, PYTHONPATH: path.join(REPO, 'src') };
+const DATA_DIR_PATH = path.join(os.homedir(), '.local', 'share', 'rog-monitor');
+const ERROR_LOG_PATH = path.join(DATA_DIR_PATH, 'errors.jsonl');
+const LAST_ISSUE_REPORT_PATH = path.join(DATA_DIR_PATH, 'last-issue-report.txt');
+
+function readVersion() {
+  const envVersion = String(process.env.ROG_MONITOR_VERSION || '').trim();
+  if (envVersion) return envVersion;
+  try {
+    const version = fs.readFileSync(VERSION_FILE, 'utf-8').trim();
+    if (version) return version;
+  } catch (_) { /* fallback below */ }
+  return require('./package.json').version;
+}
+
+const APP_VERSION = readVersion();
+
+function appendErrorLog(kind, payload = {}) {
+  try {
+    fs.mkdirSync(DATA_DIR_PATH, { recursive: true });
+    const entry = {
+      ts: new Date().toISOString(),
+      appVersion: APP_VERSION,
+      kind,
+      host: os.hostname(),
+      platform: `${process.platform} ${os.release()}`,
+      ...payload,
+    };
+    fs.appendFileSync(ERROR_LOG_PATH, JSON.stringify(entry) + '\n', 'utf-8');
+  } catch (_) { /* logging must never break the app */ }
+}
+
+function readErrorLogTail(maxLines = 60) {
+  try {
+    const lines = fs.readFileSync(ERROR_LOG_PATH, 'utf-8')
+      .split('\n')
+      .filter(Boolean);
+    return lines.slice(-maxLines).join('\n');
+  } catch (_) {
+    return '';
+  }
+}
 
 let win = null;
 let overlay = null;
@@ -83,9 +125,14 @@ function startBackend() {
       } catch (_) { /* partial line, ignore */ }
     }
   });
-  backend.stderr.on('data', (d) => console.error('[backend]', d.toString().trim()));
+  backend.stderr.on('data', (d) => {
+    const text = d.toString().trim();
+    console.error('[backend]', text);
+    if (text) appendErrorLog('backend-stderr', { message: text });
+  });
   backend.on('exit', (code) => {
     console.error('[backend] exited', code);
+    appendErrorLog('backend-exit', { code });
     backendPaused = false;
     if (win && !win.isDestroyed()) {
       win.webContents.send('backend-down', code);
@@ -125,6 +172,10 @@ function run(cmd, args, timeoutMs = 10000) {
       resolve({ ok: !err, out: (stdout || '').trim(), err: (stderr || String(err || '')).trim() });
     });
   });
+}
+
+function shQuote(value) {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`;
 }
 
 // maxBuffer ampliado a 16 MB para soportar sesiones de juego de 100+ min
@@ -322,7 +373,9 @@ ipcMain.handle('get-fan-config', (_e, profile) => {
     ok: true,
     profile,
     curves,
-    cap: store.cap_rpm || {},
+    cap: (saved && saved.cap_rpm) || store.cap_rpm || {},
+    profile_caps: Object.fromEntries(Object.entries(store.profiles || {})
+      .map(([name, value]) => [name, (value && value.cap_rpm) || null])),
     max_rpm: store.max_rpm || {},
     calibration: store.calibration || {},
     source: Object.keys(saved).length ? 'guardado' : 'por defecto',
@@ -353,14 +406,18 @@ ipcMain.handle('set-fan-config', async (_e, { profile, curves, cap }) => {
   // write-to-hardware time, so raising/clearing it unlocks instantly.
   const store = readCurvesStore();
   store.profiles = store.profiles || {};
-  store.profiles[profile] = curves;
+  const profileEntry = { ...curves };
   if (cap === null) {
-    delete store.cap_rpm;
+    delete profileEntry.cap_rpm;
   } else if (cap && Number.isFinite(+cap) && +cap > 0) {
     const c = Math.round(+cap);
-    store.cap_rpm = {};
-    for (const key of Object.keys(curves)) store.cap_rpm[key] = c;
+    profileEntry.cap_rpm = {};
+    for (const key of Object.keys(curves)) profileEntry.cap_rpm[key] = c;
   }
+  store.profiles[profile] = profileEntry;
+  // Compatibilidad con servicios viejos: cap_rpm global refleja el perfil que
+  // acabas de aplicar, mientras servicios nuevos leen profiles.<perfil>.cap_rpm.
+  if (profileEntry.cap_rpm) store.cap_rpm = profileEntry.cap_rpm;
   try {
     fs.mkdirSync(path.dirname(FAN_CURVES_JSON), { recursive: true });
     fs.writeFileSync(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
@@ -559,14 +616,39 @@ ipcMain.handle('report-issue', async (_e, body) => {
   const url = remote.out
     .replace(/^git@github\.com:/, 'https://github.com/')
     .replace(/\.git$/, '');
+  const errorTail = readErrorLogTail(80);
+  const fullBody = [
+    body || '',
+    '',
+    '---',
+    '**Registro local reciente:**',
+    errorTail ? '```jsonl\n' + errorTail.slice(-12000) + '\n```' : '_Sin errores registrados._',
+    '',
+    `TXT local completo: ${LAST_ISSUE_REPORT_PATH}`,
+  ].join('\n');
+  try {
+    fs.mkdirSync(DATA_DIR_PATH, { recursive: true });
+    fs.writeFileSync(LAST_ISSUE_REPORT_PATH, fullBody + '\n', 'utf-8');
+  } catch (_) { /* non-fatal */ }
   const params = new URLSearchParams({
     title: '[bug] ',
-    body: body || '',
+    body: fullBody.slice(0, 58000),
     labels: 'bug',
   });
   shell.openExternal(`${url}/issues/new?${params}`);
-  return { ok: true };
+  return { ok: true, logPath: LAST_ISSUE_REPORT_PATH };
 });
+
+ipcMain.handle('record-error', (_e, payload) => {
+  appendErrorLog('renderer', payload && typeof payload === 'object' ? payload : { message: String(payload || '') });
+  return { ok: true, path: ERROR_LOG_PATH };
+});
+
+ipcMain.handle('get-error-log', () => ({
+  ok: true,
+  path: ERROR_LOG_PATH,
+  text: readErrorLogTail(120),
+}));
 
 ipcMain.handle('disk-health', async () => {
   // smartctl needs root: one pkexec prompt for all disks
@@ -924,7 +1006,8 @@ ipcMain.handle('export-events', async (_e, text) => {
 });
 
 ipcMain.handle('app-info', () => ({
-  appVersion: require('./package.json').version,
+  appVersion: APP_VERSION,
+  coreVersion: APP_VERSION,
   repo: REPO,
 }));
 
@@ -1159,64 +1242,76 @@ ipcMain.handle('reset-power-control', async () => {
   return runJsonModule('rog_monitor.power_control', ['state'], 8000);
 });
 
-/* ---------- guardián térmico GPU (A6) ----------
+/* ---------- guardián térmico CPU/GPU ----------
    rog-thermal-guardian.sh: loop que sube ventiladores primero y, si el techo
    se supera, recorta dynamic_boost / PL2 suavemente. Se instala como servicio
-   systemd (ver docs/SUDO-PENDIENTE-v10.md). En runtime: start/stop vía systemctl
-   + pkexec; estado vía is-active. */
+   systemd. En runtime: start/stop vía systemctl + pkexec; estado vía is-active. */
 
 const THERMAL_GUARDIAN_SERVICE = 'rog-thermal-guardian.service';
 const THERMAL_GUARDIAN_SCRIPT = path.join(REPO, 'scripts', 'rog-thermal-guardian.sh');
+const THERMAL_GUARDIAN_UNIT = path.join(REPO, 'systemd', 'rog-thermal-guardian.service');
+
+function readGuardianOverride() {
+  const overridePath = `/etc/systemd/system/${THERMAL_GUARDIAN_SERVICE}.d/override.conf`;
+  const out = { cpuCeiling: 92, gpuCeiling: 83 };
+  try {
+    const text = fs.readFileSync(overridePath, 'utf-8');
+    const cpu = text.match(/ROG_THERMAL_CPU_CEILING=(\d+)/);
+    const gpu = text.match(/ROG_THERMAL_GPU_CEILING=(\d+)/);
+    const legacy = text.match(/ROG_THERMAL_CEILING=(\d+)/);
+    if (cpu) out.cpuCeiling = parseInt(cpu[1], 10);
+    if (gpu) out.gpuCeiling = parseInt(gpu[1], 10);
+    else if (legacy) out.gpuCeiling = parseInt(legacy[1], 10);
+  } catch (_) { /* no override */ }
+  out.cpuCeiling = Math.max(70, Math.min(100, out.cpuCeiling));
+  out.gpuCeiling = Math.max(70, Math.min(87, out.gpuCeiling));
+  out.ceiling = out.gpuCeiling;
+  return out;
+}
 
 ipcMain.handle('get-thermal-guardian', async () => {
   const active = await run('systemctl', ['is-active', THERMAL_GUARDIAN_SERVICE], 4000);
   const enabled = await run('systemctl', ['is-enabled', THERMAL_GUARDIAN_SERVICE], 4000);
   const scriptExists = fs.existsSync(THERMAL_GUARDIAN_SCRIPT);
-  // Leer el techo configurado: mirar el override de systemd si existe.
-  const overridePath = `/etc/systemd/system/${THERMAL_GUARDIAN_SERVICE}.d/override.conf`;
-  let ceiling = 83;
-  try {
-    const overrideText = fs.readFileSync(overridePath, 'utf-8');
-    const m = overrideText.match(/--ceiling\s+(\d+)/);
-    if (m) ceiling = parseInt(m[1], 10);
-  } catch (_) { /* no override → default */ }
+  const ceilings = readGuardianOverride();
 
   return {
     ok: true,
     active: active.out === 'active',
     enabled: enabled.out === 'enabled',
     scriptExists,
-    ceiling,
+    ...ceilings,
     serviceUnit: THERMAL_GUARDIAN_SERVICE,
     status: active.out || 'unknown',
   };
 });
 
-ipcMain.handle('set-thermal-guardian', async (_e, { enabled, ceiling }) => {
-  // enabled: true → start+enable; false → stop+disable.
-  // ceiling: número en °C (se pasa como argumento al servicio via override).
-  const acts = enabled
-    ? ['start', 'enable']
-    : ['stop', 'disable'];
+ipcMain.handle('set-thermal-guardian', async (_e, { enabled, cpuCeiling, gpuCeiling, ceiling }) => {
+  const cpu = Math.max(70, Math.min(100, Math.round(Number(cpuCeiling) || 92)));
+  const gpu = Math.max(70, Math.min(87, Math.round(Number(gpuCeiling || ceiling) || 83)));
+  const overrideDir = `/etc/systemd/system/${THERMAL_GUARDIAN_SERVICE}.d`;
+  const overridePath = `${overrideDir}/override.conf`;
+  const unitPath = `/etc/systemd/system/${THERMAL_GUARDIAN_SERVICE}`;
+  let unit = fs.readFileSync(THERMAL_GUARDIAN_UNIT, 'utf-8')
+    .replace(/__ROG_MONITOR_REPO__/g, REPO)
+    .replace(/ROG_THERMAL_CEILING=83/g, 'ROG_THERMAL_GPU_CEILING=83');
+  const overrideContent =
+    `[Service]\n` +
+    `Environment="ROG_THERMAL_CPU_CEILING=${cpu}"\n` +
+    `Environment="ROG_THERMAL_GPU_CEILING=${gpu}"\n` +
+    `Environment="ROG_THERMAL_CEILING=${gpu}"\n`;
+  const serviceAction = enabled
+    ? `systemctl enable --now ${shQuote(THERMAL_GUARDIAN_SERVICE)}`
+    : `systemctl disable --now ${shQuote(THERMAL_GUARDIAN_SERVICE)}`;
+  const cmd = [
+    `install -d -m 0755 ${shQuote(overrideDir)}`,
+    `printf %s ${shQuote(unit)} > ${shQuote(unitPath)}`,
+    `printf %s ${shQuote(overrideContent)} > ${shQuote(overridePath)}`,
+    'systemctl daemon-reload',
+    serviceAction,
+  ].join(' && ');
 
-  // Si se pide cambiar el techo, crear un override de systemd con el valor.
-  if (enabled && ceiling !== undefined && Number.isFinite(+ceiling)) {
-    const c = Math.max(75, Math.min(87, Math.round(+ceiling)));
-    const overrideDir = `/etc/systemd/system/${THERMAL_GUARDIAN_SERVICE}.d`;
-    const overrideContent =
-      `[Service]\nEnvironment="ROG_THERMAL_CEILING=${c}"\n`;
-    // Escribir el override (necesita root).
-    const mkdirCmd = `mkdir -p ${overrideDir}`;
-    const writeCmd = `printf '%s' '${overrideContent.replace(/'/g, "'\\''")}' > ${overrideDir}/override.conf`;
-    const daemonReload = 'systemctl daemon-reload';
-    const fullCmd = `${mkdirCmd} && ${writeCmd} && ${daemonReload}`;
-    const res = await run('pkexec', ['sh', '-c', fullCmd], 15000);
-    if (!res.ok) return { ok: false, err: `No se pudo configurar el techo: ${res.err}` };
-  }
-
-  // start/stop + enable/disable en un solo pkexec.
-  const svcActs = acts.map((a) => `systemctl ${a} ${THERMAL_GUARDIAN_SERVICE}`).join(' && ');
-  const res = await run('pkexec', ['sh', '-c', svcActs], 15000);
+  const res = await run('pkexec', ['sh', '-c', cmd], 30000);
   if (!res.ok) return { ok: false, err: res.err };
 
   // Releer estado después de la acción.
@@ -1225,7 +1320,9 @@ ipcMain.handle('set-thermal-guardian', async (_e, { enabled, ceiling }) => {
     ok: true,
     active: active.out === 'active',
     enabled,
-    ceiling: (enabled && ceiling) ? Math.max(75, Math.min(87, Math.round(+ceiling))) : undefined,
+    cpuCeiling: cpu,
+    gpuCeiling: gpu,
+    ceiling: gpu,
   };
 });
 

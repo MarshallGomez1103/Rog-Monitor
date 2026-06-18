@@ -56,6 +56,10 @@
   background: color-mix(in srgb, var(--accent) 18%, var(--panel));
   color: var(--accent);
   border-color: var(--accent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 62%, transparent),
+    0 0 14px color-mix(in srgb, var(--accent) 36%, transparent);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
 #power-tabs button:hover:not(.active) {
@@ -363,6 +367,38 @@
   width: 100%;
 }
 
+.power-guardian-row-label {
+  min-width: 76px;
+}
+
+.power-guardian-note,
+.power-guardian-cost {
+  font-size: 0.7rem;
+  line-height: 1.45;
+  color: var(--dim);
+  border-left: 2px solid var(--accent2, var(--accent));
+  padding: 0.45rem 0.6rem;
+  margin: 0.6rem 0;
+  background: color-mix(in srgb, var(--accent2, var(--accent)) 7%, transparent);
+}
+
+.power-guardian-note b,
+.power-guardian-cost .power-control-label {
+  color: var(--ink);
+}
+
+.power-guardian-cost-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.35rem;
+}
+
+.power-guardian-cost-row .power-control-tooltip {
+  flex: 1;
+  margin: 0;
+}
+
 /* ===================================================================
    v13 A-POWER-UI — color de PELIGRO, cabecera con botón Avanzado,
    rieles de seguridad, franja de peligro por-cambio y panel Avanzado.
@@ -567,6 +603,23 @@
   cursor: not-allowed;
 }
 
+.power-advanced-search {
+  width: 100%;
+}
+
+.power-advanced-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin: 0.55rem 0 0.75rem;
+}
+
+.power-advanced-supported-meta {
+  color: var(--dim);
+  font-size: 0.72rem;
+}
+
 .power-advanced-result {
   margin-top: 0.2rem;
 }
@@ -578,6 +631,43 @@
   font-size: 0.72rem;
   line-height: 1.45;
   color: var(--ink);
+}
+
+.power-advanced-entry-title {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+
+.power-advanced-models {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin: 0.55rem 0;
+  color: var(--dim);
+  font-size: 0.7rem;
+}
+
+.power-advanced-model-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.35rem;
+  padding: 0.08rem 0.42rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--hair));
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--ink);
+  font-size: 0.66rem;
+  line-height: 1.2;
+}
+
+.power-advanced-model-chip.muted {
+  color: var(--dim);
+  border-color: var(--hair);
+  background: var(--chip);
 }
 
 .power-advanced-rules {
