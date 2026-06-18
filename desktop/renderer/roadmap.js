@@ -221,61 +221,95 @@ const ROADMAP_DONE = [
   },
 ];
 
-// Pendientes (por hacer) — visión a futuro de la aplicación
+// Pendientes (por hacer) — organizado en FASES por orden lógico:
+// 1) lo que falta para publicar · 2) el lanzamiento open source ·
+// 3) la visión a futuro (multi-equipo y demás), que va DESPUÉS de publicar.
 const ROADMAP_TODO = [
   {
-    title: 'Monitoreo multi-equipo / centro de datos (visión)',
-    points: [
-      'Agente servidor "ROG Monitor Server" para monitorear varios equipos a la vez en la misma red',
-      'Ideal para un segundo PC, un servidor o un centro de datos: ver procesos, temperaturas y benchmarks de todos en un solo tablero',
-      'Instalación headless (sin interfaz gráfica) para servidores tipo Ubuntu Server',
-      'Conexión segura y autenticada: nadie en la red puede conectarse ni modificar sin permiso',
-      'Aún NO implementado — es la dirección a futuro del proyecto',
+    phase: 'Fase 1 · Ahora — preparar el lanzamiento',
+    note: 'Lo poco que falta para abrir el repo al público.',
+    items: [
+      {
+        title: 'Pulido para el primer release',
+        points: [
+          'Verificación final de privacidad: cero datos personales en código, docs y capturas',
+          'README con capturas reales + tabla de modelos probados',
+          'Guía de "primeros pasos" para quien instala desde cero',
+        ],
+      },
+      {
+        title: 'Instalar fácil (empaquetado)',
+        points: [
+          'core por pipx / PyPI; app de escritorio por Flatpak',
+          'Instalación de los servicios root con un solo comando guiado',
+        ],
+      },
     ],
   },
   {
-    title: 'Soporte AMD completo',
-    points: [
-      'k10temp por CCD, RAPL amd_energy, amdgpu probado en hardware AMD',
-      'Perfiles vía platform_profile genérico (no solo asus-wmi)',
+    phase: 'Fase 2 · El lanzamiento — open source',
+    note: 'El hito: publicar el proyecto para todo el mundo.',
+    items: [
+      {
+        title: 'Publicación open source',
+        points: [
+          'CI: lint + prueba de la salida --json en runner Ubuntu',
+          'Releases con tag semver y notas de cambio automáticas',
+          'Wiki de modelos soportados + guía de contribución',
+        ],
+      },
     ],
   },
   {
-    title: 'Historial persistente (base de datos)',
-    points: [
-      'Base de datos local para consultar semanas de datos',
-      'Gráficas de tendencia a largo plazo',
-    ],
-  },
-  {
-    title: 'Iluminación por zonas reactiva al audio',
-    points: [
-      'Graves/medios/agudos en distintas zonas del teclado',
-      'Soporte de teclados externos vía OpenRGB cuando el protocolo esté verificado',
-    ],
-  },
-  {
-    title: 'Widget de escritorio + métricas + alertas inteligentes',
-    points: [
-      'Widget que lee los datos sin necesitar la app de escritorio abierta',
-      'Exportación de métricas (Prometheus/Grafana) para tableros externos',
-      'Alertas con acciones: bajar el perfil automáticamente al hacer throttling',
-    ],
-  },
-  {
-    title: 'Multi-distro / multi-marca + paquetes',
-    points: [
-      'Detección de hwmon genérico para portátiles no-ASUS (Lenovo, Gigabyte, MSI…)',
-      'Meta: un "centro de control" de Linux para portátiles gaming',
-      'Empaquetado: PyPI (pipx), Flatpak, AUR, COPR',
-    ],
-  },
-  {
-    title: 'Publicación open source',
-    points: [
-      'CI: lint + prueba de la salida --json en runner Ubuntu',
-      'Releases con tag semver y notas de cambio',
-      'Capturas en el README y wiki de modelos soportados',
+    phase: 'Fase 3 · Después de publicar — la visión',
+    note: 'Lo grande, ya con la comunidad: hacia un centro de control de Linux gaming.',
+    items: [
+      {
+        title: '★ Monitoreo multi-equipo / centro de datos',
+        points: [
+          'La gran visión del proyecto — llega DESPUÉS del lanzamiento open source',
+          'Agente servidor "ROG Monitor Server" para ver varios equipos a la vez en la red',
+          'Ideal para un segundo PC, un servidor o un centro de datos: procesos, temperaturas y benchmarks de todos en un solo tablero',
+          'Instalación headless (sin interfaz) para servidores tipo Ubuntu Server',
+          'Conexión segura y autenticada: nadie en la red conecta ni modifica sin permiso',
+        ],
+      },
+      {
+        title: 'Soporte AMD completo',
+        points: [
+          'k10temp por CCD, RAPL amd_energy, amdgpu probado en hardware AMD',
+          'Perfiles vía platform_profile genérico (no solo asus-wmi)',
+        ],
+      },
+      {
+        title: 'Multi-distro / multi-marca',
+        points: [
+          'hwmon genérico para portátiles no-ASUS (Lenovo, Gigabyte, MSI…)',
+          'Meta: un "centro de control" de Linux para portátiles gaming',
+        ],
+      },
+      {
+        title: 'Historial persistente (base de datos)',
+        points: [
+          'Base de datos local para consultar semanas de datos',
+          'Gráficas de tendencia a largo plazo',
+        ],
+      },
+      {
+        title: 'Iluminación por zonas reactiva al audio',
+        points: [
+          'Graves/medios/agudos en distintas zonas del teclado',
+          'Teclados externos vía OpenRGB cuando el protocolo esté verificado',
+        ],
+      },
+      {
+        title: 'Widget de escritorio + métricas + alertas inteligentes',
+        points: [
+          'Widget que lee los datos sin tener la app de escritorio abierta',
+          'Exportar métricas (Prometheus/Grafana) para tableros externos',
+          'Alertas con acción: bajar el perfil solo al detectar throttling',
+        ],
+      },
     ],
   },
 ];
@@ -344,9 +378,22 @@ function _buildRoadmapContent() {
     .map((item, i) => _buildTimelineItem(item, true, i))
     .join('');
 
-  const todoHtml = ROADMAP_TODO
-    .map((item, i) => _buildTimelineItem(item, false, i))
-    .join('');
+  // POR HACER: cada FASE es un bloque (encabezado + nota + su mini-timeline).
+  // idx continuo entre fases para IDs únicos de cada ítem expandible.
+  let todoIdx = 0;
+  const todoHtml = ROADMAP_TODO.map((phase) => {
+    const itemsHtml = (phase.items || [])
+      .map((item) => _buildTimelineItem(item, false, todoIdx++))
+      .join('');
+    const noteHtml = phase.note
+      ? `<p class="roadmap-phase-note">${_escHtml(phase.note)}</p>` : '';
+    return `
+      <div class="roadmap-phase">
+        <div class="roadmap-phase-head">${_escHtml(phase.phase)}</div>
+        ${noteHtml}
+        <div class="roadmap-timeline">${itemsHtml}</div>
+      </div>`;
+  }).join('');
 
   return `
     <h3 data-i18n="roadmap.title">${_t('roadmap.title', 'Roadmap')}</h3>
@@ -358,7 +405,7 @@ function _buildRoadmapContent() {
     </div>
 
     <div class="roadmap-sep" data-i18n="roadmap.todo">${_t('roadmap.todo', 'POR HACER ▼')}</div>
-    <div class="roadmap-timeline" id="roadmap-todo-list">
+    <div id="roadmap-todo-list">
       ${todoHtml}
     </div>
 

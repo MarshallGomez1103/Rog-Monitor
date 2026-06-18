@@ -6,98 +6,154 @@
    BENCHMARK CARDS — tarjetas de historial neón clickables
    ========================================================= */
 
+/* La lista SCROLLEA dentro de la tarjeta: con varios benchmarks ya no se
+   "corta" contra el clip-path del bloque — se ven todos sin dar clic. */
 .bench-history {
   list-style: none;
-  padding: 0;
+  padding: 0 0.2rem 0 0;
   margin: 0.5rem 0 0;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  max-height: 340px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent) 50%, transparent) transparent;
+}
+.bench-history::-webkit-scrollbar { width: 8px; }
+.bench-history::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 4px;
 }
 
 .bench-card {
   background: var(--panel);
-  border: 1px solid var(--accent);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 30%, transparent),
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--hair));
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 22%, transparent),
               inset 0 0 10px color-mix(in srgb, var(--accent) 5%, transparent);
-  border-radius: 3px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: box-shadow 0.15s, border-color 0.15s;
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.1s;
   overflow: hidden;
 }
 
 .bench-card:hover,
 .bench-card:focus-within {
   border-color: var(--accent);
+  transform: translateY(-1px);
   box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 55%, transparent),
-              0 0 28px color-mix(in srgb, var(--accent) 20%, transparent),
+              0 0 26px color-mix(in srgb, var(--accent) 18%, transparent),
               inset 0 0 12px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .bench-card-header {
   display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  padding: 0.55rem 0.75rem 0.45rem;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.7rem 0.4rem;
   user-select: none;
 }
 
+/* Etiqueta GPU/CPU — pastilla neón, con color propio por tipo para distinguir */
 .bench-card-kind {
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 800;
   letter-spacing: 0.12em;
-  padding: 0.15em 0.5em;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  padding: 0.18em 0.6em;
+  border-radius: 3px;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
   color: var(--accent);
   text-shadow: var(--neon-glow-soft, 0 0 6px currentColor);
-  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
-  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.bench-card-kind.kind-gpu {
+  background: color-mix(in srgb, var(--accent2, var(--accent)) 18%, transparent);
+  color: var(--accent2, var(--accent));
+  border-color: color-mix(in srgb, var(--accent2, var(--accent)) 55%, transparent);
 }
 
 .bench-card-when {
-  font-size: 0.72rem;
-  color: var(--dim);
-  letter-spacing: 0.03em;
+  font-size: 0.74rem;
+  color: var(--ink);
+  opacity: 0.7;
+  letter-spacing: 0.02em;
 }
 
-.bench-card-arrow {
+/* pista "ampliar ▸" + botón borrar a la derecha */
+.bench-card-expand {
   margin-left: auto;
-  font-size: 0.75rem;
-  color: var(--dim);
-  transition: transform 0.2s;
   flex-shrink: 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0.45;
+  text-shadow: var(--neon-glow-soft, 0 0 5px currentColor);
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.bench-card:hover .bench-card-expand,
+.bench-card:focus-within .bench-card-expand { opacity: 1; }
+
+.bench-card-delete {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 0.15em 0.4em;
+  color: var(--dim);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.bench-card-delete:hover {
+  color: #ff5a3c;
+  border-color: color-mix(in srgb, #ff5a3c 50%, transparent);
 }
 
-.bench-card.open .bench-card-arrow {
-  transform: rotate(180deg);
-}
-
-.bench-card-summary {
+/* LÍNEA DE RESUMEN — siempre visible, legible, métrica principal grande */
+.bench-card-statline {
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 0.75rem 0.4rem;
+  align-items: baseline;
   flex-wrap: wrap;
-  /* v13: los chips de resumen se leen de izquierda a derecha (como una ficha),
-     NUNCA desbordan la tarjeta. box-sizing respeta el padding. */
-  justify-content: flex-start;
-  box-sizing: border-box;
-  max-width: 100%;
+  gap: 0.15rem 0.1rem;
+  padding: 0 0.7rem 0.5rem;
+  font-size: 0.82rem;
+  color: var(--ink);
+  opacity: 0.92;
+  font-variant-numeric: tabular-nums;
 }
+.bench-card-statline .bench-stat-main {
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-shadow: var(--neon-glow-soft, 0 0 7px currentColor);
+}
+.bench-card-statline .bench-stat-unit {
+  font-size: 0.66rem;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-left: 0.15em;
+}
+.bench-card-statline .bench-stat-dot { color: var(--dim); opacity: 0.6; font-style: normal; }
+.bench-card-statline .lvl-ok   { color: var(--lvl-ok,   #3ce087); }
+.bench-card-statline .lvl-warn { color: var(--lvl-hot,  #ffb13c); }
+.bench-card-statline .lvl-hot  { color: var(--lvl-hot,  #ffb13c); }
+.bench-card-statline .lvl-crit { color: var(--lvl-crit, #ff4d4d); }
 
-/* Cuerpo siempre visible: mini-curva térmica + pista de "click para ampliar" */
+/* Cuerpo siempre visible: mini-curva térmica neón a todo el ancho */
 .bench-card-body {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0 0.75rem 0.55rem;
+  padding: 0 0.7rem 0.55rem;
 }
 
 .bench-mini-spark {
   flex: 1 1 auto;
   width: 100%;
-  height: 56px;
+  height: 48px;
   display: block;
   border-radius: 3px;
   background: color-mix(in srgb, var(--panel) 55%, transparent);
@@ -109,70 +165,6 @@
   font-size: 0.7rem;
   color: var(--dim);
   font-style: italic;
-  padding: 0.6rem 0;
-}
-
-.bench-card-expand {
-  flex-shrink: 0;
-  font-size: 0.62rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent);
-  opacity: 0.55;
-  text-shadow: var(--neon-glow-soft, 0 0 5px currentColor);
-  transition: opacity 0.15s;
-  white-space: nowrap;
-}
-
-.bench-card:hover .bench-card-expand,
-.bench-card:focus-within .bench-card-expand {
-  opacity: 1;
-}
-
-/* Badges de veredicto */
-.bench-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25em;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  padding: 0.22em 0.55em;
-  border-radius: 2px;
-  white-space: nowrap;
-}
-
-.bench-badge.ok {
-  background: color-mix(in srgb, #46e873 15%, transparent);
-  color: #46e873;
-  border: 1px solid color-mix(in srgb, #46e873 40%, transparent);
-  text-shadow: 0 0 6px #46e873;
-}
-
-.bench-badge.warn {
-  background: color-mix(in srgb, #f7e02b 15%, transparent);
-  color: #e0b800;
-  border: 1px solid color-mix(in srgb, #f7e02b 40%, transparent);
-}
-
-.bench-badge.hot {
-  background: color-mix(in srgb, #ff9d4d 15%, transparent);
-  color: #ff9d4d;
-  border: 1px solid color-mix(in srgb, #ff9d4d 40%, transparent);
-  text-shadow: 0 0 6px #ff9d4d;
-}
-
-.bench-badge.crit {
-  background: color-mix(in srgb, #f25c3d 15%, transparent);
-  color: #f25c3d;
-  border: 1px solid color-mix(in srgb, #f25c3d 45%, transparent);
-  text-shadow: 0 0 8px #f25c3d;
-}
-
-.bench-badge.neutral {
-  background: color-mix(in srgb, var(--dim) 15%, transparent);
-  color: var(--dim);
-  border: 1px solid color-mix(in srgb, var(--dim) 30%, transparent);
 }
 
 /* Panel de detalle (expandible) */
@@ -363,6 +355,30 @@
   flex: 1;
   height: 1px;
   background: var(--hair);
+}
+
+/* POR HACER organizado en FASES — cada fase: encabezado + nota + su timeline */
+.roadmap-phase {
+  margin: 0.2rem 0 1rem;
+}
+.roadmap-phase-head {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-shadow: var(--neon-glow-soft, 0 0 6px currentColor);
+  padding: 0.2rem 0 0.1rem;
+  border-left: 3px solid var(--accent);
+  padding-left: 0.55rem;
+  margin-bottom: 0.15rem;
+}
+.roadmap-phase-note {
+  font-size: 0.72rem;
+  color: var(--ink);
+  opacity: 0.6;
+  margin: 0 0 0.5rem 0.55rem;
+  font-style: italic;
 }
 
 /* Línea de tiempo */
@@ -659,9 +675,22 @@
 .fan-ptab.active {
   color: var(--accent);
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  font-weight: 700;
-  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  font-weight: 800;
+  text-shadow: var(--neon-glow-soft, 0 0 6px currentColor);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 38%, transparent),
+              inset 0 0 8px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* Nombre del perfil activo en el título — bien neón y legible también en claro.
+   Usamos --accent (contraste AAA en los 12 temas) en vez de --accent2 que en
+   claro quedaba lavado; mayúsculas + bold para que se reconozca de un vistazo. */
+#fan-profile {
+  color: var(--accent);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-shadow: var(--neon-glow-soft, 0 0 7px currentColor);
 }
 
 .fan-ptab:not(.active):hover {
@@ -713,7 +742,22 @@
   cursor: help;
 }
 
-/* Botón NÚCLEOS dentro del h2 de Procesos — pequeño, estilo texto */
+/* Botones de acción de Procesos (VER TODOS / NÚCLEOS) — fila propia SIEMPRE
+   visible bajo el título (antes vivían dentro del <small> y se recortaban). */
+.procs-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: -4px 0 10px;
+}
+.procs-tool-btn {
+  font-size: 0.66rem !important;
+  padding: 0.32em 0.7em !important;
+  letter-spacing: 0.08em;
+  border-radius: 3px;
+}
+
+/* (compat) clase vieja por si quedara algún uso */
 .procs-cores-link {
   font-size: 0.65rem !important;
   padding: 0.1em 0.4em !important;
@@ -786,6 +830,11 @@
   border-bottom: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
 }
 #allprocs th.r { text-align: right; }
+#allprocs th.sortable { cursor: pointer; user-select: none; transition: color 0.12s; }
+#allprocs th.sortable:hover { color: var(--ink); }
+#allprocs th.sortable.sort-active { color: var(--accent); text-shadow: var(--neon-glow-soft, 0 0 5px currentColor); }
+#allprocs th.sortable.sort-active[data-dir="desc"]::after { content: ' ▼'; font-size: 0.8em; }
+#allprocs th.sortable.sort-active[data-dir="asc"]::after  { content: ' ▲'; font-size: 0.8em; }
 #allprocs td {
   padding: 4px 6px;
   border-bottom: 1px dashed var(--hair);
@@ -799,51 +848,9 @@
 #allprocs tbody tr:hover { background: var(--chip); }
 
 /* =========================================================
-   BENCHMARK CARDS — mejoras visuales (Task 2)
-   Las tarjetas del historial merecen más altura, más contraste y una
-   separación visual clara entre header / badges / sparkline / detalles.
+   BENCHMARK CARDS — detalle expandible (el header/statline/cuerpo se
+   definen arriba en el bloque consolidado v13).
    ========================================================= */
-
-/* Más énfasis en el header de la tarjeta */
-.bench-card-header {
-  background: color-mix(in srgb, var(--accent) 6%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
-}
-
-/* El tipo de benchmark (CPU/GPU) más prominente */
-.bench-card-kind {
-  font-size: 0.78rem;
-  padding: 0.2em 0.6em;
-}
-
-/* Fecha en header: separada visualmente */
-.bench-card-when {
-  font-size: 0.7rem;
-}
-
-/* Botón borrar: alineado a la derecha, rojo al hover */
-.bench-card-delete {
-  margin-left: auto;
-  font-size: 0.75rem;
-  padding: 0.1em 0.35em;
-  color: var(--dim);
-  border: 1px solid transparent;
-  border-radius: 2px;
-  cursor: pointer;
-  background: none;
-  transition: color 0.12s, border-color 0.12s;
-  flex-shrink: 0;
-}
-.bench-card-delete:hover {
-  color: #f25c3d;
-  border-color: color-mix(in srgb, #f25c3d 45%, transparent);
-}
-
-/* Arrow: ya no empuja al botón borrar */
-.bench-card-arrow {
-  margin-left: 0;
-  order: 99;
-}
 
 /* Grilla de resumen: más generosa y legible */
 .bench-detail-grid {

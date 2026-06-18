@@ -86,11 +86,37 @@ function startBackend() {
   backend.stderr.on('data', (d) => console.error('[backend]', d.toString().trim()));
   backend.on('exit', (code) => {
     console.error('[backend] exited', code);
+    backendPaused = false;
     if (win && !win.isDestroyed()) {
       win.webContents.send('backend-down', code);
       setTimeout(startBackend, 3000); // auto-recover
     }
   });
+}
+
+/* ---------- Ahorro de energía: congelar el backend cuando nadie lo ve ----------
+   Con la ventana minimizada/oculta y SIN overlay activo, el proceso Python no
+   necesita leer /proc ni sensores. Lo pausamos con SIGSTOP (literalmente 0% de
+   CPU) y lo reanudamos con SIGCONT al volver. Así "solo tener la app abierta"
+   (minimizada o en bandeja) no se nota en consumo. El renderer, al estar oculto,
+   ya lo throttlea Electron, así que entre ambos el costo en reposo es ínfimo. */
+let backendPaused = false;
+let mainVisible = true;
+
+function overlayNeedsBackend() {
+  return !!(overlay && !overlay.isDestroyed()); // si existe, está mostrándose en juego
+}
+
+function setBackendPaused(paused) {
+  if (!backend || backend.killed || paused === backendPaused) return;
+  try {
+    backend.kill(paused ? 'SIGSTOP' : 'SIGCONT');
+    backendPaused = paused;
+  } catch (_) { /* pudo morir; el auto-recover lo recrea */ }
+}
+
+function updateBackendPower() {
+  setBackendPaused(!(mainVisible || overlayNeedsBackend()));
 }
 
 function run(cmd, args, timeoutMs = 10000) {
@@ -975,6 +1001,8 @@ function applyOverlay() {
     overlay.close();
     overlay = null;
   }
+  // el overlay puede necesitar el backend aunque la ventana esté minimizada
+  updateBackendPower();
 }
 
 ipcMain.handle('list-displays', () => ({ ok: true, displays: displayList(), current: overlayCfg }));
@@ -1004,9 +1032,13 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      backgroundThrottling: true, // throttlea timers/rAF del renderer al ocultarse
     },
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  // Ahorro: congelar/reanudar el backend según se vea o no la ventana.
+  ['minimize', 'hide'].forEach((ev) => win.on(ev, () => { mainVisible = false; updateBackendPower(); }));
+  ['restore', 'show', 'focus'].forEach((ev) => win.on(ev, () => { mainVisible = true; updateBackendPower(); }));
   // closing the main window tears down the overlay too
   win.on('closed', () => {
     if (overlay && !overlay.isDestroyed()) overlay.close();
@@ -1190,7 +1222,11 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  if (backend) backend.kill();
+  if (backend) {
+    // si estaba congelado (SIGSTOP), reanudar para que reciba el SIGTERM
+    if (backendPaused) { try { backend.kill('SIGCONT'); } catch (_) {} }
+    backend.kill();
+  }
   stopMusicMode(false);
   app.quit();
 });

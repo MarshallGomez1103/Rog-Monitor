@@ -260,8 +260,11 @@
 
         <article class="block" id="procs-block" data-block="procs">
           <h2><i class="dash-num"></i> <span data-i18n="block.procs">Procesos</span>
-            <small><span data-i18n="block.procs_sub2">top 5 · clic en una fila para cerrarla</span> · <button id="procs-all-btn" class="ghost procs-cores-link" data-i18n="procs.view_all" title="Ver TODOS los procesos en una ventana ampliada">VER TODOS</button> · <button id="procs-cores-btn" class="ghost procs-cores-link" data-i18n="cores.btn" title="Ver uso por núcleo individual">NÚCLEOS</button></small>
-          </h2>
+            <small data-i18n="block.procs_sub2">top 5 · clic en una fila para cerrarla</small></h2>
+          <div class="procs-toolbar">
+            <button id="procs-all-btn" class="ghost procs-tool-btn" data-i18n="procs.view_all" title="Ver TODOS los procesos en una ventana ampliada">VER TODOS</button>
+            <button id="procs-cores-btn" class="ghost procs-tool-btn" data-i18n="cores.btn" title="Ver uso por núcleo individual">NÚCLEOS</button>
+          </div>
           <table id="procs">
             <thead>
               <tr><th>PID</th><th data-i18n="procs.col_name">proceso</th>
@@ -327,10 +330,11 @@
       <div class="allprocs-scroll">
         <table id="allprocs">
           <thead>
-            <tr><th>PID</th><th data-i18n="procs.col_name">proceso</th>
-                <th class="r" data-i18n="procs.col_cpu">% CPU</th>
-                <th class="r" data-i18n="procs.col_core">% NÚCLEO</th>
-                <th class="r" data-i18n="procs.col_ram">RAM</th></tr>
+            <tr><th class="sortable" data-sort="pid">PID</th>
+                <th class="sortable" data-sort="name" data-i18n="procs.col_name">proceso</th>
+                <th class="r sortable" data-sort="cpu" data-i18n="procs.col_cpu">% CPU</th>
+                <th class="r sortable" data-sort="cpu_core" data-i18n="procs.col_core">% NÚCLEO</th>
+                <th class="r sortable" data-sort="mem_mb" data-i18n="procs.col_ram">RAM</th></tr>
           </thead>
           <tbody id="allprocs-body"></tbody>
         </table>

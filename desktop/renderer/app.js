@@ -687,40 +687,6 @@ function benchmarkSummaryText(result) {
   return lines.join('\n');
 }
 
-/* ---- Generación de badges de veredicto para tarjetas de benchmark ---- */
-function _tempBadge(val, label) {
-  if (val == null) return '';
-  const cls = val >= 95 ? 'crit' : val >= 85 ? 'hot' : val >= 70 ? 'warn' : 'ok';
-  return `<span class="bench-badge ${cls}">${label} ${fmt(val, 1)}°C</span>`;
-}
-function _wattBadge(val, label) {
-  if (val == null) return '';
-  return `<span class="bench-badge neutral">${label} ${fmt(val, 1)} W</span>`;
-}
-function _throttleBadge(events) {
-  if (events == null) return '';
-  const cls = events > 50 ? 'crit' : events > 10 ? 'hot' : events > 0 ? 'warn' : 'ok';
-  return `<span class="bench-badge ${cls}">throttle ${events}</span>`;
-}
-function _capBadge(capRespected) {
-  if (capRespected == null) return '';
-  return capRespected
-    ? '<span class="bench-badge ok">cap respetado</span>'
-    : '<span class="bench-badge crit">cap EXCEDIDO</span>';
-}
-function _utilBadge(val) {
-  if (val == null) return '';
-  return `<span class="bench-badge neutral">uso ${fmt(val, 0)}%</span>`;
-}
-function _pkgBadge(val) {
-  if (val == null) return '';
-  const cls = val >= 95 ? 'crit' : val >= 85 ? 'hot' : val >= 70 ? 'warn' : 'ok';
-  return `<span class="bench-badge ${cls}">pkg ${fmt(val, 1)}°C</span>`;
-}
-function _durationBadge(seconds) {
-  if (seconds == null) return '';
-  return `<span class="bench-badge neutral">${seconds} s</span>`;
-}
 
 /* Dibuja una mini-gráfica de sparkline de temperatures en un canvas */
 function _unitForKey(key) {
@@ -794,6 +760,35 @@ function _drawSparkline(canvas, samples, key, color) {
   ctx.fill();
 }
 
+/* Clase de color por severidad de temperatura (reusa los umbrales de los badges) */
+function _tempLvl(v) {
+  if (v == null) return '';
+  return v >= 95 ? 'lvl-crit' : v >= 85 ? 'lvl-hot' : v >= 70 ? 'lvl-warn' : 'lvl-ok';
+}
+
+/* Construye la línea de resumen legible de una bench-card.
+ * GPU:  71.0°C máx · 33.8 W · uso 99% · 0 throttle · 45 s
+ * CPU:  89.0°C máx · pkg 82°C · 65 W · 12 throttle · 45 s */
+function _benchStatLine(item, s, isCpu, label) {
+  const parts = [];
+  const tMax = isCpu ? s.cpu_temp_max : s.gpu_temp_max;
+  if (tMax != null) {
+    parts.push(`<b class="bench-stat-main ${_tempLvl(tMax)}">${fmt(tMax, 1)}°C</b><span class="bench-stat-unit">máx</span>`);
+  }
+  if (isCpu && s.cpu_package_max != null) parts.push(`<span>pkg ${fmt(s.cpu_package_max, 1)}°C</span>`);
+  if (!isCpu && s.gpu_util_max != null) parts.push(`<span>uso ${fmt(s.gpu_util_max, 0)}%</span>`);
+  const w = isCpu ? s.cpu_watts_max : s.gpu_watts_max;
+  if (w != null) parts.push(`<span>${fmt(w, 1)} W</span>`);
+  const thr = s.throttle_events;
+  if (thr != null) {
+    const cls = thr > 10 ? 'lvl-hot' : thr > 0 ? 'lvl-warn' : 'lvl-ok';
+    parts.push(`<span class="${cls}">${thr} throttle</span>`);
+  }
+  if (item.seconds != null) parts.push(`<span>${item.seconds} s</span>`);
+  if (!parts.length) parts.push(`<span>${escapeHtml(item._legacyText || label)}</span>`);
+  return parts.join('<i class="bench-stat-dot">·</i>');
+}
+
 /* Genera el HTML interior de una bench-card */
 function _benchCardHtml(item) {
   const s = item.summary || {};
@@ -801,16 +796,10 @@ function _benchCardHtml(item) {
   const label = item.label || kind;
   const isCpu = item.kind === 'cpu';
 
-  // badges de veredicto — siempre incluyen la métrica secundaria y la duración
-  // para que la tarjeta nunca quede vacía y se lea de un vistazo.
-  const badges = [
-    isCpu ? _tempBadge(s.cpu_temp_max, 'CPU') : _tempBadge(s.gpu_temp_max, 'GPU'),
-    isCpu ? _wattBadge(s.cpu_watts_max, 'CPU') : _wattBadge(s.gpu_watts_max, 'GPU'),
-    isCpu ? _pkgBadge(s.cpu_package_max) : _utilBadge(s.gpu_util_max),
-    _throttleBadge(s.throttle_events),
-    _durationBadge(item.seconds),
-    _capBadge(s.cap_respected),
-  ].filter(Boolean).join('');
+  // Línea de resumen LEGIBLE y SIEMPRE visible (sin clic): la métrica principal
+  // grande y con color por severidad, las secundarias en gris. Reemplaza los
+  // chips diminutos que no se leían.
+  const statLine = _benchStatLine(item, s, isCpu, label);
 
   // detalle de texto: grid de valores
   let detailGrid = '';
@@ -870,15 +859,14 @@ function _benchCardHtml(item) {
 
   return `
     <div class="bench-card-header">
-      <span class="bench-card-kind">${escapeHtml(kind)}</span>
+      <span class="bench-card-kind kind-${escapeHtml((item.kind || 'cpu'))}">${escapeHtml(kind)}</span>
       <span class="bench-card-when">${escapeHtml(item.when || '')}</span>
-      <button type="button" class="ghost bench-card-delete" data-bid-del="${escapeHtml(item.id || '')}" title="Borrar este benchmark">&#10005;</button>
-      <span class="bench-card-arrow">▼</span>
+      <span class="bench-card-expand">ampliar ▸</span>
+      <button type="button" class="bench-card-delete" data-bid-del="${escapeHtml(item.id || '')}" title="Borrar este benchmark">&#10005;</button>
     </div>
-    <div class="bench-card-summary">${badges || '<span class="bench-badge neutral">' + escapeHtml(label) + '</span>'}</div>
+    <div class="bench-card-statline">${statLine}</div>
     <div class="bench-card-body">
       ${miniBody}
-      <span class="bench-card-expand">click para ampliar ▸</span>
     </div>
     <div class="bench-card-detail">
       ${sparkHtml}
@@ -1940,7 +1928,12 @@ $('fans-block').addEventListener('click', async () => {
   Object.keys(fanCfgByProfile).forEach((k) => delete fanCfgByProfile[k]);
   const ok = await loadFanProfile(startProfile);
   if (!ok) return;
-  if (fanCfg?.path) $('fan-script-path').textContent = fanCfg.path;
+  // Mostrar la ruta con ~ en vez del home absoluto (privacidad + repo público).
+  if (fanCfg?.path) {
+    $('fan-script-path').textContent = String(fanCfg.path)
+      .replace(/^\/home\/[^/]+\//, '~/')
+      .replace(/^\/root\//, '~/');
+  }
   $('fan-modal').classList.remove('hidden');
 });
 
@@ -2356,6 +2349,30 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
   const countEl = $('allprocs-count');
   let allRows = [];
   let timer = null;
+  let sortKey = 'cpu';   // por defecto: mayor uso de CPU primero
+  let sortDir = 'desc';
+
+  function sortRows(rows) {
+    const dir = sortDir === 'asc' ? 1 : -1;
+    return rows.slice().sort((a, b) => {
+      let av = a[sortKey], bv = b[sortKey];
+      if (sortKey === 'name') {
+        return String(av).localeCompare(String(bv)) * dir;
+      }
+      av = av == null ? -Infinity : av;
+      bv = bv == null ? -Infinity : bv;
+      if (av === bv) return (b.cpu || 0) - (a.cpu || 0); // desempate estable por CPU
+      return (av - bv) * dir;
+    });
+  }
+
+  function updateSortIndicators() {
+    modal.querySelectorAll('#allprocs th.sortable').forEach((th) => {
+      const active = th.dataset.sort === sortKey;
+      th.classList.toggle('sort-active', active);
+      th.dataset.dir = active ? sortDir : '';
+    });
+  }
 
   function rowHtml(p) {
     const core = p.cpu_core != null
@@ -2370,13 +2387,15 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
 
   function render() {
     const q = (filterEl.value || '').trim().toLowerCase();
-    const rows = q
+    let rows = q
       ? allRows.filter((p) => p.name.toLowerCase().includes(q) || String(p.pid).includes(q))
       : allRows;
+    rows = sortRows(rows);
     body.innerHTML = rows.length
       ? rows.map(rowHtml).join('')
       : `<tr><td colspan="5" class="dim">${t('procs.all_none')}</td></tr>`;
     countEl.textContent = t('procs.all_count', { shown: rows.length, total: allRows.length });
+    updateSortIndicators();
   }
 
   async function refresh() {
@@ -2396,7 +2415,9 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
     refresh();
     // refresco en vivo mientras el modal está abierto (cada 3 s)
     clearInterval(timer);
-    timer = setInterval(() => { if (!modal.classList.contains('hidden')) refresh(); }, 3000);
+    timer = setInterval(() => {
+      if (!modal.classList.contains('hidden') && !document.hidden) refresh();
+    }, 3000);
   }
 
   function close() {
@@ -2413,6 +2434,21 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
     if (e.key === 'Escape' && !modal.classList.contains('hidden')) close();
   });
   filterEl.addEventListener('input', render);
+
+  // Ordenar al hacer clic en la cabecera: 1er clic = mayor→menor (texto: A→Z),
+  // 2º clic en la misma columna invierte el sentido.
+  modal.querySelectorAll('#allprocs th.sortable').forEach((th) => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.sort;
+      if (sortKey === key) {
+        sortDir = sortDir === 'desc' ? 'asc' : 'desc';
+      } else {
+        sortKey = key;
+        sortDir = key === 'name' ? 'asc' : 'desc';
+      }
+      render();
+    });
+  });
 
   body.addEventListener('click', async (e) => {
     const row = e.target.closest('tr[data-pid]');
