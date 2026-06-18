@@ -16,9 +16,11 @@
   let titleEl = null;
   let subEl = null;
   let bodyEl = null;
+  let tipEl = null;          // tooltip de hover (compartido por las gráficas)
   let current = null;        // item abierto
   let chartDefs = [];        // [{ id, series, unit }] para redibujar en resize
   let chartSamples = [];     // samples del item abierto
+  const chartGeom = new Map(); // id canvas -> geometría para el crosshair/hover
 
   /* ---- helpers seguros sobre globales de app.js ---- */
   function _cv(name, fb) {
@@ -48,11 +50,13 @@
         <p class="sub" id="benchd-sub"></p>
         <div class="benchd-body" id="benchd-body"></div>
         <button class="ghost modal-close" id="benchd-close">Cerrar</button>
-      </div>`;
+      </div>
+      <div class="benchd-tip hidden" id="benchd-tip"></div>`;
     document.body.appendChild(modal);
     titleEl = modal.querySelector('#benchd-title');
     subEl = modal.querySelector('#benchd-sub');
     bodyEl = modal.querySelector('#benchd-body');
+    tipEl = modal.querySelector('#benchd-tip');
     modal.querySelector('#benchd-close').addEventListener('click', close);
     modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
     window.addEventListener('keydown', (e) => {
@@ -161,12 +165,79 @@
         ctx.fill();
       }
     });
+
+    // guardar geometría para el hover (crosshair + tooltip como en el historial)
+    if (canvas.id) {
+      chartGeom.set(canvas.id, {
+        samples, series, unit, X, Y, padL, padR, padT, gw, gh, w, h, tMin, tMax,
+      });
+    }
   }
 
   function redrawCharts() {
     chartDefs.forEach((def) => {
       const c = document.getElementById(def.id);
       if (c) drawChart(c, chartSamples, def.series, def.unit);
+    });
+  }
+
+  /* Crosshair + tooltip: punto más cercano en X de la 1ª serie. Igual que el
+     hover del historial — flechita/crosshair, rayita vertical y valor+tiempo. */
+  function overlayCrosshair(canvas, g, sIdx, color) {
+    const s = g.samples[sIdx];
+    const t = s.t == null ? 0 : s.t;
+    const ctx = canvas.getContext('2d');
+    const cx = g.X(t);
+    ctx.save();
+    ctx.strokeStyle = _cv('--dim', '#8a8a8a');
+    ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx, g.padT); ctx.lineTo(cx, g.padT + g.gh); ctx.stroke();
+    ctx.setLineDash([]);
+    g.series.forEach((se) => {
+      const v = s[se.key]; if (v == null) return;
+      const cy = g.Y(v);
+      ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = se.color; ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = _cv('--bg', '#0b0d10'); ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  function wireChartHover(canvas) {
+    canvas.addEventListener('mousemove', (e) => {
+      const g = chartGeom.get(canvas.id);
+      if (!g || !g.samples.length) { if (tipEl) tipEl.classList.add('hidden'); return; }
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      if (mx < g.padL || mx > g.padL + g.gw) { tipEl.classList.add('hidden'); return; }
+      // muestra más cercana en X
+      let best = Infinity, bi = 0;
+      g.samples.forEach((s, i) => {
+        const t = s.t == null ? 0 : s.t;
+        const d = Math.abs(g.X(t) - mx);
+        if (d < best) { best = d; bi = i; }
+      });
+      drawChart(canvas, chartSamples, g.series, g.unit); // redibuja base
+      const g2 = chartGeom.get(canvas.id);
+      overlayCrosshair(canvas, g2, bi, null);
+      // tooltip: tiempo + cada serie
+      const s = g2.samples[bi];
+      const tSec = s.t == null ? 0 : s.t;
+      const vals = g2.series
+        .filter((se) => s[se.key] != null)
+        .map((se) => `${_fmt(s[se.key], 1)}${g2.unit || ''}`)
+        .join(' · ');
+      tipEl.textContent = `${Math.round(tSec)}s · ${vals}`;
+      tipEl.classList.remove('hidden');
+      const tw = tipEl.offsetWidth;
+      const cx = rect.left + g2.X(tSec);
+      tipEl.style.left = Math.min(Math.max(cx - tw / 2, 8), window.innerWidth - tw - 8) + 'px';
+      tipEl.style.top = (rect.top - 30) + 'px';
+    });
+    canvas.addEventListener('mouseleave', () => {
+      if (tipEl) tipEl.classList.add('hidden');
+      const g = chartGeom.get(canvas.id);
+      if (g) drawChart(canvas, chartSamples, g.series, g.unit);
     });
   }
 
@@ -311,8 +382,15 @@
     `;
 
     modal.classList.remove('hidden');
-    // dibujar tras el layout para que el canvas tenga tamaño real
-    requestAnimationFrame(redrawCharts);
+    // dibujar tras el layout para que el canvas tenga tamaño real, y cablear
+    // el hover (crosshair + tooltip) en cada gráfica recién creada.
+    requestAnimationFrame(() => {
+      redrawCharts();
+      chartDefs.forEach((def) => {
+        const c = document.getElementById(def.id);
+        if (c && !c._hoverWired) { wireChartHover(c); c._hoverWired = true; }
+      });
+    });
   }
 
   window.RogBenchDetail = { open, close };

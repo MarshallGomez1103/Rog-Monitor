@@ -41,6 +41,7 @@
         'gamesession.start_btn': 'INICIAR SESIÓN',
         'gamesession.stop_btn': 'TERMINAR SESIÓN',
         'gamesession.recording': 'Grabando…',
+        'gamesession.minimize_hint': 'Grabando ✓ — puedes minimizar la app: sigue grabando y, oculta, casi no consume.',
         'gamesession.detected_game': 'Juego detectado',
         'gamesession.no_game_detected': 'Sin un juego claro detectado todavía',
         'gamesession.duration': 'Duración',
@@ -135,6 +136,7 @@
         'gamesession.start_btn': 'START SESSION',
         'gamesession.stop_btn': 'END SESSION',
         'gamesession.recording': 'Recording…',
+        'gamesession.minimize_hint': 'Recording ✓ — you can minimize the app: it keeps recording and, hidden, it barely uses any resources.',
         'gamesession.detected_game': 'Detected game',
         'gamesession.no_game_detected': 'No clear game detected yet',
         'gamesession.duration': 'Duration',
@@ -409,6 +411,10 @@
       render();
       pollTimer = setInterval(pollSample, 1000);
       pollSample();
+      // mantener el muestreo vivo aunque se minimice
+      try { if (api.setRecording) api.setRecording(true); } catch (_) { /* noop */ }
+      // recomendar minimizar para casi no consumir mientras juega
+      try { if (typeof toast === 'function') toast(t('gamesession.minimize_hint')); } catch (_) { /* noop */ }
     } catch (_) {
       flashError(null);
     }
@@ -455,6 +461,7 @@
     const api = bridge();
     if (!api || !active) return;
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    try { if (api.setRecording) api.setRecording(false); } catch (_) { /* noop */ }
     try {
       const res = await api.gameSessionStop(active.id);
       if (!res || !res.ok) { flashError(res); view = 'start'; render(); return; }
@@ -593,8 +600,10 @@
       `;
       grid.appendChild(card);
       const canvas = card.querySelector('canvas');
-      canvas._gsChart = drawSessionChart(canvas, times, values, metric, unit);
-      wireSessionChartHover(canvas, card.querySelector('.gs-tip'), () => canvas._gsChart);
+      canvas._gsRedraw = () => { canvas._gsChart = drawSessionChart(canvas, times, values, metric, unit); };
+      canvas._gsRedraw();
+      wireSessionChartHover(canvas, card.querySelector('.gs-tip'),
+        () => canvas._gsChart, () => canvas._gsRedraw());
       if (canDraw) {
         canvas.addEventListener('click', () => openZoomModal({
           title: t('gamesession.metric_' + metric),
@@ -608,11 +617,7 @@
     renderNote(body.querySelector('#gs-note'), lastSession);
     // redibujar tras el layout: el canvas necesita su tamaño real (DPR)
     requestAnimationFrame(() => {
-      grid.querySelectorAll('.gs-chart').forEach((c) => {
-        const m = c.getAttribute('data-metric');
-        const vals = samples.map((s) => s[m]);
-        c._gsChart = drawSessionChart(c, times, vals, m, METRIC_UNIT[m] || '');
-      });
+      grid.querySelectorAll('.gs-chart').forEach((c) => { if (c._gsRedraw) c._gsRedraw(); });
     });
     body.querySelector('#gs-back').addEventListener('click', () => { view = 'start'; render(); });
   }
@@ -816,8 +821,10 @@
       drawZoom();
     });
 
-    // hover tooltip (reusa el geom recalculado en drawZoom)
-    wireSessionChartHover(canvas, tip, () => zoomState && zoomState.geom);
+    // hover tooltip + crosshair (reusa el geom recalculado en drawZoom)
+    wireSessionChartHover(canvas, tip, () => zoomState && zoomState.geom, () => {
+      if (zoomState) drawZoom();
+    });
 
     window.addEventListener('resize', () => {
       if (!div.classList.contains('hidden')) drawZoom();
@@ -1003,13 +1010,47 @@
   /* Hover: tooltip con valor + tiempo del punto más cercano dentro del viewport.
      Escala coordenadas de pantalla→CSS px (el canvas usa DPR internamente, pero
      getBoundingClientRect ya está en px CSS, así que basta con restar el rect). */
-  function wireSessionChartHover(canvas, tipEl, geomGetter) {
+  /* Crosshair (rayita vertical + punto) sobre la gráfica, dibujado en las
+     mismas coords CSS-px que drawNeonChart (el contexto ya tiene el transform
+     DPR aplicado tras el último redraw). */
+  function overlayGsCrosshair(canvas, chart, tSec, color) {
+    if (!chart) return;
+    const ctx = canvas.getContext('2d');
+    const cx = chart.toX(tSec);
+    ctx.save();
+    ctx.strokeStyle = cv('--dim', '#8a8a8a');
+    ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx, chart.padT); ctx.lineTo(cx, chart.padT + chart.plotH); ctx.stroke();
+    ctx.setLineDash([]);
+    // un punto por cada serie en ese instante
+    chart.series.forEach((se) => {
+      let bv = null, bd = Infinity;
+      se.values.forEach((v, i) => {
+        const t = chart.times[i];
+        if (v == null || t == null) return;
+        const d = Math.abs(t - tSec);
+        if (d < bd) { bd = d; bv = v; }
+      });
+      if (bv == null) return;
+      const cy = chart.toY(bv);
+      ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = se.color || color; ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = cv('--bg', '#0b0d10'); ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  function wireSessionChartHover(canvas, tipEl, geomGetter, redrawFn) {
     canvas.addEventListener('mousemove', (e) => {
-      const chart = geomGetter ? geomGetter() : canvas._gsChart;
+      let chart = geomGetter ? geomGetter() : canvas._gsChart;
       if (!chart) { tipEl.classList.add('hidden'); return; }
       const rect = canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left;
-      if (mx < chart.padL || mx > chart.padL + chart.plotW) { tipEl.classList.add('hidden'); return; }
+      if (mx < chart.padL || mx > chart.padL + chart.plotW) {
+        tipEl.classList.add('hidden');
+        if (redrawFn) redrawFn();
+        return;
+      }
       // serie principal: punto más cercano en X dentro del viewport
       const se = chart.series[0];
       let nearest = null, best = Infinity;
@@ -1021,14 +1062,23 @@
       });
       if (!nearest) { tipEl.classList.add('hidden'); return; }
       const [tSec, val] = nearest;
+      // redibujar base + crosshair (como en el historial)
+      if (redrawFn) { redrawFn(); chart = geomGetter ? geomGetter() : canvas._gsChart; }
+      overlayGsCrosshair(canvas, chart, tSec, se.color);
       const u = se.unit || '';
       tipEl.classList.remove('hidden');
       tipEl.textContent = `${fmt(val)}${u ? ' ' + u : ''} · ${formatDuration(tSec)}`;
-      const tipX = chart.toX(tSec);
-      const maxLeft = rect.width - 80;
-      tipEl.style.left = Math.min(maxLeft, Math.max(4, tipX - 30)) + 'px';
+      // posicionar el tooltip JUNTO al punto (no pegado arriba)
+      const tipX = canvas.offsetLeft + chart.toX(tSec);
+      const tipTop = canvas.offsetTop + chart.toY(val) - 26;
+      const maxLeft = canvas.offsetLeft + rect.width - 8;
+      tipEl.style.left = Math.min(maxLeft, Math.max(canvas.offsetLeft + 8, tipX)) + 'px';
+      tipEl.style.top = Math.max(2, tipTop) + 'px';
     });
-    canvas.addEventListener('mouseleave', () => tipEl.classList.add('hidden'));
+    canvas.addEventListener('mouseleave', () => {
+      tipEl.classList.add('hidden');
+      if (redrawFn) redrawFn();
+    });
   }
 
   function formatDuration(sec) {

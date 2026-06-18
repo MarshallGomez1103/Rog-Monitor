@@ -770,21 +770,25 @@ function _tempLvl(v) {
  * GPU:  71.0°C máx · 33.8 W · uso 99% · 0 throttle · 45 s
  * CPU:  89.0°C máx · pkg 82°C · 65 W · 12 throttle · 45 s */
 function _benchStatLine(item, s, isCpu, label) {
+  // Todos los valores comparten el mismo tratamiento neón (.bench-stat-val);
+  // la temperatura máx es la principal (más grande + color por severidad).
+  const val = (v, unit, cls) =>
+    `<b class="bench-stat-val${cls ? ' ' + cls : ''}">${v}</b><span class="bench-stat-unit">${unit}</span>`;
   const parts = [];
   const tMax = isCpu ? s.cpu_temp_max : s.gpu_temp_max;
   if (tMax != null) {
     parts.push(`<b class="bench-stat-main ${_tempLvl(tMax)}">${fmt(tMax, 1)}°C</b><span class="bench-stat-unit">máx</span>`);
   }
-  if (isCpu && s.cpu_package_max != null) parts.push(`<span>pkg ${fmt(s.cpu_package_max, 1)}°C</span>`);
-  if (!isCpu && s.gpu_util_max != null) parts.push(`<span>uso ${fmt(s.gpu_util_max, 0)}%</span>`);
+  if (isCpu && s.cpu_package_max != null) parts.push(val(fmt(s.cpu_package_max, 1), '°C pkg'));
+  if (!isCpu && s.gpu_util_max != null) parts.push(val(fmt(s.gpu_util_max, 0), '% uso'));
   const w = isCpu ? s.cpu_watts_max : s.gpu_watts_max;
-  if (w != null) parts.push(`<span>${fmt(w, 1)} W</span>`);
+  if (w != null) parts.push(val(fmt(w, 1), 'W'));
   const thr = s.throttle_events;
   if (thr != null) {
     const cls = thr > 10 ? 'lvl-hot' : thr > 0 ? 'lvl-warn' : 'lvl-ok';
-    parts.push(`<span class="${cls}">${thr} throttle</span>`);
+    parts.push(val(thr, 'throttle', cls));
   }
-  if (item.seconds != null) parts.push(`<span>${item.seconds} s</span>`);
+  if (item.seconds != null) parts.push(val(item.seconds, 's'));
   if (!parts.length) parts.push(`<span>${escapeHtml(item._legacyText || label)}</span>`);
   return parts.join('<i class="bench-stat-dot">·</i>');
 }

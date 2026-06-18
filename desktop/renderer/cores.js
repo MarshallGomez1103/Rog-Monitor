@@ -32,8 +32,10 @@
         'cores.ptype': 'Núcleo de rendimiento (P)',
         'cores.etype': 'Núcleo de eficiencia (E)',
         'cores.type': 'Núcleo',
-        'cores.legend': 'Color = temperatura · barra = uso · P = rendimiento (deportivo) · E = eficiencia (ecológico) · clic en un núcleo para ver su detalle.',
+        'cores.legend': 'Color = temperatura · barra = uso · P = núcleo de rendimiento (para tareas pesadas) · E = núcleo de eficiencia (para tareas ligeras, gasta menos) · clic en un núcleo para ver su detalle.',
         'cores.legend.flat': 'Color = temperatura · barra = uso · clic en un núcleo para ver su detalle.',
+        'cores.note': 'Es normal que unos núcleos estén más calientes o más usados que otros: el sistema reparte el trabajo según convenga y mueve la carga entre núcleos. No es una falla.',
+        'cores.refresh': 'Actualizar cada:',
         'cores.none': 'Sin datos de núcleos todavía…',
         'cores.ghz': 'GHz',
         'cores.usage': 'uso',
@@ -59,8 +61,10 @@
         'cores.ptype': 'Performance core (P)',
         'cores.etype': 'Efficiency core (E)',
         'cores.type': 'Core',
-        'cores.legend': 'Color = temperature · bar = usage · P = performance (sporty) · E = efficiency (eco) · click a core for details.',
+        'cores.legend': 'Color = temperature · bar = usage · P = performance core (for heavy tasks) · E = efficiency core (for light tasks, lower power) · click a core for details.',
         'cores.legend.flat': 'Color = temperature · bar = usage · click a core for details.',
+        'cores.note': 'It is normal for some cores to be hotter or busier than others: the system spreads work as needed and moves load between cores. It is not a fault.',
+        'cores.refresh': 'Refresh every:',
         'cores.none': 'No core data yet…',
         'cores.ghz': 'GHz',
         'cores.usage': 'usage',
@@ -94,6 +98,10 @@
   // reconstruir innerHTML cada segundo: así no se pierde el hover/foco ni
   // reaparece el "hint", y gastamos menos CPU.
   let gridKey = '';
+  // Refresco LOCAL del modal (no afecta el resto de la app): el stream llega a
+  // 1 Hz, pero aquí podemos espaciar el re-render para poder LEER los valores.
+  let refreshMs = 1000;
+  let lastRenderTs = 0;
 
   // --- modal de detalle por núcleo ---
   let detail = null;
@@ -150,8 +158,19 @@
       <div class="modal-card cores-card">
         <h3 data-i18n="cores.title">${t('cores.title', 'Núcleos de la CPU')}</h3>
         <p class="sub" id="cores-sub"></p>
+        <div class="cores-refresh" id="cores-refresh">
+          <span class="cores-refresh-label" data-i18n="cores.refresh">${t('cores.refresh', 'Actualizar cada:')}</span>
+          <span class="cores-refresh-btns" id="cores-refresh-btns">
+            <button class="ghost cores-rb" data-ms="1000">1s</button>
+            <button class="ghost cores-rb" data-ms="2000">2s</button>
+            <button class="ghost cores-rb" data-ms="3000">3s</button>
+            <button class="ghost cores-rb" data-ms="10000">10s</button>
+            <button class="ghost cores-rb" data-ms="30000">30s</button>
+          </span>
+        </div>
         <div class="cores-grid" id="cores-grid"></div>
         <p class="cores-legend" id="cores-legend"></p>
+        <p class="cores-note" id="cores-note" data-i18n="cores.note">${t('cores.note', '')}</p>
         <div class="cores-close-row">
           <button class="ghost modal-close" id="cores-close" data-i18n="common.close">${t('common.close', 'Cerrar')}</button>
         </div>
@@ -163,6 +182,22 @@
 
     modal.querySelector('#cores-close').addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+    // Selector de refresco (solo afecta a este modal)
+    const rbWrap = modal.querySelector('#cores-refresh-btns');
+    function markActiveRb() {
+      rbWrap.querySelectorAll('.cores-rb').forEach((b) =>
+        b.classList.toggle('active', parseInt(b.dataset.ms, 10) === refreshMs));
+    }
+    rbWrap.addEventListener('click', (e) => {
+      const b = e.target.closest('.cores-rb');
+      if (!b) return;
+      refreshMs = parseInt(b.dataset.ms, 10) || 1000;
+      lastRenderTs = 0;        // refrescar ya con el nuevo ritmo
+      markActiveRb();
+      render();
+    });
+    markActiveRb();
 
     // Delegación: clic (o Enter/Espacio con foco) en una celda abre el detalle.
     gridEl.addEventListener('click', (e) => {
@@ -265,7 +300,7 @@
         // Clase de tipo solo si la CPU distingue (degradación elegante).
         const typeClass = hetero ? (isP ? 'core-p' : 'core-e') : 'core-flat';
         const badge = hetero
-          ? `<span class="core-badge ${isP ? 'badge-p' : 'badge-e'}" aria-hidden="true">${isP ? '⚡' : '🌿'}<i>${isP ? 'P' : 'E'}</i></span>`
+          ? `<span class="core-badge ${isP ? 'badge-p' : 'badge-e'}" title="${isP ? t('cores.ptype', '') : t('cores.etype', '')}">${isP ? 'P' : 'E'}</span>`
           : '';
         return `
           <div class="core-tile ${typeClass}" data-cpu="${c.cpu}" role="button" tabindex="0">
@@ -382,6 +417,10 @@
     if (stats && stats.cpu && stats.cpu.core_grid) latest = stats.cpu;
     if (stats && stats.procs) latestProcs = stats.procs;
     if (stats && stats.procs_by_core) latestByCore = stats.procs_by_core;
+    // Throttle LOCAL: solo redibujar cada refreshMs (1/2/3/10/30 s) para poder leer.
+    const now = Date.now();
+    if (now - lastRenderTs < refreshMs) return;
+    lastRenderTs = now;
     if (isOpen) render();
     if (detailOpen) renderDetail();
   }

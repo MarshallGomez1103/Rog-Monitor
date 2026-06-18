@@ -846,6 +846,20 @@ ipcMain.handle('gpu-benchmark', async (_e, seconds = 45) =>
    Timeouts generosos en stop/get/compare: sesiones de 100 min tienen
    ~6 000 samples; serializar + leer puede tomar 2-3 s en disco lento.
    maxBuffer ya está en 16 MB (runPythonModule), suficiente para ~80 min. */
+// Mientras se graba una sesión, el renderer sondea cada 1 s con un proceso
+// aparte. Si la ventana se minimiza, Electron throttlearía ese timer (~1/min)
+// y la grabación se cortaría. Al grabar, desactivamos el throttling del
+// renderer para que siga muestreando aunque esté oculta (el backend en stream
+// sí se congela: la grabación no lo usa, así que igual se ahorra energía).
+ipcMain.handle('set-recording', (_e, on) => {
+  try {
+    if (win && !win.isDestroyed() && win.webContents.setBackgroundThrottling) {
+      win.webContents.setBackgroundThrottling(!on);
+    }
+  } catch (_) { /* API no disponible: no pasa nada grave */ }
+  return { ok: true };
+});
+
 ipcMain.handle('game-session-start', async () =>
   runJsonModule('rog_monitor.game_session', ['start'], 8000));
 ipcMain.handle('game-session-sample', async (_e, id) =>

@@ -139,10 +139,10 @@
 .core-tile:focus-visible .core-hint { opacity: .85; max-height: 1.2em; }
 
 /* ===================================================================
-   P-cores (RENDIMIENTO · deportivo) vs E-cores (EFICIENCIA · ecológico)
-   El badge superior derecho lleva ícono + letra; el borde superior tinta
-   la celda con el acento del tipo. Si la CPU es homogénea -> .core-flat
-   (sin badge ni tinte), degradación elegante.
+   P-cores (RENDIMIENTO, para tareas pesadas) vs E-cores (EFICIENCIA,
+   tareas ligeras y menor consumo). El badge superior derecho lleva la
+   letra P/E; el borde superior tinta la celda con el acento del tipo.
+   Si la CPU es homogénea -> .core-flat (sin badge ni tinte).
    =================================================================== */
 .core-badge {
   position: absolute;
@@ -150,10 +150,12 @@
   right: 6px;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  font-size: .82rem;
+  justify-content: center;
+  min-width: 1.3em;
+  font-size: .72rem;
+  letter-spacing: .04em;
   line-height: 1;
-  padding: 2px 5px 2px 4px;
+  padding: 2px 6px;
   border-radius: 3px;
   font-weight: 900;
 }
@@ -207,8 +209,48 @@
   font-size: .72rem;
   color: var(--dim);
   line-height: 1.5;
-  margin: 6px 0 14px;
+  margin: 6px 0 8px;
 }
+
+/* Nota explicativa (es normal que unos núcleos estén más calientes…) */
+.cores-note {
+  font-size: .72rem;
+  line-height: 1.5;
+  color: var(--ink);
+  opacity: .72;
+  margin: 0 0 14px;
+  padding-left: .6rem;
+  border-left: 2px solid color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+/* Selector de refresco local del modal */
+.cores-refresh {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin: 2px 0 12px;
+}
+.cores-refresh-label {
+  font-size: .72rem;
+  color: var(--dim);
+  letter-spacing: .02em;
+}
+.cores-refresh-btns { display: inline-flex; gap: .35rem; flex-wrap: wrap; }
+.cores-rb {
+  font-size: .68rem !important;
+  padding: .25em .6em !important;
+  letter-spacing: .04em;
+  border-radius: 3px;
+}
+.cores-rb.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  text-shadow: var(--neon-glow-soft, 0 0 6px currentColor);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
 .cores-close-row { display: flex; justify-content: flex-end; }
 
 /* ===================================================================

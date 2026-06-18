@@ -118,26 +118,32 @@
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 0.15rem 0.1rem;
+  gap: 0.15rem 0.15rem;
   padding: 0 0.7rem 0.5rem;
   font-size: 0.82rem;
   color: var(--ink);
-  opacity: 0.92;
   font-variant-numeric: tabular-nums;
 }
+/* valor principal (temp máx): el más grande, color por severidad */
 .bench-card-statline .bench-stat-main {
-  font-size: 1.05rem;
+  font-size: 1.06rem;
   font-weight: 800;
   text-shadow: var(--neon-glow-soft, 0 0 7px currentColor);
+}
+/* todos los demás valores comparten el MISMO acabado neón (estandarizado) */
+.bench-card-statline .bench-stat-val {
+  font-weight: 700;
+  color: var(--accent2, var(--accent));
+  text-shadow: var(--neon-glow-soft, 0 0 6px currentColor);
 }
 .bench-card-statline .bench-stat-unit {
   font-size: 0.66rem;
   color: var(--dim);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-left: 0.15em;
+  margin-left: 0.18em;
 }
-.bench-card-statline .bench-stat-dot { color: var(--dim); opacity: 0.6; font-style: normal; }
+.bench-card-statline .bench-stat-dot { color: var(--dim); opacity: 0.55; font-style: normal; margin: 0 0.12em; }
 .bench-card-statline .lvl-ok   { color: var(--lvl-ok,   #3ce087); }
 .bench-card-statline .lvl-warn { color: var(--lvl-hot,  #ffb13c); }
 .bench-card-statline .lvl-hot  { color: var(--lvl-hot,  #ffb13c); }
@@ -635,7 +641,23 @@
 
 .benchd-legend i { width: 12px; height: 3px; border-radius: 2px; display: inline-block; }
 
-.benchd-canvas { width: 100%; height: 160px; display: block; }
+.benchd-canvas { width: 100%; height: 160px; display: block; cursor: crosshair; }
+
+/* tooltip de hover de las gráficas del detalle (por encima del modal) */
+.benchd-tip {
+  position: fixed; z-index: 40;
+  pointer-events: none;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 4px 9px;
+  white-space: nowrap;
+  border-radius: 2px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.3);
+}
+.benchd-tip.hidden { display: none; }
 
 .benchd-nochart {
   font-size: 0.78rem;

@@ -415,7 +415,9 @@
   border-color: color-mix(in srgb, var(--accent) 60%, var(--hair));
   box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 22%, transparent);
 }
-.gs-metric-card.gs-clickable .gs-chart { cursor: pointer; }
+/* La gráfica usa crosshair (inspección) aunque la tarjeta sea clickeable:
+   el hover muestra valor+tiempo; el clic sigue abriendo el zoom. */
+.gs-metric-card.gs-clickable .gs-chart { cursor: crosshair; }
 
 /* ---- COSTO EN $ ---- */
 .gs-cost,
