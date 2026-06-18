@@ -45,6 +45,7 @@ class GpuReader:
         self.amd = hwmon.find(chips, "amdgpu")
         self._mode: str | None = None
         self._pending: str | None = None
+        self._pending_action: str | None = None
         self._mode_ts = 0.0
         self._nvidia_dead_until = 0.0
         self.supported: list[str] = self._supported_modes()
@@ -73,7 +74,11 @@ class GpuReader:
             return
         self._mode = mode
         pending = _run(["supergfxctl", "-P"]) or ""
-        self._pending = None if pending.lower() in ("", "none", mode.lower()) else pending
+        pending_norm = pending.strip().lower()
+        self._pending = None if pending_norm in ("", "none", "unknown", mode.lower()) else pending
+        action = (_run(["supergfxctl", "-p"]) or "").strip()
+        action_norm = action.lower()
+        self._pending_action = None if action_norm in ("", "none", "noaction", "unknown") else action
         self._mode_ts = now
 
     def mode_info(self) -> dict:
@@ -81,6 +86,7 @@ class GpuReader:
         return {
             "mode": self._mode,
             "pending": self._pending,
+            "pending_action": self._pending_action,
             "supported": self.supported,
         }
 

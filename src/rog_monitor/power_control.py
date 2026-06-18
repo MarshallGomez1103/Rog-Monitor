@@ -425,15 +425,17 @@ class PowerControl:
                 return {"ok": False, "err": f"Clave no reconocida: '{key}'."}
 
         test_mode = "ROG_FW_ATTRS_DIR" in os.environ
+        run_as_root = hasattr(os, "geteuid") and os.geteuid() == 0
+        direct_write = test_mode or run_as_root
         applied: dict = {}
 
         # --- apply asus-armoury attrs via apply-power-control.sh ---
         if attr_changes:
             args = [f"{k}={int(round(float(v)))}" for k, v in attr_changes.items()]
             script_path = str(_SCRIPT)
-            if test_mode:
+            if direct_write:
                 cmd = ["bash", script_path] + args
-                env: dict | None = dict(os.environ)
+                env: dict | None = dict(os.environ) if test_mode else None
             else:
                 cmd = ["pkexec", "bash", script_path] + args
                 env = None
@@ -475,8 +477,8 @@ class PowerControl:
                     "err": f"Script no encontrado: {gpu_script_path}",
                 }
 
-            gpu_cmd = [
-                "pkexec", "bash", gpu_script_path,
+            gpu_cmd = ["bash", gpu_script_path] if run_as_root else ["pkexec", "bash", gpu_script_path]
+            gpu_cmd += [
                 "set",
                 "--core", str(core_mhz),
                 "--mem", str(mem_mhz),

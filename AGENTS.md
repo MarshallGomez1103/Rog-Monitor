@@ -37,6 +37,13 @@ HANDOFF.md al terminar su sesión** (qué hizo, qué queda pendiente, decisiones
 - Subprocesos SIEMPRE con `stdin=subprocess.DEVNULL` (si no, se comen las
   teclas de la TUI).
 - `supergfxctl --mode` puede bloquear >15 s: ejecutarlo en hilo aparte.
+- **Nunca** ejecutar `supergfxctl --mode` desde hooks automáticos
+  (`systemd`, `udev`, boot, AC/batería). Puede parar el display manager durante
+  login y dejar la sesión gris. Cambios iGPU/Hybrid/dGPU solo por acción manual
+  del usuario desde una sesión gráfica activa, con advertencia de logout/reboot.
+- Servicios root no deben usar `pkexec`: si corren como root, llaman los scripts
+  de escritura directamente. `pkexec` queda solo para acciones iniciadas desde
+  la app de escritorio.
 - intel_pstate siempre reporta governor "powersave"; lo real es el EPP.
 - Bazzite no tiene `powerprofilesctl`: usar D-Bus org.freedesktop.UPower.PowerProfiles.
 - RAPL es root-only (CVE-2020-8694): `scripts/enable-cpu-power.sh`.

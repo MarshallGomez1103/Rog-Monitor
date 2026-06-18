@@ -146,8 +146,54 @@ ipcMain.handle('set-profile', async (_e, profile) => {
   return { ok: true, profile, applied: false };
 });
 
-ipcMain.handle('set-gpu-mode', (_e, mode) =>
-  run('supergfxctl', ['--mode', mode], 90000));
+const GPU_MODES = new Set(['Integrated', 'Hybrid', 'AsusMuxDgpu']);
+
+function cleanGpuPending(value, current) {
+  const raw = String(value || '').trim();
+  const norm = raw.toLowerCase();
+  if (!raw || norm === 'none' || norm === 'unknown' || norm === String(current || '').toLowerCase()) {
+    return null;
+  }
+  return raw;
+}
+
+function cleanGpuAction(value) {
+  const raw = String(value || '').trim();
+  const norm = raw.toLowerCase();
+  if (!raw || norm === 'none' || norm === 'noaction' || norm === 'unknown') return null;
+  return raw;
+}
+
+async function readGpuModeState() {
+  const current = await run('supergfxctl', ['-g'], 10000);
+  if (!current.ok) {
+    return { mode: null, pending: null, pending_action: null, err: current.err || current.out };
+  }
+  const pending = await run('supergfxctl', ['-P'], 10000);
+  const action = await run('supergfxctl', ['-p'], 10000);
+  return {
+    mode: current.out || null,
+    pending: pending.ok ? cleanGpuPending(pending.out, current.out) : null,
+    pending_action: action.ok ? cleanGpuAction(action.out) : null,
+  };
+}
+
+ipcMain.handle('set-gpu-mode', async (_e, mode) => {
+  if (!GPU_MODES.has(mode)) {
+    return { ok: false, err: `Modo GPU no permitido: ${mode}` };
+  }
+  const before = await readGpuModeState();
+  const res = await run('supergfxctl', ['--mode', mode], 90000);
+  const after = await readGpuModeState();
+  return {
+    ...res,
+    before,
+    after,
+    mode: after.mode,
+    pending: after.pending,
+    pending_action: after.pending_action,
+  };
+});
 
 ipcMain.handle('check-update', async () => {
   const fetch = await run('git', ['fetch', '--quiet'], 30000);

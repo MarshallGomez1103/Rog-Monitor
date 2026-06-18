@@ -1040,6 +1040,40 @@ function refreshGpuTooltips(active) {
     `MUX: solo ${gpu} para todo. Más FPS pero gasta más batería. Requiere REINICIAR`;
 }
 
+function gpuPendingActionText(action, mode) {
+  const raw = String(action || '').toLowerCase();
+  if (mode === 'AsusMuxDgpu' || raw.includes('reboot') || raw.includes('restart')) {
+    return 'reinicia el equipo para aplicar';
+  }
+  return 'cierra sesión y vuelve a iniciar para aplicar';
+}
+
+function gpuSwitchWarning(mode) {
+  const gpu = dgpuName ? `la ${dgpuName}` : 'la GPU dedicada';
+  if (mode === 'AsusMuxDgpu') {
+    return `Modo dGPU (MUX): ${gpu} maneja TODO, incluida la pantalla.\n\n` +
+      '✓ Más FPS en juegos\n' +
+      '✗ Mucho más consumo de batería\n' +
+      '✗ Requiere REINICIAR el equipo\n\n' +
+      'Guarda tu trabajo antes de continuar. ¿Solicitar el cambio?';
+  }
+  if (mode === 'Integrated') {
+    return `Modo iGPU: se apaga ${gpu} para ahorrar batería.\n\n` +
+      'Esto puede cerrar tu sesión gráfica o dejar un cambio pendiente hasta cerrar sesión.\n' +
+      'Guarda tu trabajo antes de continuar. ¿Solicitar el cambio?';
+  }
+  return `Modo Hybrid: escritorio en iGPU + ${gpu} para juegos.\n\n` +
+    'Esto puede cerrar tu sesión gráfica o dejar un cambio pendiente hasta cerrar sesión.\n' +
+    'Guarda tu trabajo antes de continuar. ¿Solicitar el cambio?';
+}
+
+function gpuRequestToast(mode, res) {
+  const action = gpuPendingActionText(res.pending_action, res.pending || mode);
+  if (res.pending) return `Modo ${mode} solicitado — ${action}`;
+  if (res.mode === mode) return `Modo ${mode} activo`;
+  return `Modo ${mode} solicitado`;
+}
+
 function update(stats) {
   lastStats = stats;
   const cpu = stats.cpu || {};
@@ -1101,7 +1135,8 @@ function update(stats) {
   /* pending banner */
   const banner = $('pending-banner');
   if (gpu.pending) {
-    $('pending-mode').textContent = gpu.pending;
+    $('pending-mode').textContent = `${gpu.mode || '?'} → ${gpu.pending}`;
+    $('pending-action').textContent = gpuPendingActionText(gpu.pending_action, gpu.pending);
     banner.classList.remove('hidden');
   } else {
     banner.classList.add('hidden');
@@ -1229,21 +1264,12 @@ document.querySelectorAll('#gpu-seg button').forEach((btn) => {
       toast(`Ya estás en modo ${mode}`);
       return;
     }
-    if (mode === 'AsusMuxDgpu' && !window.confirm(
-      `Modo dGPU (MUX): ${dgpuName ? 'la ' + dgpuName : 'la GPU dedicada'} maneja TODO, incluida la pantalla.\n\n` +
-      '✓ Más FPS en juegos (sin pasar por los gráficos integrados)\n' +
-      '✗ Mucho más consumo de batería\n' +
-      '✗ Requiere REINICIAR el equipo (no basta cerrar sesión)\n\n' +
-      '¿Continuar?')) return;
+    if (!window.confirm(gpuSwitchWarning(mode))) return;
     gpuBusy = true;
     toast(`Solicitando modo ${mode}… (puede tardar)`);
     const res = await window.rog.setGpuMode(mode);
     gpuBusy = false;
-    toast(res.ok
-      ? (mode === 'AsusMuxDgpu'
-          ? 'Modo dGPU solicitado — REINICIA el equipo para aplicar'
-          : `Modo ${mode} solicitado — cierra sesión para aplicar`)
-      : `No se pudo: ${res.err || res.out}`);
+    toast(res.ok ? gpuRequestToast(mode, res) : `No se pudo: ${res.err || res.out}`);
   });
 });
 

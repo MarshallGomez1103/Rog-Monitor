@@ -2,6 +2,45 @@
 
 > Cada agente actualiza esta sección al terminar. El siguiente la lee primero.
 
+## Sesión: Codex (GPT-5) — 2026-06-18 — seguridad AC/batería y GPU anti-login-gris
+
+Diagnóstico del bloqueo de Bazzite/KDE: `/usr/local/sbin/rog-power-source`
+corría en boot/udev y llamaba `supergfxctl --mode Integrated` al estar en
+batería. `supergfxd` respondió con `StopDisplayManager` durante login, por eso
+el greeter quedaba gris/orfandado tras escribir la contraseña. El fix de
+emergencia dejó de llamar esa función; esta sesión dejó la solución permanente.
+
+Hecho:
+- `src/rog_monitor/gpu.py`: `supergfxctl -P` = `Unknown` ya no crea banner falso;
+  el stream ahora expone `pending_action` (`logout`/`reboot` cuando exista).
+- `desktop/main.js` + `desktop/renderer/app.js`: cambios GPU validados por
+  allowlist, lectura before/after, confirmación explícita para iGPU/Hybrid/dGPU
+  y banner con acción real. Sigue siendo acción manual, nunca automática.
+- `src/rog_monitor/power_control.py`: si el proceso corre como root, escribe
+  directo con los scripts; `pkexec` queda para la app gráfica. Esto permite que
+  servicios systemd apliquen `apply-profile` sin colgarse esperando auth.
+- `~/Rog-Monitor-Scripts`: `rog-power-source` ya no contiene `supergfxctl`; AC
+  aplica `performance` + brillo restaurado + límites performance; batería aplica
+  `power-saver` + brillo 30% + límites quiet; GPU unchanged. `rog-profile-sync`
+  aplica límites de potencia en cada cambio PPD además de perfil ASUS + curvas.
+  La unidad `rog-power-source.service` ya no depende de `supergfxd`.
+- Instalado en vivo con `pkexec bash ~/Rog-Monitor-Scripts/update.sh`.
+
+Verificado:
+- `bash -n` en scripts root y scripts del repo principal.
+- `node --check desktop/main.js desktop/renderer/app.js`.
+- `python -m compileall -q src` terminó con código 0.
+- Test con `ROG_FW_ATTRS_DIR` falso: quiet/power-saver = `35/45/5/75`,
+  balanced = `80/110/15/82`, performance = `140/175/25/87`.
+- `diff` fuente vs `/usr/local/sbin` y unidad systemd instalada: sin diferencias.
+- Journal nuevo: `Applied performance power limits` y
+  `AC connected: performance, brightness restored, GPU mode unchanged`.
+
+Pendiente manual: reiniciar la app ROG Monitor para cargar los cambios de
+Electron ya editados. Prueba física recomendada: desconectar/conectar cargador
+y confirmar journal + límites sin que aparezca ningún evento de supergfxd
+parando display-manager.
+
 ## Sesión: A-LIGHT + Opus 4.8 (ORQUESTADOR) — 2026-06-17 — rediseño de temas CLAROS
 
 Marshall: "los temas claros están horribles, pastel, parece política (uno izquierda,

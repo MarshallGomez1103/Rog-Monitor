@@ -55,3 +55,6 @@ Estados: TODO · LANZADO · EN CURSO · CORTADO · LISTO · FUSIONADO.
 ## Bitácora
 - 2026-06-17: spec + tracker creados; worktrees y ramas v13/* creados; 4
   instancias lanzadas en background; orquestador arranca INTEGRACIÓN.
+  IDs de agente (para retomar/continuar con SendMessage):
+  A-POWER-UI=ada59c449edcabb73 · A-POWER-BE=afbb6f5b0322cfd6b ·
+  A-GAME=a3e6f97a9c4d72a77 · A-CORES=adf2f1368b7a91cb3.
