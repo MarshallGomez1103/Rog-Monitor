@@ -2,6 +2,39 @@
 
 > Cada agente actualiza esta sección al terminar. El siguiente la lee primero.
 
+## Sesión: Opus 4.8 (ORQUESTADOR) — 2026-06-18 — cierre v13 + pulido post-uso
+
+Cierre de la build multiagente v13 y pulido tras el primer uso real de Marshall.
+
+Hecho:
+- Integré el commit de seguridad de Codex (login-gris) y lo dejé en `master`
+  (`3ca8785`): GPU nunca automática en boot/AC/batería; `pending_action`
+  logout/reboot en `gpu.py`+`main.js`+`app.js`; `power_control.py` escribe
+  directo si corre como root (pkexec solo para la app).
+- **Tarjetas de benchmark** (sección 07): el resumen se veía "vacío" porque
+  A-GAME alineó los chips a la derecha (`justify-content:flex-end`). Ahora van a
+  la izquierda y SIEMPRE incluyen temp/W/uso-o-pkg/throttle/duración. Añadí una
+  **mini-curva térmica neón siempre visible** en el cuerpo (`_drawMiniSparkline`)
+  y la pista "click para ampliar" → modal de detalle (que ya existía).
+- **VER TODOS los procesos**: backend `rog_monitor --procs-all` (one-shot,
+  `ProcReader.read(include_idle=True)`), IPC `list-all-procs`, modal con filtro
+  nombre/PID, contador, refresco vivo cada 3 s y clic-para-cerrar. El stream
+  1 Hz sigue trayendo solo top 5 (no se infla).
+- **Neón**: `.ghost` con borde tintado de acento + glow al hover/focus; tiles de
+  núcleo con halo neón por nivel de temperatura (no solo al hover).
+- Docs: `CHANGELOG.md` v13, `PROGRESS-v13.md` cerrado (todo FUSIONADO).
+
+Verificado:
+- `node --check` en main.js/preload.js/app.js/i18n.js · `py_compile` en
+  procs.py/cli.py/gpu.py/power_control.py · `--procs-all` devuelve la lista
+  completa (532 procesos en la prueba).
+- Electron arranca y corre ~20 s sin crash de JS/CSP (los errores de GPU/zygote
+  en consola son del entorno sandbox de desarrollo, no de la app).
+
+Pendiente real (no bloquea): auto-aplicar poder por perfil sin contraseña ya lo
+hace el servicio root `rog-profile-sync` (Codex); monitoreo multi-equipo sigue
+siendo visión de roadmap (SSH/back remoto NO implementados a propósito).
+
 ## Sesión: Codex (GPT-5) — 2026-06-18 — seguridad AC/batería y GPU anti-login-gris
 
 Diagnóstico del bloqueo de Bazzite/KDE: `/usr/local/sbin/rog-power-source`

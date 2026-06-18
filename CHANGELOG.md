@@ -1,5 +1,58 @@
 # Changelog
 
+## 13.0.0 — 2026-06-18
+
+> Build multiagente v13: Opus 4.8 orquestó **4 instancias Sonnet** en worktrees
+> aislados (A-POWER-UI, A-POWER-BE, A-GAME, A-CORES). El límite de cuenta cortó a
+> mitad de camino → el trabajo se rescató de los worktrees (checkpoints) y se
+> fusionó. Integración por dueño de archivo (cero conflictos). Contrato en
+> `docs/build-spec-v13.md`; tablero en `docs/PROGRESS-v13.md`. `node --check` +
+> `py_compile` + `bash -n` OK. **Primera versión preparada para publicación
+> abierta**: sin datos personales en el código.
+
+### Centro de Poder seguro
+- Al **Aplicar** se detecta y se muestra **solo lo que cambió**; franja de
+  peligro con las consecuencias reales; mensajes de los rieles de seguridad
+  (doble recorte contra rangos del dispositivo).
+- **Doble consentimiento** al salir de rango y **modo Avanzado** (elige marca +
+  componente, con enlaces a la documentación oficial y rangos seguros) tras
+  marcar "entiendo los riesgos".
+- Los **perfiles aplican poder real** con recorte seguro: Ahorro topa mucho más
+  bajo (PL1/PL2/boost/térmico) y no calienta como Performance. Curvas de
+  ventilador coherentes por perfil. `device_docs.json` y `device_profiles.json`
+  como fuente de rangos.
+
+### Sesión de juego y benchmarks
+- Gráficas **neón** (no negras), **clic para ampliar** con zoom; comparación
+  original/nueva en **%**; **costo en $** configurable ($/kWh); **notas** por
+  sesión. Tarjetas de benchmark con resumen **siempre visible** (chips a la
+  izquierda + mini-curva térmica) y sin desbordes.
+
+### Procesos y núcleos
+- **VER TODOS los procesos**: modal con la lista completa (no solo top 5),
+  filtro por nombre/PID, contador y refresco en vivo; clic para cerrar.
+- Procesos en **dos columnas** (% CPU total vs % de un núcleo).
+- **Núcleos** P (deportivo) vs E (eco) diferenciados, **GHz inline** (sin el
+  toast que parpadeaba), **detalle por núcleo** al hacer clic, halo neón por
+  temperatura.
+
+### Bugs, seguridad y pulido
+- **Rebote de perfiles** corregido (el resaltado se queda en el perfil tocado
+  hasta que el sistema lo confirma).
+- **i18n de los headers de bloque**: ya no quedan en español al cambiar idioma;
+  claves nuevas en los 8 idiomas.
+- **Roadmap honesto** (Hecho/Ahora/Próximo), con la visión de monitoreo
+  multi-equipo / centro de datos; timeline con las bolitas centradas y sin
+  recorte del glow.
+- **Seguridad GPU/AC-batería (Codex)**: la GPU **nunca** se cambia automática-
+  mente al arrancar o al conectar/desconectar el cargador (causaba el login en
+  pantalla gris). Cambios de iGPU/Hybrid/dGPU solo manuales y con aviso de si
+  toca cerrar sesión o reiniciar. Los servicios root aplican perfil, brillo,
+  ventiladores y límites de potencia sin colgarse pidiendo contraseña.
+- **Números de temperatura más nítidos**; botones secundarios más visibles.
+- **Scrub de datos personales**: fuera referencias a equipos, periféricos y
+  nombres concretos del código, scripts y README, para la publicación abierta.
+
 ## 12.0.0 — 2026-06-17
 
 > Build multiagente v12: Opus 4.8 orquestó **5 instancias Sonnet** en worktrees
