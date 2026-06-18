@@ -708,6 +708,19 @@ function _capBadge(capRespected) {
     ? '<span class="bench-badge ok">cap respetado</span>'
     : '<span class="bench-badge crit">cap EXCEDIDO</span>';
 }
+function _utilBadge(val) {
+  if (val == null) return '';
+  return `<span class="bench-badge neutral">uso ${fmt(val, 0)}%</span>`;
+}
+function _pkgBadge(val) {
+  if (val == null) return '';
+  const cls = val >= 95 ? 'crit' : val >= 85 ? 'hot' : val >= 70 ? 'warn' : 'ok';
+  return `<span class="bench-badge ${cls}">pkg ${fmt(val, 1)}°C</span>`;
+}
+function _durationBadge(seconds) {
+  if (seconds == null) return '';
+  return `<span class="bench-badge neutral">${seconds} s</span>`;
+}
 
 /* Dibuja una mini-gráfica de sparkline de temperatures en un canvas */
 function _unitForKey(key) {
@@ -786,12 +799,16 @@ function _benchCardHtml(item) {
   const s = item.summary || {};
   const kind = (item.kind || 'cpu').toUpperCase();
   const label = item.label || kind;
+  const isCpu = item.kind === 'cpu';
 
-  // badges de veredicto
+  // badges de veredicto — siempre incluyen la métrica secundaria y la duración
+  // para que la tarjeta nunca quede vacía y se lea de un vistazo.
   const badges = [
-    item.kind === 'cpu' ? _tempBadge(s.cpu_temp_max, 'CPU') : _tempBadge(s.gpu_temp_max, 'GPU'),
-    item.kind === 'cpu' ? _wattBadge(s.cpu_watts_max, 'CPU') : _wattBadge(s.gpu_watts_max, 'GPU'),
+    isCpu ? _tempBadge(s.cpu_temp_max, 'CPU') : _tempBadge(s.gpu_temp_max, 'GPU'),
+    isCpu ? _wattBadge(s.cpu_watts_max, 'CPU') : _wattBadge(s.gpu_watts_max, 'GPU'),
+    isCpu ? _pkgBadge(s.cpu_package_max) : _utilBadge(s.gpu_util_max),
     _throttleBadge(s.throttle_events),
+    _durationBadge(item.seconds),
     _capBadge(s.cap_respected),
   ].filter(Boolean).join('');
 
@@ -838,6 +855,14 @@ function _benchCardHtml(item) {
     ? `<canvas class="bench-sparkline" id="${sparklineId}" width="280" height="96"></canvas>`
     : '';
 
+  // mini-sparkline SIEMPRE visible en el cuerpo de la tarjeta: la curva térmica
+  // de un vistazo, sin tener que abrir el detalle. Si no hay samples, se muestra
+  // una franja informativa para que la tarjeta nunca quede vacía.
+  const miniSparkId = `mspark-${item.id}`;
+  const miniBody = hasSparkline
+    ? `<canvas class="bench-mini-spark" id="${miniSparkId}" height="56"></canvas>`
+    : `<div class="bench-mini-empty">${escapeHtml(item._legacyText || 'sin curva registrada')}</div>`;
+
   // tool info
   const toolHtml = item.tool
     ? `<div class="bench-detail-tool">Herramienta: ${escapeHtml(item.tool)}</div>`
@@ -851,11 +876,67 @@ function _benchCardHtml(item) {
       <span class="bench-card-arrow">▼</span>
     </div>
     <div class="bench-card-summary">${badges || '<span class="bench-badge neutral">' + escapeHtml(label) + '</span>'}</div>
+    <div class="bench-card-body">
+      ${miniBody}
+      <span class="bench-card-expand">click para ampliar ▸</span>
+    </div>
     <div class="bench-card-detail">
       ${sparkHtml}
       ${detailGrid}
       ${toolHtml}
     </div>`;
+}
+
+/* Mini-sparkline limpia (sin ejes) para el cuerpo siempre-visible de la tarjeta.
+ * Línea neón + relleno degradado + punto final marcado. */
+function _drawMiniSparkline(canvas, samples, key, color) {
+  if (!samples || !samples.length) return;
+  const vals = samples.map((s) => s[key]).filter((v) => v != null);
+  if (!vals.length) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.offsetWidth || canvas.parentElement?.offsetWidth || 240;
+  const h = canvas.offsetHeight || 56;
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+  ctx.scale(dpr, dpr);
+  const padT = 5, padB = 5, padX = 2;
+  const gh = h - padT - padB;
+  const gw = w - padX * 2;
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const range = max - min || 1;
+  const xStep = gw / Math.max(vals.length - 1, 1);
+  const col = color || '#f25c3d';
+  ctx.clearRect(0, 0, w, h);
+  const pt = (i, v) => [padX + i * xStep, padT + gh - ((v - min) / range) * gh];
+  // relleno degradado
+  ctx.beginPath();
+  vals.forEach((v, i) => { const [x, y] = pt(i, v); i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
+  ctx.lineTo(padX + (vals.length - 1) * xStep, padT + gh);
+  ctx.lineTo(padX, padT + gh);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, padT, 0, padT + gh);
+  grad.addColorStop(0, col + '55');
+  grad.addColorStop(1, col + '00');
+  ctx.fillStyle = grad;
+  ctx.fill();
+  // línea neón con glow
+  ctx.beginPath();
+  vals.forEach((v, i) => { const [x, y] = pt(i, v); i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
+  ctx.strokeStyle = col;
+  ctx.lineWidth = 1.8;
+  ctx.lineJoin = 'round';
+  ctx.shadowColor = col;
+  ctx.shadowBlur = 6;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  // punto final
+  const [ex, ey] = pt(vals.length - 1, vals[vals.length - 1]);
+  ctx.beginPath();
+  ctx.arc(ex, ey, 2.6, 0, Math.PI * 2);
+  ctx.fillStyle = col;
+  ctx.fill();
 }
 
 function renderBenchmarkHistory() {
@@ -875,11 +956,14 @@ function renderBenchmarkHistory() {
   // dibujar sparklines después de que los elementos estén en el DOM
   items.forEach((item) => {
     if (!Array.isArray(item.samples) || item.samples.length < 2) return;
-    const canvas = document.getElementById(`spark-${item.id}`);
-    if (!canvas) return;
     const key = item.kind === 'gpu' ? 'gpu_temp' : 'cpu_temp';
     const color = cssVar('--accent');
-    _drawSparkline(canvas, item.samples, key, color);
+    // sparkline del detalle (al expandir/fallback)
+    const canvas = document.getElementById(`spark-${item.id}`);
+    if (canvas) _drawSparkline(canvas, item.samples, key, color);
+    // mini-sparkline SIEMPRE visible en el cuerpo de la tarjeta
+    const mini = document.getElementById(`mspark-${item.id}`);
+    if (mini) _drawMiniSparkline(mini, item.samples, key, color);
   });
 
   // borrar un benchmark individual
@@ -2261,6 +2345,87 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
   } else {
     tryWire();
   }
+})();
+
+/* ---------- VER TODOS los procesos (modal ampliado) ---------- */
+(function wireAllProcs() {
+  const modal = $('allprocs-modal');
+  if (!modal) return;
+  const body = $('allprocs-body');
+  const filterEl = $('allprocs-filter');
+  const countEl = $('allprocs-count');
+  let allRows = [];
+  let timer = null;
+
+  function rowHtml(p) {
+    const core = p.cpu_core != null
+      ? `<span class="procs-core">${p.cpu_core.toFixed(0)}%</span>`
+      : '<span class="dim">—</span>';
+    return `<tr data-pid="${p.pid}" data-name="${escapeHtml(p.name)}" title="${t('procs.kill', { name: p.name })}">
+        <td class="pid">${p.pid}</td><td>${escapeHtml(p.name)}</td>
+        <td class="cpu r">${p.cpu.toFixed(1)}%</td>
+        <td class="cpu-core r">${core}</td>
+        <td class="mem r">${p.mem_mb} MB</td></tr>`;
+  }
+
+  function render() {
+    const q = (filterEl.value || '').trim().toLowerCase();
+    const rows = q
+      ? allRows.filter((p) => p.name.toLowerCase().includes(q) || String(p.pid).includes(q))
+      : allRows;
+    body.innerHTML = rows.length
+      ? rows.map(rowHtml).join('')
+      : `<tr><td colspan="5" class="dim">${t('procs.all_none')}</td></tr>`;
+    countEl.textContent = t('procs.all_count', { shown: rows.length, total: allRows.length });
+  }
+
+  async function refresh() {
+    const res = await window.rog.listAllProcs();
+    if (res && res.ok !== false && Array.isArray(res.procs)) {
+      allRows = res.procs;
+      render();
+    } else if (!allRows.length) {
+      body.innerHTML = `<tr><td colspan="5" class="dim">${escapeHtml((res && res.err) || 'sin datos')}</td></tr>`;
+    }
+  }
+
+  function open() {
+    modal.classList.remove('hidden');
+    body.innerHTML = `<tr><td colspan="5" class="dim">${t('procs.all_loading')}</td></tr>`;
+    countEl.textContent = '';
+    refresh();
+    // refresco en vivo mientras el modal está abierto (cada 3 s)
+    clearInterval(timer);
+    timer = setInterval(() => { if (!modal.classList.contains('hidden')) refresh(); }, 3000);
+  }
+
+  function close() {
+    modal.classList.add('hidden');
+    clearInterval(timer);
+    timer = null;
+  }
+
+  const btn = $('procs-all-btn');
+  if (btn) btn.addEventListener('click', (e) => { e.stopPropagation(); open(); });
+  $('allprocs-close').addEventListener('click', close);
+  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modal.classList.contains('hidden')) close();
+  });
+  filterEl.addEventListener('input', render);
+
+  body.addEventListener('click', async (e) => {
+    const row = e.target.closest('tr[data-pid]');
+    if (!row) return;
+    const { pid, name } = row.dataset;
+    if (!window.confirm(
+      `¿Cerrar el proceso "${name}" (PID ${pid})?\n\n` +
+      'Se le pedirá terminar de forma ordenada (SIGTERM). ' +
+      'Si es una app, perderás lo que no hayas guardado en ella.')) return;
+    const res = await window.rog.killProcess(pid);
+    toast(res.ok ? `Señal de cierre enviada a ${name}` : `No se pudo: ${res.err}`);
+    if (res.ok) { allRows = allRows.filter((p) => String(p.pid) !== String(pid)); render(); }
+  });
 })();
 
 /* ---------- export events ---------- */

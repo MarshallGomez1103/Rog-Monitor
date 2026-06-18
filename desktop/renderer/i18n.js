@@ -62,7 +62,7 @@
     'block.events':          { es: 'Eventos', en: 'Events', fr: 'Événements', it: 'Eventi', pt: 'Eventos', zh: '事件', ja: 'イベント', ko: '이벤트' },
     'block.procs':           { es: 'Procesos', en: 'Processes', fr: 'Processus', it: 'Processi', pt: 'Processos', zh: '进程', ja: 'プロセス', ko: '프로세스' },
     'block.procs_sub':       { es: 'top 5 por uso de CPU · clic para cerrar uno', en: 'top 5 by CPU · click to kill', fr: 'top 5 CPU · clic pour fermer', it: 'top 5 CPU · clic per chiudere', pt: 'top 5 CPU · clique para fechar', zh: 'CPU前5 · 点击关闭', ja: 'CPU上位5 · クリックして終了', ko: 'CPU 상위 5 · 클릭하여 종료' },
-    'block.procs_sub2':      { es: 'top 5 · clic para cerrar', en: 'top 5 · click to kill', fr: 'top 5 · clic pour fermer', it: 'top 5 · clic per chiudere', pt: 'top 5 · clique para fechar', zh: '前5 · 点击关闭', ja: '上位5 · クリックで終了', ko: '상위 5 · 클릭하여 종료' },
+    'block.procs_sub2':      { es: 'top 5 · clic en una fila para cerrarla', en: 'top 5 · click a row to kill it', fr: 'top 5 · cliquez sur une ligne pour fermer', it: 'top 5 · clic su una riga per chiudere', pt: 'top 5 · clique numa linha para fechar', zh: '前5 · 点击某行将其关闭', ja: '上位5 · 行をクリックで終了', ko: '상위 5 · 행 클릭하여 종료' },
     'block.bench_session':   { es: 'Benchmarks y sesión', en: 'Benchmarks & session', fr: 'Benchmarks & session', it: 'Benchmark & sessione', pt: 'Benchmarks & sessão', zh: '基准测试与会话', ja: 'ベンチマークとセッション', ko: '벤치마크 & 세션' },
     'block.bench_session_sub': { es: 'carga térmica · sesión de juego', en: 'thermal load · game session', fr: 'charge thermique · session de jeu', it: 'carico termico · sessione di gioco', pt: 'carga térmica · sessão de jogo', zh: '热负载 · 游戏会话', ja: '熱負荷 · ゲームセッション', ko: '열 부하 · 게임 세션' },
 
@@ -77,6 +77,13 @@
     'procs.col_ram':         { es: 'RAM', en: 'RAM', fr: 'RAM', it: 'RAM', pt: 'RAM', zh: '内存', ja: 'RAM', ko: 'RAM' },
     'procs.kill':            { es: 'Clic para cerrar {name}', en: 'Click to close {name}', fr: 'Cliquer pour fermer {name}', it: 'Clic per chiudere {name}', pt: 'Clique para fechar {name}', zh: '点击关闭 {name}', ja: 'クリックで {name} を終了', ko: '클릭하여 {name} 종료' },
     'cores.btn':             { es: 'NÚCLEOS', en: 'CORES', fr: 'CŒURS', it: 'CORE', pt: 'NÚCLEOS', zh: '核心', ja: 'コア', ko: '코어' },
+    'procs.view_all':        { es: 'VER TODOS', en: 'VIEW ALL', fr: 'TOUT VOIR', it: 'VEDI TUTTI', pt: 'VER TODOS', zh: '查看全部', ja: 'すべて表示', ko: '전체 보기' },
+    'procs.all_title':       { es: 'Todos los procesos', en: 'All processes', fr: 'Tous les processus', it: 'Tutti i processi', pt: 'Todos os processos', zh: '所有进程', ja: 'すべてのプロセス', ko: '모든 프로세스' },
+    'procs.all_sub':         { es: 'Lista completa ordenada por uso de CPU. Clic en una fila para cerrar el proceso.', en: 'Full list sorted by CPU usage. Click a row to kill the process.', fr: 'Liste complète triée par CPU. Cliquez sur une ligne pour fermer le processus.', it: 'Elenco completo ordinato per uso CPU. Clic su una riga per chiudere il processo.', pt: 'Lista completa ordenada por uso de CPU. Clique numa linha para fechar o processo.', zh: '按 CPU 使用率排序的完整列表。点击某行可关闭该进程。', ja: 'CPU使用率順の全リスト。行をクリックでプロセスを終了。', ko: 'CPU 사용량순 전체 목록. 행을 클릭하여 프로세스 종료.' },
+    'procs.all_filter':      { es: 'Filtrar por nombre o PID…', en: 'Filter by name or PID…', fr: 'Filtrer par nom ou PID…', it: 'Filtra per nome o PID…', pt: 'Filtrar por nome ou PID…', zh: '按名称或 PID 筛选…', ja: '名前またはPIDで絞り込み…', ko: '이름 또는 PID로 필터…' },
+    'procs.all_count':       { es: '{shown} de {total}', en: '{shown} of {total}', fr: '{shown} sur {total}', it: '{shown} di {total}', pt: '{shown} de {total}', zh: '{total} 中的 {shown}', ja: '{total} 中 {shown}', ko: '{total}개 중 {shown}개' },
+    'procs.all_loading':     { es: 'Cargando procesos…', en: 'Loading processes…', fr: 'Chargement des processus…', it: 'Caricamento processi…', pt: 'A carregar processos…', zh: '正在加载进程…', ja: 'プロセスを読み込み中…', ko: '프로세스 불러오는 중…' },
+    'procs.all_none':        { es: 'Sin coincidencias', en: 'No matches', fr: 'Aucune correspondance', it: 'Nessuna corrispondenza', pt: 'Sem correspondências', zh: '无匹配项', ja: '一致なし', ko: '일치 항목 없음' },
 
     /* ---- labels comunes de estadísticas ---- */
     'common.max':            { es: 'Máx', en: 'Max', fr: 'Max', it: 'Max', pt: 'Máx', zh: '最大', ja: '最大', ko: '최대' },

@@ -127,6 +127,11 @@ async function runJsonModule(module, args, timeoutMs = 10000) {
   }
 }
 
+// Lista COMPLETA de procesos bajo demanda (modal "ver todos"): el stream 1 Hz
+// solo trae el top 5; esto spawnea un one-shot ligero que muestrea dos veces.
+ipcMain.handle('list-all-procs', () =>
+  runJsonModule('rog_monitor', ['--procs-all'], 8000));
+
 const PPD = [
   'org.freedesktop.UPower.PowerProfiles',
   '/org/freedesktop/UPower/PowerProfiles',

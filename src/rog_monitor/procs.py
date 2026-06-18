@@ -23,7 +23,7 @@ class ProcReader:
         # a recorrer /proc.
         self._last_rows: list[dict] = []
 
-    def read(self, top: int = 5) -> list[dict]:
+    def read(self, top: int = 5, include_idle: bool = False) -> list[dict]:
         total = _total_jiffies()
         dt = total - self._last_total
         ncpu = os.cpu_count() or 1
@@ -57,7 +57,7 @@ class ProcReader:
             # % of the WHOLE CPU (all cores); cpu_core is the top-style
             # per-core figure (100 = one full core)
             cpu = (jiffies - prev) * 100 / dt
-            if cpu <= 0:
+            if cpu <= 0 and not include_idle:
                 continue
             rows.append(
                 {
@@ -72,8 +72,13 @@ class ProcReader:
 
         self._last = current
         self._last_total = total
-        rows.sort(key=lambda r: r["cpu"], reverse=True)
-        self._last_rows = rows
+        # cpu desc; mem como desempate para que la lista completa (include_idle)
+        # ponga primero lo que más consume y no quede arbitraria entre los idle.
+        rows.sort(key=lambda r: (r["cpu"], r["mem_mb"]), reverse=True)
+        # by_core() reusa la lista del ciclo normal (top); cuando pedimos la lista
+        # completa (one-shot CLI) no contaminamos el estado compartido.
+        if not include_idle:
+            self._last_rows = rows
         return rows[:top]
 
     def by_core(self, per_core: int = 5) -> dict[int, list[dict]]:

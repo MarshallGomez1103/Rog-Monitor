@@ -77,15 +77,56 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0 0.75rem 0.5rem;
+  padding: 0.5rem 0.75rem 0.4rem;
   flex-wrap: wrap;
-  /* v13 A-GAME: los cuadritos de color se alinean a la derecha y NUNCA
-     desbordan la tarjeta. min-width:0 deja que los hijos se ajusten dentro
-     del flex en vez de empujar el borde; box-sizing respeta el padding. */
-  justify-content: flex-end;
+  /* v13: los chips de resumen se leen de izquierda a derecha (como una ficha),
+     NUNCA desbordan la tarjeta. box-sizing respeta el padding. */
+  justify-content: flex-start;
   box-sizing: border-box;
   max-width: 100%;
-  overflow: hidden;
+}
+
+/* Cuerpo siempre visible: mini-curva térmica + pista de "click para ampliar" */
+.bench-card-body {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0 0.75rem 0.55rem;
+}
+
+.bench-mini-spark {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 56px;
+  display: block;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--panel) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.bench-mini-empty {
+  flex: 1 1 auto;
+  font-size: 0.7rem;
+  color: var(--dim);
+  font-style: italic;
+  padding: 0.6rem 0;
+}
+
+.bench-card-expand {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0.55;
+  text-shadow: var(--neon-glow-soft, 0 0 5px currentColor);
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.bench-card:hover .bench-card-expand,
+.bench-card:focus-within .bench-card-expand {
+  opacity: 1;
 }
 
 /* Badges de veredicto */
@@ -93,10 +134,10 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25em;
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  padding: 0.18em 0.5em;
+  letter-spacing: 0.06em;
+  padding: 0.22em 0.55em;
   border-radius: 2px;
   white-space: nowrap;
 }
@@ -680,6 +721,82 @@
   vertical-align: middle;
   border-radius: 2px;
 }
+
+/* =========================================================
+   MODAL "VER TODOS" los procesos — lista completa con filtro
+   ========================================================= */
+.allprocs-card {
+  display: flex;
+  flex-direction: column;
+  max-height: 88vh;
+}
+
+.allprocs-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.2rem 0 0.5rem;
+}
+
+#allprocs-filter {
+  flex: 1 1 auto;
+  background: var(--panel);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 3px;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 0.4rem 0.6rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+#allprocs-filter:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.allprocs-count {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: var(--dim);
+  font-family: var(--mono);
+  letter-spacing: 0.04em;
+}
+
+.allprocs-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+  border: 1px solid var(--hair);
+  border-radius: 3px;
+}
+
+#allprocs { width: 100%; border-collapse: collapse; font-size: 13px; }
+#allprocs th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  background: var(--panel);
+  color: var(--dim);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+}
+#allprocs th.r { text-align: right; }
+#allprocs td {
+  padding: 4px 6px;
+  border-bottom: 1px dashed var(--hair);
+  font-family: var(--mono);
+}
+#allprocs td.pid { color: var(--dim); width: 11%; font-size: 12px; }
+#allprocs td.cpu { color: var(--accent); text-align: right; width: 14%; text-shadow: var(--neon-glow-soft, 0 0 5px currentColor); }
+#allprocs td.cpu-core { text-align: right; width: 14%; }
+#allprocs td.mem { color: var(--dim); text-align: right; width: 16%; }
+#allprocs tbody tr { cursor: pointer; }
+#allprocs tbody tr:hover { background: var(--chip); }
 
 /* =========================================================
    BENCHMARK CARDS — mejoras visuales (Task 2)

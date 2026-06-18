@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('rog', {
   doUpdate: () => ipcRenderer.invoke('do-update'),
   appInfo: () => ipcRenderer.invoke('app-info'),
   killProcess: (pid) => ipcRenderer.invoke('kill-process', pid),
+  listAllProcs: () => ipcRenderer.invoke('list-all-procs'),
   exportEvents: (text) => ipcRenderer.invoke('export-events', text),
   getFanConfig: (profile) => ipcRenderer.invoke('get-fan-config', profile),
   setFanConfig: (cfg) => ipcRenderer.invoke('set-fan-config', cfg),

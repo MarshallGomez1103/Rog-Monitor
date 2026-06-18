@@ -18,6 +18,9 @@ def parse_args(argv=None):
                         help="print one snapshot as JSON and exit")
     parser.add_argument("--json-stream", action="store_true",
                         help="emit one JSON snapshot per interval (NDJSON)")
+    parser.add_argument("--procs-all", action="store_true",
+                        help="print the full active-process list as JSON and exit "
+                             "(on-demand; lighter than spinning up the full app)")
     parser.add_argument("--interval", type=float, default=None,
                         help="refresh interval in seconds (default: config, 1.0)")
     parser.add_argument("--no-gpu", action="store_true",
@@ -33,6 +36,18 @@ def parse_args(argv=None):
 
 def main(argv=None) -> int:
     args = parse_args(argv)
+
+    if args.procs_all:
+        import json
+        import time
+        from .procs import ProcReader
+
+        pr = ProcReader()
+        pr.read(top=1, include_idle=True)   # prime los deltas de CPU
+        time.sleep(0.5)
+        rows = pr.read(top=100000, include_idle=True)
+        print(json.dumps({"procs": rows, "count": len(rows)}))
+        return 0
 
     if args.desktop:
         import pathlib

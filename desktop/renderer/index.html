@@ -260,7 +260,7 @@
 
         <article class="block" id="procs-block" data-block="procs">
           <h2><i class="dash-num"></i> <span data-i18n="block.procs">Procesos</span>
-            <small><span data-i18n="block.procs_sub2">top 5 · clic para cerrar</span> · <button id="procs-cores-btn" class="ghost procs-cores-link" data-i18n="cores.btn" title="Ver uso por núcleo individual">NÚCLEOS</button></small>
+            <small><span data-i18n="block.procs_sub2">top 5 · clic en una fila para cerrarla</span> · <button id="procs-all-btn" class="ghost procs-cores-link" data-i18n="procs.view_all" title="Ver TODOS los procesos en una ventana ampliada">VER TODOS</button> · <button id="procs-cores-btn" class="ghost procs-cores-link" data-i18n="cores.btn" title="Ver uso por núcleo individual">NÚCLEOS</button></small>
           </h2>
           <table id="procs">
             <thead>
@@ -313,6 +313,29 @@
         <tbody id="ram-procs-body"></tbody>
       </table>
       <button class="ghost modal-close" id="ram-close">Cerrar</button>
+    </div>
+  </div>
+
+  <div id="allprocs-modal" class="modal hidden">
+    <div class="modal-card wide allprocs-card">
+      <h3 data-i18n="procs.all_title">Todos los procesos</h3>
+      <p class="sub"><span data-i18n="procs.all_sub">Lista completa ordenada por uso de CPU. Clic en una fila para cerrar el proceso.</span></p>
+      <div class="allprocs-toolbar">
+        <input type="text" id="allprocs-filter" data-i18n-attr="placeholder:procs.all_filter" placeholder="Filtrar por nombre o PID…" autocomplete="off" spellcheck="false">
+        <span class="allprocs-count" id="allprocs-count"></span>
+      </div>
+      <div class="allprocs-scroll">
+        <table id="allprocs">
+          <thead>
+            <tr><th>PID</th><th data-i18n="procs.col_name">proceso</th>
+                <th class="r" data-i18n="procs.col_cpu">% CPU</th>
+                <th class="r" data-i18n="procs.col_core">% NÚCLEO</th>
+                <th class="r" data-i18n="procs.col_ram">RAM</th></tr>
+          </thead>
+          <tbody id="allprocs-body"></tbody>
+        </table>
+      </div>
+      <button class="ghost modal-close" id="allprocs-close" data-i18n="common.close">Cerrar</button>
     </div>
   </div>
 

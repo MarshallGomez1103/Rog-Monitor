@@ -68,11 +68,20 @@
 }
 
 /* ---- color del borde y números por temperatura (nivel) + glow neón ---- */
-.core-tile.c-cold   { border-left-color: var(--lvl-cold, #4db8ff); }
-.core-tile.c-normal { border-left-color: var(--lvl-ok, #3ce087); }
-.core-tile.c-hot    { border-left-color: var(--lvl-hot, #ffb13c); }
-.core-tile.c-crit   { border-left-color: var(--lvl-crit, #ff4d4d); }
+/* v13: el borde de color ahora SIEMPRE emite un halo neón (no solo al hover),
+   para que cada núcleo se lea de un vistazo según su temperatura. */
+.core-tile.c-cold   { border-left-color: var(--lvl-cold, #4db8ff); box-shadow: -4px 0 12px -5px color-mix(in srgb, var(--lvl-cold, #4db8ff) 60%, transparent); }
+.core-tile.c-normal { border-left-color: var(--lvl-ok, #3ce087);   box-shadow: -4px 0 12px -5px color-mix(in srgb, var(--lvl-ok, #3ce087) 55%, transparent); }
+.core-tile.c-hot    { border-left-color: var(--lvl-hot, #ffb13c);  box-shadow: -4px 0 13px -5px color-mix(in srgb, var(--lvl-hot, #ffb13c) 65%, transparent); }
+.core-tile.c-crit   { border-left-color: var(--lvl-crit, #ff4d4d); box-shadow: -4px 0 15px -4px color-mix(in srgb, var(--lvl-crit, #ff4d4d) 75%, transparent); }
 .core-tile.c-na     { border-left-color: var(--dim); }
+
+/* El realce de acento al pasar el cursor debe ganar al halo de nivel
+   (mismo specificity → esta regla va después para imponerse). */
+.core-tile:hover,
+.core-tile:focus-visible {
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 42%, transparent);
+}
 
 .core-temp { font-size: 1.12rem; font-weight: 800; line-height: 1; letter-spacing: .01em; }
 .core-tile.c-cold   .core-temp { color: var(--lvl-cold, #4db8ff); text-shadow: 0 0 8px color-mix(in srgb, var(--lvl-cold) 45%, transparent); }

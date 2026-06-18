@@ -442,19 +442,33 @@ b, .num { font-variant-numeric: tabular-nums; }
 .segment button.busy { opacity: .45; cursor: wait; }
 
 .ghost {
-  border: 1px solid var(--hair);
+  /* v13: botones secundarios más visibles — borde con tinte de acento y texto
+     más claro (antes color:dim + borde:hair se perdían sobre el panel). */
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--hair));
   border-radius: 2px;
   background: var(--chip);
-  color: var(--dim);
+  color: color-mix(in srgb, var(--ink) 80%, var(--dim));
   font-family: var(--sans);
   font-size: 12.5px;
   font-weight: 600;
   padding: 7px 13px;
   cursor: pointer;
+  transition: color .15s, border-color .15s, box-shadow .15s, background .15s;
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%);
 }
-.ghost:hover { color: var(--ink); border-color: var(--accent); }
-.ghost.attention { color: var(--accent); border-color: var(--accent); }
+.ghost:hover, .ghost:focus-visible {
+  color: var(--ink);
+  border-color: var(--accent);
+  box-shadow: 0 0 9px color-mix(in srgb, var(--accent) 38%, transparent),
+              inset 0 0 10px color-mix(in srgb, var(--accent) 8%, transparent);
+  outline: none;
+}
+.ghost.attention {
+  color: var(--accent);
+  border-color: var(--accent);
+  text-shadow: var(--neon-glow-soft, 0 0 6px currentColor);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 30%, transparent);
+}
 
 /* ---------- banner ---------- */
 #pending-banner {
