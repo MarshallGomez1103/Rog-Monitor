@@ -393,7 +393,7 @@ async function applyFanService() {
   return run('pkexec', ['sh', '-c', cmd], 60000);
 }
 
-ipcMain.handle('set-fan-config', async (_e, { profile, curves, cap }) => {
+ipcMain.handle('set-fan-config', async (_e, { profile, curves, cap, capByFan }) => {
   for (const [fan, c] of Object.entries(curves)) {
     if (!c || c.temps.length !== 8 || c.pwms.length !== 8) {
       return { ok: false, err: `curva de ${fan} inválida (deben ser 8 puntos)` };
@@ -407,12 +407,23 @@ ipcMain.handle('set-fan-config', async (_e, { profile, curves, cap }) => {
   const store = readCurvesStore();
   store.profiles = store.profiles || {};
   const profileEntry = { ...curves };
-  if (cap === null) {
-    delete profileEntry.cap_rpm;
+  const caps = {};
+  if (capByFan && typeof capByFan === 'object') {
+    for (const [fan, raw] of Object.entries(capByFan)) {
+      if (!Object.prototype.hasOwnProperty.call(curves, fan)) continue;
+      const value = Math.round(+raw);
+      if (Number.isFinite(value) && value >= 2000) caps[fan] = value;
+    }
   } else if (cap && Number.isFinite(+cap) && +cap > 0) {
-    const c = Math.round(+cap);
-    profileEntry.cap_rpm = {};
-    for (const key of Object.keys(curves)) profileEntry.cap_rpm[key] = c;
+    const value = Math.round(+cap);
+    for (const key of Object.keys(curves)) caps[key] = value;
+  }
+
+  if (!Object.keys(caps).length) {
+    delete profileEntry.cap_rpm;
+    delete store.cap_rpm;
+  } else {
+    profileEntry.cap_rpm = caps;
   }
   store.profiles[profile] = profileEntry;
   // Compatibilidad con servicios viejos: cap_rpm global refleja el perfil que

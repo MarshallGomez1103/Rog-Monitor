@@ -7,14 +7,12 @@
 #   3. Al enfriar → revertir suavemente.
 #   FALLA-SEGURO: si no puede leer temperatura → sube fans, NO sube potencia.
 #
-# v11 (A1): además del techo térmico, el guardián ahora MODULA la
-# agresividad de fans según CARGA (uso CPU/GPU) + TEMPERATURA + TENDENCIA,
-# con tres modos: silence/normal/high. Antes solo reaccionaba al techo de
-# emergencia, así que en escritorio con perfil performance los fans no
-# bajaban (idle alto horneado en la curva). Ahora, si la carga y la
-# temperatura son bajas, pide agresividad "quiet" aunque el perfil activo de
-# ASUS sea performance — y al terminar carga, BAJA ESCALONADO con histéresis
-# temporal (no de golpe) para no oscilar.
+# v13 (guardian suave): por defecto NO modula platform_profile por carga.
+# El guardián solo empuja ventiladores cuando la temperatura se acerca al
+# techo; el recorte real de potencia espera un exceso sostenido. Esto evita
+# que una sesión de juego se sienta peor con el guardián activo que sin él.
+# Si alguien quiere la modulación por carga anterior, puede activar
+# ROG_THERMAL_MODULATE_LOAD=1 en un override de systemd.
 #
 # v12 (A-FANS): corrección de histéresis — cada escalón de bajada reinicia su
 # propio contador COOLDOWN (antes el segundo escalón se aplicaba STEP_DELAY
@@ -51,6 +49,14 @@
 #                             "idle" para entrar en modo silencio (default 15)
 #   ROG_THERMAL_LOAD_HIGH   — % de carga desde el cual se considera "carga
 #                             alta" y se pide modo alto (default 60)
+#   ROG_THERMAL_MODULATE_LOAD — 1 para permitir que el guardián cambie
+#                             platform_profile por carga; default 0
+#   ROG_THERMAL_OVER_GRACE  — segundos sobre el techo antes de recortar
+#                             potencia; default 12
+#   ROG_THERMAL_DB_STEP     — W por paso al recortar nv_dynamic_boost; default 2
+#   ROG_THERMAL_PL2_STEP    — W por paso al recortar PL2/SPPT; default 5
+#   ROG_THERMAL_CUT_INTERVAL — segundos minimos entre recortes; default 10
+#   ROG_THERMAL_RESTORE_MARGIN — margen bajo el techo para restaurar; default 4
 #   ROG_THERMAL_COOLDOWN    — segundos que debe mantenerse la carga/temp baja
 #                             ANTES de empezar a bajar un escalón (default 20)
 #   ROG_THERMAL_STEP_DELAY  — segundos entre cada escalón de bajada una vez
@@ -72,11 +78,17 @@ set -euo pipefail
 CPU_CEILING="${ROG_THERMAL_CPU_CEILING:-92}"
 GPU_CEILING="${ROG_THERMAL_GPU_CEILING:-${ROG_THERMAL_CEILING:-83}}"
 INTERVAL="${ROG_THERMAL_INTERVAL:-2}"
-WARN_DELTA=5
+WARN_DELTA="${ROG_THERMAL_WARN_DELTA:-3}"
 LOAD_IDLE="${ROG_THERMAL_LOAD_IDLE:-15}"
 LOAD_HIGH="${ROG_THERMAL_LOAD_HIGH:-60}"
+LOAD_MODULATION="${ROG_THERMAL_MODULATE_LOAD:-0}"
 COOLDOWN="${ROG_THERMAL_COOLDOWN:-20}"
 STEP_DELAY="${ROG_THERMAL_STEP_DELAY:-10}"
+OVER_GRACE="${ROG_THERMAL_OVER_GRACE:-12}"
+DB_STEP="${ROG_THERMAL_DB_STEP:-2}"
+PL2_STEP="${ROG_THERMAL_PL2_STEP:-5}"
+CUT_INTERVAL="${ROG_THERMAL_CUT_INTERVAL:-10}"
+RESTORE_MARGIN="${ROG_THERMAL_RESTORE_MARGIN:-4}"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -86,6 +98,11 @@ while [[ $# -gt 0 ]]; do
         --interval) INTERVAL="$2"; shift 2 ;;
         --load-idle) LOAD_IDLE="$2"; shift 2 ;;
         --load-high) LOAD_HIGH="$2"; shift 2 ;;
+        --modulate-load) LOAD_MODULATION=1; shift ;;
+        --over-grace) OVER_GRACE="$2"; shift 2 ;;
+        --db-step) DB_STEP="$2"; shift 2 ;;
+        --pl2-step) PL2_STEP="$2"; shift 2 ;;
+        --cut-interval) CUT_INTERVAL="$2"; shift 2 ;;
         --cooldown) COOLDOWN="$2"; shift 2 ;;
         --step-delay) STEP_DELAY="$2"; shift 2 ;;
         --) shift; break ;;
@@ -98,7 +115,7 @@ done
 (( GPU_CEILING < 70 )) && GPU_CEILING=70
 (( GPU_CEILING > 87 )) && GPU_CEILING=87
 GPU_WARN_TEMP="${WARN_OFFSET:-$(( GPU_CEILING - WARN_DELTA ))}"
-CPU_WARN_TEMP="${ROG_THERMAL_CPU_WARN:-$(( CPU_CEILING - 8 ))}"
+CPU_WARN_TEMP="${ROG_THERMAL_CPU_WARN:-$(( CPU_CEILING - WARN_DELTA ))}"
 
 # ------------------------------------------------------------------
 # Rutas sysfs con overrides por entorno (facilita testing)
@@ -429,6 +446,8 @@ ORIGINAL_PL2=""
 ORIGINAL_PROFILE=""
 FAN_PROFILE_PUSHED=false
 INTERVENTION_COUNT=0
+OVER_SINCE=0
+LAST_POWER_CUT=0
 
 save_originals_once() {
     if [[ -z "$ORIGINAL_PROFILE" ]]; then
@@ -469,34 +488,54 @@ handle_temp() {
     [[ -n "$gpu_temp" ]] && (( gpu_temp >= GPU_WARN_TEMP )) && gpu_warn=1
 
     if (( cpu_over == 1 || gpu_over == 1 )); then
-        # EMERGENCIA: al techo
+        # TECHO: fans primero. El recorte de potencia espera un exceso sostenido
+        # para no castigar picos cortos normales durante juego.
         save_originals_once
-        log "Temp cpu=${cpu_temp:-?}°C/gpu=${gpu_temp:-?}°C >= techo cpu=${CPU_CEILING}°C/gpu=${GPU_CEILING}°C — subir fans + recortar boost"
         set_fan_aggression "performance"
         FAN_PROFILE_PUSHED=true
+        local now over_for
+        now=$(date +%s)
+        if (( OVER_SINCE == 0 )); then
+            OVER_SINCE="$now"
+            log "Temp cpu=${cpu_temp:-?}°C/gpu=${gpu_temp:-?}°C >= techo cpu=${CPU_CEILING}°C/gpu=${GPU_CEILING}°C — fans alto; esperando ${OVER_GRACE}s antes de recortar potencia"
+        fi
+        over_for=$(( now - OVER_SINCE ))
+        if (( over_for < OVER_GRACE )); then
+            GUARDIAN_STATE="fans-up"
+            return
+        fi
+
+        if (( LAST_POWER_CUT > 0 && now - LAST_POWER_CUT < CUT_INTERVAL )); then
+            return
+        fi
+        LAST_POWER_CUT="$now"
+
+        log "Temp sobre techo por ${over_for}s — recorte suave de potencia"
 
         # Recortar nv_dynamic_boost
-        local db_lo db_hi db_cur
+        local db_lo db_hi db_cur db_cut=0
         read -r db_lo db_hi db_cur <<< "$(get_db_range)"
         local new_db
-        new_db="$(clamp_int $(( db_cur - 5 )) "$db_lo" "$db_hi")"
+        new_db="$(clamp_int $(( db_cur - DB_STEP )) "$db_lo" "$db_hi")"
         if (( new_db < db_cur )); then
             if [[ -d "$DB_PATH" ]]; then
                 write_sysfs_int "$DB_PATH/current_value" "$new_db" && \
                     log "nv_dynamic_boost: ${db_cur} → ${new_db} W"
+                db_cut=1
             fi
         fi
 
-        # Si ya estamos en boost_down y sigue subiendo → recortar PL2
-        if [[ "$GUARDIAN_STATE" == "boost-down" || "$GUARDIAN_STATE" == "pl-down" ]]; then
+        # PL2/SPPT solo entra si el boost ya se tocó antes o si dynamic_boost
+        # no puede bajar más. Es el segundo escalón, no la primera reacción.
+        if [[ "$GUARDIAN_STATE" == "boost-down" || "$GUARDIAN_STATE" == "pl-down" || "$db_cut" == "0" ]]; then
             local pl_lo pl_hi pl_cur
             read -r pl_lo pl_hi pl_cur <<< "$(get_pl2_range)"
             local new_pl
-            new_pl="$(clamp_int $(( pl_cur - 10 )) "$pl_lo" "$pl_hi")"
+            new_pl="$(clamp_int $(( pl_cur - PL2_STEP )) "$pl_lo" "$pl_hi")"
             if (( new_pl < pl_cur )); then
                 if [[ -d "$PL2_PATH" ]]; then
                     write_sysfs_int "$PL2_PATH/current_value" "$new_pl" && \
-                        log "ppt_pl2_sppt: ${pl_cur} → ${new_pl} W (emergencia)"
+                        log "ppt_pl2_sppt: ${pl_cur} → ${new_pl} W (sostenido)"
                 fi
             fi
             GUARDIAN_STATE="pl-down"
@@ -508,6 +547,7 @@ handle_temp() {
     elif (( cpu_warn == 1 || gpu_warn == 1 )); then
         # ADVERTENCIA: acercándose al techo → solo fans
         save_originals_once
+        OVER_SINCE=0
         if [[ "$GUARDIAN_STATE" == "normal" ]]; then
             log "Temp cpu=${cpu_temp:-?}°C/gpu=${gpu_temp:-?}°C >= umbral alerta cpu=${CPU_WARN_TEMP}°C/gpu=${GPU_WARN_TEMP}°C — subir fans"
             set_fan_aggression "performance"
@@ -518,11 +558,12 @@ handle_temp() {
 
     else
         # NORMAL: por debajo del umbral → revertir suavemente
+        OVER_SINCE=0
         if [[ "$GUARDIAN_STATE" != "normal" ]]; then
             local cpu_margin=99 gpu_margin=99
             [[ -n "$cpu_temp" ]] && cpu_margin=$(( CPU_CEILING - cpu_temp ))
             [[ -n "$gpu_temp" ]] && gpu_margin=$(( GPU_CEILING - gpu_temp ))
-            if (( cpu_margin >= 8 && gpu_margin >= 8 )); then
+            if (( cpu_margin >= RESTORE_MARGIN && gpu_margin >= RESTORE_MARGIN )); then
                 # Suficiente margen: restaurar
                 log "Temp cpu=${cpu_temp:-?}°C/gpu=${gpu_temp:-?}°C — margen suficiente — restaurando configuración"
 
@@ -549,8 +590,10 @@ handle_temp() {
                 ORIGINAL_PL2=""
                 ORIGINAL_PROFILE=""
                 INTERVENTION_COUNT=0
+                OVER_SINCE=0
+                LAST_POWER_CUT=0
             fi
-            # Si el margen es < 8°C, esperar otro ciclo antes de revertir (evitar oscilación)
+            # Si el margen es bajo, esperar otro ciclo antes de revertir (evitar oscilación)
         fi
     fi
 }
@@ -558,7 +601,7 @@ handle_temp() {
 # ------------------------------------------------------------------
 # Loop principal
 # ------------------------------------------------------------------
-log "Iniciando guardián térmico CPU/GPU (cpu=${CPU_CEILING}°C, gpu=${GPU_CEILING}°C, intervalo=${INTERVAL}s)"
+log "Iniciando guardián térmico CPU/GPU (cpu=${CPU_CEILING}°C, gpu=${GPU_CEILING}°C, warn cpu=${CPU_WARN_TEMP}°C/gpu=${GPU_WARN_TEMP}°C, gracia=${OVER_GRACE}s, recorte_cada=${CUT_INTERVAL}s, intervalo=${INTERVAL}s, modula_carga=${LOAD_MODULATION})"
 
 # Trap para limpieza al detener el servicio
 cleanup() {
@@ -584,10 +627,12 @@ while true; do
     # hay una emergencia térmica activa — durante "fans-up"/"boost-down"/
     # "pl-down" handle_temp ya forzó "performance" y eso manda (falla-segura:
     # nunca relajar fans mientras el techo está en juego).
-    if [[ "$GUARDIAN_STATE" == "normal" ]]; then
+    if [[ "$GUARDIAN_STATE" == "normal" && "$LOAD_MODULATION" == "1" ]]; then
         CPU_LOAD="$(read_cpu_load)"
         GPU_LOAD="$(read_gpu_load)"
         evaluate_load "$CPU_LOAD" "$GPU_LOAD" "$CPU_TEMP" "$GPU_TEMP"
+    elif [[ "$GUARDIAN_STATE" == "normal" ]]; then
+        write_guardian_state "normal" "monitorizando; sin modular perfil por carga"
     else
         write_guardian_state "high" "emergencia térmica: ${GUARDIAN_STATE}"
     fi

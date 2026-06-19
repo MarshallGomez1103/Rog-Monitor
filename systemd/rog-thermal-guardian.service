@@ -19,6 +19,11 @@ ExecStart=/usr/bin/env bash __ROG_MONITOR_REPO__/scripts/rog-thermal-guardian.sh
 Environment="ROG_THERMAL_CPU_CEILING=92"
 Environment="ROG_THERMAL_GPU_CEILING=83"
 Environment="ROG_THERMAL_INTERVAL=2"
+Environment="ROG_THERMAL_MODULATE_LOAD=0"
+Environment="ROG_THERMAL_OVER_GRACE=12"
+Environment="ROG_THERMAL_CUT_INTERVAL=10"
+Environment="ROG_THERMAL_DB_STEP=2"
+Environment="ROG_THERMAL_PL2_STEP=5"
 Restart=on-failure
 RestartSec=5
 # Necesita escribir en sysfs (asus-armoury, platform_profile, throttle_thermal_policy)

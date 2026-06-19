@@ -741,46 +741,85 @@
   display: none;
 }
 
-.fan-profile-summary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.55rem;
+.fan-cap-panel {
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--hair));
+  background: color-mix(in srgb, var(--chip) 78%, transparent);
+  padding: 0.65rem;
   margin: 0.65rem 0 0.8rem;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
 }
 
-.fan-profile-card {
-  border: 1px solid var(--hair);
-  background: color-mix(in srgb, var(--chip) 82%, transparent);
-  padding: 0.55rem 0.65rem;
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+.fan-cap-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
-.fan-profile-card.active {
-  border-color: var(--accent);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 25%, transparent),
-              inset 0 0 10px color-mix(in srgb, var(--accent) 10%, transparent);
-}
-
-.fan-profile-card span {
+.fan-cap-kicker,
+.fan-cap-editor label,
+.fan-cap-per-fan label span {
   display: block;
   color: var(--dim);
+  font-family: var(--mono);
   font-size: 0.64rem;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.fan-profile-card b {
+#fan-cap-title {
   display: block;
   color: var(--ink);
-  font-size: 1rem;
-  margin-top: 0.18rem;
+  font-size: 1.05rem;
+  margin-top: 0.12rem;
 }
 
-.fan-profile-card small {
+#fan-cap-state {
   display: block;
-  color: var(--dim);
-  font-size: 0.64rem;
+  color: var(--accent);
+  font-weight: 700;
   margin-top: 0.15rem;
+}
+
+.fan-cap-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.fan-cap-editor {
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) 1fr;
+  gap: 0.55rem 0.75rem;
+  align-items: end;
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--hair);
+}
+
+.fan-cap-editor.hidden {
+  display: none;
+}
+
+.fan-cap-editor > label {
+  grid-column: 1 / -1;
+}
+
+.fan-cap-per-fan {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(110px, 1fr));
+  gap: 0.5rem;
+}
+
+.fan-cap-per-fan label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.fan-cap-per-fan input {
+  width: 100%;
 }
 
 .curve-fan {
@@ -865,6 +904,18 @@
   fill: var(--ink);
   stroke: var(--accent);
   stroke-width: 1.5;
+  cursor: grab;
+  pointer-events: all;
+  transition: r 0.12s, fill 0.12s;
+}
+
+.fan-curve-points circle:hover,
+.curve-fan.dragging .fan-curve-points circle {
+  fill: var(--accent);
+}
+
+.curve-fan.dragging .fan-curve-points circle {
+  cursor: grabbing;
 }
 
 .fan-cap-line {
@@ -899,8 +950,22 @@
 }
 
 @media (max-width: 760px) {
-  .fan-profile-summary {
+  .fan-cap-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .fan-cap-actions {
+    flex-direction: column;
+  }
+  .fan-cap-editor {
     grid-template-columns: 1fr;
+  }
+  .fan-cap-per-fan {
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+  }
+  .fan-cap-actions .ghost {
+    width: 100%;
   }
   .curve-table {
     grid-template-columns: 38px repeat(4, minmax(40px, 1fr));
