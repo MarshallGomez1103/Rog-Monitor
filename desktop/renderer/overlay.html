@@ -12,6 +12,7 @@
       --crit:  #ff453a;
       --ink:   #f2f4f8;
       --dim:   #7a8398;
+      --label: #c4ccda;   /* gris claro legible para etiquetas CPU/GPU */
       --bg:    rgba(10, 12, 18, 0.88);
       --border: rgba(255, 255, 255, 0.08);
       --accent: #c8f;
@@ -77,14 +78,14 @@
     }
     .row-label {
       font-size: 9px;
-      color: var(--dim);
+      color: var(--label);
       text-transform: uppercase;
       letter-spacing: 0.5px;
       width: 34px;
       flex-shrink: 0;
     }
     .row-value {
-      font-size: 19px;
+      font-size: 23px;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
       line-height: 1;
@@ -173,7 +174,7 @@
     body.layout-row .divider { display: none; }
     body.layout-row .row { margin: 0; gap: 4px; align-items: baseline; }
     body.layout-row .row-label { width: auto; font-size: 10px; }
-    body.layout-row .row-value { font-size: 18px; min-width: 0; }
+    body.layout-row .row-value { font-size: 22px; min-width: 0; }
     body.layout-row .row-sub { margin-left: 5px; text-align: left; font-size: 10px; }
     body.layout-row #fans-section { display: flex; align-items: center; }
     body.layout-row .fans-row { flex-wrap: nowrap; }

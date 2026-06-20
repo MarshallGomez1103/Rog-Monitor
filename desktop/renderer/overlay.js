@@ -60,6 +60,9 @@ function applyLabels() {
 let show = { cpu: true, gpu: true, fans: true };
 let lastStats = null;
 let currentLang = getLang();
+// Umbrales [lo, mid, hi] que manda main.js vía overlay-config (mismos que el
+// dashboard). Null hasta el primer config → se usan los defaults estáticos.
+let tempLimits = null;
 
 /* ---- aplicar visibilidad ---- */
 function applyShow() {
@@ -74,7 +77,9 @@ function applyShow() {
 /* ---- renderizado principal ---- */
 function render(stats) {
   lastStats = stats;
-  const colors = stats.temp_colors || { cpu: [70, 85, 92], gpu: [60, 75, 83] };
+  // Prioridad: umbrales del config (main.js, idénticos al dashboard) > los que
+  // pudiera traer el stream > defaults estáticos. Degrada con gracia.
+  const colors = tempLimits || stats.temp_colors || { cpu: [70, 85, 92], gpu: [60, 75, 83] };
 
   /* perfil activo */
   const prof = $('prof');
@@ -177,6 +182,8 @@ window.rog.onStats(render);
 window.rog.onOverlayConfig((cfg) => {
   if (cfg.show) show = { ...show, ...cfg.show };
   else show = { ...show, ...cfg };   // compat: config viejo mandaba show plano
+  // Umbrales de color por nivel (cpu/gpu) que vienen del dashboard.
+  if (cfg.temp_colors) tempLimits = cfg.temp_colors;
   if (cfg.layout) applyLayout(cfg.layout);
   applyAccent(cfg.accent);
   applyShow();
