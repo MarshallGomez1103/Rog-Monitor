@@ -203,8 +203,28 @@ def cap_to_pwm(cap, calib, max_rpm):
 # mejor un cap aproximado que ignorarlo en silencio.
 FALLBACK_MAX = {"cpu": 7000, "gpu": 6900, "mid": 7500}
 
+# Override de Gaming: si el guardián térmico está en modo "gaming" y activo,
+# permitir un tope más alto (data["gaming_cap_rpm"]) para refrigerar a tope sin
+# recorte de potencia. Desacoplado: solo LEE el estado que el guardián publica.
+gaming_cap = None
+try:
+    gc = data.get("gaming_cap_rpm")
+    if gc and float(gc) > 0:
+        import glob, time
+        for sp in (glob.glob("/var/home/*/.local/share/rog-monitor/thermal-guardian-state.json")
+                   + glob.glob("/home/*/.local/share/rog-monitor/thermal-guardian-state.json")):
+            try:
+                st = json.load(open(sp))
+            except Exception:
+                continue
+            if st.get("guardian_mode") == "gaming" and (time.time() - float(st.get("updated", 0)) < 30):
+                gaming_cap = float(gc)
+                break
+except Exception:
+    gaming_cap = None
+
 profile_cap = (((data.get("profiles") or {}).get(profile) or {}).get("cap_rpm") or {}).get(fan)
-cap = profile_cap or (data.get("cap_rpm") or {}).get(fan)
+cap = gaming_cap or profile_cap or (data.get("cap_rpm") or {}).get(fan)
 if isinstance(cap, (int, float)) and cap > 0:
     limit = cap_to_pwm(
         cap,

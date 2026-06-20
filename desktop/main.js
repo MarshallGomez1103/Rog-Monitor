@@ -81,7 +81,7 @@ function readErrorLogTail(maxLines = 60) {
 
 let win = null;
 let overlay = null;
-let overlayCfg = { enabled: false, displayId: null, corner: 'top-left', show: null };
+let overlayCfg = { enabled: false, displayId: null, corner: 'top-center', show: null, layout: 'row', accent: null };
 let backend = null;
 let musicProc = null;
 let musicMode = {
@@ -374,7 +374,10 @@ ipcMain.handle('get-fan-config', (_e, profile) => {
     ok: true,
     profile,
     curves,
-    cap: (saved && saved.cap_rpm) || store.cap_rpm || {},
+    // Cap por perfil AUTORITATIVO: NUNCA caer al global store.cap_rpm (eso
+    // contaminaba todos los perfiles con el del último guardado). Sin cap propio
+    // = sin tope para ese perfil.
+    cap: (saved && saved.cap_rpm) || {},
     profile_caps: Object.fromEntries(Object.entries(store.profiles || {})
       .map(([name, value]) => [name, (value && value.cap_rpm) || null])),
     max_rpm: store.max_rpm || {},
@@ -422,14 +425,14 @@ ipcMain.handle('set-fan-config', async (_e, { profile, curves, cap, capByFan }) 
 
   if (!Object.keys(caps).length) {
     delete profileEntry.cap_rpm;
-    delete store.cap_rpm;
   } else {
     profileEntry.cap_rpm = caps;
   }
   store.profiles[profile] = profileEntry;
-  // Compatibilidad con servicios viejos: cap_rpm global refleja el perfil que
-  // acabas de aplicar, mientras servicios nuevos leen profiles.<perfil>.cap_rpm.
-  if (profileEntry.cap_rpm) store.cap_rpm = profileEntry.cap_rpm;
+  // El cap es SOLO por perfil (profiles.<perfil>.cap_rpm). Eliminamos cualquier
+  // cap_rpm global heredado: era la causa del bug donde los 3 perfiles
+  // terminaban con el mismo tope. rog-profile-sync.sh ya lee el per-perfil.
+  delete store.cap_rpm;
   try {
     fs.mkdirSync(path.dirname(FAN_CURVES_JSON), { recursive: true });
     fs.writeFileSync(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
@@ -443,6 +446,83 @@ ipcMain.handle('set-fan-config', async (_e, { profile, curves, cap, capByFan }) 
   return res.ok
     ? { ok: true }
     : { ok: false, err: 'Curvas guardadas, pero no se aplicaron (servicio): ' + res.err };
+});
+
+// Valida y vuelca un perfil (curvas + cap por ventilador) dentro del store.
+// Devuelve un mensaje de error o null si todo bien.
+function writeFanProfile(store, { profile, curves, capByFan }) {
+  for (const [fan, c] of Object.entries(curves || {})) {
+    if (!c || c.temps.length !== 8 || c.pwms.length !== 8) {
+      return `curva de ${fan} inválida en ${profile} (deben ser 8 puntos)`;
+    }
+    if ([...c.temps, ...c.pwms].some((v) => !Number.isFinite(v) || v < 0 || v > 255)) {
+      return `valores fuera de rango en ${fan} (${profile})`;
+    }
+  }
+  const entry = { ...curves };
+  const caps = {};
+  if (capByFan && typeof capByFan === 'object') {
+    for (const [fan, raw] of Object.entries(capByFan)) {
+      if (!Object.prototype.hasOwnProperty.call(curves, fan)) continue;
+      const value = Math.round(+raw);
+      if (Number.isFinite(value) && value >= 2000) caps[fan] = value;
+    }
+  }
+  if (Object.keys(caps).length) entry.cap_rpm = caps;
+  else delete entry.cap_rpm;
+  store.profiles[profile] = entry;
+  return null;
+}
+
+// Guarda VARIOS perfiles de una sola vez y aplica con UN solo pkexec. Esto
+// permite editar ahorro/balance/performance y guardarlos juntos, cada uno con
+// su propio tope, sin 3 prompts de contraseña ni contaminación entre perfiles.
+ipcMain.handle('set-fan-config-multi', async (_e, { profiles }) => {
+  if (!Array.isArray(profiles) || !profiles.length) {
+    return { ok: false, err: 'no hay perfiles que guardar' };
+  }
+  const store = readCurvesStore();
+  store.profiles = store.profiles || {};
+  for (const p of profiles) {
+    const err = writeFanProfile(store, p);
+    if (err) return { ok: false, err };
+  }
+  delete store.cap_rpm; // el cap es solo por perfil (ver set-fan-config)
+  try {
+    fs.mkdirSync(path.dirname(FAN_CURVES_JSON), { recursive: true });
+    fs.writeFileSync(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
+  } catch (err) {
+    return { ok: false, err: `No pude guardar ${FAN_CURVES_JSON}: ${err.message}` };
+  }
+  if (!fs.existsSync(SYNC_SCRIPT)) {
+    return { ok: true, warn: 'Curvas guardadas, pero falta el repo de scripts para aplicarlas en vivo.' };
+  }
+  const res = await applyFanService();
+  return res.ok ? { ok: true } : { ok: false, err: 'Curvas guardadas, pero no se aplicaron (servicio): ' + res.err };
+});
+
+// Tope de ventiladores SOLO para el modo Gaming del guardián. Se guarda en
+// fan-curves.json (gaming_cap_rpm) y el servicio de ventiladores lo usa cuando
+// detecta que el guardián está en gaming activo. No pide contraseña: el servicio
+// lo reaplica solo en su próximo ciclo (≤30 s).
+ipcMain.handle('get-gaming-cap', () => {
+  const store = readCurvesStore();
+  const maxes = Object.values(store.max_rpm || {}).map(Number).filter(Number.isFinite);
+  return { ok: true, rpm: store.gaming_cap_rpm || null, maxRpm: maxes.length ? Math.max(...maxes) : null };
+});
+
+ipcMain.handle('set-gaming-cap', (_e, rpm) => {
+  const store = readCurvesStore();
+  const v = Math.round(+rpm);
+  if (Number.isFinite(v) && v >= 2000) store.gaming_cap_rpm = v;
+  else delete store.gaming_cap_rpm;
+  try {
+    fs.mkdirSync(path.dirname(FAN_CURVES_JSON), { recursive: true });
+    fs.writeFileSync(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
+  } catch (err) {
+    return { ok: false, err: String(err.message) };
+  }
+  return { ok: true, rpm: store.gaming_cap_rpm || null };
 });
 
 // Minimal single-quote shell escaping for the pkexec command above.
@@ -1125,19 +1205,32 @@ function positionOverlay() {
   const bottom = wa.y + wa.height - height - OVERLAY_MARGIN;
   const left = wa.x + OVERLAY_MARGIN;
   const top = wa.y + OVERLAY_MARGIN;
+  const centerX = wa.x + Math.round((wa.width - width) / 2);
+  const centerY = wa.y + Math.round((wa.height - height) / 2);
   const pos = {
     'top-left': [left, top],
+    'top-center': [centerX, top],
     'top-right': [right, top],
+    'center': [centerX, centerY],
     'bottom-left': [left, bottom],
+    'bottom-center': [centerX, bottom],
     'bottom-right': [right, bottom],
-  }[overlayCfg.corner] || [left, top];
+  }[overlayCfg.corner] || [centerX, top];
   overlay.setPosition(Math.round(pos[0]), Math.round(pos[1]));
 }
 
+// Tamaño según layout: fila delgada (default) o cuadro clásico.
+function overlaySize() {
+  return overlayCfg.layout === 'box'
+    ? { width: 232, height: 150 }
+    : { width: 540, height: 58 };
+}
+
 function createOverlay() {
+  const { width, height } = overlaySize();
   overlay = new BrowserWindow({
-    width: 232,
-    height: 150,
+    width,
+    height,
     frame: false,
     transparent: true,
     resizable: false,
@@ -1167,10 +1260,15 @@ function createOverlay() {
   overlay.on('closed', () => { overlay = null; });
 }
 
-// El overlay decide qué filas pintar según las casillas del modal.
+// El overlay decide qué filas pintar, el layout (fila/cuadro) y el acento del
+// tema según lo que mande el modal.
 function pushOverlayConfig() {
-  if (overlay && !overlay.isDestroyed() && overlayCfg.show) {
-    overlay.webContents.send('overlay-config', overlayCfg.show);
+  if (overlay && !overlay.isDestroyed()) {
+    overlay.webContents.send('overlay-config', {
+      show: overlayCfg.show || { cpu: true, gpu: true, fans: true },
+      layout: overlayCfg.layout || 'row',
+      accent: overlayCfg.accent || null,
+    });
   }
 }
 
@@ -1189,12 +1287,19 @@ function applyOverlay() {
 ipcMain.handle('list-displays', () => ({ ok: true, displays: displayList(), current: overlayCfg }));
 
 ipcMain.handle('set-overlay', (_e, cfg) => {
+  const layoutChanged = cfg.layout && cfg.layout !== overlayCfg.layout;
   overlayCfg = {
     enabled: !!cfg.enabled,
     displayId: cfg.displayId ?? overlayCfg.displayId,
     corner: cfg.corner || overlayCfg.corner,
     show: cfg.show || overlayCfg.show,
+    layout: cfg.layout || overlayCfg.layout,
+    accent: cfg.accent ?? overlayCfg.accent,
   };
+  // Si cambió el layout, redimensionar la ventana antes de reposicionar.
+  if (layoutChanged && overlay && !overlay.isDestroyed()) {
+    overlay.setBounds(overlaySize());
+  }
   applyOverlay();
   return { ok: true, current: overlayCfg };
 });

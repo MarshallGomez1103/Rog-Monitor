@@ -53,7 +53,7 @@
         <div class="control-menu-panel hidden" data-menu-panel="tools">
           <button id="power-btn" class="ghost primary-action" data-i18n="topbar.power" title="Centro de Poder: limites de potencia CPU/GPU (requiere contraseña para aplicar)">PODER</button>
           <button id="overlay-btn" class="ghost" data-i18n="topbar.overlay" title="Overlay de stats siempre encima para jugar (elige el monitor)">OVERLAY</button>
-          <button id="alerts-btn" class="ghost" data-i18n="topbar.alerts" title="Editar los umbrales de temperatura, potencia y alertas">ALERTAS</button>
+          <button id="alerts-btn" class="ghost" data-i18n="topbar.settings" title="Configuración: autoarranque, notificaciones, umbrales de temperatura/potencia y colores">CONFIGURACIÓN</button>
           <button id="theme-btn" class="ghost" data-i18n="topbar.theme" title="Apariencia: tema, modo claro/oscuro y tamaño">TEMA</button>
         </div>
       </div>
@@ -61,11 +61,8 @@
       <div class="control-menu">
         <button class="ghost control-menu-toggle" type="button" data-menu-toggle="system" data-i18n="topbar.system">SISTEMA</button>
         <div class="control-menu-panel hidden" data-menu-panel="system">
-          <button id="update-btn" class="ghost" title="Buscar actualizaciones del repositorio">
-            <span id="update-label" data-i18n="topbar.update">ACTUALIZAR</span>
-          </button>
+          <button id="maintenance-btn" class="ghost" title="Actualizar, reinstalar/reparar o desinstalar ROG Monitor" data-i18n="topbar.maintenance">MANTENIMIENTO</button>
           <button id="report-btn" class="ghost" data-i18n="topbar.report" title="Abre un issue en el repositorio de GitHub con la información del sistema ya escrita">REPORTAR ERROR</button>
-          <button id="maintenance-btn" class="ghost" title="Actualizar, reinstalar o desinstalar ROG Monitor">MANTENIMIENTO</button>
         </div>
       </div>
 
@@ -81,7 +78,7 @@
   </header>
 
   <div id="pending-banner" class="hidden">
-    Cambio de GPU pendiente: <b id="pending-mode"></b> — <span id="pending-action">cierra sesión para aplicar</span>
+    <span data-i18n="pending.banner">Cambio de GPU pendiente:</span> <b id="pending-mode"></b> — <span id="pending-action" data-i18n="pending.action">cierra sesión para aplicar</span>
   </div>
 
   <main>
@@ -99,25 +96,25 @@
         </div>
         <div class="widget-empty-msg" aria-hidden="true">
           <span class="empty-icon">&#x1F321;</span>
-          <span>Sin datos de CPU</span>
+          <span data-i18n="widget.no_cpu">Sin datos de CPU</span>
         </div>
         <div class="widget-error-chip" aria-hidden="true">
-          <div class="error-badge">&#x26A0; BACKEND CAIDO</div>
-          <div class="error-detail">Reconectando con los sensores…</div>
+          <div class="error-badge">&#x26A0; <span data-i18n="widget.backend_down">BACKEND CAÍDO</span></div>
+          <div class="error-detail" data-i18n="widget.reconnecting">Reconectando con los sensores…</div>
         </div>
         <h2><i class="dash-num"></i> <span data-i18n="block.cpu">CPU</span> <small id="cpu-model"></small></h2>
         <div class="bignum"><span id="cpu-temp">--</span><em>°C</em></div>
         <div class="statgrid">
-          <div><label>Máx</label><b id="cpu-max">--</b></div>
-          <div><label>Mín</label><b id="cpu-min">--</b></div>
-          <div><label>Package</label><b id="cpu-pkg">--</b></div>
+          <div><label data-i18n="common.max">Máx</label><b id="cpu-max">--</b></div>
+          <div><label data-i18n="common.min">Mín</label><b id="cpu-min">--</b></div>
+          <div><label data-i18n="common.package">Package</label><b id="cpu-pkg">--</b></div>
           <div><label>&gt;90°C</label><b id="cpu-hot">--</b></div>
           <div><label>GHz</label><b id="cpu-freq" title="Frecuencia promedio de los núcleos (1 GHz = 1000 MHz)">--</b></div>
-          <div><label>Watts</label><b id="cpu-watts" title="Consumo actual del paquete CPU — sube y baja con la carga, bajo en reposo es normal">--</b></div>
-          <div><label>Throttle</label><b id="cpu-throttle">--</b></div>
+          <div><label data-i18n="common.watts">Watts</label><b id="cpu-watts" title="Consumo actual del paquete CPU — sube y baja con la carga, bajo en reposo es normal">--</b></div>
+          <div><label data-i18n="common.throttle">Throttle</label><b id="cpu-throttle">--</b></div>
           <div><label>EPP</label><b id="cpu-epp" class="small">--</b></div>
         </div>
-        <p id="rapl-note" class="note hidden">
+        <p id="rapl-note" class="note hidden" data-i18n="cpu.rapl_note">
           Sensor de potencia CPU no accesible. Ejecuta
           <code>sudo bash scripts/enable-cpu-power.sh</code> —
           da permiso de solo lectura al contador de energía Intel RAPL
@@ -137,24 +134,24 @@
         </div>
         <div class="widget-empty-msg" aria-hidden="true">
           <span class="empty-icon">&#x1F4A4;</span>
-          <span>dGPU apagada (modo Integrated)</span>
-          <span style="font-size:11px;color:var(--dim)">Cambia a Hybrid o dGPU para ver datos</span>
+          <span data-i18n="widget.gpu_off">dGPU apagada (modo Integrated)</span>
+          <span style="font-size:11px;color:var(--dim)" data-i18n="widget.gpu_switch_hint">Cambia a Hybrid o dGPU para ver datos</span>
         </div>
         <div class="widget-error-chip" aria-hidden="true">
-          <div class="error-badge">&#x26A0; BACKEND CAIDO</div>
-          <div class="error-detail">Reconectando con los sensores…</div>
+          <div class="error-badge">&#x26A0; <span data-i18n="widget.backend_down">BACKEND CAÍDO</span></div>
+          <div class="error-detail" data-i18n="widget.reconnecting">Reconectando con los sensores…</div>
         </div>
         <h2><i class="dash-num"></i> <span data-i18n="block.gpu">GPU</span> <small id="gpu-name"></small></h2>
         <div class="bignum"><span id="gpu-temp">--</span><em>°C</em></div>
         <div class="statgrid">
-          <div><label>Uso</label><b id="gpu-util">--</b></div>
-          <div><label>Watts</label><b id="gpu-watts" title="Consumo actual de la GPU — depende de la carga">--</b></div>
-          <div><label>VRAM</label><b id="gpu-vram" class="small">--</b></div>
-          <div><label>MHz</label><b id="gpu-clock" title="Frecuencia actual del núcleo gráfico">--</b></div>
+          <div><label data-i18n="common.usage">Uso</label><b id="gpu-util">--</b></div>
+          <div><label data-i18n="common.watts">Watts</label><b id="gpu-watts" title="Consumo actual de la GPU — depende de la carga">--</b></div>
+          <div><label data-i18n="common.vram">VRAM</label><b id="gpu-vram" class="small">--</b></div>
+          <div><label data-i18n="common.mhz">MHz</label><b id="gpu-clock" title="Frecuencia actual del núcleo gráfico">--</b></div>
           <div><label>VRAM MHz</label><b id="gpu-vram-clock" class="small" title="Frecuencia actual de la memoria de video">--</b></div>
-          <div><label>Modo</label><b id="gpu-mode" class="small">--</b></div>
+          <div><label data-i18n="common.mode">Modo</label><b id="gpu-mode" class="small">--</b></div>
         </div>
-        <p id="gpu-off-note" class="note hidden">dGPU apagada (modo Integrated)</p>
+        <p id="gpu-off-note" class="note hidden" data-i18n="widget.gpu_off">dGPU apagada (modo Integrated)</p>
       </article>
 
       <article class="block clickable" id="fans-block" data-block="fans" title="Clic para configurar caps y curvas de ventilación">
@@ -175,20 +172,20 @@
         <select id="aura-effect" class="hidden"></select>
 
         <div class="aura-grid">
-          <label><span>Color</span><input type="color" id="aura-colour" value="#ff5500"></label>
-          <label id="aura-colour2-wrap" class="hidden"><span>Color 2</span><input type="color" id="aura-colour2" value="#000000"></label>
-          <label id="aura-speed-wrap"><span>Velocidad</span><select id="aura-speed">
+          <label><span data-i18n="aura.color">Color</span><input type="color" id="aura-colour" value="#ff5500"></label>
+          <label id="aura-colour2-wrap" class="hidden"><span data-i18n="aura.color2">Color 2</span><input type="color" id="aura-colour2" value="#000000"></label>
+          <label id="aura-speed-wrap"><span data-i18n="aura.speed">Velocidad</span><select id="aura-speed">
             <option value="low">low</option>
             <option value="med">med</option>
             <option value="high">high</option>
           </select></label>
-          <label id="aura-direction-wrap" class="hidden"><span>Dirección</span><select id="aura-direction">
+          <label id="aura-direction-wrap" class="hidden"><span data-i18n="aura.direction">Dirección</span><select id="aura-direction">
             <option value="left">left</option>
             <option value="right">right</option>
             <option value="up">up</option>
             <option value="down">down</option>
           </select></label>
-          <label><span>Brillo</span><select id="aura-brightness">
+          <label><span data-i18n="aura.brightness">Brillo</span><select id="aura-brightness">
             <option value="off">off</option>
             <option value="low">low</option>
             <option value="med">med</option>
@@ -197,27 +194,27 @@
         </div>
 
         <div class="aura-actions">
-          <button class="ghost hidden" id="aura-setup">ACTIVAR AURA</button>
-          <button class="ghost aura-primary" id="aura-apply">APLICAR</button>
-          <button class="ghost" id="aura-music">MODO MÚSICA</button>
+          <button class="ghost hidden" id="aura-setup" data-i18n="aura.activate">ACTIVAR AURA</button>
+          <button class="ghost aura-primary" id="aura-apply" data-i18n="aura.apply">APLICAR</button>
+          <button class="ghost" id="aura-music" data-i18n="aura.music">MODO MÚSICA</button>
         </div>
 
         <div class="aura-profiles">
-          <span class="aura-subhead">Perfiles guardados</span>
+          <span class="aura-subhead" data-i18n="aura.profiles_head">Perfiles guardados</span>
           <div class="aura-profile-row">
-            <input type="text" id="aura-profile-name" placeholder="Nombre para guardar">
-            <button class="ghost" id="aura-save-profile">GUARDAR</button>
+            <input type="text" id="aura-profile-name" data-i18n-attr="placeholder:aura.profile_name" placeholder="Nombre para guardar">
+            <button class="ghost" id="aura-save-profile" data-i18n="aura.save_profile">GUARDAR</button>
           </div>
           <select id="aura-profile-select" class="hidden"></select>
           <ul id="aura-profile-list" class="profile-list"></ul>
-          <p id="aura-profile-empty" class="dim profile-empty">Aún no has guardado perfiles. Ajusta la iluminación y oprime GUARDAR.</p>
+          <p id="aura-profile-empty" class="dim profile-empty" data-i18n="aura.profile_empty">Aún no has guardado perfiles. Ajusta la iluminación y oprime GUARDAR.</p>
           <label class="check-row" for="aura-startup">
             <input type="checkbox" id="aura-startup">
-            Aplicar el perfil seleccionado cuando se abra ROG Monitor
+            <span data-i18n="aura.startup_check">Aplicar el perfil seleccionado cuando se abra ROG Monitor</span>
           </label>
         </div>
 
-        <p id="aura-note" class="note">Detectando asusctl / Aura…</p>
+        <p id="aura-note" class="note" data-i18n="aura.detecting">Detectando asusctl / Aura…</p>
         <p id="aura-status" class="note hidden"></p>
         <p id="openrgb-note" class="note hidden"></p>
         <div id="peripherals" class="hidden"></div>
@@ -244,9 +241,9 @@
           <!-- Sesión de juego integrada aquí (Task 4: consolidar topbar) -->
           <button class="ghost bench-game-session-btn" id="bench-game-session-btn" title="Grabar temperaturas, RPM, watts y uso mientras juegas">SESIÓN DE JUEGO</button>
         </div>
-        <p id="bench-inline-status" class="note">Sin benchmarks en esta sesión.</p>
+        <p id="bench-inline-status" class="note" data-i18n="bench.no_bench">Sin benchmarks en esta sesión.</p>
         <ul id="bench-history" class="bench-history">
-          <li class="dim">sin historial</li>
+          <li class="dim" data-i18n="bench.history_none">sin historial</li>
         </ul>
       </article>
 
@@ -255,13 +252,13 @@
         <div class="sysrow">
           <div class="meter clickable" id="ram-meter" title="Clic para ver qué está consumiendo la RAM"><label>RAM <span id="ram-label"></span></label><div class="track"><div id="ram-bar"></div></div></div>
           <div id="disks"></div>
-          <button class="ghost" id="disk-health-btn" title="Lee el estado SMART de los discos (pide tu contraseña)">SALUD DE DISCOS</button>
+          <button class="ghost" id="disk-health-btn" data-i18n="system.disk_health" data-i18n-attr="title:system.disk_health_title" title="Lee el estado SMART de los discos (pide tu contraseña)">SALUD DE DISCOS</button>
           <p id="disk-health-out" class="note hidden"></p>
           <div class="syskv">
-            <div><label>Red</label><b id="net">--</b></div>
-            <div><label>Carga</label><b id="load">--</b></div>
-            <div><label>Batería</label><b id="battery">--</b></div>
-            <div><label>Perfil ASUS</label><b id="asus-profile">--</b></div>
+            <div><label data-i18n="common.network">Red</label><b id="net">--</b></div>
+            <div><label data-i18n="common.load">Carga</label><b id="load">--</b></div>
+            <div><label data-i18n="common.battery">Batería</label><b id="battery">--</b></div>
+            <div><label data-i18n="common.asus_profile">Perfil ASUS</label><b id="asus-profile">--</b></div>
           </div>
         </div>
       </article>
@@ -271,8 +268,8 @@
           <h2><i class="dash-num"></i> <span data-i18n="block.events">Eventos</span>
             <button id="export-events" class="ghost" data-i18n="common.export" title="Guardar el registro de eventos como .txt">EXPORTAR</button>
           </h2>
-          <ul id="events"><li class="dim">sin eventos</li></ul>
-          <p class="note dim" id="events-help">🌡 <b>Thermal throttling</b> = la CPU
+          <ul id="events"><li class="dim" data-i18n="events.none">sin eventos</li></ul>
+          <p class="note dim" id="events-help" data-i18n="events.help">🌡 <b>Thermal throttling</b> = la CPU
             baja su frecuencia un instante para no pasar de su temperatura límite
             (~100 °C). Es una protección normal del procesador bajo carga fuerte.
             Muchos eventos seguidos significan que la refrigeración no da abasto:
@@ -301,7 +298,7 @@
   </main>
 
   <footer id="statusbar">
-    <span id="backend-state">conectando con sensores…</span>
+    <span id="backend-state" data-i18n="status.connecting">conectando con sensores…</span>
     <span id="versions"></span>
   </footer>
 
@@ -330,13 +327,13 @@
 
   <div id="ram-modal" class="modal hidden">
     <div class="modal-card">
-      <h3>¿Qué está usando la RAM?</h3>
-      <p class="sub">Memoria residente real por proceso (clic para cerrar uno).</p>
+      <h3 data-i18n="modal.ram">¿Qué está usando la RAM?</h3>
+      <p class="sub" data-i18n="modal.ram_sub">Memoria residente real por proceso (clic para cerrar uno).</p>
       <table id="ram-procs">
-        <thead><tr><th>PID</th><th>proceso</th><th class="r">RAM</th></tr></thead>
+        <thead><tr><th>PID</th><th data-i18n="procs.col_name">proceso</th><th class="r">RAM</th></tr></thead>
         <tbody id="ram-procs-body"></tbody>
       </table>
-      <button class="ghost modal-close" id="ram-close">Cerrar</button>
+      <button class="ghost modal-close" id="ram-close" data-i18n="common.close">Cerrar</button>
     </div>
   </div>
 
@@ -366,30 +363,30 @@
 
   <div id="fan-modal" class="modal hidden">
     <div class="modal-card wide">
-      <h3>Ventiladores — perfil activo: <span id="fan-profile" class="accent2"></span></h3>
+      <h3><span data-i18n="fan.modal_title">Ventiladores — perfil activo:</span> <span id="fan-profile" class="accent2"></span></h3>
       <p class="sub">
-        Edita curvas y tope de RPM para cada perfil de energía por separado.
-        Los cambios se guardan en <code id="fan-script-path"></code> y reinician
-        el servicio de curvas (pide contraseña).
+        <span data-i18n="fan.sub">Edita curvas y tope de RPM para cada perfil de energía por separado. Los cambios se guardan en</span>
+        <code id="fan-script-path"></code>
+        <span data-i18n="fan.sub_restart">y reinician el servicio de curvas (pide contraseña).</span>
       </p>
 
       <!-- Selector de perfil a editar (Task 1 / C3) -->
       <div class="fan-profile-tabs" id="fan-profile-tabs">
-        <button class="ghost fan-ptab active" data-pfan="quiet">AHORRO</button>
-        <button class="ghost fan-ptab" data-pfan="balanced">BALANCED</button>
-        <button class="ghost fan-ptab" data-pfan="performance">PERFORMANCE</button>
+        <button class="ghost fan-ptab active" data-pfan="quiet" data-i18n="fan.tab_quiet">AHORRO</button>
+        <button class="ghost fan-ptab" data-pfan="balanced" data-i18n="fan.tab_balanced">BALANCED</button>
+        <button class="ghost fan-ptab" data-pfan="performance" data-i18n="fan.tab_performance">PERFORMANCE</button>
       </div>
-      <p class="sub fan-editing-note">Editando perfil: <b id="fan-editing-label">AHORRO</b>
-        <span class="fan-active-indicator hidden" id="fan-active-indicator">(perfil activo del sistema)</span>
+      <p class="sub fan-editing-note"><span data-i18n="fan.editing_note">Editando perfil:</span> <b id="fan-editing-label">AHORRO</b>
+        <span class="fan-active-indicator hidden" id="fan-active-indicator" data-i18n="fan.active_indicator">(perfil activo del sistema)</span>
       </p>
 
       <!-- Aviso sticky: aparece al tocar curvas o cap; lleva al botón de abajo -->
       <div class="fan-dirty-banner hidden" id="fan-dirty-banner" role="status">
-        <span>⬇ Cambios sin aplicar — baja y pulsa <b>GUARDAR Y APLICAR</b>.</span>
-        <button type="button" class="ghost" id="fan-dirty-jump">IR A GUARDAR</button>
+        <span><span data-i18n="fan.dirty_msg">⬇ Cambios sin aplicar — baja y pulsa</span> <b data-i18n="common.save_apply">GUARDAR Y APLICAR</b>.</span>
+        <button type="button" class="ghost" id="fan-dirty-jump" data-i18n="fan.dirty_jump">IR A GUARDAR</button>
       </div>
 
-      <p class="sub warn-note hidden" id="fan-calib-banner">
+      <p class="sub warn-note hidden" id="fan-calib-banner" data-i18n="fan.calib_banner">
         ⚙ <b>Primera vez:</b> calibra los ventiladores (botón CALIBRAR). La app
         mide las RPM reales de cada uno en 7 velocidades; sin esa tabla el tope
         es un estimado y puede quedar 200-400 RPM arriba.
@@ -397,18 +394,18 @@
       <section class="fan-cap-panel" id="fan-cap-panel">
         <div class="fan-cap-head">
           <div>
-            <span class="fan-cap-kicker">Tope de RPM</span>
+            <span class="fan-cap-kicker" data-i18n="fan.cap_kicker">Tope de RPM</span>
             <b id="fan-cap-title">AHORRO</b>
             <small id="fan-cap-state">sin tope</small>
           </div>
           <div class="fan-cap-actions">
-            <button class="ghost" id="fan-cap-adjust" type="button">AJUSTAR CAP</button>
-            <button class="ghost" id="fan-clear-cap" title="Borra el tope: cada ventilador vuelve a poder llegar a su máximo">QUITAR CAP</button>
-            <button class="ghost" id="fan-benchmark" title="Mide las RPM reales de cada ventilador en 7 velocidades (~70 s, suena fuerte). Restaura todo al terminar.">CALIBRAR (1-3 min)</button>
+            <button class="ghost" id="fan-cap-adjust" type="button" data-i18n="fan.cap_adjust">AJUSTAR CAP</button>
+            <button class="ghost" id="fan-clear-cap" data-i18n="fan.cap_clear" data-i18n-attr="title:fan.cap_clear_title" title="Borra el tope: cada ventilador vuelve a poder llegar a su máximo">QUITAR CAP</button>
+            <button class="ghost" id="fan-benchmark" data-i18n="fan.calibrate" data-i18n-attr="title:fan.calibrate_title" title="Mide las RPM reales de cada ventilador en 7 velocidades (~70 s, suena fuerte). Restaura todo al terminar.">CALIBRAR (1-3 min)</button>
           </div>
         </div>
         <div class="fan-cap-editor hidden" id="fan-cap-editor">
-          <label>Cap para todos los ventiladores de <span id="fan-cap-label">AHORRO</span></label>
+          <label><span data-i18n="fan.cap_for">Cap para todos los ventiladores de</span> <span id="fan-cap-label">AHORRO</span></label>
           <input type="number" id="fan-cap" min="2000" max="8000" step="100" placeholder="sin tope">
           <div class="fan-cap-per-fan" id="fan-cap-per-fan"></div>
         </div>
@@ -416,123 +413,132 @@
       <p class="sub" id="fan-cap-preview"></p>
       <p class="sub" id="fan-max-note"></p>
       <p class="sub" id="fan-acoustic-note"></p>
-      <p class="sub">Las velocidades se editan en <b>% del máximo de cada ventilador</b>.
+      <p class="sub" data-i18n="fan.speeds_note">Las velocidades se editan en <b>% del máximo de cada ventilador</b>.
         La curva se guarda <b>completa (sin recortar)</b>: el tope se aplica al
         momento de mandarla al hardware. Cada perfil puede tener curvas distintas.</p>
 
       <div id="fan-curves"></div>
 
-      <p class="sub warn-note">
+      <p class="sub warn-note" data-i18n="fan.warn_low">
         ⚠ Ventiladores muy lentos a temperaturas altas pueden dañar el equipo.
         Si tu curva queda agresivamente baja, se te pedirá confirmarlo.
       </p>
       <div class="mode-row">
-        <button class="ghost" id="fan-save">GUARDAR Y APLICAR</button>
-        <button class="ghost" id="fan-close">Cancelar</button>
-        <button class="ghost" id="config-export" title="Guarda TODA tu configuración (curvas, cap, calibración, Aura, umbrales) en un solo archivo JSON">EXPORTAR CONFIG</button>
-        <button class="ghost" id="config-import" title="Restaura una configuración exportada (hace respaldo .pre-import de la actual)">IMPORTAR CONFIG</button>
+        <button class="ghost" id="fan-save" data-i18n="common.save_apply">GUARDAR Y APLICAR</button>
+        <button class="ghost" id="fan-close" data-i18n="common.cancel">Cancelar</button>
+        <button class="ghost" id="config-export" data-i18n="fan.export_config" data-i18n-attr="title:fan.export_title" title="Guarda TODA tu configuración (curvas, cap, calibración, Aura, umbrales) en un solo archivo JSON">EXPORTAR CONFIG</button>
+        <button class="ghost" id="config-import" data-i18n="fan.import_config" data-i18n-attr="title:fan.import_title" title="Restaura una configuración exportada (hace respaldo .pre-import de la actual)">IMPORTAR CONFIG</button>
       </div>
     </div>
   </div>
 
   <div id="theme-modal" class="modal hidden">
     <div class="modal-card">
-      <h3>Apariencia</h3>
-      <p class="sub">Elige el modo de color y la paleta. Se guarda automáticamente.</p>
+      <h3 data-i18n="modal.theme">Apariencia</h3>
+      <p class="sub" data-i18n="modal.theme_sub">Elige el modo de color y la paleta. Se guarda automáticamente.</p>
       <div class="mode-row segment" id="mode-seg">
-        <button data-mode="light">☀ Claro</button>
-        <button data-mode="dark">🌙 Oscuro</button>
-        <button data-mode="system">🖥 Sistema</button>
+        <button data-mode="light" data-i18n="theme.light">☀ Claro</button>
+        <button data-mode="dark" data-i18n="theme.dark">🌙 Oscuro</button>
+        <button data-mode="system" data-i18n="theme.system">🖥 Sistema</button>
       </div>
       <div class="theme-grid" id="theme-grid"></div>
-      <h3 class="size-title">Tamaño</h3>
+      <h3 class="size-title" data-i18n="modal.theme_size">Tamaño</h3>
       <div class="mode-row segment" id="size-seg">
         <button data-zoom="-0.5">A−</button>
         <button data-zoom="0">Normal</button>
         <button data-zoom="0.5">A+</button>
         <button data-zoom="1">A++</button>
       </div>
-      <button class="ghost modal-close" id="theme-close">Cerrar</button>
+      <button class="ghost modal-close" id="theme-close" data-i18n="common.close">Cerrar</button>
     </div>
   </div>
 
   <div id="overlay-modal" class="modal hidden">
     <div class="modal-card">
-      <h3>Overlay para juegos</h3>
-      <p class="sub">Una ventanita siempre encima con temperaturas, vatios y RPM.
+      <h3 data-i18n="modal.overlay">Overlay para juegos</h3>
+      <p class="sub" data-i18n="modal.overlay_sub">Una ventanita siempre encima con temperaturas, vatios y RPM.
         No roba el foco del juego (es click-through) y aparece sobre pantalla completa.</p>
       <label class="check-row" for="overlay-enabled">
         <input type="checkbox" id="overlay-enabled">
-        Mostrar overlay
+        <span data-i18n="overlay.show">Mostrar overlay</span>
       </label>
-      <label>Monitor
-        <select id="overlay-display"></select>
-      </label>
-      <label>Esquina
-        <select id="overlay-corner">
-          <option value="top-left">Arriba izquierda</option>
-          <option value="top-right">Arriba derecha</option>
-          <option value="bottom-left">Abajo izquierda</option>
-          <option value="bottom-right">Abajo derecha</option>
+      <label><span data-i18n="overlay.format">Formato</span>
+        <select id="overlay-layout">
+          <option value="row" data-i18n="overlay.layout_row">Fila delgada (estorba menos)</option>
+          <option value="box" data-i18n="overlay.layout_box">Cuadro (más detalle)</option>
         </select>
       </label>
-      <h3 class="size-title">¿Qué quieres ver en el overlay?</h3>
+      <label><span data-i18n="overlay.monitor">Monitor</span>
+        <select id="overlay-display"></select>
+      </label>
+      <label><span data-i18n="overlay.position">Posición</span>
+        <select id="overlay-corner">
+          <option value="top-left" data-i18n="overlay.pos_tl">Arriba izquierda</option>
+          <option value="top-center" data-i18n="overlay.pos_tc">Arriba centro</option>
+          <option value="top-right" data-i18n="overlay.pos_tr">Arriba derecha</option>
+          <option value="center" data-i18n="overlay.pos_c">Centro</option>
+          <option value="bottom-left" data-i18n="overlay.pos_bl">Abajo izquierda</option>
+          <option value="bottom-center" data-i18n="overlay.pos_bc">Abajo centro</option>
+          <option value="bottom-right" data-i18n="overlay.pos_br">Abajo derecha</option>
+        </select>
+      </label>
+      <h3 class="size-title" data-i18n="overlay.show_label">¿Qué quieres ver en el overlay?</h3>
       <label class="check-row" for="ov-show-cpu">
         <input type="checkbox" id="ov-show-cpu" checked>
-        CPU — temperatura promedio (AVG) y vatios
+        <span data-i18n="overlay.show_cpu">CPU — temperatura promedio de los núcleos y vatios del paquete</span>
       </label>
       <label class="check-row" for="ov-show-gpu">
         <input type="checkbox" id="ov-show-gpu" checked>
-        GPU — temperatura, vatios y % de uso
+        <span data-i18n="overlay.show_gpu">GPU — temperatura, vatios y % de uso</span>
       </label>
       <label class="check-row" for="ov-show-fans">
         <input type="checkbox" id="ov-show-fans" checked>
-        Ventiladores — RPM en vivo
+        <span data-i18n="overlay.show_fans">Ventiladores — RPM en vivo</span>
       </label>
       <label class="check-row" for="fps-logging">
         <input type="checkbox" id="fps-logging">
-        FPS del juego
+        <span data-i18n="overlay.show_fps">FPS del juego</span>
       </label>
-      <p class="sub" id="fps-note">Los FPS solo puede medirlos algo que corre
+      <p class="sub" id="fps-note" data-i18n="overlay.fps_note">Los FPS solo puede medirlos algo que corre
         <b>dentro</b> del juego; en Linux eso es <b>MangoHud</b> (incluido en
         Bazzite, instalable en cualquier distro). Al activar esta casilla la app
         lo configura sola; tú solo lanza el juego con MangoHud (en Steam:
         clic derecho → Propiedades → Opciones de lanzamiento →
         <code>mangohud %command%</code>) y los FPS aparecen en el overlay.</p>
-      <p class="sub">Para esconderlo durante una captura, desactiva «Mostrar overlay».</p>
-      <button class="ghost modal-close" id="overlay-close">Cerrar</button>
+      <p class="sub" data-i18n="overlay.hide_capture">Para esconderlo durante una captura, desactiva «Mostrar overlay».</p>
+      <button class="ghost modal-close" id="overlay-close" data-i18n="common.close">Cerrar</button>
     </div>
   </div>
 
   <div id="alerts-modal" class="modal hidden">
     <div class="modal-card">
-      <h3 data-i18n="alerts.title">Umbrales y alertas</h3>
+      <h3 data-i18n="alerts.title">Configuración</h3>
       <p class="sub" data-i18n="alerts.sub">Ajusta cuándo avisa el monitor y a qué temperaturas cambian los colores. Se guarda y se aplica al instante.</p>
       <div class="settings-grid">
-        <label class="f-temp"><span>🌡 Alerta temp CPU (°C)</span><input type="number" id="set-cpu-temp-warn" min="50" max="110" step="1"></label>
-        <label class="f-temp"><span>🌡 Alerta temp GPU (°C)</span><input type="number" id="set-gpu-temp-warn" min="45" max="105" step="1"></label>
-        <label class="f-power"><span>⚡ Alerta potencia CPU (W)</span><input type="number" id="set-cpu-power-warn" min="20" max="300" step="1"></label>
-        <label class="f-fan"><span>🌀 Ventilador parado bajo (°C)</span><input type="number" id="set-fan-stopped" min="30" max="100" step="1"></label>
-        <label class="f-time"><span>⏱ Enfriamiento alerta (s)</span><input type="number" id="set-cooldown" min="10" max="3600" step="5"></label>
-        <label class="f-time"><span>⏱ Throttle mínimo (ms)</span><input type="number" id="set-throttle-ms" min="0" max="5000" step="10"></label>
+        <label class="f-temp"><span data-i18n="alerts.cpu_temp">🌡 Alerta temp CPU (°C)</span><input type="number" id="set-cpu-temp-warn" min="50" max="110" step="1"></label>
+        <label class="f-temp"><span data-i18n="alerts.gpu_temp">🌡 Alerta temp GPU (°C)</span><input type="number" id="set-gpu-temp-warn" min="45" max="105" step="1"></label>
+        <label class="f-power"><span data-i18n="alerts.cpu_power">⚡ Alerta potencia CPU (W)</span><input type="number" id="set-cpu-power-warn" min="20" max="300" step="1"></label>
+        <label class="f-fan"><span data-i18n="alerts.fan_stopped">🌀 Ventilador parado bajo (°C)</span><input type="number" id="set-fan-stopped" min="30" max="100" step="1"></label>
+        <label class="f-time"><span data-i18n="alerts.cooldown">⏱ Enfriamiento alerta (s)</span><input type="number" id="set-cooldown" min="10" max="3600" step="5"></label>
+        <label class="f-time"><span data-i18n="alerts.throttle_ms">⏱ Throttle mínimo (ms)</span><input type="number" id="set-throttle-ms" min="0" max="5000" step="10"></label>
       </div>
-      <h3 class="size-title">Colores de temperatura (hasta qué °C llega cada color)</h3>
+      <h3 class="size-title" data-i18n="alerts.color_title">Colores de temperatura (hasta qué °C llega cada color)</h3>
       <div class="settings-grid">
-        <label><span><i class="dot ok"></i>CPU verde &lt;</span><input type="number" id="set-cpu-c0" min="40" max="110" step="1"></label>
-        <label><span><i class="dot warn"></i>CPU amarillo &lt;</span><input type="number" id="set-cpu-c1" min="40" max="110" step="1"></label>
-        <label><span><i class="dot hot"></i>CPU naranja &lt;</span><input type="number" id="set-cpu-c2" min="40" max="110" step="1"></label>
-        <label><span><i class="dot ok"></i>GPU verde &lt;</span><input type="number" id="set-gpu-c0" min="40" max="105" step="1"></label>
-        <label><span><i class="dot warn"></i>GPU amarillo &lt;</span><input type="number" id="set-gpu-c1" min="40" max="105" step="1"></label>
-        <label><span><i class="dot hot"></i>GPU naranja &lt;</span><input type="number" id="set-gpu-c2" min="40" max="105" step="1"></label>
+        <label><span><i class="dot ok"></i><span data-i18n="alerts.cpu_green">CPU verde &lt;</span></span><input type="number" id="set-cpu-c0" min="40" max="110" step="1"></label>
+        <label><span><i class="dot warn"></i><span data-i18n="alerts.cpu_yellow">CPU amarillo &lt;</span></span><input type="number" id="set-cpu-c1" min="40" max="110" step="1"></label>
+        <label><span><i class="dot hot"></i><span data-i18n="alerts.cpu_orange">CPU naranja &lt;</span></span><input type="number" id="set-cpu-c2" min="40" max="110" step="1"></label>
+        <label><span><i class="dot ok"></i><span data-i18n="alerts.gpu_green">GPU verde &lt;</span></span><input type="number" id="set-gpu-c0" min="40" max="105" step="1"></label>
+        <label><span><i class="dot warn"></i><span data-i18n="alerts.gpu_yellow">GPU amarillo &lt;</span></span><input type="number" id="set-gpu-c1" min="40" max="105" step="1"></label>
+        <label><span><i class="dot hot"></i><span data-i18n="alerts.gpu_orange">GPU naranja &lt;</span></span><input type="number" id="set-gpu-c2" min="40" max="105" step="1"></label>
       </div>
-      <p class="sub"><i class="dot crit"></i>Rojo = por encima del naranja. Estos colores aplican en toda la app y en el overlay.</p>
+      <p class="sub"><i class="dot crit"></i><span data-i18n="alerts.color_note">Rojo = por encima del naranja. Estos colores aplican en toda la app y en el overlay.</span></p>
       <label class="check-row" for="set-notifications">
         <input type="checkbox" id="set-notifications">
-        Mostrar notificaciones de escritorio
+        <span data-i18n="alerts.notifications">Mostrar notificaciones de escritorio</span>
       </label>
-      <label class="check-row" for="set-autostart" title="Crea una entrada de inicio de sesión. La app abre minimizada y el monitor queda congelado (0% CPU) hasta que la abras.">
+      <label class="check-row" for="set-autostart" data-i18n-attr="title:alerts.autostart_title" title="Crea una entrada de inicio de sesión. La app abre minimizada y el monitor queda congelado (0% CPU) hasta que la abras.">
         <input type="checkbox" id="set-autostart">
-        Iniciar con el sistema (minimizado, sin consumir recursos)
+        <span data-i18n="alerts.autostart">Iniciar con el sistema (minimizado, sin consumir recursos)</span>
       </label>
       <p id="alerts-status" class="note hidden"></p>
       <div class="mode-row">
@@ -544,41 +550,41 @@
 
   <div id="maintenance-modal" class="modal hidden">
     <div class="modal-card">
-      <h3>Mantenimiento</h3>
-      <p class="sub">Actualiza, reinstala o desinstala ROG Monitor. Todo vive en una sola
+      <h3 data-i18n="maint.title">Mantenimiento</h3>
+      <p class="sub" data-i18n="maint.sub">Actualiza, reinstala o desinstala ROG Monitor. Todo vive en una sola
         carpeta del repo; tus configuraciones están en <code>~/.config/rog-monitor</code>.</p>
       <div class="maint-actions">
-        <button class="ghost" id="maint-update">BUSCAR ACTUALIZACIÓN</button>
-        <button class="ghost" id="maint-reinstall" title="Reinstala dependencias y reinicia el backend">REINSTALAR</button>
+        <button class="ghost" id="maint-update" data-i18n="maint.update">BUSCAR ACTUALIZACIÓN</button>
+        <button class="ghost" id="maint-reinstall" data-i18n="maint.reinstall" data-i18n-attr="title:maint.reinstall_title" title="Reinstala dependencias y reinicia el backend (repara la app sin perder tu configuración)">REINSTALAR / REPARAR</button>
       </div>
       <p id="maint-status" class="note hidden"></p>
       <hr>
-      <h3 class="size-title">Desinstalar</h3>
-      <p class="sub">Quita la app, los launchers, el autoarranque y las integraciones de
+      <h3 class="size-title" data-i18n="maint.uninstall_title">Desinstalar</h3>
+      <p class="sub" data-i18n="maint.uninstall_sub">Quita la app, los launchers, el autoarranque y las integraciones de
         sistema (pedirá contraseña). El auto-perfil por fuente de poder y la GPU nunca se tocan solos.</p>
       <label class="check-row" for="maint-purge">
         <input type="checkbox" id="maint-purge">
-        Borrar también mis configuraciones (no se puede deshacer)
+        <span data-i18n="maint.purge">Borrar también mis configuraciones (no se puede deshacer)</span>
       </label>
       <div class="mode-row">
-        <button class="ghost danger" id="maint-uninstall">DESINSTALAR</button>
-        <button class="ghost modal-close" id="maint-close">Cerrar</button>
+        <button class="ghost danger" id="maint-uninstall" data-i18n="maint.uninstall">DESINSTALAR</button>
+        <button class="ghost modal-close" id="maint-close" data-i18n="common.close">Cerrar</button>
       </div>
     </div>
   </div>
 
   <div id="benchmark-modal" class="modal hidden">
     <div class="modal-card">
-      <h3>Benchmark térmico</h3>
-      <p class="sub">Lanza una carga sintética local al máximo y mide temperatura, watts y RPM. Úsalo con el cargador conectado y con ventilación libre.</p>
+      <h3 data-i18n="modal.bench">Benchmark térmico</h3>
+      <p class="sub" data-i18n="bench.modal_sub">Lanza una carga sintética local al máximo y mide temperatura, watts y RPM. Úsalo con el cargador conectado y con ventilación libre.</p>
       <div class="mode-row">
         <button class="ghost" id="bench-cpu">CPU 45 s</button>
         <button class="ghost" id="bench-gpu">GPU LOCAL 45 s</button>
-        <button class="ghost" id="bench-export">EXPORTAR</button>
+        <button class="ghost" id="bench-export" data-i18n="common.export">EXPORTAR</button>
       </div>
-      <p id="bench-status" class="note">Aún no hay resultados.</p>
-      <pre id="bench-output" class="bench-output">sin resultados</pre>
-      <button class="ghost modal-close" id="benchmark-close">Cerrar</button>
+      <p id="bench-status" class="note" data-i18n="bench.no_results">Aún no hay resultados.</p>
+      <pre id="bench-output" class="bench-output" data-i18n="bench.no_output">sin resultados</pre>
+      <button class="ghost modal-close" id="benchmark-close" data-i18n="common.close">Cerrar</button>
     </div>
   </div>
 
@@ -587,7 +593,7 @@
     <div class="modal-card">
       <!-- v13 POWER-UI: cabecera con título + botón Avanzado a la derecha -->
       <div id="power-title-row">
-        <h3>CENTRO DE PODER</h3>
+        <h3 data-i18n="modal.power">CENTRO DE PODER</h3>
         <button class="ghost" id="power-advanced-btn" data-i18n="power.advancedBtn">Avanzado</button>
       </div>
       <!-- /v13 POWER-UI -->
@@ -609,14 +615,14 @@
       </div>
 
       <!-- advertencia PL1 > PL2 -->
-      <p id="power-pl-warn">PL2 debe ser mayor o igual a PL1 para que la ráfaga funcione correctamente.</p>
+      <p id="power-pl-warn" data-i18n="power.pl_warn">PL2 debe ser mayor o igual a PL1 para que la ráfaga funcione correctamente.</p>
 
       <!-- panel GUARDIÁN -->
       <div id="power-guardian-panel" class="power-tab-panel active"></div>
 
       <!-- panel CPU -->
       <div id="power-cpu-panel" class="power-tab-panel">
-        <p class="dim" style="padding:1rem">Cargando…</p>
+        <p class="dim" style="padding:1rem" data-i18n="power.loading">Cargando…</p>
       </div>
 
       <!-- panel GPU -->
@@ -631,9 +637,9 @@
 
       <!-- botones de acción -->
       <div id="power-actions">
-        <button class="ghost" id="power-reset">RESET A FÁBRICA</button>
-        <button class="ghost" id="power-cancel">Cancelar</button>
-        <button class="ghost" id="power-apply" disabled>APLICAR</button>
+        <button class="ghost" id="power-reset" data-i18n="common.reset_factory">RESET A FÁBRICA</button>
+        <button class="ghost" id="power-cancel" data-i18n="common.cancel">Cancelar</button>
+        <button class="ghost" id="power-apply" data-i18n="common.apply" disabled>APLICAR</button>
       </div>
     </div>
   </div>

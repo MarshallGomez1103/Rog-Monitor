@@ -1237,5 +1237,7 @@ html[data-mode="dark"][data-theme="neon-nights"] .block::before {
 
 /* ---------- Mantenimiento v14 ---------- */
 .maint-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin: .5rem 0; }
-.ghost.danger { border-color: var(--hot, #ff6b3d); color: var(--hot, #ff6b3d); }
-.ghost.danger:hover { background: var(--hot, #ff6b3d); color: var(--bg); }
+/* Botón peligroso UNIFORME con los demás (mismo borde/forma que "Cerrar"); solo
+   el texto lleva un matiz rojo de aviso, y al pasar el mouse se llena de rojo. */
+.ghost.danger { color: var(--hot, #ff6b3d); }
+.ghost.danger:hover { background: var(--hot, #ff6b3d); color: var(--bg); border-color: var(--hot, #ff6b3d); }

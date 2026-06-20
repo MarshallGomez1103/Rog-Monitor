@@ -1,5 +1,38 @@
 # Changelog
 
+## 15.0.0 — 2026-06-20
+
+### Fixed
+
+- **Per-profile fan caps now persist independently.** Setting a different RPM cap
+  for Ahorro / Balance / Performance no longer collapses all three to the last one
+  saved. The global `cap_rpm` mirror (the contamination source) was removed; each
+  profile keeps its own cap. Editing several profiles and saving once now persists
+  them all in a single privileged step.
+
+### Added
+
+- **Guardian Gaming: configurable fan cap.** A "Tope en Gaming (RPM)" field (default
+  = measured maximum) lets fans climb above the normal cap while gaming, enforced by
+  the fan service only when the guardian is in active Gaming mode (decoupled, no extra
+  password prompt).
+- **Overlay redesign.** New default is a thin single **row** anchored **top-center**
+  (with box mode still available); new **top-center / center / bottom-center**
+  positions; the overlay now follows the active theme accent; the cryptic "AVG" label
+  was clarified (CPU shows average-of-cores temperature + package watts).
+- **Full internationalization.** The whole UI — Fans modal, modal titles, tooltips,
+  toasts and newly generated events — now translates across all 8 languages; the
+  backend re-localizes new events when the UI language changes.
+
+### Changed
+
+- **Maintenance/Settings cleanup.** The duplicate "Update" button was removed from the
+  System menu (it lives in **Maintenance** now: Update / Reinstall-Repair / Uninstall);
+  the uninstall button is visually uniform with the others; "Alerts" became
+  **"Configuración"** grouping autostart, notifications, thresholds and colors.
+- **README**: one-line install and one-line uninstall up top, with a clear note about
+  what the single sudo step does.
+
 ## 14.0.0 — 2026-06-20
 
 ### Added

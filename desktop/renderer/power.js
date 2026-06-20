@@ -836,6 +836,9 @@
           if (Number(gpuRow.slider.value) <= 83) { gpuRow.slider.value = 87; gpuRow.num.value = 87; }
         }
         modeDesc.textContent = key === 'gaming' ? b.title : modeBtns.protection.title;
+        const gShow = key === 'gaming' ? '' : 'none';
+        gamingCapRow.style.display = gShow;
+        gamingCapHint.style.display = gShow;
       });
       modeBtns[key] = b;
       modeSeg.appendChild(b);
@@ -861,6 +864,44 @@
     );
     section.appendChild(cpuRow.row);
     section.appendChild(gpuRow.row);
+
+    // Tope de ventiladores SOLO para Gaming (default = máximo medido).
+    const gc = await window.rog.getGamingCap().catch(() => ({}));
+    const gamingCapRow = document.createElement('div');
+    gamingCapRow.className = 'power-control-row power-guardian-gamingcap';
+    const gcLabel = document.createElement('span');
+    gcLabel.className = 'power-control-unit power-guardian-row-label';
+    gcLabel.textContent = tf('power.guardian.gamingCap', 'Tope ventiladores Gaming') + ':';
+    gamingCapRow.appendChild(gcLabel);
+    const gcInput = document.createElement('input');
+    gcInput.type = 'number';
+    gcInput.className = 'power-numbox';
+    gcInput.min = 2000;
+    gcInput.max = (gc && gc.maxRpm) || 9000;
+    gcInput.step = 100;
+    gcInput.value = (gc && (gc.rpm || gc.maxRpm)) || '';
+    gcInput.placeholder = gc && gc.maxRpm ? String(gc.maxRpm) : t('common.max');
+    gamingCapRow.appendChild(gcInput);
+    const gcUnit = document.createElement('span');
+    gcUnit.className = 'power-control-unit';
+    gcUnit.textContent = 'RPM';
+    gamingCapRow.appendChild(gcUnit);
+    const gamingCapHint = document.createElement('span');
+    gamingCapHint.className = 'power-control-tooltip';
+    gamingCapHint.textContent = tf('power.guardian.gamingCapHint',
+      'Solo en Gaming: los ventiladores pueden subir hasta este tope (default = máximo medido). Súbelo para enfriar más; bájalo por ruido.');
+    gcInput.addEventListener('change', async () => {
+      const r = await window.rog.setGamingCap(Number(gcInput.value));
+      if (r && r.ok) {
+        powerToast(tf('power.guardian.gamingCapSaved', 'Tope de Gaming: {v} RPM ✓')
+          .replace('{v}', r.rpm || gcInput.value));
+      }
+    });
+    const gShow = selectedMode === 'gaming' ? '' : 'none';
+    gamingCapRow.style.display = gShow;
+    gamingCapHint.style.display = gShow;
+    section.appendChild(gamingCapRow);
+    section.appendChild(gamingCapHint);
 
     const fanNote = document.createElement('p');
     fanNote.className = 'power-guardian-note';

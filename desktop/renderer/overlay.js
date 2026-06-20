@@ -89,10 +89,11 @@ function render(stats) {
   }
   const cpuW = $('cpu-w');
   if (cpuW) {
-    const watts = stats.rapl_available && stats.cpu_watts != null
-      ? fmt(stats.cpu_watts, 0) + ' W · ' + s('avg')
+    // Watts del paquete CPU (la temperatura ya es el promedio de núcleos; el
+    // viejo sufijo "· AVG" confundía, se quitó — se explica en el menú).
+    cpuW.textContent = stats.rapl_available && stats.cpu_watts != null
+      ? fmt(stats.cpu_watts, 0) + ' W'
       : s('na') + ' W';
-    cpuW.textContent = watts;
   }
 
   /* FPS (MangoHud) */
@@ -157,14 +158,27 @@ function render(stats) {
   }
 }
 
+/* ---- layout (fila / cuadro) + acento del tema ---- */
+function applyLayout(layout) {
+  // Default = fila (una línea, estorba menos). 'box' = el cuadro clásico.
+  document.body.classList.toggle('layout-row', layout !== 'box');
+}
+function applyAccent(accent) {
+  if (accent) document.documentElement.style.setProperty('--accent', accent);
+}
+
 /* ---- inicialización ---- */
 applyLabels();
 applyShow();
+applyLayout('row');   // por defecto, fila
 
 window.rog.onStats(render);
 
 window.rog.onOverlayConfig((cfg) => {
-  show = { ...show, ...cfg };
+  if (cfg.show) show = { ...show, ...cfg.show };
+  else show = { ...show, ...cfg };   // compat: config viejo mandaba show plano
+  if (cfg.layout) applyLayout(cfg.layout);
+  applyAccent(cfg.accent);
   applyShow();
   if (lastStats) render(lastStats);
 });
