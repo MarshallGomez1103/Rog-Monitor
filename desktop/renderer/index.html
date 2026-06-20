@@ -235,9 +235,9 @@
       <article class="block" id="bench-block" data-block="bench">
         <h2><i class="dash-num"></i> <span data-i18n="block.bench_session">Benchmarks y sesión</span> <small data-i18n="block.bench_session_sub">carga térmica · sesión de juego</small></h2>
         <div class="bench-actions">
-          <button class="ghost" id="benchmark-btn">ABRIR BENCHMARKS</button>
-          <button class="ghost" id="bench-run-cpu-quick">CPU 45 s</button>
-          <button class="ghost" id="bench-run-gpu-quick">GPU LOCAL 45 s</button>
+          <button class="ghost" id="benchmark-btn" data-i18n="bench.open">ABRIR BENCHMARKS</button>
+          <button class="ghost" id="bench-run-cpu-quick" data-i18n="bench.cpu">CPU 45 s</button>
+          <button class="ghost" id="bench-run-gpu-quick" data-i18n="bench.gpu">GPU LOCAL 45 s</button>
           <!-- Sesión de juego integrada aquí (Task 4: consolidar topbar) -->
           <button class="ghost bench-game-session-btn" id="bench-game-session-btn" title="Grabar temperaturas, RPM, watts y uso mientras juegas">SESIÓN DE JUEGO</button>
         </div>
@@ -578,8 +578,8 @@
       <h3 data-i18n="modal.bench">Benchmark térmico</h3>
       <p class="sub" data-i18n="bench.modal_sub">Lanza una carga sintética local al máximo y mide temperatura, watts y RPM. Úsalo con el cargador conectado y con ventilación libre.</p>
       <div class="mode-row">
-        <button class="ghost" id="bench-cpu">CPU 45 s</button>
-        <button class="ghost" id="bench-gpu">GPU LOCAL 45 s</button>
+        <button class="ghost" id="bench-cpu" data-i18n="bench.cpu">CPU 45 s</button>
+        <button class="ghost" id="bench-gpu" data-i18n="bench.gpu">GPU LOCAL 45 s</button>
         <button class="ghost" id="bench-export" data-i18n="common.export">EXPORTAR</button>
       </div>
       <p id="bench-status" class="note" data-i18n="bench.no_results">Aún no hay resultados.</p>

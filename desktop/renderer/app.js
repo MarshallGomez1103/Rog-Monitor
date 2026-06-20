@@ -32,6 +32,102 @@ window.addEventListener('unhandledrejection', (event) => {
   });
 });
 
+/* --------------------------------------------------------------------------
+ * i18n long-tail (v16 Fase A): claves para confirms nativos, toasts y estados
+ * que v15 dejó en español duro. Registradas aquí (el motor i18n.js ya cargó).
+ * Helper confirmT(): traduce el texto de un window.confirm en vivo.
+ * -------------------------------------------------------------------------- */
+function confirmT(key, vars) { return window.confirm(t(key, vars)); }
+
+if (window.i18n && window.i18n.register) {
+  window.i18n.register({
+    /* ---- confirms nativos ---- */
+    'confirm.bench_clear_all': { es: '¿Borrar TODOS los benchmarks anteriores? Esta acción no se puede deshacer.', en: 'Delete ALL previous benchmarks? This cannot be undone.', fr: 'Supprimer TOUS les benchmarks précédents ? Action irréversible.', it: 'Eliminare TUTTI i benchmark precedenti? Operazione irreversibile.', pt: 'Apagar TODOS os benchmarks anteriores? Esta ação não pode ser desfeita.', zh: '删除所有以前的基准测试？此操作无法撤销。', ja: '以前のベンチマークをすべて削除しますか？この操作は元に戻せません。', ko: '이전 벤치마크를 모두 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.' },
+    'confirm.uninstall_purge': { es: '¿Desinstalar ROG Monitor Y BORRAR tus configuraciones? No se puede deshacer.', en: 'Uninstall ROG Monitor AND DELETE your settings? This cannot be undone.', fr: 'Désinstaller ROG Monitor ET SUPPRIMER vos réglages ? Irréversible.', it: 'Disinstallare ROG Monitor ED ELIMINARE le tue impostazioni? Irreversibile.', pt: 'Desinstalar o ROG Monitor E APAGAR as tuas configurações? Não pode ser desfeito.', zh: '卸载 ROG Monitor 并删除您的配置？此操作无法撤销。', ja: 'ROG Monitor をアンインストールし、設定も削除しますか？元に戻せません。', ko: 'ROG Monitor를 제거하고 설정도 삭제하시겠습니까? 되돌릴 수 없습니다.' },
+    'confirm.uninstall_keep': { es: '¿Desinstalar ROG Monitor? (se conservan tus configuraciones)', en: 'Uninstall ROG Monitor? (your settings are kept)', fr: 'Désinstaller ROG Monitor ? (vos réglages sont conservés)', it: 'Disinstallare ROG Monitor? (le impostazioni vengono mantenute)', pt: 'Desinstalar o ROG Monitor? (as tuas configurações são mantidas)', zh: '卸载 ROG Monitor？（保留您的配置）', ja: 'ROG Monitor をアンインストールしますか？（設定は保持されます）', ko: 'ROG Monitor를 제거하시겠습니까? (설정은 유지됩니다)' },
+    'confirm.uninstall_pw_note': { es: '\n\nSe pedirá tu contraseña para quitar las integraciones de sistema.', en: '\n\nYour password will be requested to remove system integrations.', fr: '\n\nVotre mot de passe sera demandé pour retirer les intégrations système.', it: '\n\nVerrà richiesta la password per rimuovere le integrazioni di sistema.', pt: '\n\nA tua senha será pedida para remover as integrações do sistema.', zh: '\n\n移除系统集成时将要求输入密码。', ja: '\n\nシステム統合を削除するためにパスワードが要求されます。', ko: '\n\n시스템 통합을 제거하기 위해 비밀번호를 요청합니다.' },
+    'confirm.aura_setup': { es: 'Esto configurará y arrancará asusd para Aura sin apagar rog-profile-sync.\n\nPedirá tu contraseña de administrador. ¿Continuar?', en: 'This will set up and start asusd for Aura without turning off rog-profile-sync.\n\nIt will ask for your admin password. Continue?', fr: 'Ceci configurera et démarrera asusd pour Aura sans désactiver rog-profile-sync.\n\nVotre mot de passe administrateur sera demandé. Continuer ?', it: 'Questo configurerà e avvierà asusd per Aura senza disattivare rog-profile-sync.\n\nVerrà richiesta la password di amministratore. Continuare?', pt: 'Isto vai configurar e iniciar o asusd para o Aura sem desligar o rog-profile-sync.\n\nPedirá a tua senha de administrador. Continuar?', zh: '这将配置并启动用于 Aura 的 asusd，不会关闭 rog-profile-sync。\n\n将要求输入管理员密码。是否继续？', ja: 'rog-profile-sync をオフにせず、Aura 用に asusd を設定・起動します。\n\n管理者パスワードが要求されます。続行しますか？', ko: 'rog-profile-sync를 끄지 않고 Aura용 asusd를 설정하고 시작합니다.\n\n관리자 비밀번호를 요청합니다. 계속하시겠습니까?' },
+    'confirm.delete_profile': { es: '¿Borrar el perfil "{name}"? Esta acción no se puede deshacer.', en: 'Delete profile "{name}"? This cannot be undone.', fr: 'Supprimer le profil « {name} » ? Action irréversible.', it: 'Eliminare il profilo "{name}"? Operazione irreversibile.', pt: 'Apagar o perfil "{name}"? Esta ação não pode ser desfeita.', zh: '删除配置“{name}”？此操作无法撤销。', ja: 'プロファイル「{name}」を削除しますか？この操作は元に戻せません。', ko: '프로파일 "{name}"을(를) 삭제하시겠습니까? 되돌릴 수 없습니다.' },
+    'confirm.fan_calibrate': { es: 'Calibrar ventiladores (medir máximos reales):\n\nLos ventiladores pasarán por 7 velocidades (1-3 min: espera a que\nestabilicen en cada una, va a sonar fuerte) midiendo sus RPM reales.\nCon esa tabla el tope de RPM cae exacto. Al terminar se restaura solo.\nPedirá tu contraseña.\n\n¿Continuar?', en: 'Calibrate fans (measure real maxima):\n\nThe fans will run through 7 speeds (1-3 min: wait for them to\nsettle at each one, it will get loud) measuring their real RPM.\nWith that table the RPM cap lands exact. It restores itself when done.\nIt will ask for your password.\n\nContinue?', fr: 'Calibrer les ventilateurs (mesurer les maxima réels) :\n\nLes ventilateurs passeront par 7 vitesses (1-3 min : attendez qu\'ils\nse stabilisent à chacune, ce sera bruyant) en mesurant leurs RPM réels.\nAvec cette table, la limite RPM est exacte. Tout se restaure à la fin.\nVotre mot de passe sera demandé.\n\nContinuer ?', it: 'Calibrare le ventole (misurare i massimi reali):\n\nLe ventole passeranno per 7 velocità (1-3 min: attendi che\nsi stabilizzino su ciascuna, sarà rumoroso) misurando gli RPM reali.\nCon quella tabella il limite RPM è esatto. Al termine si ripristina da solo.\nVerrà richiesta la password.\n\nContinuare?', pt: 'Calibrar ventoinhas (medir máximos reais):\n\nAs ventoinhas passarão por 7 velocidades (1-3 min: espera que\nestabilizem em cada uma, vai ficar barulhento) medindo as RPM reais.\nCom essa tabela o cap de RPM fica exato. No fim restaura-se sozinho.\nPedirá a tua senha.\n\nContinuar?', zh: '校准风扇（测量真实最大值）：\n\n风扇将经过 7 个速度（1-3 分钟：请等待每个速度\n稳定，声音会很大）测量其真实 RPM。\n有了该表格，RPM 上限将非常精确。完成后会自动恢复。\n将要求输入密码。\n\n是否继续？', ja: 'ファンを校正（実際の最大値を測定）：\n\nファンが 7 段階の速度を通過し（1〜3 分：各段階で安定するまで\n待ってください、大きな音がします）、実際の RPM を測定します。\nその表で RPM 上限が正確になります。終了時に自動で元に戻ります。\nパスワードが要求されます。\n\n続行しますか？', ko: '팬 보정 (실제 최대값 측정):\n\n팬이 7가지 속도를 거치며 (1-3분: 각 속도에서 안정될 때까지\n기다리세요, 소리가 커집니다) 실제 RPM을 측정합니다.\n그 표로 RPM 상한이 정확해집니다. 완료되면 자동으로 복원됩니다.\n비밀번호를 요청합니다.\n\n계속하시겠습니까?' },
+    'confirm.fan_risk': { es: 'ADVERTENCIA: dejaste los ventiladores por debajo del 60% en los puntos más calientes en: {labels}.\n\nEsto puede sobrecalentar y dañar tu equipo bajo carga.\n\n¿Entiendes el riesgo y quieres continuar?', en: 'WARNING: you left the fans below 60% at the hottest points in: {labels}.\n\nThis can overheat and damage your machine under load.\n\nDo you understand the risk and want to continue?', fr: 'AVERTISSEMENT : vous avez laissé les ventilateurs sous 60 % aux points les plus chauds dans : {labels}.\n\nCela peut surchauffer et endommager votre machine sous charge.\n\nComprenez-vous le risque et voulez-vous continuer ?', it: 'ATTENZIONE: hai lasciato le ventole sotto il 60% nei punti più caldi in: {labels}.\n\nQuesto può surriscaldare e danneggiare il tuo computer sotto carico.\n\nCapisci il rischio e vuoi continuare?', pt: 'AVISO: deixaste as ventoinhas abaixo de 60% nos pontos mais quentes em: {labels}.\n\nIsto pode sobreaquecer e danificar o teu equipamento sob carga.\n\nCompreendes o risco e queres continuar?', zh: '警告：您在以下配置的最热点将风扇设置低于 60%：{labels}。\n\n这可能在高负载下导致过热并损坏您的设备。\n\n您是否了解风险并希望继续？', ja: '警告：最も高温になる箇所でファンを 60% 未満にしました：{labels}。\n\n高負荷時に過熱し、機器を損傷する可能性があります。\n\nリスクを理解した上で続行しますか？', ko: '경고: 가장 뜨거운 지점에서 팬을 60% 미만으로 설정했습니다: {labels}.\n\n부하 시 과열되어 장비가 손상될 수 있습니다.\n\n위험을 이해하고 계속하시겠습니까?' },
+    'confirm.import_config': { es: 'Importar una configuración reemplaza tus curvas, cap, calibración, perfiles Aura y umbrales actuales (se guarda un respaldo .pre-import).\n\n¿Continuar?', en: 'Importing a configuration replaces your current curves, cap, calibration, Aura profiles and thresholds (a .pre-import backup is saved).\n\nContinue?', fr: 'Importer une configuration remplace vos courbes, limite, calibration, profils Aura et seuils actuels (une sauvegarde .pre-import est créée).\n\nContinuer ?', it: 'Importare una configurazione sostituisce le tue curve, cap, calibrazione, profili Aura e soglie attuali (viene salvato un backup .pre-import).\n\nContinuare?', pt: 'Importar uma configuração substitui as tuas curvas, cap, calibração, perfis Aura e limiares atuais (é guardado um backup .pre-import).\n\nContinuar?', zh: '导入配置将替换您当前的曲线、上限、校准、Aura 配置和阈值（会保存 .pre-import 备份）。\n\n是否继续？', ja: '設定をインポートすると、現在のカーブ、上限、校正、Aura プロファイル、しきい値が置き換わります（.pre-import バックアップが保存されます）。\n\n続行しますか？', ko: '구성을 가져오면 현재 커브, 상한, 보정, Aura 프로파일 및 임계값이 대체됩니다 (.pre-import 백업이 저장됩니다).\n\n계속하시겠습니까?' },
+    'confirm.kill_proc': { es: '¿Cerrar el proceso "{name}" (PID {pid})?\n\nSe le pedirá terminar de forma ordenada (SIGTERM). Si es una app, perderás lo que no hayas guardado en ella.', en: 'Close the process "{name}" (PID {pid})?\n\nIt will be asked to terminate gracefully (SIGTERM). If it is an app, you will lose anything unsaved in it.', fr: 'Fermer le processus « {name} » (PID {pid}) ?\n\nIl recevra une demande d\'arrêt propre (SIGTERM). Si c\'est une appli, vous perdrez tout ce qui n\'y est pas enregistré.', it: 'Chiudere il processo "{name}" (PID {pid})?\n\nGli verrà chiesto di terminare in modo ordinato (SIGTERM). Se è un\'app, perderai ciò che non hai salvato.', pt: 'Fechar o processo "{name}" (PID {pid})?\n\nSerá pedido para terminar de forma ordenada (SIGTERM). Se for uma app, perderás o que não tiveres guardado nela.', zh: '关闭进程“{name}”（PID {pid}）？\n\n将请求其正常终止（SIGTERM）。如果是应用程序，您将丢失其中未保存的内容。', ja: 'プロセス「{name}」（PID {pid}）を終了しますか？\n\n正常終了（SIGTERM）が要求されます。アプリの場合、保存していない内容が失われます。', ko: '프로세스 "{name}"(PID {pid})을(를) 종료하시겠습니까?\n\n정상 종료(SIGTERM)를 요청합니다. 앱인 경우 저장하지 않은 내용을 잃게 됩니다.' },
+    'confirm.kill_proc_short': { es: '¿Cerrar "{name}" (PID {pid})? Perderás lo no guardado en esa app.', en: 'Close "{name}" (PID {pid})? You will lose anything unsaved in that app.', fr: 'Fermer « {name} » (PID {pid}) ? Vous perdrez tout ce qui n\'est pas enregistré dans cette appli.', it: 'Chiudere "{name}" (PID {pid})? Perderai ciò che non hai salvato in quell\'app.', pt: 'Fechar "{name}" (PID {pid})? Perderás o que não tiveres guardado nessa app.', zh: '关闭“{name}”（PID {pid}）？您将丢失该应用中未保存的内容。', ja: '「{name}」（PID {pid}）を終了しますか？そのアプリの未保存の内容が失われます。', ko: '"{name}"(PID {pid})을(를) 종료하시겠습니까? 해당 앱의 저장하지 않은 내용을 잃게 됩니다.' },
+    'confirm.bench_cpu': { es: 'La CPU se irá al 100% durante 45 segundos. Puede subir bastante la temperatura. ¿Continuar?', en: 'The CPU will hit 100% for 45 seconds. The temperature may rise quite a bit. Continue?', fr: 'Le CPU passera à 100 % pendant 45 secondes. La température peut beaucoup monter. Continuer ?', it: 'La CPU andrà al 100% per 45 secondi. La temperatura può salire parecchio. Continuare?', pt: 'A CPU irá a 100% durante 45 segundos. A temperatura pode subir bastante. Continuar?', zh: 'CPU 将在 45 秒内达到 100%。温度可能会大幅上升。是否继续？', ja: 'CPU が 45 秒間 100% になります。温度がかなり上昇する可能性があります。続行しますか？', ko: 'CPU가 45초 동안 100%로 작동합니다. 온도가 상당히 오를 수 있습니다. 계속하시겠습니까?' },
+    'confirm.bench_gpu': { es: 'La GPU se pondrá al máximo durante 45 segundos (se abrirán varias ventanas de carga que se cierran al terminar). Va a subir la temperatura. ¿Continuar?', en: 'The GPU will run at maximum for 45 seconds (several load windows will open and close when done). The temperature will rise. Continue?', fr: 'Le GPU tournera au maximum pendant 45 secondes (plusieurs fenêtres de charge s\'ouvriront et se fermeront à la fin). La température va monter. Continuer ?', it: 'La GPU andrà al massimo per 45 secondi (si apriranno varie finestre di carico che si chiudono alla fine). La temperatura salirà. Continuare?', pt: 'A GPU irá ao máximo durante 45 segundos (abrir-se-ão várias janelas de carga que fecham no fim). A temperatura vai subir. Continuar?', zh: 'GPU 将在 45 秒内全力运行（会打开多个负载窗口，结束时关闭）。温度将会上升。是否继续？', ja: 'GPU が 45 秒間最大で動作します（複数の負荷ウィンドウが開き、終了時に閉じます）。温度が上昇します。続行しますか？', ko: 'GPU가 45초 동안 최대로 작동합니다 (여러 부하 창이 열렸다가 완료 시 닫힙니다). 온도가 오릅니다. 계속하시겠습니까?' },
+
+    /* ---- gpuSwitchWarning (texto del confirm de cambio de GPU) ---- */
+    'gpu.warn_dgpu_name': { es: 'la {name}', en: 'the {name}', fr: 'la {name}', it: 'la {name}', pt: 'a {name}', zh: '{name}', ja: '{name}', ko: '{name}' },
+    'gpu.warn_dgpu_generic': { es: 'la GPU dedicada', en: 'the dedicated GPU', fr: 'le GPU dédié', it: 'la GPU dedicata', pt: 'a GPU dedicada', zh: '独立 GPU', ja: '専用 GPU', ko: '전용 GPU' },
+    'gpu.warn_mux': { es: 'Modo dGPU (MUX): {gpu} maneja TODO, incluida la pantalla.\n\n✓ Más FPS en juegos\n✗ Mucho más consumo de batería\n✗ Requiere REINICIAR el equipo\n\nGuarda tu trabajo antes de continuar. ¿Solicitar el cambio?', en: 'dGPU mode (MUX): {gpu} drives EVERYTHING, including the display.\n\n✓ More FPS in games\n✗ Much higher battery drain\n✗ Requires a REBOOT\n\nSave your work before continuing. Request the change?', fr: 'Mode dGPU (MUX) : {gpu} gère TOUT, y compris l\'écran.\n\n✓ Plus de FPS en jeu\n✗ Bien plus de consommation de batterie\n✗ Nécessite un REDÉMARRAGE\n\nEnregistrez votre travail avant de continuer. Demander le changement ?', it: 'Modalità dGPU (MUX): {gpu} gestisce TUTTO, incluso lo schermo.\n\n✓ Più FPS nei giochi\n✗ Consumo di batteria molto più alto\n✗ Richiede il RIAVVIO\n\nSalva il tuo lavoro prima di continuare. Richiedere il cambio?', pt: 'Modo dGPU (MUX): {gpu} controla TUDO, incluindo o ecrã.\n\n✓ Mais FPS em jogos\n✗ Muito mais consumo de bateria\n✗ Requer REINICIAR o equipamento\n\nGuarda o teu trabalho antes de continuar. Solicitar a mudança?', zh: 'dGPU 模式（MUX）：{gpu} 处理一切，包括显示。\n\n✓ 游戏中更高的 FPS\n✗ 电池消耗大得多\n✗ 需要重启设备\n\n继续前请保存工作。请求更改？', ja: 'dGPU モード（MUX）：{gpu} がディスプレイを含むすべてを処理します。\n\n✓ ゲームでの FPS 向上\n✗ バッテリー消費が大幅に増加\n✗ 再起動が必要\n\n続行前に作業を保存してください。変更を要求しますか？', ko: 'dGPU 모드(MUX): {gpu}이(가) 디스플레이를 포함한 모든 것을 처리합니다.\n\n✓ 게임에서 더 높은 FPS\n✗ 훨씬 높은 배터리 소모\n✗ 재부팅 필요\n\n계속하기 전에 작업을 저장하세요. 변경을 요청하시겠습니까?' },
+    'gpu.warn_igpu': { es: 'Modo iGPU: se apaga {gpu} para ahorrar batería.\n\nEsto puede cerrar tu sesión gráfica o dejar un cambio pendiente hasta cerrar sesión.\nGuarda tu trabajo antes de continuar. ¿Solicitar el cambio?', en: 'iGPU mode: {gpu} is turned off to save battery.\n\nThis may close your graphical session or leave a change pending until log-out.\nSave your work before continuing. Request the change?', fr: 'Mode iGPU : {gpu} est éteint pour économiser la batterie.\n\nCela peut fermer votre session graphique ou laisser un changement en attente jusqu\'à la déconnexion.\nEnregistrez votre travail avant de continuer. Demander le changement ?', it: 'Modalità iGPU: {gpu} viene spenta per risparmiare batteria.\n\nQuesto può chiudere la sessione grafica o lasciare un cambiamento in sospeso fino al logout.\nSalva il tuo lavoro prima di continuare. Richiedere il cambio?', pt: 'Modo iGPU: {gpu} é desligada para poupar bateria.\n\nIsto pode fechar a tua sessão gráfica ou deixar uma mudança pendente até saíres da sessão.\nGuarda o teu trabalho antes de continuar. Solicitar a mudança?', zh: 'iGPU 模式：关闭 {gpu} 以节省电池。\n\n这可能会关闭您的图形会话，或在注销前保留待定更改。\n继续前请保存工作。请求更改？', ja: 'iGPU モード：バッテリー節約のため {gpu} をオフにします。\n\nグラフィカルセッションが閉じる、またはログアウトまで変更が保留される場合があります。\n続行前に作業を保存してください。変更を要求しますか？', ko: 'iGPU 모드: 배터리 절약을 위해 {gpu}을(를) 끕니다.\n\n그래픽 세션이 종료되거나 로그아웃할 때까지 변경이 보류될 수 있습니다.\n계속하기 전에 작업을 저장하세요. 변경을 요청하시겠습니까?' },
+    'gpu.warn_hybrid': { es: 'Modo Hybrid: escritorio en iGPU + {gpu} para juegos.\n\nEsto puede cerrar tu sesión gráfica o dejar un cambio pendiente hasta cerrar sesión.\nGuarda tu trabajo antes de continuar. ¿Solicitar el cambio?', en: 'Hybrid mode: desktop on iGPU + {gpu} for games.\n\nThis may close your graphical session or leave a change pending until log-out.\nSave your work before continuing. Request the change?', fr: 'Mode Hybrid : bureau sur iGPU + {gpu} pour les jeux.\n\nCela peut fermer votre session graphique ou laisser un changement en attente jusqu\'à la déconnexion.\nEnregistrez votre travail avant de continuer. Demander le changement ?', it: 'Modalità Hybrid: desktop su iGPU + {gpu} per i giochi.\n\nQuesto può chiudere la sessione grafica o lasciare un cambiamento in sospeso fino al logout.\nSalva il tuo lavoro prima di continuare. Richiedere il cambio?', pt: 'Modo Hybrid: ambiente de trabalho na iGPU + {gpu} para jogos.\n\nIsto pode fechar a tua sessão gráfica ou deixar uma mudança pendente até saíres da sessão.\nGuarda o teu trabalho antes de continuar. Solicitar a mudança?', zh: 'Hybrid 模式：桌面使用 iGPU + 游戏使用 {gpu}。\n\n这可能会关闭您的图形会话，或在注销前保留待定更改。\n继续前请保存工作。请求更改？', ja: 'Hybrid モード：デスクトップは iGPU、ゲームは {gpu}。\n\nグラフィカルセッションが閉じる、またはログアウトまで変更が保留される場合があります。\n続行前に作業を保存してください。変更を要求しますか？', ko: 'Hybrid 모드: 데스크톱은 iGPU + 게임은 {gpu}.\n\n그래픽 세션이 종료되거나 로그아웃할 때까지 변경이 보류될 수 있습니다.\n계속하기 전에 작업을 저장하세요. 변경을 요청하시겠습니까?' },
+
+    /* ---- estados de Aura (setAuraStatus / nota / efecto fallback) ---- */
+    'aura.status_music': { es: 'Modo música activo: la iluminación está siendo controlada por el audio.', en: 'Music mode on: the lighting is being driven by the audio.', fr: 'Mode musique activé : l\'éclairage est piloté par l\'audio.', it: 'Modalità musica attiva: l\'illuminazione è guidata dall\'audio.', pt: 'Modo música ativo: a iluminação está a ser controlada pelo áudio.', zh: '音乐模式开启：灯光由音频控制。', ja: 'ミュージックモード：照明が音声によって制御されています。', ko: '음악 모드 켜짐: 조명이 오디오에 의해 제어됩니다.' },
+    'aura.status_dirty': { es: 'Tienes cambios sin aplicar.', en: 'You have unapplied changes.', fr: 'Vous avez des modifications non appliquées.', it: 'Hai modifiche non applicate.', pt: 'Tens alterações por aplicar.', zh: '您有未应用的更改。', ja: '未適用の変更があります。', ko: '적용되지 않은 변경 사항이 있습니다.' },
+    'aura.status_ready': { es: 'Iluminación aplicada y lista.', en: 'Lighting applied and ready.', fr: 'Éclairage appliqué et prêt.', it: 'Illuminazione applicata e pronta.', pt: 'Iluminação aplicada e pronta.', zh: '灯光已应用并就绪。', ja: '照明が適用され、準備完了です。', ko: '조명이 적용되어 준비되었습니다.' },
+    'aura.status_need_setup': { es: 'Primero activa asusd con el botón ACTIVAR AURA.', en: 'First enable asusd with the ENABLE AURA button.', fr: 'Activez d\'abord asusd avec le bouton ACTIVER AURA.', it: 'Prima attiva asusd con il pulsante ATTIVA AURA.', pt: 'Primeiro ativa o asusd com o botão ATIVAR AURA.', zh: '请先用“启用 AURA”按钮启用 asusd。', ja: '先に「AURA を有効化」ボタンで asusd を有効にしてください。', ko: '먼저 "AURA 활성화" 버튼으로 asusd를 활성화하세요.' },
+    'aura.status_apply_failed': { es: 'Aura falló al aplicar.', en: 'Aura failed to apply.', fr: 'Échec de l\'application d\'Aura.', it: 'Applicazione di Aura fallita.', pt: 'O Aura falhou ao aplicar.', zh: 'Aura 应用失败。', ja: 'Aura の適用に失敗しました。', ko: 'Aura 적용에 실패했습니다.' },
+    'aura.status_enabling': { es: 'Activando asusd para Aura…', en: 'Enabling asusd for Aura…', fr: 'Activation d\'asusd pour Aura…', it: 'Attivazione di asusd per Aura…', pt: 'A ativar o asusd para o Aura…', zh: '正在为 Aura 启用 asusd…', ja: 'Aura 用に asusd を有効化中…', ko: 'Aura용 asusd 활성화 중…' },
+    'aura.status_enable_failed': { es: 'No se pudo activar Aura: {err}', en: 'Could not enable Aura: {err}', fr: 'Impossible d\'activer Aura : {err}', it: 'Impossibile attivare Aura: {err}', pt: 'Não foi possível ativar o Aura: {err}', zh: '无法启用 Aura：{err}', ja: 'Aura を有効化できませんでした：{err}', ko: 'Aura를 활성화할 수 없습니다: {err}' },
+    'aura.note_ready': { es: 'Aura lista en {path}. Brillo actual: {b}.', en: 'Aura ready at {path}. Current brightness: {b}.', fr: 'Aura prêt à {path}. Luminosité actuelle : {b}.', it: 'Aura pronta in {path}. Luminosità attuale: {b}.', pt: 'Aura pronta em {path}. Brilho atual: {b}.', zh: 'Aura 已就绪：{path}。当前亮度：{b}。', ja: 'Aura 準備完了：{path}。現在の明るさ：{b}。', ko: 'Aura 준비 완료: {path}. 현재 밝기: {b}.' },
+    'aura.brightness_unknown': { es: 'desconocido', en: 'unknown', fr: 'inconnu', it: 'sconosciuto', pt: 'desconhecido', zh: '未知', ja: '不明', ko: '알 수 없음' },
+    'aura.asusctl_unavailable': { es: 'asusctl no disponible', en: 'asusctl not available', fr: 'asusctl non disponible', it: 'asusctl non disponibile', pt: 'asusctl não disponível', zh: 'asusctl 不可用', ja: 'asusctl は利用できません', ko: 'asusctl를 사용할 수 없습니다' },
+    'aura.effect_fallback': { es: 'efecto', en: 'effect', fr: 'effet', it: 'effetto', pt: 'efeito', zh: '效果', ja: 'エフェクト', ko: '효과' },
+    'aura.applied_ok': { es: 'Aura aplicada ✓', en: 'Aura applied ✓', fr: 'Aura appliqué ✓', it: 'Aura applicata ✓', pt: 'Aura aplicada ✓', zh: 'Aura 已应用 ✓', ja: 'Aura を適用しました ✓', ko: 'Aura가 적용되었습니다 ✓' },
+
+    /* ---- estados de alertas (setAlertsStatus) ---- */
+    'alerts.status_saving': { es: 'Guardando y reiniciando el monitor…', en: 'Saving and restarting the monitor…', fr: 'Enregistrement et redémarrage du moniteur…', it: 'Salvataggio e riavvio del monitor…', pt: 'A guardar e reiniciar o monitor…', zh: '正在保存并重启监视器…', ja: '保存してモニターを再起動中…', ko: '저장하고 모니터를 다시 시작하는 중…' },
+    'alerts.status_save_failed': { es: 'No se pudo guardar.', en: 'Could not save.', fr: 'Impossible d\'enregistrer.', it: 'Impossibile salvare.', pt: 'Não foi possível guardar.', zh: '无法保存。', ja: '保存できませんでした。', ko: '저장할 수 없습니다.' },
+    'alerts.status_saved': { es: 'Guardado y aplicado ✓', en: 'Saved and applied ✓', fr: 'Enregistré et appliqué ✓', it: 'Salvato e applicato ✓', pt: 'Guardado e aplicado ✓', zh: '已保存并应用 ✓', ja: '保存して適用しました ✓', ko: '저장 및 적용되었습니다 ✓' },
+
+    /* ---- benchmark: resumen, estado inline, estados del modal ---- */
+    'bench.summary_none': { es: 'sin resultados', en: 'no results', fr: 'aucun résultat', it: 'nessun risultato', pt: 'sem resultados', zh: '无结果', ja: '結果なし', ko: '결과 없음' },
+    'bench.failed': { es: 'benchmark falló', en: 'benchmark failed', fr: 'le benchmark a échoué', it: 'benchmark fallito', pt: 'o benchmark falhou', zh: '基准测试失败', ja: 'ベンチマークに失敗しました', ko: '벤치마크 실패' },
+    'bench.no_fan_data': { es: 'sin datos de ventiladores', en: 'no fan data', fr: 'pas de données de ventilateurs', it: 'nessun dato ventole', pt: 'sem dados de ventoinhas', zh: '无风扇数据', ja: 'ファンデータなし', ko: '팬 데이터 없음' },
+    'bench.summary_cpu_max': { es: 'CPU máx: {temp}°C · paquete {pkg}°C · {watts} W', en: 'CPU max: {temp}°C · package {pkg}°C · {watts} W', fr: 'CPU max : {temp}°C · package {pkg}°C · {watts} W', it: 'CPU max: {temp}°C · package {pkg}°C · {watts} W', pt: 'CPU máx: {temp}°C · package {pkg}°C · {watts} W', zh: 'CPU 最高：{temp}°C · 封装 {pkg}°C · {watts} W', ja: 'CPU 最大：{temp}°C · パッケージ {pkg}°C · {watts} W', ko: 'CPU 최대: {temp}°C · 패키지 {pkg}°C · {watts} W' },
+    'bench.summary_gpu_max': { es: 'GPU máx: {temp}°C · {watts} W · uso {util}%', en: 'GPU max: {temp}°C · {watts} W · usage {util}%', fr: 'GPU max : {temp}°C · {watts} W · utilisation {util}%', it: 'GPU max: {temp}°C · {watts} W · utilizzo {util}%', pt: 'GPU máx: {temp}°C · {watts} W · uso {util}%', zh: 'GPU 最高：{temp}°C · {watts} W · 使用率 {util}%', ja: 'GPU 最大：{temp}°C · {watts} W · 使用率 {util}%', ko: 'GPU 최대: {temp}°C · {watts} W · 사용률 {util}%' },
+    'bench.summary_throttle': { es: 'Throttling: {events} eventos · {ms} ms', en: 'Throttling: {events} events · {ms} ms', fr: 'Throttling : {events} événements · {ms} ms', it: 'Throttling: {events} eventi · {ms} ms', pt: 'Throttling: {events} eventos · {ms} ms', zh: '降频：{events} 次事件 · {ms} ms', ja: 'スロットリング：{events} 回 · {ms} ms', ko: '스로틀링: {events}회 · {ms} ms' },
+    'bench.summary_fans': { es: 'Ventiladores: {fans}', en: 'Fans: {fans}', fr: 'Ventilateurs : {fans}', it: 'Ventole: {fans}', pt: 'Ventoinhas: {fans}', zh: '风扇：{fans}', ja: 'ファン：{fans}', ko: '팬: {fans}' },
+    'bench.summary_cap': { es: 'Tope RPM: {caps} → {result}', en: 'RPM cap: {caps} → {result}', fr: 'Limite RPM : {caps} → {result}', it: 'Limite RPM: {caps} → {result}', pt: 'Cap RPM: {caps} → {result}', zh: 'RPM 上限：{caps} → {result}', ja: 'RPM 上限：{caps} → {result}', ko: 'RPM 상한: {caps} → {result}' },
+    'bench.cap_respected': { es: 'respetado ✓', en: 'respected ✓', fr: 'respecté ✓', it: 'rispettato ✓', pt: 'respeitado ✓', zh: '已遵守 ✓', ja: '遵守 ✓', ko: '준수됨 ✓' },
+    'bench.cap_exceeded': { es: 'EXCEDIDO ✗', en: 'EXCEEDED ✗', fr: 'DÉPASSÉ ✗', it: 'SUPERATO ✗', pt: 'EXCEDIDO ✗', zh: '已超出 ✗', ja: '超過 ✗', ko: '초과됨 ✗' },
+    'bench.inline_empty': { es: 'Sin benchmarks en esta sesión.', en: 'No benchmarks in this session.', fr: 'Aucun benchmark dans cette session.', it: 'Nessun benchmark in questa sessione.', pt: 'Sem benchmarks nesta sessão.', zh: '本次会话没有基准测试。', ja: 'このセッションにベンチマークはありません。', ko: '이 세션에 벤치마크가 없습니다.' },
+    'bench.inline_cpu': { es: 'CPU {temp}°C · {watts} W · throttle {events} — {when}', en: 'CPU {temp}°C · {watts} W · throttle {events} — {when}', fr: 'CPU {temp}°C · {watts} W · throttle {events} — {when}', it: 'CPU {temp}°C · {watts} W · throttle {events} — {when}', pt: 'CPU {temp}°C · {watts} W · throttle {events} — {when}', zh: 'CPU {temp}°C · {watts} W · 降频 {events} — {when}', ja: 'CPU {temp}°C · {watts} W · スロットル {events} — {when}', ko: 'CPU {temp}°C · {watts} W · 스로틀 {events} — {when}' },
+    'bench.inline_gpu': { es: 'GPU {temp}°C · {watts} W — {when}', en: 'GPU {temp}°C · {watts} W — {when}', fr: 'GPU {temp}°C · {watts} W — {when}', it: 'GPU {temp}°C · {watts} W — {when}', pt: 'GPU {temp}°C · {watts} W — {when}', zh: 'GPU {temp}°C · {watts} W — {when}', ja: 'GPU {temp}°C · {watts} W — {when}', ko: 'GPU {temp}°C · {watts} W — {when}' },
+    'bench.running': { es: 'Corriendo benchmark {kind}…', en: 'Running {kind} benchmark…', fr: 'Benchmark {kind} en cours…', it: 'Benchmark {kind} in corso…', pt: 'A correr benchmark {kind}…', zh: '正在运行 {kind} 基准测试…', ja: '{kind} ベンチマークを実行中…', ko: '{kind} 벤치마크 실행 중…' },
+    'bench.sampling': { es: 'Tomando muestras térmicas…', en: 'Taking thermal samples…', fr: 'Prise d\'échantillons thermiques…', it: 'Acquisizione campioni termici…', pt: 'A recolher amostras térmicas…', zh: '正在采集热样本…', ja: '熱サンプルを取得中…', ko: '열 샘플 수집 중…' },
+    'bench.done_kind': { es: '{kind} terminado.', en: '{kind} finished.', fr: '{kind} terminé.', it: '{kind} terminato.', pt: '{kind} terminado.', zh: '{kind} 已完成。', ja: '{kind} が完了しました。', ko: '{kind} 완료.' },
+    'bench.unavailable_kind': { es: 'Benchmark {kind} no disponible.', en: 'Benchmark {kind} not available.', fr: 'Benchmark {kind} non disponible.', it: 'Benchmark {kind} non disponibile.', pt: 'Benchmark {kind} não disponível.', zh: '{kind} 基准测试不可用。', ja: '{kind} ベンチマークは利用できません。', ko: '{kind} 벤치마크를 사용할 수 없습니다.' },
+    'bench.done_toast': { es: 'Benchmark {kind} terminado ✓', en: 'Benchmark {kind} finished ✓', fr: 'Benchmark {kind} terminé ✓', it: 'Benchmark {kind} terminato ✓', pt: 'Benchmark {kind} terminado ✓', zh: '{kind} 基准测试已完成 ✓', ja: '{kind} ベンチマークが完了しました ✓', ko: '{kind} 벤치마크 완료 ✓' },
+    'bench.failed_toast': { es: 'Benchmark {kind} falló', en: 'Benchmark {kind} failed', fr: 'Le benchmark {kind} a échoué', it: 'Benchmark {kind} fallito', pt: 'O benchmark {kind} falhou', zh: '{kind} 基准测试失败', ja: '{kind} ベンチマークに失敗しました', ko: '{kind} 벤치마크 실패' },
+    'bench.exported': { es: 'Benchmark guardado en {path}', en: 'Benchmark saved to {path}', fr: 'Benchmark enregistré dans {path}', it: 'Benchmark salvato in {path}', pt: 'Benchmark guardado em {path}', zh: '基准测试已保存到 {path}', ja: 'ベンチマークを {path} に保存しました', ko: '벤치마크를 {path}에 저장했습니다' },
+    'bench.export_failed': { es: 'No se exportó: {err}', en: 'Not exported: {err}', fr: 'Non exporté : {err}', it: 'Non esportato: {err}', pt: 'Não exportado: {err}', zh: '未导出：{err}', ja: 'エクスポートされませんでした：{err}', ko: '내보내지 않음: {err}' },
+
+    /* ---- fan: calibración y guardado ---- */
+    'fan.calib_done': { es: 'Calibración lista ✓ Máximos reales: {max} RPM', en: 'Calibration ready ✓ Real maxima: {max} RPM', fr: 'Calibration prête ✓ Maxima réels : {max} RPM', it: 'Calibrazione pronta ✓ Massimi reali: {max} RPM', pt: 'Calibração pronta ✓ Máximos reais: {max} RPM', zh: '校准完成 ✓ 真实最大值：{max} RPM', ja: 'キャリブレーション完了 ✓ 実測最大値：{max} RPM', ko: '캘리브레이션 완료 ✓ 실측 최대값: {max} RPM' },
+    'fan.saved_ok': { es: 'Guardado ✓ {labels} — cada perfil con su propio tope (persiste al reiniciar).', en: 'Saved ✓ {labels} — each profile with its own cap (persists across reboots).', fr: 'Enregistré ✓ {labels} — chaque profil avec sa propre limite (persiste au redémarrage).', it: 'Salvato ✓ {labels} — ogni profilo con il proprio limite (persiste al riavvio).', pt: 'Guardado ✓ {labels} — cada perfil com o seu próprio cap (persiste ao reiniciar).', zh: '已保存 ✓ {labels} — 每个配置都有自己的上限（重启后保留）。', ja: '保存しました ✓ {labels} — 各プロファイルに独自の上限（再起動後も保持）。', ko: '저장됨 ✓ {labels} — 각 프로파일마다 고유한 상한 (재부팅 후에도 유지).' },
+
+    /* ---- config export / import (toasts) ---- */
+    'config.exported': { es: 'Configuración exportada a {path}\n({items})', en: 'Configuration exported to {path}\n({items})', fr: 'Configuration exportée vers {path}\n({items})', it: 'Configurazione esportata in {path}\n({items})', pt: 'Configuração exportada para {path}\n({items})', zh: '配置已导出到 {path}\n（{items}）', ja: '設定を {path} にエクスポートしました\n（{items}）', ko: '구성을 {path}에 내보냈습니다\n({items})' },
+    'config.export_cancelled': { es: 'Exportación cancelada', en: 'Export cancelled', fr: 'Exportation annulée', it: 'Esportazione annullata', pt: 'Exportação cancelada', zh: '导出已取消', ja: 'エクスポートをキャンセルしました', ko: '내보내기 취소됨' },
+    'config.export_failed': { es: 'No se exportó: {err}', en: 'Not exported: {err}', fr: 'Non exporté : {err}', it: 'Non esportato: {err}', pt: 'Não exportado: {err}', zh: '未导出：{err}', ja: 'エクスポートされませんでした：{err}', ko: '내보내지 않음: {err}' },
+    'config.import_cancelled': { es: 'Importación cancelada', en: 'Import cancelled', fr: 'Importation annulée', it: 'Importazione annullata', pt: 'Importação cancelada', zh: '导入已取消', ja: 'インポートをキャンセルしました', ko: '가져오기 취소됨' },
+    'config.import_failed': { es: 'No se importó: {err}', en: 'Not imported: {err}', fr: 'Non importé : {err}', it: 'Non importato: {err}', pt: 'Não importado: {err}', zh: '未导入：{err}', ja: 'インポートされませんでした：{err}', ko: '가져오지 않음: {err}' },
+    'config.imported': { es: 'Importado: {items} ✓\nAbre VENTILADORES → GUARDAR Y APLICAR para mandar las curvas al sistema.', en: 'Imported: {items} ✓\nOpen FANS → SAVE & APPLY to push the curves to the system.', fr: 'Importé : {items} ✓\nOuvrez VENTILATEURS → ENREGISTRER & APPLIQUER pour envoyer les courbes au système.', it: 'Importato: {items} ✓\nApri VENTOLE → SALVA E APPLICA per inviare le curve al sistema.', pt: 'Importado: {items} ✓\nAbre VENTOINHAS → GUARDAR E APLICAR para enviar as curvas ao sistema.', zh: '已导入：{items} ✓\n打开“风扇”→“保存并应用”将曲线发送到系统。', ja: 'インポートしました：{items} ✓\n「ファン」→「保存して適用」を開いてカーブをシステムに送信してください。', ko: '가져옴: {items} ✓\n"팬" → "저장 및 적용"을 열어 커브를 시스템에 전송하세요.' },
+    'config.current_lang': { es: 'Idioma: {lang}', en: 'Language: {lang}', fr: 'Langue : {lang}', it: 'Lingua: {lang}', pt: 'Idioma: {lang}', zh: '语言：{lang}', ja: '言語：{lang}', ko: '언어: {lang}' },
+
+    /* ---- kill process (toasts) ---- */
+    'proc.kill_sent': { es: 'Señal de cierre enviada a {name}', en: 'Close signal sent to {name}', fr: 'Signal de fermeture envoyé à {name}', it: 'Segnale di chiusura inviato a {name}', pt: 'Sinal de fecho enviado para {name}', zh: '已向 {name} 发送关闭信号', ja: '{name} に終了シグナルを送信しました', ko: '{name}에 종료 신호를 보냈습니다' },
+    'proc.kill_failed': { es: 'No se pudo: {err}', en: 'Could not: {err}', fr: 'Impossible : {err}', it: 'Impossibile: {err}', pt: 'Não foi possível: {err}', zh: '无法执行：{err}', ja: '実行できませんでした：{err}', ko: '실행할 수 없습니다: {err}' },
+
+    /* ---- export events (toasts) ---- */
+    'events.exported': { es: 'Eventos guardados en {path}', en: 'Events saved to {path}', fr: 'Événements enregistrés dans {path}', it: 'Eventi salvati in {path}', pt: 'Eventos guardados em {path}', zh: '事件已保存到 {path}', ja: 'イベントを {path} に保存しました', ko: '이벤트를 {path}에 저장했습니다' },
+    'events.export_failed': { es: 'No se exportó: {err}', en: 'Not exported: {err}', fr: 'Non exporté : {err}', it: 'Non esportato: {err}', pt: 'Não exportado: {err}', zh: '未导出：{err}', ja: 'エクスポートされませんでした：{err}', ko: '내보내지 않음: {err}' },
+  });
+}
+
 let lastStats = null;
 let gpuBusy = false;
 // Perfil de energía "pendiente": al hacer clic mantenemos resaltado el perfil
@@ -477,11 +573,11 @@ function setAuraStatus(message, kind = '') {
 function markAuraDirty(dirty, reason = '') {
   auraDirty = dirty;
   if (musicModeActive) {
-    setAuraStatus('Modo música activo: la iluminación está siendo controlada por el audio.', 'status-live');
+    setAuraStatus(t('aura.status_music'), 'status-live');
     return;
   }
-  if (dirty) setAuraStatus(reason || 'Tienes cambios sin aplicar.', 'status-dirty');
-  else if (auraState?.current) setAuraStatus('Iluminación aplicada y lista.', 'status-ok');
+  if (dirty) setAuraStatus(reason || t('aura.status_dirty'), 'status-dirty');
+  else if (auraState?.current) setAuraStatus(t('aura.status_ready'), 'status-ok');
   else setAuraStatus('');
 }
 
@@ -604,8 +700,8 @@ function renderAura(aura, resetForm = false) {
   }
 
   note.textContent = aura.asus?.available
-    ? `Aura lista en ${aura.config_path}. Brillo actual: ${aura.asus.current_brightness || 'desconocido'}.`
-    : (aura.asus?.hint || 'asusctl no disponible');
+    ? t('aura.note_ready', { path: aura.config_path, b: aura.asus.current_brightness || t('aura.brightness_unknown') })
+    : (aura.asus?.hint || t('aura.asusctl_unavailable'));
   const setupBtn = $('aura-setup');
   if (aura.setup?.needsSetup) {
     setupBtn.classList.remove('hidden');
@@ -623,7 +719,7 @@ function renderAura(aura, resetForm = false) {
   $('aura-music').disabled = !(aura.music?.available && aura.asus?.available);
   syncAuraFields();
   if (!musicModeActive && !auraDirty) {
-    setAuraStatus(aura.current ? 'Iluminación aplicada y lista.' : '', aura.current ? 'status-ok' : '');
+    setAuraStatus(aura.current ? t('aura.status_ready') : '', aura.current ? 'status-ok' : '');
   }
 }
 
@@ -639,7 +735,7 @@ function selectedAuraProfile() {
 }
 
 function effectLabel(id) {
-  return auraState?.asus?.effects?.find((fx) => fx.id === id)?.label || id || 'efecto';
+  return auraState?.asus?.effects?.find((fx) => fx.id === id)?.label || id || t('aura.effect_fallback');
 }
 
 function renderAuraProfileList(profiles, selected, startupProfile) {
@@ -667,9 +763,10 @@ function escapeHtml(s) {
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-async function applyAuraState(state, successMessage = 'Aura aplicada ✓') {
+async function applyAuraState(state, successMessage) {
+  if (successMessage === undefined) successMessage = t('aura.applied_ok');
   if (auraState?.setup?.needsSetup) {
-    setAuraStatus('Primero activa asusd con el botón ACTIVAR AURA.', 'status-dirty');
+    setAuraStatus(t('aura.status_need_setup'), 'status-dirty');
     toast(t('toast.aura_not_ready'));
     return null;
   }
@@ -684,7 +781,7 @@ async function applyAuraState(state, successMessage = 'Aura aplicada ✓') {
   }
   const res = await window.rog.applyAura(state);
   if (!res.ok) {
-    setAuraStatus(res.err || 'Aura falló al aplicar.', 'status-dirty');
+    setAuraStatus(res.err || t('aura.status_apply_failed'), 'status-dirty');
     toast(`Aura: ${res.err}`);
     return null;
   }
@@ -698,22 +795,22 @@ async function applyAuraState(state, successMessage = 'Aura aplicada ✓') {
 }
 
 function benchmarkSummaryText(result) {
-  if (!result) return 'sin resultados';
-  if (!result.ok) return result.err || 'benchmark falló';
+  if (!result) return t('bench.summary_none');
+  if (!result.ok) return result.err || t('bench.failed');
   const s = result.summary || {};
   const fanText = Object.entries(s.fan_rpm_max || {})
-    .map(([k, v]) => `${k}: ${v} RPM`).join(' · ') || 'sin datos de ventiladores';
+    .map(([k, v]) => `${k}: ${v} RPM`).join(' · ') || t('bench.no_fan_data');
   const lines = [
     `${result.kind.toUpperCase()} · ${result.tool} · ${result.seconds}s`,
-    `CPU máx: ${fmt(s.cpu_temp_max, 1)}°C · paquete ${fmt(s.cpu_package_max, 1)}°C · ${fmt(s.cpu_watts_max, 1)} W`,
-    `GPU máx: ${fmt(s.gpu_temp_max, 1)}°C · ${fmt(s.gpu_watts_max, 1)} W · uso ${fmt(s.gpu_util_max, 0)}%`,
-    `Throttling: ${s.throttle_events ?? 0} eventos · ${s.throttle_ms ?? 0} ms`,
-    `Ventiladores: ${fanText}`,
+    t('bench.summary_cpu_max', { temp: fmt(s.cpu_temp_max, 1), pkg: fmt(s.cpu_package_max, 1), watts: fmt(s.cpu_watts_max, 1) }),
+    t('bench.summary_gpu_max', { temp: fmt(s.gpu_temp_max, 1), watts: fmt(s.gpu_watts_max, 1), util: fmt(s.gpu_util_max, 0) }),
+    t('bench.summary_throttle', { events: s.throttle_events ?? 0, ms: s.throttle_ms ?? 0 }),
+    t('bench.summary_fans', { fans: fanText }),
   ];
   if (s.fan_cap) {
     const capText = Object.entries(s.fan_cap).map(([k, c]) =>
       `${k.replace('_fan', '').toUpperCase()} ${c.max ?? '--'}/${c.cap}`).join(' · ');
-    lines.push(`Tope RPM: ${capText} → ${s.cap_respected ? 'respetado ✓' : 'EXCEDIDO ✗'}`);
+    lines.push(t('bench.summary_cap', { caps: capText, result: s.cap_respected ? t('bench.cap_respected') : t('bench.cap_exceeded') }));
   }
   return lines.join('\n');
 }
@@ -966,7 +1063,7 @@ function renderBenchmarkHistory() {
   const host = $('bench-history');
   if (!benchmarkHistory.length) {
     host.innerHTML = '<li class="bench-empty">sin historial</li>';
-    $('bench-inline-status').textContent = 'Sin benchmarks en esta sesión.';
+    $('bench-inline-status').textContent = t('bench.inline_empty');
     updateBenchClearAllVisibility();
     return;
   }
@@ -1028,10 +1125,10 @@ function renderBenchmarkHistory() {
   const first = items[0];
   const s = first.summary || {};
   const statusText = first.kind === 'cpu'
-    ? `CPU ${fmt(s.cpu_temp_max, 1)}°C · ${fmt(s.cpu_watts_max, 1)} W · throttle ${s.throttle_events ?? 0} — ${first.when}`
+    ? t('bench.inline_cpu', { temp: fmt(s.cpu_temp_max, 1), watts: fmt(s.cpu_watts_max, 1), events: s.throttle_events ?? 0, when: first.when })
     : first._legacyText
       ? first._legacyText
-      : `GPU ${fmt(s.gpu_temp_max, 1)}°C · ${fmt(s.gpu_watts_max, 1)} W — ${first.when}`;
+      : t('bench.inline_gpu', { temp: fmt(s.gpu_temp_max, 1), watts: fmt(s.gpu_watts_max, 1), when: first.when });
   $('bench-inline-status').textContent = statusText;
 }
 
@@ -1073,7 +1170,7 @@ function deleteBenchmarkItem(id) {
 
 function clearAllBenchmarkHistory() {
   if (!benchmarkHistory.length) return;
-  if (!window.confirm('¿Borrar TODOS los benchmarks anteriores? Esta acción no se puede deshacer.')) return;
+  if (!confirmT('confirm.bench_clear_all')) return;
   benchmarkHistory = [];
   _saveBenchmarkHistory();
   renderBenchmarkHistory();
@@ -1156,22 +1253,10 @@ function gpuPendingActionText(action, mode) {
 }
 
 function gpuSwitchWarning(mode) {
-  const gpu = dgpuName ? `la ${dgpuName}` : 'la GPU dedicada';
-  if (mode === 'AsusMuxDgpu') {
-    return `Modo dGPU (MUX): ${gpu} maneja TODO, incluida la pantalla.\n\n` +
-      '✓ Más FPS en juegos\n' +
-      '✗ Mucho más consumo de batería\n' +
-      '✗ Requiere REINICIAR el equipo\n\n' +
-      'Guarda tu trabajo antes de continuar. ¿Solicitar el cambio?';
-  }
-  if (mode === 'Integrated') {
-    return `Modo iGPU: se apaga ${gpu} para ahorrar batería.\n\n` +
-      'Esto puede cerrar tu sesión gráfica o dejar un cambio pendiente hasta cerrar sesión.\n' +
-      'Guarda tu trabajo antes de continuar. ¿Solicitar el cambio?';
-  }
-  return `Modo Hybrid: escritorio en iGPU + ${gpu} para juegos.\n\n` +
-    'Esto puede cerrar tu sesión gráfica o dejar un cambio pendiente hasta cerrar sesión.\n' +
-    'Guarda tu trabajo antes de continuar. ¿Solicitar el cambio?';
+  const gpu = dgpuName ? t('gpu.warn_dgpu_name', { name: dgpuName }) : t('gpu.warn_dgpu_generic');
+  if (mode === 'AsusMuxDgpu') return t('gpu.warn_mux', { gpu });
+  if (mode === 'Integrated') return t('gpu.warn_igpu', { gpu });
+  return t('gpu.warn_hybrid', { gpu });
 }
 
 function gpuRequestToast(mode, res) {
@@ -1486,9 +1571,9 @@ $('maint-reinstall')?.addEventListener('click', async () => {
 $('maint-uninstall')?.addEventListener('click', async () => {
   const purge = $('maint-purge').checked;
   const msg = purge
-    ? '¿Desinstalar ROG Monitor Y BORRAR tus configuraciones? No se puede deshacer.'
-    : '¿Desinstalar ROG Monitor? (se conservan tus configuraciones)';
-  if (!window.confirm(msg + '\n\nSe pedirá tu contraseña para quitar las integraciones de sistema.')) return;
+    ? t('confirm.uninstall_purge')
+    : t('confirm.uninstall_keep');
+  if (!window.confirm(msg + t('confirm.uninstall_pw_note'))) return;
   maintStatus('Desinstalando… (puede pedir contraseña)');
   const res = await window.rog.uninstallApp({ purge });
   if (res.ok) {
@@ -1591,6 +1676,18 @@ if (window.i18n) {
   window.i18n.onChange((lang) => {
     window.i18n.apply();
     buildLangGrid();
+    // Re-pintar contenido dinámico ya visible (estados que no son data-i18n).
+    // Cada llamada va protegida: un elemento/estado ausente nunca debe lanzar.
+    try { if (typeof auraState !== 'undefined' && auraState) renderAura(auraState); } catch (_) {}
+    try { if (typeof renderBenchmarkHistory === 'function') renderBenchmarkHistory(); } catch (_) {}
+    try {
+      // Modal de benchmark abierto: re-pinta resumen y estado del último resultado.
+      const bm = $('benchmark-modal');
+      if (bm && !bm.classList.contains('hidden') && typeof benchmarkResult !== 'undefined' && benchmarkResult) {
+        $('bench-output').textContent = benchmarkSummaryText(benchmarkResult);
+      }
+    } catch (_) {}
+    try { if (typeof lastStats !== 'undefined' && lastStats) update(lastStats); } catch (_) {}
     if (window.rog?.saveSettings) {
       clearTimeout(langSaveTimer); // ponytail: debounce — reinicia el backend una sola vez
       langSaveTimer = setTimeout(() => window.rog.saveSettings({ lang }), 400);
@@ -1709,15 +1806,15 @@ $('alerts-save').addEventListener('click', async () => {
     },
     notifications: $('set-notifications').checked,
   };
-  setAlertsStatus('Guardando y reiniciando el monitor…', 'status-live');
+  setAlertsStatus(t('alerts.status_saving'), 'status-live');
   const res = await window.rog.saveSettings(payload);
   if (!res.ok) {
-    setAlertsStatus(res.err || 'No se pudo guardar.', 'status-dirty');
+    setAlertsStatus(res.err || t('alerts.status_save_failed'), 'status-dirty');
     toast(`Ajustes: ${res.err}`);
     return;
   }
   fillAlertsForm(res);
-  setAlertsStatus('Guardado y aplicado ✓', 'status-ok');
+  setAlertsStatus(t('alerts.status_saved'), 'status-ok');
   toast(t('toast.thresholds_saved'));
 });
 
@@ -1791,13 +1888,11 @@ $('aura-profile-select').addEventListener('change', () => {
 });
 
 $('aura-setup').addEventListener('click', async () => {
-  if (!window.confirm(
-    'Esto configurará y arrancará asusd para Aura sin apagar rog-profile-sync.\n\n' +
-    'Pedirá tu contraseña de administrador. ¿Continuar?')) return;
-  setAuraStatus('Activando asusd para Aura…', 'status-live');
+  if (!confirmT('confirm.aura_setup')) return;
+  setAuraStatus(t('aura.status_enabling'), 'status-live');
   const res = await window.rog.enableAuraService();
   if (!res.ok) {
-    setAuraStatus(`No se pudo activar Aura: ${res.err}`, 'status-dirty');
+    setAuraStatus(t('aura.status_enable_failed', { err: res.err }), 'status-dirty');
     toast(`Aura: ${res.err}`);
     return;
   }
@@ -1806,7 +1901,7 @@ $('aura-setup').addEventListener('click', async () => {
 });
 
 $('aura-apply').addEventListener('click', async () => {
-  await applyAuraState(currentAuraFormState(), 'Aura aplicada ✓');
+  await applyAuraState(currentAuraFormState(), t('aura.applied_ok'));
 });
 
 $('aura-save-profile').addEventListener('click', async () => {
@@ -1838,7 +1933,7 @@ $('aura-profile-list').addEventListener('click', async (e) => {
   const action = e.target.closest('[data-act]')?.dataset.act;
 
   if (action === 'delete') {
-    if (!window.confirm(`¿Borrar el perfil "${name}"? Esta acción no se puede deshacer.`)) return;
+    if (!confirmT('confirm.delete_profile', { name })) return;
     const res = await window.rog.deleteAuraProfile(name);
     if (!res.ok) { toast(`No se borró: ${res.err}`); return; }
     if (auraProfileSelection === name) auraProfileSelection = '';
@@ -1904,12 +1999,9 @@ $('procs-body').addEventListener('click', async (e) => {
   const row = e.target.closest('tr[data-pid]');
   if (!row) return;
   const { pid, name } = row.dataset;
-  if (!window.confirm(
-    `¿Cerrar el proceso "${name}" (PID ${pid})?\n\n` +
-    'Se le pedirá terminar de forma ordenada (SIGTERM). ' +
-    'Si es una app, perderás lo que no hayas guardado en ella.')) return;
+  if (!confirmT('confirm.kill_proc', { name, pid })) return;
   const res = await window.rog.killProcess(pid);
-  toast(res.ok ? `Señal de cierre enviada a ${name}` : `No se pudo: ${res.err}`);
+  toast(res.ok ? t('proc.kill_sent', { name }) : t('proc.kill_failed', { err: res.err }));
 });
 
 /* ---------- fan control center — con selector de perfil (Task 1 / C3) ---------- */
@@ -2525,12 +2617,7 @@ $('fan-dirty-jump').addEventListener('click', () => {
 });
 
 $('fan-benchmark').addEventListener('click', async () => {
-  if (!window.confirm(
-    'Calibrar ventiladores (medir máximos reales):\n\n' +
-    'Los ventiladores pasarán por 7 velocidades (1-3 min: espera a que\n' +
-    'estabilicen en cada una, va a sonar fuerte) midiendo sus RPM reales.\n' +
-    'Con esa tabla el tope de RPM cae exacto. Al terminar se restaura solo.\n' +
-    'Pedirá tu contraseña.\n\n¿Continuar?')) return;
+  if (!confirmT('confirm.fan_calibrate')) return;
   toast(t('toast.calibrating'));
   const res = await window.rog.fanBenchmark();
   if (!res.ok) { toast(`No se pudo: ${res.err}`); return; }
@@ -2543,7 +2630,7 @@ $('fan-benchmark').addEventListener('click', async () => {
   });
   renderCurves();
   refreshFanNotes();
-  toast(`Calibración lista ✓ Máximos reales: ${fanMaxSummary()} RPM`);
+  toast(t('fan.calib_done', { max: fanMaxSummary() }));
 });
 
 $('fan-save').addEventListener('click', async () => {
@@ -2565,11 +2652,7 @@ $('fan-save').addEventListener('click', async () => {
     });
     if (risky) riskyLabels.push(fanProfileLabel(p));
   }
-  if (riskyLabels.length && !window.confirm(
-    'ADVERTENCIA: dejaste los ventiladores por debajo del 60% en los puntos ' +
-    'más calientes en: ' + riskyLabels.join(', ') + '.\n\n' +
-    'Esto puede sobrecalentar y dañar tu equipo bajo carga.\n\n' +
-    '¿Entiendes el riesgo y quieres continuar?')) return;
+  if (riskyLabels.length && !confirmT('confirm.fan_risk', { labels: riskyLabels.join(', ') })) return;
 
   // Un solo guardado (un solo pkexec) con todos los perfiles editados, cada
   // uno con su propio tope independiente.
@@ -2584,8 +2667,7 @@ $('fan-save').addEventListener('click', async () => {
   $('fan-modal').classList.add('hidden');
   clearFanDirty();
   const labels = profiles.map(fanProfileLabel).join(', ');
-  toast(res.warn ? res.warn
-    : `Guardado ✓ ${labels} — cada perfil con su propio tope (persiste al reiniciar).`);
+  toast(res.warn ? res.warn : t('fan.saved_ok', { labels }));
 });
 
 /* ---------- config export / import ---------- */
@@ -2593,20 +2675,18 @@ $('fan-save').addEventListener('click', async () => {
 $('config-export').addEventListener('click', async () => {
   const res = await window.rog.exportConfig();
   toast(res.ok
-    ? `Configuración exportada a ${res.path}\n(${res.items.join(', ')})`
-    : (res.err === 'cancelado' ? 'Exportación cancelada' : `No se exportó: ${res.err}`));
+    ? t('config.exported', { path: res.path, items: res.items.join(', ') })
+    : (res.err === 'cancelado' ? t('config.export_cancelled') : t('config.export_failed', { err: res.err })));
 });
 
 $('config-import').addEventListener('click', async () => {
-  if (!window.confirm(
-    'Importar una configuración reemplaza tus curvas, cap, calibración, perfiles ' +
-    'Aura y umbrales actuales (se guarda un respaldo .pre-import).\n\n¿Continuar?')) return;
+  if (!confirmT('confirm.import_config')) return;
   const res = await window.rog.importConfig();
   if (!res.ok) {
-    toast(res.err === 'cancelado' ? 'Importación cancelada' : `No se importó: ${res.err}`);
+    toast(res.err === 'cancelado' ? t('config.import_cancelled') : t('config.import_failed', { err: res.err }));
     return;
   }
-  toast(`Importado: ${res.items.join(', ')} ✓\nAbre VENTILADORES → GUARDAR Y APLICAR para mandar las curvas al sistema.`);
+  toast(t('config.imported', { items: res.items.join(', ') }));
   $('fan-modal').classList.add('hidden');
   await refreshAuraState(true);
 });
@@ -2749,9 +2829,9 @@ $('ram-procs-body').addEventListener('click', async (e) => {
   const row = e.target.closest('tr[data-pid]');
   if (!row) return;
   const { pid, name } = row.dataset;
-  if (!window.confirm(`¿Cerrar "${name}" (PID ${pid})? Perderás lo no guardado en esa app.`)) return;
+  if (!confirmT('confirm.kill_proc_short', { name, pid })) return;
   const res = await window.rog.killProcess(pid);
-  toast(res.ok ? `Señal de cierre enviada a ${name}` : `No se pudo: ${res.err}`);
+  toast(res.ok ? t('proc.kill_sent', { name }) : t('proc.kill_failed', { err: res.err }));
 });
 
 /* ---------- disk health ---------- */
@@ -2820,27 +2900,24 @@ function closeBenchmarkModal() {
 
 async function runBenchmark(kind) {
   if (benchBusy) return;
-  const warning = kind === 'cpu'
-    ? 'La CPU se irá al 100% durante 45 segundos. Puede subir bastante la temperatura. ¿Continuar?'
-    : 'La GPU se pondrá al máximo durante 45 segundos (se abrirán varias ventanas de carga que se cierran al terminar). Va a subir la temperatura. ¿Continuar?';
-  if (!window.confirm(warning)) return;
+  if (!confirmT(kind === 'cpu' ? 'confirm.bench_cpu' : 'confirm.bench_gpu')) return;
   benchBusy = true;
-  $('bench-status').textContent = `Corriendo benchmark ${kind.toUpperCase()}…`;
-  $('bench-output').textContent = 'Tomando muestras térmicas…';
+  $('bench-status').textContent = t('bench.running', { kind: kind.toUpperCase() });
+  $('bench-output').textContent = t('bench.sampling');
   const res = kind === 'cpu'
     ? await window.rog.cpuBenchmark(45)
     : await window.rog.gpuBenchmark(45);
   benchBusy = false;
   benchmarkResult = res;
   $('bench-status').textContent = res.ok
-    ? `${kind.toUpperCase()} terminado.`
-    : `Benchmark ${kind.toUpperCase()} no disponible.`;
+    ? t('bench.done_kind', { kind: kind.toUpperCase() })
+    : t('bench.unavailable_kind', { kind: kind.toUpperCase() });
   $('bench-output').textContent = benchmarkSummaryText(res);
   if (res.ok) {
     pushBenchmarkHistory(res);
-    toast(`Benchmark ${kind.toUpperCase()} terminado ✓`);
+    toast(t('bench.done_toast', { kind: kind.toUpperCase() }));
   } else {
-    toast(res.err || `Benchmark ${kind.toUpperCase()} falló`);
+    toast(res.err || t('bench.failed_toast', { kind: kind.toUpperCase() }));
   }
 }
 
@@ -2863,7 +2940,7 @@ $('bench-export').addEventListener('click', async () => {
   if (!benchmarkResult) { toast(t('toast.no_bench_export')); return; }
   const text = JSON.stringify(benchmarkResult, null, 2);
   const res = await window.rog.exportBenchmark({ kind: benchmarkResult.kind, text });
-  toast(res.ok ? `Benchmark guardado en ${res.path}` : `No se exportó: ${res.err}`);
+  toast(res.ok ? t('bench.exported', { path: res.path }) : t('bench.export_failed', { err: res.err }));
 });
 
 /* ---------- size / zoom persistence ---------- */
@@ -3043,12 +3120,9 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
     const row = e.target.closest('tr[data-pid]');
     if (!row) return;
     const { pid, name } = row.dataset;
-    if (!window.confirm(
-      `¿Cerrar el proceso "${name}" (PID ${pid})?\n\n` +
-      'Se le pedirá terminar de forma ordenada (SIGTERM). ' +
-      'Si es una app, perderás lo que no hayas guardado en ella.')) return;
+    if (!confirmT('confirm.kill_proc', { name, pid })) return;
     const res = await window.rog.killProcess(pid);
-    toast(res.ok ? `Señal de cierre enviada a ${name}` : `No se pudo: ${res.err}`);
+    toast(res.ok ? t('proc.kill_sent', { name }) : t('proc.kill_failed', { err: res.err }));
     if (res.ok) { allRows = allRows.filter((p) => String(p.pid) !== String(pid)); render(); }
   });
 })();
@@ -3063,5 +3137,5 @@ $('export-events').addEventListener('click', async (e) => {
   const text = `ROG Monitor — registro de eventos (${today})\n\n`
     + events.map(([ts, level, msg]) => `${ts}  [${level.toUpperCase()}]  ${msg}`).join('\n') + '\n';
   const res = await window.rog.exportEvents(text);
-  toast(res.ok ? `Eventos guardados en ${res.path}` : `No se exportó: ${res.err}`);
+  toast(res.ok ? t('events.exported', { path: res.path }) : t('events.export_failed', { err: res.err }));
 });
