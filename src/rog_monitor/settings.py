@@ -77,8 +77,12 @@ def update_settings(raw: dict) -> dict:
     cfg.data["temp_colors"] = colors
     if "notifications" in raw:
         cfg.data["notifications"] = bool(raw["notifications"])
+    # lang: persist so the backend re-emits new events in the chosen language
+    if raw.get("lang") in ("auto", "es", "en", "fr", "it", "pt", "zh", "ja", "ko"):
+        cfg.data["lang"] = raw["lang"]
     cfg.save()
-    return {"ok": True, "alerts": alerts, "temp_colors": colors, "notifications": bool(cfg.get("notifications", True))}
+    return {"ok": True, "alerts": alerts, "temp_colors": colors,
+            "notifications": bool(cfg.get("notifications", True)), "lang": cfg.get("lang", "auto")}
 
 
 def main(argv=None) -> int:

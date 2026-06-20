@@ -1,0 +1,2 @@
+SUBSYSTEM=="power_supply", KERNEL=="ADP*", ACTION=="change", TAG+="systemd", ENV{SYSTEMD_WANTS}+="rog-power-source.service"
+SUBSYSTEM=="power_supply", KERNEL=="AC*", ACTION=="change", TAG+="systemd", ENV{SYSTEMD_WANTS}+="rog-power-source.service"

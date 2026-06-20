@@ -111,52 +111,49 @@ Para agregar tu propio equipo o ajustar rangos, ver
 
 ---
 
-## Instalación
+## Instalación (una línea)
 
 ```bash
-git clone https://github.com/<tu-usuario>/Rog-Monitor
-cd Rog-Monitor
-bash scripts/install.sh      # venv + dependencias + comando `monitor` en ~/.local/bin
-monitor
+git clone https://github.com/<tu-usuario>/Rog-Monitor && cd Rog-Monitor && bash install.sh
 ```
 
-La potencia del CPU (Intel RAPL) requiere un cambio de permisos en `/proc`
-(restringido desde CVE-2020-8694):
+Eso es todo. `install.sh`:
+
+1. Crea el entorno de Python y el comando **`monitor`** (terminal) — sin sudo.
+2. Instala la **app de escritorio** y crea el icono en el menú y en el escritorio
+   (si tienes Node.js/npm) — sin sudo.
+3. Solo al final, y **avisando exactamente para qué**, pide sudo **una vez** para
+   la integración de sistema opcional (servicio de ventiladores, dejar listo el
+   guardián térmico y permitir leer la potencia de la CPU). Puedes decir que no.
+
+No instala nada que cambie el perfil o la GPU automáticamente.
+
+Lanza con:
 
 ```bash
-sudo bash scripts/enable-cpu-power.sh
+monitor            # terminal (TUI)
+monitor --desktop  # app de escritorio, o ábrela desde el menú/escritorio
 ```
 
-App de escritorio (requiere Node.js/npm):
+## Desinstalación (una línea)
 
 ```bash
-bash scripts/install-all.sh      # terminal + escritorio si npm está disponible
-bash scripts/install-desktop.sh   # dependencias npm + entrada en el menú de apps
-monitor --desktop                 # o lanzar desde el menú
+bash uninstall.sh            # quita app, lanzadores, autoarranque y servicios;
+                             # CONSERVA tu configuración (~/.config/rog-monitor)
+bash uninstall.sh --purge    # quita también la configuración (vuelta a cero)
 ```
 
-### Rescate / desinstalación segura
+También puedes **Actualizar / Reinstalar / Desinstalar** desde la app:
+menú **Sistema → Mantenimiento**.
+
+### Rescate desde TTY
 
 Si algo del stack de servicios root causa problemas y solo puedes entrar por
-TTY (`Ctrl+Alt+F3`), desactiva todo lo automático con:
+TTY (`Ctrl+Alt+F3`):
 
 ```bash
-cd ~/MyFiles/Dev/Rog-Monitor
-sudo bash scripts/rog-monitor-safe-mode.sh disable
-sudo reboot
-```
-
-Para quitar las integraciones root instaladas sin borrar tu configuración de
-usuario:
-
-```bash
-sudo bash scripts/rog-monitor-safe-mode.sh uninstall
-```
-
-Para quitar solo lanzadores de usuario:
-
-```bash
-bash scripts/uninstall.sh
+sudo bash scripts/rog-monitor-safe-mode.sh disable   # apaga todo lo automático
+sudo bash scripts/rog-monitor-safe-mode.sh no-auto-profile  # solo el auto-perfil por AC/batería
 ```
 
 ---

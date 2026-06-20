@@ -40,6 +40,7 @@ let gpuBusy = false;
 // daemon aplicaba el cambio → el botón "rebotaba" al anterior y luego saltaba.
 let pendingProfile = null;
 let pendingProfileTs = 0;
+let pendingProfileConfirmed = false;  // true cuando el sistema confirmó (busctl read-back)
 const PENDING_PROFILE_MS = 8000;
 // PowerProfilesDaemon usa power-saver/balanced/performance; algunos equipos
 // reportan el perfil ASUS "quiet". Normalizamos para comparar contra los botones.
@@ -669,7 +670,7 @@ function escapeHtml(s) {
 async function applyAuraState(state, successMessage = 'Aura aplicada ✓') {
   if (auraState?.setup?.needsSetup) {
     setAuraStatus('Primero activa asusd con el botón ACTIVAR AURA.', 'status-dirty');
-    toast('Aura no está lista todavía: falta activar asusd');
+    toast(t('toast.aura_not_ready'));
     return null;
   }
   if (musicModeActive) {
@@ -1067,7 +1068,7 @@ function deleteBenchmarkItem(id) {
   if (benchmarkHistory.length === before) return;
   _saveBenchmarkHistory();
   renderBenchmarkHistory();
-  toast('Benchmark borrado');
+  toast(t('toast.bench_cleared'));
 }
 
 function clearAllBenchmarkHistory() {
@@ -1076,7 +1077,7 @@ function clearAllBenchmarkHistory() {
   benchmarkHistory = [];
   _saveBenchmarkHistory();
   renderBenchmarkHistory();
-  toast('Historial de benchmarks borrado');
+  toast(t('toast.bench_hist_cleared'));
 }
 
 /* Inyecta el botón "Borrar todos" en el bloque inline si todavía no existe */
@@ -1252,8 +1253,15 @@ function update(stats) {
   const sysProfile = normalizeProfile(stats.ppd_profile);
   let shownProfile = sysProfile;
   if (pendingProfile) {
-    if (sysProfile === pendingProfile || Date.now() - pendingProfileTs > PENDING_PROFILE_MS) {
-      pendingProfile = null;            // confirmado por el sistema, o expiró
+    if (sysProfile === pendingProfile) {
+      pendingProfile = null;            // el sistema ya reporta el perfil elegido
+    } else if (pendingProfileConfirmed) {
+      // El sistema confirmó el cambio (busctl read-back). El perfil ES el que
+      // el usuario eligió; si el stream 1 Hz aún reporta el viejo es solo
+      // rezago. NO revertimos: el usuario manda, se queda donde lo puso.
+      shownProfile = pendingProfile;
+    } else if (Date.now() - pendingProfileTs > PENDING_PROFILE_MS) {
+      pendingProfile = null;            // nunca se confirmó y expiró: reflejar realidad
     } else {
       shownProfile = pendingProfile;    // mantener el elegido mientras se aplica
     }
@@ -1376,6 +1384,7 @@ document.querySelectorAll('#profile-seg button').forEach((btn) => {
     // ocurría cuando el refresco 1 Hz pisaba el resaltado con el perfil viejo.
     pendingProfile = profile;
     pendingProfileTs = Date.now();
+    pendingProfileConfirmed = false;
     document.querySelectorAll('#profile-seg button').forEach((b) =>
       b.classList.toggle('active', b === btn));
     const label = t(PROFILE_KEY[profile] || 'profile.balanced');
@@ -1386,6 +1395,9 @@ document.querySelectorAll('#profile-seg button').forEach((btn) => {
       if (lastStats) update(lastStats);
       return;
     }
+    // applied === true → busctl confirmó que el perfil realmente quedó. A
+    // partir de aquí el resaltado se queda fijo en lo que elegiste (no rebota).
+    if (res.applied && pendingProfile === profile) pendingProfileConfirmed = true;
     toast(res.applied
       ? t('profile.changed', { p: label })
       : t('profile.requested', { p: label }));
@@ -1409,7 +1421,9 @@ document.querySelectorAll('#gpu-seg button').forEach((btn) => {
   });
 });
 
-$('update-btn').addEventListener('click', async () => {
+// El botón ACTUALIZAR del menú SISTEMA se removió (vive en MANTENIMIENTO). El
+// handler se conserva guardado por si vuelve a existir.
+$('update-btn')?.addEventListener('click', async () => {
   const label = $('update-label');
   const btn = $('update-btn');
   if (btn.dataset.ready === '1') {
@@ -1434,6 +1448,53 @@ $('update-btn').addEventListener('click', async () => {
   } else {
     label.textContent = 'AL DÍA ✓';
     setTimeout(() => { label.textContent = 'ACTUALIZAR'; }, 4000);
+  }
+});
+
+/* ---------- mantenimiento (actualizar / reinstalar / desinstalar) ---------- */
+function maintStatus(msg) {
+  const el = $('maint-status');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('hidden', !msg);
+}
+$('maintenance-btn')?.addEventListener('click', () => {
+  maintStatus('');
+  $('maintenance-modal').classList.remove('hidden');
+});
+$('maint-close')?.addEventListener('click', () => $('maintenance-modal').classList.add('hidden'));
+$('maintenance-modal')?.addEventListener('click', (e) => {
+  if (e.target === $('maintenance-modal')) $('maintenance-modal').classList.add('hidden');
+});
+$('maint-update')?.addEventListener('click', async () => {
+  maintStatus('Buscando actualización…');
+  const res = await window.rog.checkUpdate();
+  if (!res.ok) { maintStatus(`No se pudo verificar: ${res.err}`); return; }
+  if (res.behind > 0) {
+    maintStatus(`Hay ${res.behind} cambio(s). Instalando…`);
+    const up = await window.rog.doUpdate();
+    maintStatus(up.ok ? 'Actualizado y backend reiniciado ✓' : `Error: ${up.err}`);
+  } else {
+    maintStatus('Ya estás al día ✓');
+  }
+});
+$('maint-reinstall')?.addEventListener('click', async () => {
+  maintStatus('Reinstalando dependencias…');
+  const res = await window.rog.reinstallApp();
+  maintStatus(res.ok ? 'Reinstalado y backend reiniciado ✓' : `Error: ${res.err || res.out}`);
+});
+$('maint-uninstall')?.addEventListener('click', async () => {
+  const purge = $('maint-purge').checked;
+  const msg = purge
+    ? '¿Desinstalar ROG Monitor Y BORRAR tus configuraciones? No se puede deshacer.'
+    : '¿Desinstalar ROG Monitor? (se conservan tus configuraciones)';
+  if (!window.confirm(msg + '\n\nSe pedirá tu contraseña para quitar las integraciones de sistema.')) return;
+  maintStatus('Desinstalando… (puede pedir contraseña)');
+  const res = await window.rog.uninstallApp({ purge });
+  if (res.ok) {
+    maintStatus('Desinstalado. La app se cerrará…');
+  } else {
+    maintStatus(`Error: ${res.err || 'no se pudo desinstalar'}`);
   }
 });
 
@@ -1522,11 +1583,18 @@ $('lang-modal').addEventListener('click', (e) => {
   if (e.target === $('lang-modal')) $('lang-modal').classList.add('hidden');
 });
 
-// Cuando cambia el idioma: re-aplica data-i18n al DOM y regenera el grid
+// Cuando cambia el idioma: re-aplica data-i18n al DOM, regenera el grid y
+// persiste el idioma en el backend (reinicia el monitor para que los eventos
+// NUEVOS salgan en el idioma elegido; el historial viejo se queda como está).
 if (window.i18n) {
-  window.i18n.onChange(() => {
+  let langSaveTimer = null;
+  window.i18n.onChange((lang) => {
     window.i18n.apply();
     buildLangGrid();
+    if (window.rog?.saveSettings) {
+      clearTimeout(langSaveTimer); // ponytail: debounce — reinicia el backend una sola vez
+      langSaveTimer = setTimeout(() => window.rog.saveSettings({ lang }), 400);
+    }
   });
 }
 
@@ -1599,8 +1667,26 @@ async function openAlertsModal() {
   const res = await window.rog.getSettings();
   if (!res.ok) { toast(`No pude leer ajustes: ${res.err}`); return; }
   fillAlertsForm(res);
+  // Autoarranque: estado independiente (no va en settings.json, es una entrada
+  // .desktop en ~/.config/autostart). Se aplica al instante al marcar/desmarcar.
+  try {
+    const a = await window.rog.getAutostart();
+    if (a && a.ok) $('set-autostart').checked = !!a.enabled;
+  } catch (_) { /* no crítico */ }
   $('alerts-modal').classList.remove('hidden');
 }
+
+$('set-autostart').addEventListener('change', async (e) => {
+  const res = await window.rog.setAutostart(e.target.checked);
+  if (!res || res.ok === false) {
+    toast(`No pude cambiar el autoarranque: ${(res && res.err) || '?'}`);
+    e.target.checked = !e.target.checked; // revertir el visual
+    return;
+  }
+  toast(e.target.checked
+    ? 'Autoarranque activado: la app abrirá minimizada al iniciar sesión.'
+    : 'Autoarranque desactivado.');
+});
 
 $('alerts-btn').addEventListener('click', openAlertsModal);
 $('alerts-close').addEventListener('click', () => $('alerts-modal').classList.add('hidden'));
@@ -1632,7 +1718,7 @@ $('alerts-save').addEventListener('click', async () => {
   }
   fillAlertsForm(res);
   setAlertsStatus('Guardado y aplicado ✓', 'status-ok');
-  toast('Umbrales actualizados ✓');
+  toast(t('toast.thresholds_saved'));
 });
 
 applyAppearance();
@@ -1715,7 +1801,7 @@ $('aura-setup').addEventListener('click', async () => {
     toast(`Aura: ${res.err}`);
     return;
   }
-  toast('asusd activado para Aura ✓');
+  toast(t('toast.asusd_on'));
   await refreshAuraState(true);
 });
 
@@ -1725,7 +1811,7 @@ $('aura-apply').addEventListener('click', async () => {
 
 $('aura-save-profile').addEventListener('click', async () => {
   const name = $('aura-profile-name').value.trim() || auraProfileSelection;
-  if (!name) { toast('Escribe un nombre de perfil'); return; }
+  if (!name) { toast(t('toast.write_profile_name')); return; }
   const res = await window.rog.saveAuraProfile({ name, state: currentAuraFormState() });
   if (!res.ok) { toast(`No se guardó: ${res.err}`); return; }
   auraProfileSelection = name;
@@ -1762,7 +1848,7 @@ $('aura-profile-list').addEventListener('click', async (e) => {
   }
 
   const profile = selectAuraProfileByName(name);
-  if (!profile) { toast('Ese perfil ya no existe'); return; }
+  if (!profile) { toast(t('toast.profile_gone')); return; }
 
   if (action === 'apply') {
     setAuraForm(profile.state);
@@ -1780,7 +1866,7 @@ $('aura-startup').addEventListener('change', async (e) => {
   const name = $('aura-profile-select').value;
   if (e.target.checked && !name) {
     e.target.checked = false;
-    toast('Primero guarda o selecciona un perfil');
+    toast(t('toast.save_select_first'));
     return;
   }
   const res = await window.rog.setAuraStartup({ name, enabled: e.target.checked });
@@ -1800,7 +1886,7 @@ $('aura-music').addEventListener('click', async () => {
   musicModeActive = false;
   $('aura-music').textContent = 'MODO MÚSICA';
   markAuraDirty(false);
-  toast('Modo música desactivado');
+  toast(t('toast.music_off'));
   await refreshAuraState();
   return;
   }
@@ -1809,7 +1895,7 @@ $('aura-music').addEventListener('click', async () => {
   musicModeActive = true;
   $('aura-music').textContent = 'PARAR MÚSICA';
   markAuraDirty(false);
-  toast('Modo música activo: el brillo y el color siguen el audio del sistema');
+  toast(t('toast.music_on'));
 });
 
 /* ---------- kill process ---------- */
@@ -1836,6 +1922,7 @@ let fanActiveProfile = '';  // perfil de energia activo (ppd_profile -> quiet/ba
 let fanEditingProfile = '';  // perfil que se está editando en el modal
 let fanCapDraft = {};       // cap_rpm por ventilador para el perfil en edición
 const fanCfgByProfile = {}; // { quiet: res, balanced: res, performance: res }
+const fanDirtyProfiles = new Set(); // perfiles con cambios sin guardar (edición multi-perfil)
 
 const FAN_PROFILE_RECOMMENDED_CAP = {
   quiet: 4500,
@@ -1951,7 +2038,7 @@ function capValues(caps = fanCapDraft) {
 
 function fanCapDisplay(caps = fanCapDraft) {
   const values = capValues(caps);
-  if (!values.length) return 'sin tope';
+  if (!values.length) return t('fan.no_cap');
   const unique = [...new Set(values)];
   if (unique.length === 1) return `${unique[0]} RPM`;
   return Object.entries(caps)
@@ -1967,8 +2054,8 @@ function syncFanCapInput() {
   const unique = [...new Set(values)];
   input.value = unique.length === 1 ? unique[0] : '';
   input.placeholder = unique.length > 1
-    ? 'cap mixto por ventilador'
-    : `recomendado ${FAN_PROFILE_RECOMMENDED_CAP[fanEditingProfile] || 5500}`;
+    ? t('fan.cap_mixed')
+    : t('fan.recommended', { n: FAN_PROFILE_RECOMMENDED_CAP[fanEditingProfile] || 5500 });
 }
 
 function updateFanCapPanelText() {
@@ -1987,7 +2074,7 @@ function renderFanCapEditor() {
     <label>
       <span>${fanName(fan)}</span>
       <input type="number" min="2000" max="8000" step="100" data-fan-cap="${fan}"
-        value="${capForFan(fan) || ''}" placeholder="sin tope">
+        value="${capForFan(fan) || ''}" placeholder="${t('fan.no_cap')}">
     </label>`).join('');
   host.querySelectorAll('[data-fan-cap]').forEach((input) => {
     input.addEventListener('input', () => {
@@ -2000,6 +2087,7 @@ function renderFanCapEditor() {
       syncFanCapInput();
       updateFanCapPanelText();
       updateCapPreview({ skipEditor: true });
+      markFanDirty();
     });
   });
 }
@@ -2044,21 +2132,21 @@ function updateCapPreview(options = {}) {
     renderFanCapEditor();
   }
   if (!hasCap) {
-    note.textContent = 'Sin tope: cada ventilador puede llegar a su máximo real.';
+    note.textContent = t('fan.cap_none_note');
     updateFanAcousticNote();
     document.querySelectorAll('.curve-fan').forEach(updateFanCurveCard);
     return;
   }
   const parts = Object.keys(fanCfg.curves).map((fan) => {
     const cap = caps[fan];
-    if (!cap) return `${fanName(fan)} sin tope`;
+    if (!cap) return t('fan.fan_no_cap', { fan: fanName(fan) });
     const pct = Math.round(capToPwm(cap, fan) / 255 * 100);
     return `${fanName(fan)} ${cap} RPM ≤${pct}%`;
   });
   note.textContent =
-    `Topes activos: al aplicar, los puntos de curva que los superen se recortan a ` +
+    t('fan.caps_active_pre') +
     parts.join(' · ') + (Object.keys(fanCfg.curves).some(fanCalibrated)
-      ? ' (con calibración real).' : ' (estimado — mide los máximos para precisión).');
+      ? t('fan.with_calib') : t('fan.estimated_suffix'));
   updateFanAcousticNote();
   document.querySelectorAll('.curve-fan').forEach(updateFanCurveCard);
 }
@@ -2073,7 +2161,7 @@ function renderCurves() {
         <div class="fan-curve-head">
           <div>
             <h4>${fanName(fan)}</h4>
-            <span>${fanCalibrated(fan) ? 'máximo medido' : 'máximo estimado'} ${fanMaxRpm(fan)} RPM</span>
+            <span>${fanCalibrated(fan) ? t('fan.max_measured') : t('fan.max_estimated')} ${fanMaxRpm(fan)} RPM</span>
           </div>
           <div class="fan-curve-metrics">
             <b class="fan-curve-rpm">${maxRpm} RPM</b>
@@ -2090,7 +2178,10 @@ function renderCurves() {
       </div>`;
   }).join('');
   document.querySelectorAll('.curve-fan input').forEach((input) => {
-    input.addEventListener('input', () => updateFanCurveCard(input.closest('.curve-fan')));
+    input.addEventListener('input', () => {
+      updateFanCurveCard(input.closest('.curve-fan'));
+      markFanDirty();
+    });
   });
   document.querySelectorAll('.curve-fan').forEach(attachFanGraphDrag);
 }
@@ -2159,9 +2250,45 @@ function graphYToPercent(y) {
   return Math.max(0, Math.min(100, Math.round(ratio * 100)));
 }
 
+// Tooltip singleton para los puntos de las curvas (mismo gesto que el resto de
+// la app: pasas el mouse y ves el valor). Muestra "°C / %vel" sobre el punto.
+let fanPointTip = null;
+function fanTooltipEl() {
+  if (!fanPointTip) {
+    fanPointTip = document.createElement('div');
+    fanPointTip.className = 'fan-curve-tooltip hidden';
+    document.body.appendChild(fanPointTip);
+  }
+  return fanPointTip;
+}
+function showFanPointTip(clientX, clientY, temp, pct) {
+  const el = fanTooltipEl();
+  el.textContent = `${temp}°C · ${pct}%`;
+  el.style.left = `${clientX}px`;
+  el.style.top = `${clientY - 34}px`;
+  el.classList.remove('hidden');
+}
+function hideFanPointTip() {
+  if (fanPointTip) fanPointTip.classList.add('hidden');
+}
+
 function attachFanGraphDrag(box) {
   const graph = box.querySelector('.fan-curve-graph');
   if (!graph) return;
+
+  // Hover: al pasar el mouse por un punto (sin arrastrar) se ve su valor.
+  graph.addEventListener('pointermove', (event) => {
+    if (box.classList.contains('dragging')) return;
+    const point = event.target.closest('circle[data-i]');
+    if (!point) { hideFanPointTip(); return; }
+    const i = Number(point.dataset.i);
+    const temps = [...box.querySelectorAll('input[data-kind="temps"]')];
+    const pwms = [...box.querySelectorAll('input[data-kind="pwms"]')];
+    showFanPointTip(event.clientX, event.clientY,
+      Math.round(+temps[i].value), Math.round(+pwms[i].value));
+  });
+  graph.addEventListener('pointerleave', hideFanPointTip);
+
   graph.addEventListener('pointerdown', (event) => {
     const point = event.target.closest('circle[data-i]');
     if (!point) return;
@@ -2180,9 +2307,15 @@ function attachFanGraphDrag(box) {
       tempInputs[pointIndex].value = graphXToTemp(x, pointIndex, tempInputs);
       pwmInputs[pointIndex].value = graphYToPercent(y);
       updateFanCurveCard(box);
+      // Tooltip vivo mientras arrastras: ves el °C/% exacto del punto.
+      showFanPointTip(moveEvent.clientX, moveEvent.clientY,
+        Math.round(+tempInputs[pointIndex].value),
+        Math.round(+pwmInputs[pointIndex].value));
+      markFanDirty();
     };
     const up = () => {
       box.classList.remove('dragging');
+      hideFanPointTip();
       document.removeEventListener('pointermove', move);
       document.removeEventListener('pointerup', up);
     };
@@ -2190,6 +2323,29 @@ function attachFanGraphDrag(box) {
     document.addEventListener('pointerup', up);
     move(event);
   });
+}
+
+// Marca el PERFIL ACTUAL como "con cambios sin aplicar". El aviso sticky lleva
+// al botón GUARDAR Y APLICAR, que persiste TODOS los perfiles editados a la vez.
+function markFanDirty() {
+  if (fanEditingProfile) fanDirtyProfiles.add(fanEditingProfile);
+  refreshFanDirtyBanner();
+}
+function refreshFanDirtyBanner() {
+  $('fan-dirty-banner')?.classList.toggle('hidden', fanDirtyProfiles.size === 0);
+}
+function clearFanDirty() {
+  fanDirtyProfiles.clear();
+  $('fan-dirty-banner')?.classList.add('hidden');
+}
+
+// Guarda en la caché lo que hay AHORA en el formulario (curvas + cap) para el
+// perfil en edición, de modo que cambiar de pestaña no pierda lo editado.
+function stageCurrentFan() {
+  const cached = fanCfgByProfile[fanEditingProfile];
+  if (!cached) return;
+  cached.curves = readCurvesFromForm();
+  cached.cap = currentCapMap();
 }
 
 function singleCurveFromBox(box) {
@@ -2299,13 +2455,14 @@ async function loadFanProfile(profile) {
   });
   renderCurves();
   refreshFanNotes();
+  refreshFanDirtyBanner();   // mantiene el aviso si OTRO perfil sigue con cambios
   return true;
 }
 
 /* Abrir el modal de ventiladores: siempre carga los 3 perfiles en caché */
 $('fans-block').addEventListener('click', async () => {
   const sysProfile = lastStats?.ppd_profile || lastStats?.asus_profile;
-  if (!sysProfile) { toast('Aún no conozco el perfil de energía activo'); return; }
+  if (!sysProfile) { toast(t('toast.profile_unknown')); return; }
   fanActiveProfile = normalizeFanProfile(sysProfile);
   $('fan-profile').textContent = fanProfileLabel(fanActiveProfile);
   // Elegir qué perfil mostrar primero: el perfil de energía real, no platform_profile.
@@ -2329,6 +2486,7 @@ $('fan-profile-tabs').addEventListener('click', async (e) => {
   if (!tab) return;
   const profile = tab.dataset.pfan;
   if (profile === fanEditingProfile) return; // ya estamos aquí
+  stageCurrentFan();   // no perder lo editado en este perfil al cambiar de pestaña
   await loadFanProfile(profile);
 });
 
@@ -2350,11 +2508,20 @@ $('fan-modal').addEventListener('click', (e) => {
 $('fan-cap').addEventListener('input', () => {
   setFanCapAll($('fan-cap').value);
   updateCapPreview();
+  markFanDirty();
 });
 $('fan-clear-cap').addEventListener('click', () => {
   setFanCapDraft({});
   updateCapPreview();
-  toast('Tope quitado. Oprime GUARDAR Y APLICAR para liberar los ventiladores.');
+  markFanDirty();
+  toast(t('toast.cap_removed'));
+});
+
+// "Ir a guardar": lleva el foco/scroll al botón GUARDAR Y APLICAR (abajo).
+$('fan-dirty-jump').addEventListener('click', () => {
+  $('fan-save')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  $('fan-save')?.classList.add('pulse');
+  setTimeout(() => $('fan-save')?.classList.remove('pulse'), 1200);
 });
 
 $('fan-benchmark').addEventListener('click', async () => {
@@ -2364,7 +2531,7 @@ $('fan-benchmark').addEventListener('click', async () => {
     'estabilicen en cada una, va a sonar fuerte) midiendo sus RPM reales.\n' +
     'Con esa tabla el tope de RPM cae exacto. Al terminar se restaura solo.\n' +
     'Pedirá tu contraseña.\n\n¿Continuar?')) return;
-  toast('Calibrando… 1-3 min (va a sonar fuerte)');
+  toast(t('toast.calibrating'));
   const res = await window.rog.fanBenchmark();
   if (!res.ok) { toast(`No se pudo: ${res.err}`); return; }
   fanCfg.max_rpm = res.max;
@@ -2380,47 +2547,45 @@ $('fan-benchmark').addEventListener('click', async () => {
 });
 
 $('fan-save').addEventListener('click', async () => {
-  const curves = readCurvesFromForm();
-  const capByFan = currentCapMap();
-  const cap = currentCap();
-  const editLabel = fanProfileLabel(fanEditingProfile);
-  // consent gate: slow fans at the two hottest points are dangerous
-  const risky = Object.entries(curves).filter(([fan, c]) => {
-    const fanCap = capForFan(fan);
-    const limit = fanCap ? capToPwm(fanCap, fan) : 255;
-    return Math.min(c.pwms[6], limit) < 150 || Math.min(c.pwms[7], limit) < 150;
-  });
-  if (risky.length && !window.confirm(
+  stageCurrentFan();   // volcar lo que hay en el formulario a la caché del perfil
+  // Perfiles a guardar: todos los editados; si no hubo cambios, al menos el actual.
+  const profiles = fanDirtyProfiles.size
+    ? [...fanDirtyProfiles]
+    : [fanEditingProfile];
+
+  // Consentimiento: ventiladores muy lentos en los puntos calientes son peligrosos.
+  // Se revisa CADA perfil que se va a guardar (no solo el visible).
+  const riskyLabels = [];
+  for (const p of profiles) {
+    const curves = fanCfgByProfile[p]?.curves || {};
+    const caps = fanCfgByProfile[p]?.cap || {};
+    const risky = Object.entries(curves).some(([fan, c]) => {
+      const limit = caps[fan] ? capToPwm(caps[fan], fan) : 255;
+      return Math.min(c.pwms[6], limit) < 150 || Math.min(c.pwms[7], limit) < 150;
+    });
+    if (risky) riskyLabels.push(fanProfileLabel(p));
+  }
+  if (riskyLabels.length && !window.confirm(
     'ADVERTENCIA: dejaste los ventiladores por debajo del 60% en los puntos ' +
-    'más calientes de la curva (' + risky.map(([f]) => fanName(f)).join(', ') + ').\n\n' +
+    'más calientes en: ' + riskyLabels.join(', ') + '.\n\n' +
     'Esto puede sobrecalentar y dañar tu equipo bajo carga.\n\n' +
     '¿Entiendes el riesgo y quieres continuar?')) return;
-  const res = await window.rog.setFanConfig({
-    profile: fanEditingProfile,
-    curves,
-    cap: capByFan && Object.keys(capByFan).length ? cap : null,
-    capByFan,
-  });
-  if (res.ok) {
-    // Actualizar caché del perfil guardado
-    if (fanCfgByProfile[fanEditingProfile]) {
-      fanCfgByProfile[fanEditingProfile].curves = curves;
-      fanCfgByProfile[fanEditingProfile].cap = capByFan;
-      fanCfgByProfile[fanEditingProfile].profile_caps = {
-        ...(fanCfgByProfile[fanEditingProfile].profile_caps || {}),
-        [fanEditingProfile]: capByFan,
-      };
-    }
-    $('fan-modal').classList.add('hidden');
-    const hasCap = Object.keys(capByFan).length > 0;
-    toast(res.warn
-      ? res.warn
-      : (hasCap
-          ? `Guardado ✓ Tope para ${editLabel}: ${fanCapDisplay(capByFan)} (persiste al reiniciar).`
-          : `Guardado ✓ Sin tope: ventiladores libres en perfil ${editLabel}.`));
-  } else {
-    toast(`Error: ${res.err}`);
-  }
+
+  // Un solo guardado (un solo pkexec) con todos los perfiles editados, cada
+  // uno con su propio tope independiente.
+  const payload = profiles.map((p) => ({
+    profile: p,
+    curves: fanCfgByProfile[p]?.curves || {},
+    capByFan: fanCfgByProfile[p]?.cap || {},
+  }));
+  const res = await window.rog.setFanConfigMulti({ profiles: payload });
+  if (!res.ok) { toast(`Error: ${res.err}`); return; }
+
+  $('fan-modal').classList.add('hidden');
+  clearFanDirty();
+  const labels = profiles.map(fanProfileLabel).join(', ');
+  toast(res.warn ? res.warn
+    : `Guardado ✓ ${labels} — cada perfil con su propio tope (persiste al reiniciar).`);
 });
 
 /* ---------- config export / import ---------- */
@@ -2449,17 +2614,21 @@ $('config-import').addEventListener('click', async () => {
 /* ---------- gaming overlay ---------- */
 
 const overlayPrefs = JSON.parse(localStorage.getItem('overlayPrefs') || 'null')
-  || { enabled: false, displayId: null, corner: 'top-right' };
+  || { enabled: false, displayId: null, corner: 'top-center', layout: 'row' };
 // qué muestra el overlay (personalizable desde el modal)
 overlayPrefs.show = { cpu: true, gpu: true, fans: true, ...(overlayPrefs.show || {}) };
+if (!overlayPrefs.layout) overlayPrefs.layout = 'row';
+if (!overlayPrefs.corner) overlayPrefs.corner = 'top-center';
 
 function saveOverlayPrefs() {
   try { localStorage.setItem('overlayPrefs', JSON.stringify(overlayPrefs)); } catch (_) {}
 }
 
 async function pushOverlay() {
+  // El overlay sigue el acento del tema activo.
+  overlayPrefs.accent = cssVar('--accent');
   const res = await window.rog.setOverlay(overlayPrefs);
-  if (!res.ok) toast('No se pudo cambiar el overlay');
+  if (!res.ok) toast(t('toast.overlay_failed'));
 }
 
 async function openOverlayModal() {
@@ -2476,6 +2645,7 @@ async function openOverlayModal() {
   }
   $('overlay-enabled').checked = !!overlayPrefs.enabled;
   $('overlay-corner').value = overlayPrefs.corner;
+  if ($('overlay-layout')) $('overlay-layout').value = overlayPrefs.layout || 'row';
   $('ov-show-cpu').checked = overlayPrefs.show.cpu !== false;
   $('ov-show-gpu').checked = overlayPrefs.show.gpu !== false;
   $('ov-show-fans').checked = overlayPrefs.show.fans !== false;
@@ -2505,6 +2675,11 @@ $('overlay-display').addEventListener('change', (e) => {
 });
 $('overlay-corner').addEventListener('change', (e) => {
   overlayPrefs.corner = e.target.value;
+  saveOverlayPrefs();
+  pushOverlay();
+});
+$('overlay-layout').addEventListener('change', (e) => {
+  overlayPrefs.layout = e.target.value;
   saveOverlayPrefs();
   pushOverlay();
 });
@@ -2582,7 +2757,7 @@ $('ram-procs-body').addEventListener('click', async (e) => {
 /* ---------- disk health ---------- */
 
 $('disk-health-btn').addEventListener('click', async () => {
-  toast('Leyendo SMART… (pide tu contraseña)');
+  toast(t('toast.reading_smart'));
   const res = await window.rog.diskHealth();
   const out = $('disk-health-out');
   if (!res.ok) { toast(`No se pudo: ${res.err}`); return; }
@@ -2685,7 +2860,7 @@ $('benchmark-modal').addEventListener('click', (e) => {
 $('bench-cpu').addEventListener('click', () => runBenchmark('cpu'));
 $('bench-gpu').addEventListener('click', () => runBenchmark('gpu'));
 $('bench-export').addEventListener('click', async () => {
-  if (!benchmarkResult) { toast('Todavía no hay benchmark para exportar'); return; }
+  if (!benchmarkResult) { toast(t('toast.no_bench_export')); return; }
   const text = JSON.stringify(benchmarkResult, null, 2);
   const res = await window.rog.exportBenchmark({ kind: benchmarkResult.kind, text });
   toast(res.ok ? `Benchmark guardado en ${res.path}` : `No se exportó: ${res.err}`);
@@ -2698,7 +2873,7 @@ if (savedZoom) window.rog.zoomTo(savedZoom);
 document.querySelectorAll('#size-seg button').forEach((btn) => {
   btn.addEventListener('click', () => {
     window.rog.zoomTo(parseFloat(btn.dataset.zoom));
-    toast('Tamaño aplicado (también funciona Ctrl + rueda del mouse)');
+    toast(t('toast.size_applied'));
   });
 });
 
@@ -2883,7 +3058,7 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
 $('export-events').addEventListener('click', async (e) => {
   e.stopPropagation();
   const events = lastStats?.events || [];
-  if (!events.length) { toast('No hay eventos para exportar'); return; }
+  if (!events.length) { toast(t('toast.no_events_export')); return; }
   const today = new Date().toLocaleDateString();
   const text = `ROG Monitor — registro de eventos (${today})\n\n`
     + events.map(([ts, level, msg]) => `${ts}  [${level.toUpperCase()}]  ${msg}`).join('\n') + '\n';

@@ -81,7 +81,7 @@ function readErrorLogTail(maxLines = 60) {
 
 let win = null;
 let overlay = null;
-let overlayCfg = { enabled: false, displayId: null, corner: 'top-left', show: null };
+let overlayCfg = { enabled: false, displayId: null, corner: 'top-center', show: null, layout: 'row', accent: null };
 let backend = null;
 let musicProc = null;
 let musicMode = {
@@ -299,8 +299,9 @@ ipcMain.handle('do-update', async () => {
    service rog-profile-sync.service applies them. Editing the file needs no
    privileges; restarting the service prompts for the password via pkexec. */
 
-const SCRIPTS_DIR = process.env.ROG_SCRIPTS_DIR
-  || path.join(os.homedir(), 'Rog-Monitor-Scripts');
+// Scripts ahora viven en el propio repo (carpeta única). Se respeta
+// ROG_SCRIPTS_DIR por compatibilidad, pero el default es REPO/scripts.
+const SCRIPTS_DIR = process.env.ROG_SCRIPTS_DIR || REPO;
 const SYNC_SCRIPT = path.join(SCRIPTS_DIR, 'scripts', 'rog-profile-sync.sh');
 const FAN_CALIBRATE = path.join(SCRIPTS_DIR, 'scripts', 'calibrate-fans.sh');
 const ENABLE_ASUSD = path.join(SCRIPTS_DIR, 'scripts', 'enable-asusd.sh');
@@ -373,7 +374,10 @@ ipcMain.handle('get-fan-config', (_e, profile) => {
     ok: true,
     profile,
     curves,
-    cap: (saved && saved.cap_rpm) || store.cap_rpm || {},
+    // Cap por perfil AUTORITATIVO: NUNCA caer al global store.cap_rpm (eso
+    // contaminaba todos los perfiles con el del último guardado). Sin cap propio
+    // = sin tope para ese perfil.
+    cap: (saved && saved.cap_rpm) || {},
     profile_caps: Object.fromEntries(Object.entries(store.profiles || {})
       .map(([name, value]) => [name, (value && value.cap_rpm) || null])),
     max_rpm: store.max_rpm || {},
@@ -421,14 +425,14 @@ ipcMain.handle('set-fan-config', async (_e, { profile, curves, cap, capByFan }) 
 
   if (!Object.keys(caps).length) {
     delete profileEntry.cap_rpm;
-    delete store.cap_rpm;
   } else {
     profileEntry.cap_rpm = caps;
   }
   store.profiles[profile] = profileEntry;
-  // Compatibilidad con servicios viejos: cap_rpm global refleja el perfil que
-  // acabas de aplicar, mientras servicios nuevos leen profiles.<perfil>.cap_rpm.
-  if (profileEntry.cap_rpm) store.cap_rpm = profileEntry.cap_rpm;
+  // El cap es SOLO por perfil (profiles.<perfil>.cap_rpm). Eliminamos cualquier
+  // cap_rpm global heredado: era la causa del bug donde los 3 perfiles
+  // terminaban con el mismo tope. rog-profile-sync.sh ya lee el per-perfil.
+  delete store.cap_rpm;
   try {
     fs.mkdirSync(path.dirname(FAN_CURVES_JSON), { recursive: true });
     fs.writeFileSync(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
@@ -442,6 +446,83 @@ ipcMain.handle('set-fan-config', async (_e, { profile, curves, cap, capByFan }) 
   return res.ok
     ? { ok: true }
     : { ok: false, err: 'Curvas guardadas, pero no se aplicaron (servicio): ' + res.err };
+});
+
+// Valida y vuelca un perfil (curvas + cap por ventilador) dentro del store.
+// Devuelve un mensaje de error o null si todo bien.
+function writeFanProfile(store, { profile, curves, capByFan }) {
+  for (const [fan, c] of Object.entries(curves || {})) {
+    if (!c || c.temps.length !== 8 || c.pwms.length !== 8) {
+      return `curva de ${fan} inválida en ${profile} (deben ser 8 puntos)`;
+    }
+    if ([...c.temps, ...c.pwms].some((v) => !Number.isFinite(v) || v < 0 || v > 255)) {
+      return `valores fuera de rango en ${fan} (${profile})`;
+    }
+  }
+  const entry = { ...curves };
+  const caps = {};
+  if (capByFan && typeof capByFan === 'object') {
+    for (const [fan, raw] of Object.entries(capByFan)) {
+      if (!Object.prototype.hasOwnProperty.call(curves, fan)) continue;
+      const value = Math.round(+raw);
+      if (Number.isFinite(value) && value >= 2000) caps[fan] = value;
+    }
+  }
+  if (Object.keys(caps).length) entry.cap_rpm = caps;
+  else delete entry.cap_rpm;
+  store.profiles[profile] = entry;
+  return null;
+}
+
+// Guarda VARIOS perfiles de una sola vez y aplica con UN solo pkexec. Esto
+// permite editar ahorro/balance/performance y guardarlos juntos, cada uno con
+// su propio tope, sin 3 prompts de contraseña ni contaminación entre perfiles.
+ipcMain.handle('set-fan-config-multi', async (_e, { profiles }) => {
+  if (!Array.isArray(profiles) || !profiles.length) {
+    return { ok: false, err: 'no hay perfiles que guardar' };
+  }
+  const store = readCurvesStore();
+  store.profiles = store.profiles || {};
+  for (const p of profiles) {
+    const err = writeFanProfile(store, p);
+    if (err) return { ok: false, err };
+  }
+  delete store.cap_rpm; // el cap es solo por perfil (ver set-fan-config)
+  try {
+    fs.mkdirSync(path.dirname(FAN_CURVES_JSON), { recursive: true });
+    fs.writeFileSync(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
+  } catch (err) {
+    return { ok: false, err: `No pude guardar ${FAN_CURVES_JSON}: ${err.message}` };
+  }
+  if (!fs.existsSync(SYNC_SCRIPT)) {
+    return { ok: true, warn: 'Curvas guardadas, pero falta el repo de scripts para aplicarlas en vivo.' };
+  }
+  const res = await applyFanService();
+  return res.ok ? { ok: true } : { ok: false, err: 'Curvas guardadas, pero no se aplicaron (servicio): ' + res.err };
+});
+
+// Tope de ventiladores SOLO para el modo Gaming del guardián. Se guarda en
+// fan-curves.json (gaming_cap_rpm) y el servicio de ventiladores lo usa cuando
+// detecta que el guardián está en gaming activo. No pide contraseña: el servicio
+// lo reaplica solo en su próximo ciclo (≤30 s).
+ipcMain.handle('get-gaming-cap', () => {
+  const store = readCurvesStore();
+  const maxes = Object.values(store.max_rpm || {}).map(Number).filter(Number.isFinite);
+  return { ok: true, rpm: store.gaming_cap_rpm || null, maxRpm: maxes.length ? Math.max(...maxes) : null };
+});
+
+ipcMain.handle('set-gaming-cap', (_e, rpm) => {
+  const store = readCurvesStore();
+  const v = Math.round(+rpm);
+  if (Number.isFinite(v) && v >= 2000) store.gaming_cap_rpm = v;
+  else delete store.gaming_cap_rpm;
+  try {
+    fs.mkdirSync(path.dirname(FAN_CURVES_JSON), { recursive: true });
+    fs.writeFileSync(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
+  } catch (err) {
+    return { ok: false, err: String(err.message) };
+  }
+  return { ok: true, rpm: store.gaming_cap_rpm || null };
 });
 
 // Minimal single-quote shell escaping for the pkexec command above.
@@ -1022,6 +1103,78 @@ ipcMain.handle('app-info', () => ({
   repo: REPO,
 }));
 
+/* ---------- autoarranque minimizado (XDG autostart) ----------
+   Sin daemon: solo una entrada .desktop en ~/.config/autostart que lanza la
+   app minimizada al iniciar sesión. El backend queda congelado (SIGSTOP) hasta
+   que abras la ventana, así que no consume CPU en reposo. */
+const AUTOSTART_DESKTOP = path.join(
+  os.homedir(), '.config', 'autostart', 'rog-monitor.desktop');
+
+ipcMain.handle('get-autostart', () => {
+  try { return { ok: true, enabled: fs.existsSync(AUTOSTART_DESKTOP) }; }
+  catch (e) { return { ok: false, err: String((e && e.message) || e) }; }
+});
+
+/* ---------- mantenimiento: reinstalar / desinstalar ---------- */
+ipcMain.handle('reinstall-app', async () => {
+  // Reinstala dependencias de usuario (venv) y reinicia el backend. Sin sudo.
+  const res = await run('bash', [path.join(REPO, 'scripts', 'install.sh')], 180000);
+  if (res.ok) startBackend();
+  return res;
+});
+
+ipcMain.handle('uninstall-app', async (_e, { purge } = {}) => {
+  // Nivel usuario (sin privilegios): launcher, entrada de menú, autostart.
+  const userTargets = [
+    path.join(os.homedir(), '.local', 'bin', 'monitor'),
+    path.join(os.homedir(), '.local', 'share', 'applications', 'rog-monitor.desktop'),
+    AUTOSTART_DESKTOP,
+  ];
+  for (const f of userTargets) { try { fs.rmSync(f, { force: true }); } catch (_) {} }
+
+  // Nivel sistema (pkexec, una sola contraseña): servicios/units/udev/scripts.
+  const safeMode = path.join(REPO, 'scripts', 'rog-monitor-safe-mode.sh');
+  const sys = await run('pkexec', ['bash', safeMode, 'uninstall'], 60000);
+
+  if (purge) {
+    for (const d of [CONFIG_DIR_PATH, DATA_DIR_PATH]) {
+      try { fs.rmSync(d, { recursive: true, force: true }); } catch (_) {}
+    }
+  }
+  // Cerrar la app tras desinstalar.
+  setTimeout(() => { try { app.quit(); } catch (_) {} }, 800);
+  return { ok: true, systemRemoved: sys.ok, systemErr: sys.ok ? '' : sys.err };
+});
+
+ipcMain.handle('set-autostart', (_e, enabled) => {
+  try {
+    if (enabled) {
+      const startSh = path.join(__dirname, 'start.sh');
+      const icon = path.join(__dirname, 'assets', 'icon.png');
+      const content = [
+        '[Desktop Entry]',
+        'Type=Application',
+        'Name=ROG Monitor',
+        'Comment=Monitor de hardware para portátiles ASUS ROG',
+        `Exec=${startSh} --minimized`,
+        `Icon=${icon}`,
+        'Terminal=false',
+        'Categories=System;Monitor;',
+        'StartupWMClass=rog-monitor',
+        'X-GNOME-Autostart-enabled=true',
+        '',
+      ].join('\n');
+      fs.mkdirSync(path.dirname(AUTOSTART_DESKTOP), { recursive: true });
+      fs.writeFileSync(AUTOSTART_DESKTOP, content);
+    } else {
+      fs.rmSync(AUTOSTART_DESKTOP, { force: true });
+    }
+    return { ok: true, enabled: !!enabled };
+  } catch (e) {
+    return { ok: false, err: String((e && e.message) || e) };
+  }
+});
+
 /* ---------- gaming overlay (always-on-top stats) ----------
    A frameless, click-through, transparent window pinned to a corner of the
    chosen monitor. It stays above fullscreen games so you can watch temps and
@@ -1052,19 +1205,32 @@ function positionOverlay() {
   const bottom = wa.y + wa.height - height - OVERLAY_MARGIN;
   const left = wa.x + OVERLAY_MARGIN;
   const top = wa.y + OVERLAY_MARGIN;
+  const centerX = wa.x + Math.round((wa.width - width) / 2);
+  const centerY = wa.y + Math.round((wa.height - height) / 2);
   const pos = {
     'top-left': [left, top],
+    'top-center': [centerX, top],
     'top-right': [right, top],
+    'center': [centerX, centerY],
     'bottom-left': [left, bottom],
+    'bottom-center': [centerX, bottom],
     'bottom-right': [right, bottom],
-  }[overlayCfg.corner] || [left, top];
+  }[overlayCfg.corner] || [centerX, top];
   overlay.setPosition(Math.round(pos[0]), Math.round(pos[1]));
 }
 
+// Tamaño según layout: fila delgada (default) o cuadro clásico.
+function overlaySize() {
+  return overlayCfg.layout === 'box'
+    ? { width: 232, height: 150 }
+    : { width: 540, height: 58 };
+}
+
 function createOverlay() {
+  const { width, height } = overlaySize();
   overlay = new BrowserWindow({
-    width: 232,
-    height: 150,
+    width,
+    height,
     frame: false,
     transparent: true,
     resizable: false,
@@ -1094,10 +1260,15 @@ function createOverlay() {
   overlay.on('closed', () => { overlay = null; });
 }
 
-// El overlay decide qué filas pintar según las casillas del modal.
+// El overlay decide qué filas pintar, el layout (fila/cuadro) y el acento del
+// tema según lo que mande el modal.
 function pushOverlayConfig() {
-  if (overlay && !overlay.isDestroyed() && overlayCfg.show) {
-    overlay.webContents.send('overlay-config', overlayCfg.show);
+  if (overlay && !overlay.isDestroyed()) {
+    overlay.webContents.send('overlay-config', {
+      show: overlayCfg.show || { cpu: true, gpu: true, fans: true },
+      layout: overlayCfg.layout || 'row',
+      accent: overlayCfg.accent || null,
+    });
   }
 }
 
@@ -1116,15 +1287,28 @@ function applyOverlay() {
 ipcMain.handle('list-displays', () => ({ ok: true, displays: displayList(), current: overlayCfg }));
 
 ipcMain.handle('set-overlay', (_e, cfg) => {
+  const layoutChanged = cfg.layout && cfg.layout !== overlayCfg.layout;
   overlayCfg = {
     enabled: !!cfg.enabled,
     displayId: cfg.displayId ?? overlayCfg.displayId,
     corner: cfg.corner || overlayCfg.corner,
     show: cfg.show || overlayCfg.show,
+    layout: cfg.layout || overlayCfg.layout,
+    accent: cfg.accent ?? overlayCfg.accent,
   };
+  // Si cambió el layout, redimensionar la ventana antes de reposicionar.
+  if (layoutChanged && overlay && !overlay.isDestroyed()) {
+    overlay.setBounds(overlaySize());
+  }
   applyOverlay();
   return { ok: true, current: overlayCfg };
 });
+
+// Arranque minimizado: lo usa la entrada de autostart (start.sh --minimized).
+// Al estar minimizada, los listeners de abajo ponen mainVisible=false y el
+// backend Python queda en SIGSTOP (0% CPU): "iniciar con el sistema" no roba
+// rendimiento hasta que abres la ventana.
+const START_MINIMIZED = process.argv.includes('--minimized');
 
 function createWindow() {
   win = new BrowserWindow({
@@ -1132,6 +1316,7 @@ function createWindow() {
     height: 860,
     minWidth: 980,
     minHeight: 640,
+    show: !START_MINIMIZED,
     backgroundColor: '#0b0d10',
     autoHideMenuBar: true,
     title: 'ROG Monitor',
@@ -1144,6 +1329,16 @@ function createWindow() {
     },
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  win.once('ready-to-show', () => {
+    if (START_MINIMIZED) {
+      mainVisible = false;
+      win.showInactive();   // aparece en la barra de tareas…
+      win.minimize();        // …pero minimizada, sin robar foco
+      updateBackendPower();  // congela el backend hasta que la abras
+    } else {
+      win.show();
+    }
+  });
   // Ahorro: congelar/reanudar el backend según se vea o no la ventana.
   ['minimize', 'hide'].forEach((ev) => win.on(ev, () => { mainVisible = false; updateBackendPower(); }));
   ['restore', 'show', 'focus'].forEach((ev) => win.on(ev, () => { mainVisible = true; updateBackendPower(); }));
@@ -1264,15 +1459,17 @@ const THERMAL_GUARDIAN_UNIT = path.join(REPO, 'systemd', 'rog-thermal-guardian.s
 
 function readGuardianOverride() {
   const overridePath = `/etc/systemd/system/${THERMAL_GUARDIAN_SERVICE}.d/override.conf`;
-  const out = { cpuCeiling: 92, gpuCeiling: 83 };
+  const out = { cpuCeiling: 92, gpuCeiling: 83, mode: 'protection' };
   try {
     const text = fs.readFileSync(overridePath, 'utf-8');
     const cpu = text.match(/ROG_THERMAL_CPU_CEILING=(\d+)/);
     const gpu = text.match(/ROG_THERMAL_GPU_CEILING=(\d+)/);
     const legacy = text.match(/ROG_THERMAL_CEILING=(\d+)/);
+    const mode = text.match(/ROG_THERMAL_MODE=(\w+)/);
     if (cpu) out.cpuCeiling = parseInt(cpu[1], 10);
     if (gpu) out.gpuCeiling = parseInt(gpu[1], 10);
     else if (legacy) out.gpuCeiling = parseInt(legacy[1], 10);
+    if (mode && (mode[1] === 'gaming' || mode[1] === 'protection')) out.mode = mode[1];
   } catch (_) { /* no override */ }
   out.cpuCeiling = Math.max(70, Math.min(100, out.cpuCeiling));
   out.gpuCeiling = Math.max(70, Math.min(87, out.gpuCeiling));
@@ -1297,9 +1494,14 @@ ipcMain.handle('get-thermal-guardian', async () => {
   };
 });
 
-ipcMain.handle('set-thermal-guardian', async (_e, { enabled, cpuCeiling, gpuCeiling, ceiling }) => {
-  const cpu = Math.max(70, Math.min(100, Math.round(Number(cpuCeiling) || 92)));
-  const gpu = Math.max(70, Math.min(87, Math.round(Number(gpuCeiling || ceiling) || 83)));
+ipcMain.handle('set-thermal-guardian', async (_e, { enabled, cpuCeiling, gpuCeiling, ceiling, mode }) => {
+  const guardianMode = mode === 'gaming' ? 'gaming' : 'protection';
+  // En modo Gaming los techos por defecto suben (95/87): la meta es jugar sin
+  // throttling, solo subiendo ventiladores. El usuario igual puede ajustarlos.
+  const defCpu = guardianMode === 'gaming' ? 95 : 92;
+  const defGpu = guardianMode === 'gaming' ? 87 : 83;
+  const cpu = Math.max(70, Math.min(100, Math.round(Number(cpuCeiling) || defCpu)));
+  const gpu = Math.max(70, Math.min(87, Math.round(Number(gpuCeiling || ceiling) || defGpu)));
   const overrideDir = `/etc/systemd/system/${THERMAL_GUARDIAN_SERVICE}.d`;
   const overridePath = `${overrideDir}/override.conf`;
   const unitPath = `/etc/systemd/system/${THERMAL_GUARDIAN_SERVICE}`;
@@ -1308,6 +1510,7 @@ ipcMain.handle('set-thermal-guardian', async (_e, { enabled, cpuCeiling, gpuCeil
     .replace(/ROG_THERMAL_CEILING=83/g, 'ROG_THERMAL_GPU_CEILING=83');
   const overrideContent =
     `[Service]\n` +
+    `Environment="ROG_THERMAL_MODE=${guardianMode}"\n` +
     `Environment="ROG_THERMAL_CPU_CEILING=${cpu}"\n` +
     `Environment="ROG_THERMAL_GPU_CEILING=${gpu}"\n` +
     `Environment="ROG_THERMAL_CEILING=${gpu}"\n`;
@@ -1334,6 +1537,7 @@ ipcMain.handle('set-thermal-guardian', async (_e, { enabled, cpuCeiling, gpuCeil
     cpuCeiling: cpu,
     gpuCeiling: gpu,
     ceiling: gpu,
+    mode: guardianMode,
   };
 });
 

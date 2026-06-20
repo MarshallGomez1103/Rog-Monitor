@@ -6,3 +6,17 @@ __pycache__/
 node_modules/
 package-lock.json
 .claude/
+
+# Memoria interna multiagente y specs de construcción: NO van al repo público.
+# Se conservan en disco; solo dejan de rastrearse (git rm --cached).
+AGENTS.md
+CLAUDE.md
+HANDOFF.md
+docs/HANDOFF.md
+docs/INTERNAL.md
+docs/PROGRESS-*.md
+docs/SUDO-PENDIENTE-*.md
+docs/APPLY-FANS-*.md
+docs/build-spec-*.md
+docs/progress/
+*.bak
