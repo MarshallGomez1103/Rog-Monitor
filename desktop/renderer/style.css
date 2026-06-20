@@ -1015,10 +1015,25 @@ input[type="color"] {
   padding: 0 6px 6px; border-bottom: 1px solid var(--hair);
 }
 #procs th.r { text-align: right; }
+#procs th.sortable { cursor: pointer; user-select: none; transition: color 0.12s; }
+#procs th.sortable:hover { color: var(--ink); }
+#procs th.sortable.sort-active { color: var(--accent); text-shadow: var(--neon-glow-soft, 0 0 5px currentColor); }
+#procs th.sortable.sort-active[data-dir="desc"]::after { content: ' ▼'; font-size: 0.8em; }
+#procs th.sortable.sort-active[data-dir="asc"]::after  { content: ' ▲'; font-size: 0.8em; }
 #procs td { padding: 5px 6px; border-bottom: 1px dashed var(--hair); font-family: var(--mono); }
 #procs td.pid { color: var(--dim); width: 12%; font-size: 12px; }
-#procs td.cpu { color: var(--accent); text-align: right; width: 18%; }
+#procs td.cpu { text-align: right; width: 18%; }
+#procs td.cpu-core { text-align: right; }
 #procs td.mem { color: var(--dim); text-align: right; width: 22%; }
+/* neón SOLO en la columna actualmente ordenada (data-sort-col lo fija el JS) */
+#procs[data-sort-col="pid"]      td.pid,
+#procs[data-sort-col="pname"]    td.pname,
+#procs[data-sort-col="cpu"]      td.cpu,
+#procs[data-sort-col="cpu-core"] td.cpu-core,
+#procs[data-sort-col="mem"]      td.mem {
+  color: var(--accent);
+  text-shadow: var(--neon-glow-soft, 0 0 5px currentColor);
+}
 #procs tbody tr { cursor: pointer; }
 #procs tbody tr:hover { background: var(--chip); }
 
