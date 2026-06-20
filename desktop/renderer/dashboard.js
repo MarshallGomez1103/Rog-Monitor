@@ -492,6 +492,11 @@
         <div class="modal-card">
           <h3 data-i18n="dash.panel_title">${t('dash.panel_title', 'Configuración del tablero')}</h3>
           <p class="sub" data-i18n="dash.panel_sub">${t('dash.panel_sub', 'Activa o desactiva bloques y restablece el orden original.')}</p>
+          <label class="check-row" id="dash-edit-row" for="dash-edit-toggle"
+                 title="${t('dash.edit_title_off', 'Activa el modo edición para arrastrar/ocultar/reordenar bloques.')}">
+            <input type="checkbox" id="dash-edit-toggle">
+            <span id="dash-edit-label" data-i18n="dash.edit_off">${t('dash.edit_off', 'MODO EDICIÓN')}</span>
+          </label>
           <div id="dash-config-body"></div>
           <div class="mode-row" style="margin-top:1rem">
             <button class="ghost" id="dash-reset-btn" data-i18n="dash.reset_btn">${t('dash.reset_btn', 'Restablecer tablero')}</button>
@@ -508,6 +513,10 @@
         modal.classList.add('hidden'));
       document.getElementById('dash-reset-btn').addEventListener('click', () => {
         resetLayout();
+      });
+      /* Interruptor de modo edición DENTRO del modal (v16: fusión Layout∪Edit) */
+      document.getElementById('dash-edit-toggle').addEventListener('change', (e) => {
+        setEditMode(e.target.checked);
       });
     }
     updateConfigPanel();
@@ -555,12 +564,18 @@
      * Cuando está "off", .dash-block-ctrl debe permanecer oculta SIEMPRE
      * (sin importar :hover) y los bloques no deben mostrar cursor de arrastre. */
     document.documentElement.dataset.editMode = editMode ? 'on' : 'off';
-    const btn = document.getElementById('edit-mode-btn');
-    if (btn) {
-      btn.classList.toggle('active', editMode);
-      btn.setAttribute('aria-pressed', editMode ? 'true' : 'false');
-      btn.textContent = t(editMode ? 'dash.edit_on' : 'dash.edit_off', editMode ? 'MODO EDICIÓN: ACTIVO' : 'MODO EDICIÓN');
-      btn.title = t(editMode ? 'dash.edit_title_on' : 'dash.edit_title_off',
+    /* v16: el toggle vive DENTRO del modal del tablero (no en la topbar). */
+    const toggle = document.getElementById('dash-edit-toggle');
+    if (toggle) toggle.checked = editMode;
+    const label = document.getElementById('dash-edit-label');
+    if (label) {
+      label.setAttribute('data-i18n', editMode ? 'dash.edit_on' : 'dash.edit_off');
+      label.textContent = t(editMode ? 'dash.edit_on' : 'dash.edit_off',
+        editMode ? 'MODO EDICIÓN: ACTIVO' : 'MODO EDICIÓN');
+    }
+    const row = document.getElementById('dash-edit-row');
+    if (row) {
+      row.title = t(editMode ? 'dash.edit_title_on' : 'dash.edit_title_off',
         editMode ? 'Modo edición activo' : 'Activa el modo edición');
     }
   }
@@ -576,21 +591,8 @@
     }
   }
 
-  function addEditModeButton() {
-    if (document.getElementById('edit-mode-btn')) return;
-    const controls = document.querySelector('.controls');
-    if (!controls) return;
-
-    const btn = document.createElement('button');
-    btn.id = 'edit-mode-btn';
-    btn.className = 'ghost dash-edit-toggle';
-    btn.setAttribute('data-i18n', 'dash.edit_off');
-    btn.setAttribute('aria-pressed', 'false');
-
-    btn.addEventListener('click', () => setEditMode(!editMode));
-
-    controls.insertBefore(btn, controls.firstChild);
-  }
+  /* v16: el botón de modo edición de la topbar (#edit-mode-btn) se eliminó.
+     Ahora el modo edición es un interruptor DENTRO del modal del tablero. */
 
   /* ---- botón en topbar ---- */
   function addTopbarButton() {
@@ -651,7 +653,6 @@
   function init() {
     sanitizeLayout();
     injectBlockControls();
-    addEditModeButton();
     addTopbarButton();
     buildConfigPanel();
     applyLayout();

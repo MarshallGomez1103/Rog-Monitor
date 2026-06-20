@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('rog', {
   checkUpdate: () => ipcRenderer.invoke('check-update'),
   doUpdate: () => ipcRenderer.invoke('do-update'),
   appInfo: () => ipcRenderer.invoke('app-info'),
+  appQuit: () => ipcRenderer.invoke('app-quit'),
   getAutostart: () => ipcRenderer.invoke('get-autostart'),
   setAutostart: (enabled) => ipcRenderer.invoke('set-autostart', enabled),
   setFanConfigMulti: (payload) => ipcRenderer.invoke('set-fan-config-multi', payload),

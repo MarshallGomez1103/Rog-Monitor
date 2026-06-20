@@ -1751,11 +1751,8 @@ document.querySelectorAll('#mode-seg button').forEach((btn) => {
 });
 prefersDark.addEventListener('change', applyAppearance);
 
-$('theme-btn').addEventListener('click', () => $('theme-modal').classList.remove('hidden'));
-$('theme-close').addEventListener('click', () => $('theme-modal').classList.add('hidden'));
-$('theme-modal').addEventListener('click', (e) => {
-  if (e.target === $('theme-modal')) $('theme-modal').classList.add('hidden');
-});
+/* v16: el tema/modo/tamaño viven ahora dentro de #config-modal (ver región
+   v16 Agente4 más abajo). El antiguo #theme-modal / #theme-btn ya no existen. */
 
 /* ---------- alert thresholds / colors ---------- */
 
@@ -1796,26 +1793,9 @@ async function openAlertsModal() {
   const res = await window.rog.getSettings();
   if (!res.ok) { toast(`No pude leer ajustes: ${res.err}`); return; }
   fillAlertsForm(res);
-  // Autoarranque: estado independiente (no va en settings.json, es una entrada
-  // .desktop en ~/.config/autostart). Se aplica al instante al marcar/desmarcar.
-  try {
-    const a = await window.rog.getAutostart();
-    if (a && a.ok) $('set-autostart').checked = !!a.enabled;
-  } catch (_) { /* no crítico */ }
+  // v16: autoarranque y notificaciones se gestionan en #config-modal.
   $('alerts-modal').classList.remove('hidden');
 }
-
-$('set-autostart').addEventListener('change', async (e) => {
-  const res = await window.rog.setAutostart(e.target.checked);
-  if (!res || res.ok === false) {
-    toast(`No pude cambiar el autoarranque: ${(res && res.err) || '?'}`);
-    e.target.checked = !e.target.checked; // revertir el visual
-    return;
-  }
-  toast(e.target.checked
-    ? 'Autoarranque activado: la app abrirá minimizada al iniciar sesión.'
-    : 'Autoarranque desactivado.');
-});
 
 $('alerts-btn').addEventListener('click', openAlertsModal);
 $('alerts-close').addEventListener('click', () => $('alerts-modal').classList.add('hidden'));
@@ -1836,7 +1816,7 @@ $('alerts-save').addEventListener('click', async () => {
       cpu: [numOrNull('set-cpu-c0'), numOrNull('set-cpu-c1'), numOrNull('set-cpu-c2')],
       gpu: [numOrNull('set-gpu-c0'), numOrNull('set-gpu-c1'), numOrNull('set-gpu-c2')],
     },
-    notifications: $('set-notifications').checked,
+    // v16: notificaciones se gestionan ahora en #config-modal (merge en backend).
   };
   setAlertsStatus(t('alerts.status_saving'), 'status-live');
   const res = await window.rog.saveSettings(payload);
@@ -1849,6 +1829,102 @@ $('alerts-save').addEventListener('click', async () => {
   setAlertsStatus(t('alerts.status_saved'), 'status-ok');
   toast(t('toast.thresholds_saved'));
 });
+
+/* ===== v16 Agente4: config/salir/layout handlers (no tocar otras regiones) ===== */
+(function v16ConfigSalir() {
+  /* --- i18n: claves nuevas en los 8 idiomas --- */
+  if (window.i18n && window.i18n.register) {
+    window.i18n.register({
+      'topbar.alerts':        { es:'ALERTAS', en:'ALERTS', fr:'ALERTES', it:'AVVISI', pt:'ALERTAS', zh:'警报', ja:'アラート', ko:'경고' },
+      'topbar.alerts_title':  { es:'Alertas / Umbrales: avisos y colores por temperatura y potencia', en:'Alerts / Thresholds: warnings and colors by temperature and power', fr:'Alertes / Seuils : avertissements et couleurs par température et puissance', it:'Avvisi / Soglie: avvisi e colori per temperatura e potenza', pt:'Alertas / Limiares: avisos e cores por temperatura e potência', zh:'警报/阈值：按温度和功率的提醒与颜色', ja:'アラート / しきい値：温度と電力による警告と色', ko:'경고 / 임계값: 온도 및 전력별 알림과 색상' },
+      'topbar.config':        { es:'CONFIGURACIÓN', en:'CONFIGURATION', fr:'CONFIGURATION', it:'CONFIGURAZIONE', pt:'CONFIGURAÇÃO', zh:'配置', ja:'設定', ko:'구성' },
+      'topbar.config_title':  { es:'Configuración: idioma, apariencia, autoarranque y notificaciones', en:'Configuration: language, appearance, autostart and notifications', fr:'Configuration : langue, apparence, démarrage automatique et notifications', it:'Configurazione: lingua, aspetto, avvio automatico e notifiche', pt:'Configuração: idioma, aparência, início automático e notificações', zh:'配置：语言、外观、开机启动和通知', ja:'設定：言語、外観、自動起動、通知', ko:'구성: 언어, 모양, 자동 시작 및 알림' },
+      'topbar.quit':          { es:'SALIR', en:'QUIT', fr:'QUITTER', it:'ESCI', pt:'SAIR', zh:'退出', ja:'終了', ko:'종료' },
+      'topbar.quit_title':    { es:'Cerrar ROG Monitor por completo (sale de la bandeja y detiene el monitor)', en:'Quit ROG Monitor completely (leaves the tray and stops the monitor)', fr:'Quitter complètement ROG Monitor (quitte la zone de notification et arrête le moniteur)', it:'Chiudi completamente ROG Monitor (esce dalla tray e ferma il monitor)', pt:'Fechar o ROG Monitor por completo (sai da bandeja e para o monitor)', zh:'完全退出 ROG Monitor（离开托盘并停止监控）', ja:'ROG Monitor を完全に終了（トレイから抜けてモニターを停止）', ko:'ROG Monitor 완전히 종료 (트레이에서 나가고 모니터 중지)' },
+      'config.title':         { es:'Configuración', en:'Configuration', fr:'Configuration', it:'Configurazione', pt:'Configuração', zh:'配置', ja:'設定', ko:'구성' },
+      'config.sub':           { es:'Idioma, apariencia, autoarranque y notificaciones. Todo se guarda automáticamente.', en:'Language, appearance, autostart and notifications. Everything is saved automatically.', fr:'Langue, apparence, démarrage automatique et notifications. Tout est enregistré automatiquement.', it:'Lingua, aspetto, avvio automatico e notifiche. Tutto viene salvato automaticamente.', pt:'Idioma, aparência, início automático e notificações. Tudo é salvo automaticamente.', zh:'语言、外观、开机启动和通知。所有内容都会自动保存。', ja:'言語、外観、自動起動、通知。すべて自動的に保存されます。', ko:'언어, 모양, 자동 시작 및 알림. 모든 것이 자동으로 저장됩니다.' },
+      'config.lang_title':    { es:'Idioma', en:'Language', fr:'Langue', it:'Lingua', pt:'Idioma', zh:'语言', ja:'言語', ko:'언어' },
+      'config.system_title':  { es:'Sistema', en:'System', fr:'Système', it:'Sistema', pt:'Sistema', zh:'系统', ja:'システム', ko:'시스템' },
+    });
+  }
+
+  /* --- selector de idioma dentro de #config-modal --- */
+  const LANG_FB = (window.i18n && window.i18n.LANG_META) || [
+    { code:'es', native:'Español' }, { code:'en', native:'English' },
+    { code:'fr', native:'Français' }, { code:'it', native:'Italiano' },
+    { code:'pt', native:'Português' }, { code:'zh', native:'中文' },
+    { code:'ja', native:'日本語' }, { code:'ko', native:'한국어' },
+  ];
+  function buildConfigLangGrid() {
+    const grid = $('config-lang-grid');
+    if (!grid) return;
+    const active = window.i18n ? window.i18n.get() : 'es';
+    const langs = (window.i18n && window.i18n.LANG_META) || LANG_FB;
+    grid.innerHTML = langs.map((l) => `
+      <button class="lang-option${l.code === active ? ' active' : ''}" data-lang="${l.code}" type="button">
+        <span class="lang-flag">${l.code.toUpperCase()}</span>
+        <span class="lang-name">${l.native || l.label}</span>
+      </button>`).join('');
+    grid.querySelectorAll('.lang-option').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (window.i18n) window.i18n.set(btn.dataset.lang);
+        grid.querySelectorAll('.lang-option').forEach((b) =>
+          b.classList.toggle('active', b.dataset.lang === btn.dataset.lang));
+      });
+    });
+  }
+  if (window.i18n && window.i18n.onChange) {
+    window.i18n.onChange(() => { if ($('config-lang-grid')) buildConfigLangGrid(); });
+  }
+
+  /* --- abrir/cerrar #config-modal y cargar estados --- */
+  async function openConfigModal() {
+    buildConfigLangGrid();
+    try {
+      const a = await window.rog.getAutostart();
+      if (a && a.ok) $('set-autostart').checked = !!a.enabled;
+    } catch (_) { /* no crítico */ }
+    try {
+      const s = await window.rog.getSettings();
+      if (s && s.ok) $('set-notifications').checked = s.notifications !== false;
+    } catch (_) { /* no crítico */ }
+    $('config-modal').classList.remove('hidden');
+  }
+  if ($('config-btn')) $('config-btn').addEventListener('click', openConfigModal);
+  if ($('config-close')) $('config-close').addEventListener('click', () =>
+    $('config-modal').classList.add('hidden'));
+  $('config-modal').addEventListener('click', (e) => {
+    if (e.target === $('config-modal')) $('config-modal').classList.add('hidden');
+  });
+
+  /* --- autoarranque: estado independiente (.desktop en autostart) --- */
+  $('set-autostart').addEventListener('change', async (e) => {
+    const res = await window.rog.setAutostart(e.target.checked);
+    if (!res || res.ok === false) {
+      toast(`No pude cambiar el autoarranque: ${(res && res.err) || '?'}`);
+      e.target.checked = !e.target.checked;
+      return;
+    }
+    toast(e.target.checked
+      ? 'Autoarranque activado: la app abrirá minimizada al iniciar sesión.'
+      : 'Autoarranque desactivado.');
+  });
+
+  /* --- notificaciones: merge en settings.json (no reinicia perfiles) --- */
+  $('set-notifications').addEventListener('change', async (e) => {
+    const res = await window.rog.saveSettings({ notifications: e.target.checked });
+    if (!res || res.ok === false) {
+      toast(`No pude guardar notificaciones: ${(res && res.err) || '?'}`);
+      e.target.checked = !e.target.checked;
+    }
+  });
+
+  /* --- SALIR (tipo Steam): cierra de verdad la app --- */
+  if ($('quit-btn')) $('quit-btn').addEventListener('click', () => {
+    if (window.rog && window.rog.appQuit) window.rog.appQuit();
+  });
+}());
+/* ===== /v16 Agente4 ===== */
 
 applyAppearance();
 refreshAuraState(true);
