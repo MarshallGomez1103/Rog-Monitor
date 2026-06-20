@@ -75,6 +75,13 @@ set -euo pipefail
 # ------------------------------------------------------------------
 # Parseo de argumentos
 # ------------------------------------------------------------------
+# MODO del guardián:
+#   protection (default) → fans primero y, si el exceso es sostenido, recorte
+#                          suave de dynamic_boost/PL2. Para uso general.
+#   gaming               → SOLO ventiladores: nunca recorta potencia, así no
+#                          hay thermal throttling y la sesión de juego no se
+#                          siente peor con el guardián activo. Techos altos.
+MODE="${ROG_THERMAL_MODE:-protection}"
 CPU_CEILING="${ROG_THERMAL_CPU_CEILING:-92}"
 GPU_CEILING="${ROG_THERMAL_GPU_CEILING:-${ROG_THERMAL_CEILING:-83}}"
 INTERVAL="${ROG_THERMAL_INTERVAL:-2}"
@@ -94,6 +101,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --ceiling|--gpu-ceiling)  GPU_CEILING="$2";  shift 2 ;;
         --cpu-ceiling) CPU_CEILING="$2"; shift 2 ;;
+        --mode)     MODE="$2"; shift 2 ;;
         --warn)     WARN_OFFSET="$2"; shift 2 ;;
         --interval) INTERVAL="$2"; shift 2 ;;
         --load-idle) LOAD_IDLE="$2"; shift 2 ;;
@@ -110,6 +118,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+[[ "$MODE" == "gaming" || "$MODE" == "protection" ]] || MODE="protection"
 (( CPU_CEILING < 70 )) && CPU_CEILING=70
 (( CPU_CEILING > 100 )) && CPU_CEILING=100
 (( GPU_CEILING < 70 )) && GPU_CEILING=70
@@ -267,8 +276,8 @@ write_guardian_state() {
     fi
     local payload
     printf -v payload \
-        '{"mode":"%s","reason":"%s","updated":%s,"aggression":"%s","thermal_state":"%s","cooldown_remaining":%s,"interventions":%s,"cpu_ceiling":%s,"gpu_ceiling":%s,"cpu_temp":"%s","gpu_temp":"%s"}' \
-        "$mode" "$reason" "$now" \
+        '{"mode":"%s","reason":"%s","updated":%s,"guardian_mode":"%s","aggression":"%s","thermal_state":"%s","cooldown_remaining":%s,"interventions":%s,"cpu_ceiling":%s,"gpu_ceiling":%s,"cpu_temp":"%s","gpu_temp":"%s"}' \
+        "$mode" "$reason" "$now" "$MODE" \
         "${LOAD_LEVELS[$CURRENT_LOAD_LEVEL]:-balanced}" \
         "${GUARDIAN_STATE:-normal}" \
         "$remaining" \
@@ -493,6 +502,13 @@ handle_temp() {
         save_originals_once
         set_fan_aggression "performance"
         FAN_PROFILE_PUSHED=true
+        # MODO GAMING: solo ventiladores. Nunca recorta dynamic_boost/PL2, así
+        # que no hay thermal throttling y el juego no pierde rendimiento.
+        if [[ "$MODE" == "gaming" ]]; then
+            GUARDIAN_STATE="fans-up"
+            write_guardian_state "high" "gaming: techo cpu=${cpu_temp:-?}°C/gpu=${gpu_temp:-?}°C — fans al máximo, sin recorte de potencia"
+            return
+        fi
         local now over_for
         now=$(date +%s)
         if (( OVER_SINCE == 0 )); then
@@ -601,7 +617,8 @@ handle_temp() {
 # ------------------------------------------------------------------
 # Loop principal
 # ------------------------------------------------------------------
-log "Iniciando guardián térmico CPU/GPU (cpu=${CPU_CEILING}°C, gpu=${GPU_CEILING}°C, warn cpu=${CPU_WARN_TEMP}°C/gpu=${GPU_WARN_TEMP}°C, gracia=${OVER_GRACE}s, recorte_cada=${CUT_INTERVAL}s, intervalo=${INTERVAL}s, modula_carga=${LOAD_MODULATION})"
+log "Iniciando guardián térmico CPU/GPU [modo=${MODE}] (cpu=${CPU_CEILING}°C, gpu=${GPU_CEILING}°C, warn cpu=${CPU_WARN_TEMP}°C/gpu=${GPU_WARN_TEMP}°C, gracia=${OVER_GRACE}s, recorte_cada=${CUT_INTERVAL}s, intervalo=${INTERVAL}s, modula_carga=${LOAD_MODULATION})"
+[[ "$MODE" == "gaming" ]] && log "MODO GAMING: solo ventiladores, sin recorte de potencia (cero throttling)."
 
 # Trap para limpieza al detener el servicio
 cleanup() {

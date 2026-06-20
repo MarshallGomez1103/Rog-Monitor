@@ -1,0 +1,11 @@
+[Unit]
+Description=Apply ROG settings for the current power source
+After=tuned-ppd.service
+Wants=tuned-ppd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/rog-power-source
+
+[Install]
+WantedBy=multi-user.target

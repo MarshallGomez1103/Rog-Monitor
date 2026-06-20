@@ -1189,3 +1189,53 @@ html[data-mode="dark"][data-theme="neon-nights"] .block::before {
 
 /* .bignum base: tamaño de fuente y layout. El text-shadow viene de neon.css. */
 /* (sin reglas de text-shadow aquí — delegar a neon.css evita conflictos) */
+
+/* ---------- Editor de ventiladores v14: tooltip de puntos + aviso "baja para aplicar" ---------- */
+.fan-curve-tooltip {
+  position: fixed;
+  z-index: 9999;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: var(--bg);
+  font: 600 12px/1.2 ui-monospace, monospace;
+  padding: 3px 7px;
+  border-radius: 6px;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,.45);
+}
+.fan-curve-tooltip.hidden { display: none; }
+.fan-curve-graph circle[data-i] { cursor: grab; }
+.fan-curve-graph .fan-curve-points circle { transition: r .08s ease; }
+.fan-curve-graph circle[data-i]:hover { r: 6; }
+
+.fan-dirty-banner {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin: .4rem 0;
+  padding: .5rem .75rem;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 13px;
+}
+.fan-dirty-banner.hidden { display: none; }
+.fan-dirty-banner #fan-dirty-jump { white-space: nowrap; }
+
+@keyframes fan-save-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50% { box-shadow: 0 0 0 4px var(--accent); }
+}
+#fan-save.pulse { animation: fan-save-pulse .6s ease 2; }
+
+/* ---------- Mantenimiento v14 ---------- */
+.maint-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin: .5rem 0; }
+.ghost.danger { border-color: var(--hot, #ff6b3d); color: var(--hot, #ff6b3d); }
+.ghost.danger:hover { background: var(--hot, #ff6b3d); color: var(--bg); }

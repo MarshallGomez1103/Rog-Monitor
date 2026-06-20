@@ -1,5 +1,50 @@
 # Changelog
 
+## 14.0.0 — 2026-06-20
+
+### Added
+
+- **Guardian modes: Protection and Gaming.** Gaming keeps fans-first only and
+  never trims Dynamic Boost/PL2, so there is no thermal throttling while you
+  play (high ceilings, 95 °C CPU / 87 °C GPU). Protection keeps the previous
+  conservative power-cutting behaviour. Selectable from the Guardian panel.
+- **Autostart (minimized).** Optional "start with the system" setting that adds
+  an XDG autostart entry launching the app minimized. The Python backend stays
+  frozen (SIGSTOP, 0 % CPU) until you open the window, so it does not steal
+  performance.
+- **One-line install / uninstall.** `bash install.sh` does all user-level setup
+  without sudo, creates a desktop shortcut, and only then — after printing
+  exactly what it needs — asks once for sudo for the optional system
+  integration. `bash uninstall.sh [--purge]` removes everything (configs kept by
+  default). In-app **Maintenance** wizard for update / reinstall / uninstall.
+- **Fan curve editor: hover tooltips** showing °C / % on each point (also while
+  dragging) and a sticky "unsaved changes — scroll down to SAVE & APPLY" banner
+  that jumps to the save button.
+
+### Changed
+
+- **Single folder.** Fan/profile scripts and their systemd units moved from the
+  separate `~/Rog-Monitor-Scripts` into the main repo (`scripts/`, `systemd/`),
+  so everything ships and uninstalls from one place.
+- Profile selection no longer reverts: once the system confirms (busctl
+  read-back) the chosen profile stays highlighted regardless of stream lag.
+
+### Fixed
+
+- **No more profile drift / battery-boot brick.** The automatic profile switch
+  by power source (`rog-power-source` + udev rule) is now opt-in and no longer
+  installed/enabled by default. Disable it on an existing system with
+  `sudo bash scripts/rog-monitor-safe-mode.sh no-auto-profile`. GPU mode is
+  never changed automatically.
+- **Terminal UI** no longer breaks on mouse-wheel/scroll/zoom/resize (SIGWINCH
+  refresh + robust SGR mouse drain) and exits cleanly ("Saliendo…", no
+  tracebacks).
+
+### Removed
+
+- Dead `src/legacy/` module. Internal multi-agent handoff docs are no longer
+  tracked in git (kept locally, ignored).
+
 ## 13.1.0 — 2026-06-18
 
 ### Added

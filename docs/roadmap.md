@@ -15,13 +15,17 @@ read-only instead of guessing.
 * [x] Public security notes in `SECURITY.md`.
 * [x] Advanced documentation panel with vendor/component/model search.
 * [x] Local private calibration through `~/.config/rog-monitor/device.json`.
+* [x] Guardian modes: **Protection** and **Gaming** (fans-only, no throttling). *(v14)*
+* [x] Autostart minimized without stealing performance (backend frozen until shown). *(v14)*
+* [x] Packaging: one-line install, one-line disable, one-line uninstall + in-app
+  maintenance wizard; everything in a single folder. *(v14)*
+* [x] Profile no longer drifts by power source (auto-switch is opt-in). *(v14)*
 
 ## Next
 
 * [ ] Manual profile beside Ahorro, Balance and Performance.
 * [ ] Larger official-doc catalog by exact model/SKU.
 * [ ] First-run safety wizard that explains writable controls and recovery.
-* [ ] Packaging: one-line install, one-line disable, one-line uninstall.
 * [ ] GitHub Actions for syntax checks, JSON validation and read-only sensor smoke tests.
 * [ ] Windows feasibility prototype: same ROG Monitor UX backed by Windows
   sensors/vendor APIs where available, strictly read-only first.

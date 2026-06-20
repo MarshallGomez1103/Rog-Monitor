@@ -2,6 +2,7 @@
 
 import json
 import queue
+import signal
 import sys
 import threading
 import time
@@ -67,6 +68,7 @@ class App:
         self._message_until = 0.0
         self._gpu_thread: threading.Thread | None = None
         self._gpu_results: queue.Queue = queue.Queue()
+        self._resized = False  # bandera para SIGWINCH
 
     def flash(self, message: str) -> None:
         self.message = message
@@ -225,6 +227,15 @@ class App:
     def run(self) -> None:
         console = Console()
         state = self.sample()
+
+        # Manejador de SIGWINCH: sólo activa la bandera (reentrancy-safe).
+        # El bucle principal detecta _resized y re-renderiza con el ancho nuevo.
+        def _on_resize(signum, frame):
+            self._resized = True
+
+        if hasattr(signal, "SIGWINCH"):
+            signal.signal(signal.SIGWINCH, _on_resize)
+
         try:
             with KeyReader() as keyboard, Live(
                 ui.build(state, self.t, console.width),
@@ -236,6 +247,16 @@ class App:
                 while running:
                     deadline = time.monotonic() + self.interval
                     while running and time.monotonic() < deadline:
+                        # Responder a resize antes de esperar la próxima tecla
+                        if self._resized:
+                            self._resized = False
+                            try:
+                                live.update(
+                                    ui.build(state, self.t, console.width),
+                                    refresh=True,
+                                )
+                            except Exception:
+                                self._log_error()
                         key = keyboard.get(timeout=0.1)
                         if not key:
                             continue
@@ -248,14 +269,25 @@ class App:
                             self._log_error()
                     if not running:
                         break
+                    if self._resized:
+                        self._resized = False
                     try:
                         state = self.sample()
                         live.update(ui.build(state, self.t, console.width), refresh=True)
                     except Exception:
                         self._log_error()
-        except KeyboardInterrupt:
-            pass
-        finally:
+            # El bloque `with` ya salió: pantalla alternativa restaurada,
+            # modos de ratón desactivados, termios restaurado.
+            # Ahora es seguro escribir al terminal normal.
             self.fans.persist_max()
             if sys.stdout.isatty():
-                sys.stdout.write("\x1b[?25h")  # ensure cursor is restored
+                sys.stdout.write("\x1b[?25h")  # asegurar cursor visible
+                sys.stdout.flush()
+            print("Saliendo…")
+        except KeyboardInterrupt:
+            # Ctrl-C: salida limpia igual que 'q'
+            self.fans.persist_max()
+            if sys.stdout.isatty():
+                sys.stdout.write("\x1b[?25h")
+                sys.stdout.flush()
+            print("Saliendo…")

@@ -299,8 +299,9 @@ ipcMain.handle('do-update', async () => {
    service rog-profile-sync.service applies them. Editing the file needs no
    privileges; restarting the service prompts for the password via pkexec. */
 
-const SCRIPTS_DIR = process.env.ROG_SCRIPTS_DIR
-  || path.join(os.homedir(), 'Rog-Monitor-Scripts');
+// Scripts ahora viven en el propio repo (carpeta única). Se respeta
+// ROG_SCRIPTS_DIR por compatibilidad, pero el default es REPO/scripts.
+const SCRIPTS_DIR = process.env.ROG_SCRIPTS_DIR || REPO;
 const SYNC_SCRIPT = path.join(SCRIPTS_DIR, 'scripts', 'rog-profile-sync.sh');
 const FAN_CALIBRATE = path.join(SCRIPTS_DIR, 'scripts', 'calibrate-fans.sh');
 const ENABLE_ASUSD = path.join(SCRIPTS_DIR, 'scripts', 'enable-asusd.sh');
@@ -1022,6 +1023,78 @@ ipcMain.handle('app-info', () => ({
   repo: REPO,
 }));
 
+/* ---------- autoarranque minimizado (XDG autostart) ----------
+   Sin daemon: solo una entrada .desktop en ~/.config/autostart que lanza la
+   app minimizada al iniciar sesión. El backend queda congelado (SIGSTOP) hasta
+   que abras la ventana, así que no consume CPU en reposo. */
+const AUTOSTART_DESKTOP = path.join(
+  os.homedir(), '.config', 'autostart', 'rog-monitor.desktop');
+
+ipcMain.handle('get-autostart', () => {
+  try { return { ok: true, enabled: fs.existsSync(AUTOSTART_DESKTOP) }; }
+  catch (e) { return { ok: false, err: String((e && e.message) || e) }; }
+});
+
+/* ---------- mantenimiento: reinstalar / desinstalar ---------- */
+ipcMain.handle('reinstall-app', async () => {
+  // Reinstala dependencias de usuario (venv) y reinicia el backend. Sin sudo.
+  const res = await run('bash', [path.join(REPO, 'scripts', 'install.sh')], 180000);
+  if (res.ok) startBackend();
+  return res;
+});
+
+ipcMain.handle('uninstall-app', async (_e, { purge } = {}) => {
+  // Nivel usuario (sin privilegios): launcher, entrada de menú, autostart.
+  const userTargets = [
+    path.join(os.homedir(), '.local', 'bin', 'monitor'),
+    path.join(os.homedir(), '.local', 'share', 'applications', 'rog-monitor.desktop'),
+    AUTOSTART_DESKTOP,
+  ];
+  for (const f of userTargets) { try { fs.rmSync(f, { force: true }); } catch (_) {} }
+
+  // Nivel sistema (pkexec, una sola contraseña): servicios/units/udev/scripts.
+  const safeMode = path.join(REPO, 'scripts', 'rog-monitor-safe-mode.sh');
+  const sys = await run('pkexec', ['bash', safeMode, 'uninstall'], 60000);
+
+  if (purge) {
+    for (const d of [CONFIG_DIR_PATH, DATA_DIR_PATH]) {
+      try { fs.rmSync(d, { recursive: true, force: true }); } catch (_) {}
+    }
+  }
+  // Cerrar la app tras desinstalar.
+  setTimeout(() => { try { app.quit(); } catch (_) {} }, 800);
+  return { ok: true, systemRemoved: sys.ok, systemErr: sys.ok ? '' : sys.err };
+});
+
+ipcMain.handle('set-autostart', (_e, enabled) => {
+  try {
+    if (enabled) {
+      const startSh = path.join(__dirname, 'start.sh');
+      const icon = path.join(__dirname, 'assets', 'icon.png');
+      const content = [
+        '[Desktop Entry]',
+        'Type=Application',
+        'Name=ROG Monitor',
+        'Comment=Monitor de hardware para portátiles ASUS ROG',
+        `Exec=${startSh} --minimized`,
+        `Icon=${icon}`,
+        'Terminal=false',
+        'Categories=System;Monitor;',
+        'StartupWMClass=rog-monitor',
+        'X-GNOME-Autostart-enabled=true',
+        '',
+      ].join('\n');
+      fs.mkdirSync(path.dirname(AUTOSTART_DESKTOP), { recursive: true });
+      fs.writeFileSync(AUTOSTART_DESKTOP, content);
+    } else {
+      fs.rmSync(AUTOSTART_DESKTOP, { force: true });
+    }
+    return { ok: true, enabled: !!enabled };
+  } catch (e) {
+    return { ok: false, err: String((e && e.message) || e) };
+  }
+});
+
 /* ---------- gaming overlay (always-on-top stats) ----------
    A frameless, click-through, transparent window pinned to a corner of the
    chosen monitor. It stays above fullscreen games so you can watch temps and
@@ -1126,12 +1199,19 @@ ipcMain.handle('set-overlay', (_e, cfg) => {
   return { ok: true, current: overlayCfg };
 });
 
+// Arranque minimizado: lo usa la entrada de autostart (start.sh --minimized).
+// Al estar minimizada, los listeners de abajo ponen mainVisible=false y el
+// backend Python queda en SIGSTOP (0% CPU): "iniciar con el sistema" no roba
+// rendimiento hasta que abres la ventana.
+const START_MINIMIZED = process.argv.includes('--minimized');
+
 function createWindow() {
   win = new BrowserWindow({
     width: 1320,
     height: 860,
     minWidth: 980,
     minHeight: 640,
+    show: !START_MINIMIZED,
     backgroundColor: '#0b0d10',
     autoHideMenuBar: true,
     title: 'ROG Monitor',
@@ -1144,6 +1224,16 @@ function createWindow() {
     },
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  win.once('ready-to-show', () => {
+    if (START_MINIMIZED) {
+      mainVisible = false;
+      win.showInactive();   // aparece en la barra de tareas…
+      win.minimize();        // …pero minimizada, sin robar foco
+      updateBackendPower();  // congela el backend hasta que la abras
+    } else {
+      win.show();
+    }
+  });
   // Ahorro: congelar/reanudar el backend según se vea o no la ventana.
   ['minimize', 'hide'].forEach((ev) => win.on(ev, () => { mainVisible = false; updateBackendPower(); }));
   ['restore', 'show', 'focus'].forEach((ev) => win.on(ev, () => { mainVisible = true; updateBackendPower(); }));
@@ -1264,15 +1354,17 @@ const THERMAL_GUARDIAN_UNIT = path.join(REPO, 'systemd', 'rog-thermal-guardian.s
 
 function readGuardianOverride() {
   const overridePath = `/etc/systemd/system/${THERMAL_GUARDIAN_SERVICE}.d/override.conf`;
-  const out = { cpuCeiling: 92, gpuCeiling: 83 };
+  const out = { cpuCeiling: 92, gpuCeiling: 83, mode: 'protection' };
   try {
     const text = fs.readFileSync(overridePath, 'utf-8');
     const cpu = text.match(/ROG_THERMAL_CPU_CEILING=(\d+)/);
     const gpu = text.match(/ROG_THERMAL_GPU_CEILING=(\d+)/);
     const legacy = text.match(/ROG_THERMAL_CEILING=(\d+)/);
+    const mode = text.match(/ROG_THERMAL_MODE=(\w+)/);
     if (cpu) out.cpuCeiling = parseInt(cpu[1], 10);
     if (gpu) out.gpuCeiling = parseInt(gpu[1], 10);
     else if (legacy) out.gpuCeiling = parseInt(legacy[1], 10);
+    if (mode && (mode[1] === 'gaming' || mode[1] === 'protection')) out.mode = mode[1];
   } catch (_) { /* no override */ }
   out.cpuCeiling = Math.max(70, Math.min(100, out.cpuCeiling));
   out.gpuCeiling = Math.max(70, Math.min(87, out.gpuCeiling));
@@ -1297,9 +1389,14 @@ ipcMain.handle('get-thermal-guardian', async () => {
   };
 });
 
-ipcMain.handle('set-thermal-guardian', async (_e, { enabled, cpuCeiling, gpuCeiling, ceiling }) => {
-  const cpu = Math.max(70, Math.min(100, Math.round(Number(cpuCeiling) || 92)));
-  const gpu = Math.max(70, Math.min(87, Math.round(Number(gpuCeiling || ceiling) || 83)));
+ipcMain.handle('set-thermal-guardian', async (_e, { enabled, cpuCeiling, gpuCeiling, ceiling, mode }) => {
+  const guardianMode = mode === 'gaming' ? 'gaming' : 'protection';
+  // En modo Gaming los techos por defecto suben (95/87): la meta es jugar sin
+  // throttling, solo subiendo ventiladores. El usuario igual puede ajustarlos.
+  const defCpu = guardianMode === 'gaming' ? 95 : 92;
+  const defGpu = guardianMode === 'gaming' ? 87 : 83;
+  const cpu = Math.max(70, Math.min(100, Math.round(Number(cpuCeiling) || defCpu)));
+  const gpu = Math.max(70, Math.min(87, Math.round(Number(gpuCeiling || ceiling) || defGpu)));
   const overrideDir = `/etc/systemd/system/${THERMAL_GUARDIAN_SERVICE}.d`;
   const overridePath = `${overrideDir}/override.conf`;
   const unitPath = `/etc/systemd/system/${THERMAL_GUARDIAN_SERVICE}`;
@@ -1308,6 +1405,7 @@ ipcMain.handle('set-thermal-guardian', async (_e, { enabled, cpuCeiling, gpuCeil
     .replace(/ROG_THERMAL_CEILING=83/g, 'ROG_THERMAL_GPU_CEILING=83');
   const overrideContent =
     `[Service]\n` +
+    `Environment="ROG_THERMAL_MODE=${guardianMode}"\n` +
     `Environment="ROG_THERMAL_CPU_CEILING=${cpu}"\n` +
     `Environment="ROG_THERMAL_GPU_CEILING=${gpu}"\n` +
     `Environment="ROG_THERMAL_CEILING=${gpu}"\n`;
@@ -1334,6 +1432,7 @@ ipcMain.handle('set-thermal-guardian', async (_e, { enabled, cpuCeiling, gpuCeil
     cpuCeiling: cpu,
     gpuCeiling: gpu,
     ceiling: gpu,
+    mode: guardianMode,
   };
 });
 

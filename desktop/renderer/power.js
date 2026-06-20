@@ -86,8 +86,8 @@
       'power.confirm.beyondQuestion': { es: '¿Aplicar fuera del rango seguro?', en: 'Apply outside the safe range?' },
       // --- panel avanzado ---
       'power.advanced.intro': {
-        es: 'Modo avanzado: elige marca y componente para ver la documentación oficial y los rangos seguros. Estos límites varían por modelo; consulta siempre la fuente oficial antes de salir del rango seguro.',
-        en: 'Advanced mode: pick a brand and component to see official documentation and safe ranges. These limits vary by model; always check the official source before leaving the safe range.',
+        es: '¿No quieres complicarte? La mayoría solo activa el GUARDIÁN (abajo) y listo. El modo avanzado es para quien quiere afinar a mano: elige marca y componente, busca tu modelo y abre la documentación oficial de undervolt/overclock. Estos límites varían por modelo; consulta siempre la fuente oficial antes de salir del rango seguro.',
+        en: 'Don’t want the hassle? Most people just turn on the GUARDIAN (below) and that’s it. Advanced mode is for hand-tuning: pick a brand and component, search your model and open the official undervolt/overclock docs. These limits vary by model; always check the official source before leaving the safe range.',
       },
       'power.advanced.unavailable': {
         es: 'La base de documentación de dispositivos aún no está disponible. Igual puedes ajustar dentro de los rangos seguros detectados para tu equipo.',
@@ -803,6 +803,50 @@
       return;
     }
 
+    // Selector de modo: Protección (recorta potencia si hace falta) vs
+    // Gaming (solo ventiladores, sin throttling — para jugar tranquilo).
+    let selectedMode = result.mode === 'gaming' ? 'gaming' : 'protection';
+    const modeRow = document.createElement('div');
+    modeRow.className = 'power-control-row power-guardian-mode';
+    const modeLabel = document.createElement('span');
+    modeLabel.className = 'power-control-unit power-guardian-row-label';
+    modeLabel.textContent = tf('power.guardian.modeLabel', 'Modo') + ':';
+    modeRow.appendChild(modeLabel);
+    const modeSeg = document.createElement('div');
+    modeSeg.className = 'segment power-guardian-modeseg';
+    const modeBtns = {};
+    [
+      ['protection', tf('power.guardian.modeProtection', 'Protección')],
+      ['gaming', tf('power.guardian.modeGaming', 'Gaming')],
+    ].forEach(([key, lbl]) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      if (selectedMode === key) b.classList.add('active');
+      b.textContent = lbl;
+      b.title = key === 'gaming'
+        ? tf('power.guardian.modeGamingTip', 'Solo ventiladores al máximo: nunca recorta potencia, así no hay thermal throttling mientras juegas. Techos altos (95°C/87°C).')
+        : tf('power.guardian.modeProtectionTip', 'Sube ventiladores y, si el calor persiste, recorta Dynamic Boost/PL2 para proteger el equipo. Uso general.');
+      b.addEventListener('click', () => {
+        selectedMode = key;
+        Object.values(modeBtns).forEach((x) => x.classList.remove('active'));
+        b.classList.add('active');
+        // En Gaming subimos los techos por defecto si seguían en los de Protección.
+        if (key === 'gaming') {
+          if (Number(cpuRow.slider.value) <= 92) { cpuRow.slider.value = 95; cpuRow.num.value = 95; }
+          if (Number(gpuRow.slider.value) <= 83) { gpuRow.slider.value = 87; gpuRow.num.value = 87; }
+        }
+        modeDesc.textContent = key === 'gaming' ? b.title : modeBtns.protection.title;
+      });
+      modeBtns[key] = b;
+      modeSeg.appendChild(b);
+    });
+    modeRow.appendChild(modeSeg);
+    section.appendChild(modeRow);
+    const modeDesc = document.createElement('span');
+    modeDesc.className = 'power-control-tooltip';
+    modeDesc.textContent = modeBtns[selectedMode].title;
+    section.appendChild(modeDesc);
+
     const cpuRow = buildGuardianTempRow(
       tf('power.guardian.cpuCeiling', 'Techo CPU'),
       result.cpuCeiling || 92,
@@ -840,6 +884,7 @@
           enabled: enabling,
           cpuCeiling: Number(cpuRow.slider.value),
           gpuCeiling: Number(gpuRow.slider.value),
+          mode: selectedMode,
         });
       } catch (err) {
         powerToast(`${t('power.thermalError')}: ${err.message}`);

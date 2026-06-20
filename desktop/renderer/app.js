@@ -40,6 +40,7 @@ let gpuBusy = false;
 // daemon aplicaba el cambio → el botón "rebotaba" al anterior y luego saltaba.
 let pendingProfile = null;
 let pendingProfileTs = 0;
+let pendingProfileConfirmed = false;  // true cuando el sistema confirmó (busctl read-back)
 const PENDING_PROFILE_MS = 8000;
 // PowerProfilesDaemon usa power-saver/balanced/performance; algunos equipos
 // reportan el perfil ASUS "quiet". Normalizamos para comparar contra los botones.
@@ -1252,8 +1253,15 @@ function update(stats) {
   const sysProfile = normalizeProfile(stats.ppd_profile);
   let shownProfile = sysProfile;
   if (pendingProfile) {
-    if (sysProfile === pendingProfile || Date.now() - pendingProfileTs > PENDING_PROFILE_MS) {
-      pendingProfile = null;            // confirmado por el sistema, o expiró
+    if (sysProfile === pendingProfile) {
+      pendingProfile = null;            // el sistema ya reporta el perfil elegido
+    } else if (pendingProfileConfirmed) {
+      // El sistema confirmó el cambio (busctl read-back). El perfil ES el que
+      // el usuario eligió; si el stream 1 Hz aún reporta el viejo es solo
+      // rezago. NO revertimos: el usuario manda, se queda donde lo puso.
+      shownProfile = pendingProfile;
+    } else if (Date.now() - pendingProfileTs > PENDING_PROFILE_MS) {
+      pendingProfile = null;            // nunca se confirmó y expiró: reflejar realidad
     } else {
       shownProfile = pendingProfile;    // mantener el elegido mientras se aplica
     }
@@ -1376,6 +1384,7 @@ document.querySelectorAll('#profile-seg button').forEach((btn) => {
     // ocurría cuando el refresco 1 Hz pisaba el resaltado con el perfil viejo.
     pendingProfile = profile;
     pendingProfileTs = Date.now();
+    pendingProfileConfirmed = false;
     document.querySelectorAll('#profile-seg button').forEach((b) =>
       b.classList.toggle('active', b === btn));
     const label = t(PROFILE_KEY[profile] || 'profile.balanced');
@@ -1386,6 +1395,9 @@ document.querySelectorAll('#profile-seg button').forEach((btn) => {
       if (lastStats) update(lastStats);
       return;
     }
+    // applied === true → busctl confirmó que el perfil realmente quedó. A
+    // partir de aquí el resaltado se queda fijo en lo que elegiste (no rebota).
+    if (res.applied && pendingProfile === profile) pendingProfileConfirmed = true;
     toast(res.applied
       ? t('profile.changed', { p: label })
       : t('profile.requested', { p: label }));
@@ -1434,6 +1446,53 @@ $('update-btn').addEventListener('click', async () => {
   } else {
     label.textContent = 'AL DÍA ✓';
     setTimeout(() => { label.textContent = 'ACTUALIZAR'; }, 4000);
+  }
+});
+
+/* ---------- mantenimiento (actualizar / reinstalar / desinstalar) ---------- */
+function maintStatus(msg) {
+  const el = $('maint-status');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('hidden', !msg);
+}
+$('maintenance-btn')?.addEventListener('click', () => {
+  maintStatus('');
+  $('maintenance-modal').classList.remove('hidden');
+});
+$('maint-close')?.addEventListener('click', () => $('maintenance-modal').classList.add('hidden'));
+$('maintenance-modal')?.addEventListener('click', (e) => {
+  if (e.target === $('maintenance-modal')) $('maintenance-modal').classList.add('hidden');
+});
+$('maint-update')?.addEventListener('click', async () => {
+  maintStatus('Buscando actualización…');
+  const res = await window.rog.checkUpdate();
+  if (!res.ok) { maintStatus(`No se pudo verificar: ${res.err}`); return; }
+  if (res.behind > 0) {
+    maintStatus(`Hay ${res.behind} cambio(s). Instalando…`);
+    const up = await window.rog.doUpdate();
+    maintStatus(up.ok ? 'Actualizado y backend reiniciado ✓' : `Error: ${up.err}`);
+  } else {
+    maintStatus('Ya estás al día ✓');
+  }
+});
+$('maint-reinstall')?.addEventListener('click', async () => {
+  maintStatus('Reinstalando dependencias…');
+  const res = await window.rog.reinstallApp();
+  maintStatus(res.ok ? 'Reinstalado y backend reiniciado ✓' : `Error: ${res.err || res.out}`);
+});
+$('maint-uninstall')?.addEventListener('click', async () => {
+  const purge = $('maint-purge').checked;
+  const msg = purge
+    ? '¿Desinstalar ROG Monitor Y BORRAR tus configuraciones? No se puede deshacer.'
+    : '¿Desinstalar ROG Monitor? (se conservan tus configuraciones)';
+  if (!window.confirm(msg + '\n\nSe pedirá tu contraseña para quitar las integraciones de sistema.')) return;
+  maintStatus('Desinstalando… (puede pedir contraseña)');
+  const res = await window.rog.uninstallApp({ purge });
+  if (res.ok) {
+    maintStatus('Desinstalado. La app se cerrará…');
+  } else {
+    maintStatus(`Error: ${res.err || 'no se pudo desinstalar'}`);
   }
 });
 
@@ -1599,8 +1658,26 @@ async function openAlertsModal() {
   const res = await window.rog.getSettings();
   if (!res.ok) { toast(`No pude leer ajustes: ${res.err}`); return; }
   fillAlertsForm(res);
+  // Autoarranque: estado independiente (no va en settings.json, es una entrada
+  // .desktop en ~/.config/autostart). Se aplica al instante al marcar/desmarcar.
+  try {
+    const a = await window.rog.getAutostart();
+    if (a && a.ok) $('set-autostart').checked = !!a.enabled;
+  } catch (_) { /* no crítico */ }
   $('alerts-modal').classList.remove('hidden');
 }
+
+$('set-autostart').addEventListener('change', async (e) => {
+  const res = await window.rog.setAutostart(e.target.checked);
+  if (!res || res.ok === false) {
+    toast(`No pude cambiar el autoarranque: ${(res && res.err) || '?'}`);
+    e.target.checked = !e.target.checked; // revertir el visual
+    return;
+  }
+  toast(e.target.checked
+    ? 'Autoarranque activado: la app abrirá minimizada al iniciar sesión.'
+    : 'Autoarranque desactivado.');
+});
 
 $('alerts-btn').addEventListener('click', openAlertsModal);
 $('alerts-close').addEventListener('click', () => $('alerts-modal').classList.add('hidden'));
@@ -2000,6 +2077,7 @@ function renderFanCapEditor() {
       syncFanCapInput();
       updateFanCapPanelText();
       updateCapPreview({ skipEditor: true });
+      markFanDirty();
     });
   });
 }
@@ -2090,7 +2168,10 @@ function renderCurves() {
       </div>`;
   }).join('');
   document.querySelectorAll('.curve-fan input').forEach((input) => {
-    input.addEventListener('input', () => updateFanCurveCard(input.closest('.curve-fan')));
+    input.addEventListener('input', () => {
+      updateFanCurveCard(input.closest('.curve-fan'));
+      markFanDirty();
+    });
   });
   document.querySelectorAll('.curve-fan').forEach(attachFanGraphDrag);
 }
@@ -2159,9 +2240,45 @@ function graphYToPercent(y) {
   return Math.max(0, Math.min(100, Math.round(ratio * 100)));
 }
 
+// Tooltip singleton para los puntos de las curvas (mismo gesto que el resto de
+// la app: pasas el mouse y ves el valor). Muestra "°C / %vel" sobre el punto.
+let fanPointTip = null;
+function fanTooltipEl() {
+  if (!fanPointTip) {
+    fanPointTip = document.createElement('div');
+    fanPointTip.className = 'fan-curve-tooltip hidden';
+    document.body.appendChild(fanPointTip);
+  }
+  return fanPointTip;
+}
+function showFanPointTip(clientX, clientY, temp, pct) {
+  const el = fanTooltipEl();
+  el.textContent = `${temp}°C · ${pct}%`;
+  el.style.left = `${clientX}px`;
+  el.style.top = `${clientY - 34}px`;
+  el.classList.remove('hidden');
+}
+function hideFanPointTip() {
+  if (fanPointTip) fanPointTip.classList.add('hidden');
+}
+
 function attachFanGraphDrag(box) {
   const graph = box.querySelector('.fan-curve-graph');
   if (!graph) return;
+
+  // Hover: al pasar el mouse por un punto (sin arrastrar) se ve su valor.
+  graph.addEventListener('pointermove', (event) => {
+    if (box.classList.contains('dragging')) return;
+    const point = event.target.closest('circle[data-i]');
+    if (!point) { hideFanPointTip(); return; }
+    const i = Number(point.dataset.i);
+    const temps = [...box.querySelectorAll('input[data-kind="temps"]')];
+    const pwms = [...box.querySelectorAll('input[data-kind="pwms"]')];
+    showFanPointTip(event.clientX, event.clientY,
+      Math.round(+temps[i].value), Math.round(+pwms[i].value));
+  });
+  graph.addEventListener('pointerleave', hideFanPointTip);
+
   graph.addEventListener('pointerdown', (event) => {
     const point = event.target.closest('circle[data-i]');
     if (!point) return;
@@ -2180,9 +2297,15 @@ function attachFanGraphDrag(box) {
       tempInputs[pointIndex].value = graphXToTemp(x, pointIndex, tempInputs);
       pwmInputs[pointIndex].value = graphYToPercent(y);
       updateFanCurveCard(box);
+      // Tooltip vivo mientras arrastras: ves el °C/% exacto del punto.
+      showFanPointTip(moveEvent.clientX, moveEvent.clientY,
+        Math.round(+tempInputs[pointIndex].value),
+        Math.round(+pwmInputs[pointIndex].value));
+      markFanDirty();
     };
     const up = () => {
       box.classList.remove('dragging');
+      hideFanPointTip();
       document.removeEventListener('pointermove', move);
       document.removeEventListener('pointerup', up);
     };
@@ -2190,6 +2313,15 @@ function attachFanGraphDrag(box) {
     document.addEventListener('pointerup', up);
     move(event);
   });
+}
+
+// Marca el editor como "con cambios sin aplicar" y muestra el aviso sticky que
+// lleva al botón GUARDAR Y APLICAR (abajo). Se limpia al guardar/cargar/cerrar.
+function markFanDirty() {
+  $('fan-dirty-banner')?.classList.remove('hidden');
+}
+function clearFanDirty() {
+  $('fan-dirty-banner')?.classList.add('hidden');
 }
 
 function singleCurveFromBox(box) {
@@ -2299,6 +2431,7 @@ async function loadFanProfile(profile) {
   });
   renderCurves();
   refreshFanNotes();
+  clearFanDirty();   // perfil recién cargado: sin cambios pendientes
   return true;
 }
 
@@ -2350,11 +2483,20 @@ $('fan-modal').addEventListener('click', (e) => {
 $('fan-cap').addEventListener('input', () => {
   setFanCapAll($('fan-cap').value);
   updateCapPreview();
+  markFanDirty();
 });
 $('fan-clear-cap').addEventListener('click', () => {
   setFanCapDraft({});
   updateCapPreview();
+  markFanDirty();
   toast('Tope quitado. Oprime GUARDAR Y APLICAR para liberar los ventiladores.');
+});
+
+// "Ir a guardar": lleva el foco/scroll al botón GUARDAR Y APLICAR (abajo).
+$('fan-dirty-jump').addEventListener('click', () => {
+  $('fan-save')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  $('fan-save')?.classList.add('pulse');
+  setTimeout(() => $('fan-save')?.classList.remove('pulse'), 1200);
 });
 
 $('fan-benchmark').addEventListener('click', async () => {
@@ -2412,6 +2554,7 @@ $('fan-save').addEventListener('click', async () => {
       };
     }
     $('fan-modal').classList.add('hidden');
+    clearFanDirty();   // cambios aplicados
     const hasCap = Object.keys(capByFan).length > 0;
     toast(res.warn
       ? res.warn

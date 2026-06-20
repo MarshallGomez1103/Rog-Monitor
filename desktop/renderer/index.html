@@ -65,6 +65,7 @@
             <span id="update-label" data-i18n="topbar.update">ACTUALIZAR</span>
           </button>
           <button id="report-btn" class="ghost" data-i18n="topbar.report" title="Abre un issue en el repositorio de GitHub con la información del sistema ya escrita">REPORTAR ERROR</button>
+          <button id="maintenance-btn" class="ghost" title="Actualizar, reinstalar o desinstalar ROG Monitor">MANTENIMIENTO</button>
         </div>
       </div>
 
@@ -382,6 +383,12 @@
         <span class="fan-active-indicator hidden" id="fan-active-indicator">(perfil activo del sistema)</span>
       </p>
 
+      <!-- Aviso sticky: aparece al tocar curvas o cap; lleva al botón de abajo -->
+      <div class="fan-dirty-banner hidden" id="fan-dirty-banner" role="status">
+        <span>⬇ Cambios sin aplicar — baja y pulsa <b>GUARDAR Y APLICAR</b>.</span>
+        <button type="button" class="ghost" id="fan-dirty-jump">IR A GUARDAR</button>
+      </div>
+
       <p class="sub warn-note hidden" id="fan-calib-banner">
         ⚙ <b>Primera vez:</b> calibra los ventiladores (botón CALIBRAR). La app
         mide las RPM reales de cada uno en 7 velocidades; sin esa tabla el tope
@@ -523,10 +530,39 @@
         <input type="checkbox" id="set-notifications">
         Mostrar notificaciones de escritorio
       </label>
+      <label class="check-row" for="set-autostart" title="Crea una entrada de inicio de sesión. La app abre minimizada y el monitor queda congelado (0% CPU) hasta que la abras.">
+        <input type="checkbox" id="set-autostart">
+        Iniciar con el sistema (minimizado, sin consumir recursos)
+      </label>
       <p id="alerts-status" class="note hidden"></p>
       <div class="mode-row">
         <button class="ghost aura-primary" id="alerts-save" data-i18n="common.save_apply">GUARDAR Y APLICAR</button>
         <button class="ghost modal-close" id="alerts-close" data-i18n="common.close">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="maintenance-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Mantenimiento</h3>
+      <p class="sub">Actualiza, reinstala o desinstala ROG Monitor. Todo vive en una sola
+        carpeta del repo; tus configuraciones están en <code>~/.config/rog-monitor</code>.</p>
+      <div class="maint-actions">
+        <button class="ghost" id="maint-update">BUSCAR ACTUALIZACIÓN</button>
+        <button class="ghost" id="maint-reinstall" title="Reinstala dependencias y reinicia el backend">REINSTALAR</button>
+      </div>
+      <p id="maint-status" class="note hidden"></p>
+      <hr>
+      <h3 class="size-title">Desinstalar</h3>
+      <p class="sub">Quita la app, los launchers, el autoarranque y las integraciones de
+        sistema (pedirá contraseña). El auto-perfil por fuente de poder y la GPU nunca se tocan solos.</p>
+      <label class="check-row" for="maint-purge">
+        <input type="checkbox" id="maint-purge">
+        Borrar también mis configuraciones (no se puede deshacer)
+      </label>
+      <div class="mode-row">
+        <button class="ghost danger" id="maint-uninstall">DESINSTALAR</button>
+        <button class="ghost modal-close" id="maint-close">Cerrar</button>
       </div>
     </div>
   </div>
