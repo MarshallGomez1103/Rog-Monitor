@@ -1835,7 +1835,6 @@ $('alerts-save').addEventListener('click', async () => {
   /* --- i18n: claves nuevas en los 8 idiomas --- */
   if (window.i18n && window.i18n.register) {
     window.i18n.register({
-      'topbar.alerts':        { es:'ALERTAS', en:'ALERTS', fr:'ALERTES', it:'AVVISI', pt:'ALERTAS', zh:'警报', ja:'アラート', ko:'경고' },
       'topbar.alerts_title':  { es:'Alertas / Umbrales: avisos y colores por temperatura y potencia', en:'Alerts / Thresholds: warnings and colors by temperature and power', fr:'Alertes / Seuils : avertissements et couleurs par température et puissance', it:'Avvisi / Soglie: avvisi e colori per temperatura e potenza', pt:'Alertas / Limiares: avisos e cores por temperatura e potência', zh:'警报/阈值：按温度和功率的提醒与颜色', ja:'アラート / しきい値：温度と電力による警告と色', ko:'경고 / 임계값: 온도 및 전력별 알림과 색상' },
       'topbar.config':        { es:'CONFIGURACIÓN', en:'CONFIGURATION', fr:'CONFIGURATION', it:'CONFIGURAZIONE', pt:'CONFIGURAÇÃO', zh:'配置', ja:'設定', ko:'구성' },
       'topbar.config_title':  { es:'Configuración: idioma, apariencia, autoarranque y notificaciones', en:'Configuration: language, appearance, autostart and notifications', fr:'Configuration : langue, apparence, démarrage automatique et notifications', it:'Configurazione: lingua, aspetto, avvio automatico e notifiche', pt:'Configuração: idioma, aparência, início automático e notificações', zh:'配置：语言、外观、开机启动和通知', ja:'設定：言語、外観、自動起動、通知', ko:'구성: 언어, 모양, 자동 시작 및 알림' },

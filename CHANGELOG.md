@@ -1,5 +1,45 @@
 # Changelog
 
+## 16.0.0 — 2026-06-20
+
+### Fixed
+
+- **i18n now covers the whole app, live.** Changing language translates everything
+  visible without reopening modals — including the text shown in native system
+  `window.confirm()` dialogs, toasts/status with interpolated values, Aura status,
+  and the benchmark buttons/labels. The language-change hook now re-paints already
+  visible dynamic content (Aura state, open benchmark modal, inline history, process
+  table). 67 new keys across all 8 languages.
+- **Process table: the highlighted column follows the sort.** The CPU column was
+  always neon regardless of sort order; now only the actively-sorted column is
+  highlighted (`data-sort-col` + scoped CSS), and the `cpu_core` → `cpu-core` cell
+  desync was fixed so "Core" highlights the real core column.
+- **Type the fan cap with the keyboard.** The cap input no longer rewrites its own
+  value on every keystroke (which erased partial numbers like `4500`); it commits on
+  `change`/blur with clamping intact. Same fix for the per-fan inputs.
+
+### Added
+
+- **Main process table is sortable** (CPU / RAM / Core / Name), reusing the existing
+  `#allprocs` sort pattern.
+- **Overlay temps colored by level.** Temperatures use the dashboard's thresholds
+  (passed main→overlay via `pushOverlayConfig`), labels are legible light-gray, and
+  the numbers are larger. Degrades to static colors if thresholds are absent.
+- **Settings split into CONFIGURACIÓN and ALERTAS / UMBRALES.** New `#config-modal`
+  groups language, appearance (mode/theme/size, moved out of the old theme modal),
+  autostart and notifications; the alerts modal now holds only thresholds + colors.
+  Tools menu is `Poder · Overlay · Alertas · Configuración`.
+- **System tray + real Quit (Steam-style).** Closing the window minimizes to tray
+  (backend stays SIGSTOP-suspended); a tray menu and a **SALIR** item in the System
+  menu fully quit — closing the overlay and killing the backend.
+- **One dashboard button.** Layout and edit-mode merged into a single `#dash-btn`
+  with the edit-mode toggle inside the dashboard modal.
+- **Power button** now carries the neon accent matching the Tools toggle.
+- **Roadmap: aligned, multilingual, competitive.** Timeline titles align in one
+  column (grid layout); content is translatable in all 8 languages and re-renders on
+  language change; phases reframed as the launch-oriented P0–P3 roadmap, with
+  `docs/roadmap.md` synced.
+
 ## 15.0.0 — 2026-06-20
 
 ### Fixed
