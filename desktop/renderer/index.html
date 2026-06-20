@@ -53,8 +53,8 @@
         <div class="control-menu-panel hidden" data-menu-panel="tools">
           <button id="power-btn" class="ghost primary-action" data-i18n="topbar.power" title="Centro de Poder: limites de potencia CPU/GPU (requiere contraseña para aplicar)">PODER</button>
           <button id="overlay-btn" class="ghost" data-i18n="topbar.overlay" title="Overlay de stats siempre encima para jugar (elige el monitor)">OVERLAY</button>
-          <button id="alerts-btn" class="ghost" data-i18n="topbar.settings" title="Configuración: autoarranque, notificaciones, umbrales de temperatura/potencia y colores">CONFIGURACIÓN</button>
-          <button id="theme-btn" class="ghost" data-i18n="topbar.theme" title="Apariencia: tema, modo claro/oscuro y tamaño">TEMA</button>
+          <button id="alerts-btn" class="ghost" data-i18n="topbar.alerts" data-i18n-attr="title:topbar.alerts_title" title="Alertas / Umbrales: avisos y colores por temperatura y potencia">ALERTAS</button>
+          <button id="config-btn" class="ghost" data-i18n="topbar.config" data-i18n-attr="title:topbar.config_title" title="Configuración: idioma, apariencia, autoarranque y notificaciones">CONFIGURACIÓN</button>
         </div>
       </div>
 
@@ -63,6 +63,7 @@
         <div class="control-menu-panel hidden" data-menu-panel="system">
           <button id="maintenance-btn" class="ghost" title="Actualizar, reinstalar/reparar o desinstalar ROG Monitor" data-i18n="topbar.maintenance">MANTENIMIENTO</button>
           <button id="report-btn" class="ghost" data-i18n="topbar.report" title="Abre un issue en el repositorio de GitHub con la información del sistema ya escrita">REPORTAR ERROR</button>
+          <button id="quit-btn" class="ghost" data-i18n="topbar.quit" data-i18n-attr="title:topbar.quit_title" title="Cerrar ROG Monitor por completo (sale de la bandeja y detiene el monitor)">SALIR</button>
         </div>
       </div>
 
@@ -432,9 +433,17 @@
     </div>
   </div>
 
-  <div id="theme-modal" class="modal hidden">
+  <div id="config-modal" class="modal hidden">
     <div class="modal-card">
-      <h3 data-i18n="modal.theme">Apariencia</h3>
+      <h3 data-i18n="config.title">Configuración</h3>
+      <p class="sub" data-i18n="config.sub">Idioma, apariencia, autoarranque y notificaciones. Todo se guarda automáticamente.</p>
+
+      <h3 class="size-title" data-i18n="config.lang_title">Idioma</h3>
+      <div class="lang-grid" id="config-lang-grid">
+        <!-- Llenado por app.js (buildLangGrid) al abrir -->
+      </div>
+
+      <h3 class="size-title" data-i18n="modal.theme">Apariencia</h3>
       <p class="sub" data-i18n="modal.theme_sub">Elige el modo de color y la paleta. Se guarda automáticamente.</p>
       <div class="mode-row segment" id="mode-seg">
         <button data-mode="light" data-i18n="theme.light">☀ Claro</button>
@@ -449,7 +458,18 @@
         <button data-zoom="0.5">A+</button>
         <button data-zoom="1">A++</button>
       </div>
-      <button class="ghost modal-close" id="theme-close" data-i18n="common.close">Cerrar</button>
+
+      <h3 class="size-title" data-i18n="config.system_title">Sistema</h3>
+      <label class="check-row" for="set-notifications">
+        <input type="checkbox" id="set-notifications">
+        <span data-i18n="alerts.notifications">Mostrar notificaciones de escritorio</span>
+      </label>
+      <label class="check-row" for="set-autostart" data-i18n-attr="title:alerts.autostart_title" title="Crea una entrada de inicio de sesión. La app abre minimizada y el monitor queda congelado (0% CPU) hasta que la abras.">
+        <input type="checkbox" id="set-autostart">
+        <span data-i18n="alerts.autostart">Iniciar con el sistema (minimizado, sin consumir recursos)</span>
+      </label>
+      <p id="config-status" class="note hidden"></p>
+      <button class="ghost modal-close" id="config-close" data-i18n="common.close">Cerrar</button>
     </div>
   </div>
 
@@ -512,7 +532,7 @@
 
   <div id="alerts-modal" class="modal hidden">
     <div class="modal-card">
-      <h3 data-i18n="alerts.title">Configuración</h3>
+      <h3 data-i18n="alerts.title">Alertas / Umbrales</h3>
       <p class="sub" data-i18n="alerts.sub">Ajusta cuándo avisa el monitor y a qué temperaturas cambian los colores. Se guarda y se aplica al instante.</p>
       <div class="settings-grid">
         <label class="f-temp"><span data-i18n="alerts.cpu_temp">🌡 Alerta temp CPU (°C)</span><input type="number" id="set-cpu-temp-warn" min="50" max="110" step="1"></label>
@@ -532,14 +552,6 @@
         <label><span><i class="dot hot"></i><span data-i18n="alerts.gpu_orange">GPU naranja &lt;</span></span><input type="number" id="set-gpu-c2" min="40" max="105" step="1"></label>
       </div>
       <p class="sub"><i class="dot crit"></i><span data-i18n="alerts.color_note">Rojo = por encima del naranja. Estos colores aplican en toda la app y en el overlay.</span></p>
-      <label class="check-row" for="set-notifications">
-        <input type="checkbox" id="set-notifications">
-        <span data-i18n="alerts.notifications">Mostrar notificaciones de escritorio</span>
-      </label>
-      <label class="check-row" for="set-autostart" data-i18n-attr="title:alerts.autostart_title" title="Crea una entrada de inicio de sesión. La app abre minimizada y el monitor queda congelado (0% CPU) hasta que la abras.">
-        <input type="checkbox" id="set-autostart">
-        <span data-i18n="alerts.autostart">Iniciar con el sistema (minimizado, sin consumir recursos)</span>
-      </label>
       <p id="alerts-status" class="note hidden"></p>
       <div class="mode-row">
         <button class="ghost aura-primary" id="alerts-save" data-i18n="common.save_apply">GUARDAR Y APLICAR</button>

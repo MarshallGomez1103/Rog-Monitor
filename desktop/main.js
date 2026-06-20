@@ -1,7 +1,7 @@
 // ROG Monitor desktop: Electron shell over the Python sensor core.
 // The backend is `python -m rog_monitor --json-stream`; one JSON per second.
 
-const { app, BrowserWindow, ipcMain, dialog, shell, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, screen, Tray, Menu, nativeImage } = require('electron');
 const { spawn, spawnSync, execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -81,6 +81,10 @@ function readErrorLogTail(maxLines = 60) {
 
 let win = null;
 let overlay = null;
+let tray = null;
+// Salir-de-verdad vs minimizar-a-bandeja: el botón "Salir"/Quit pone esto en
+// true para que el handler de `close` deje cerrar la ventana en vez de ocultarla.
+let isQuitting = false;
 let overlayCfg = { enabled: false, displayId: null, corner: 'top-center', show: null, layout: 'row', accent: null };
 let backend = null;
 let musicProc = null;
@@ -1340,13 +1344,78 @@ function createWindow() {
     }
   });
   // Ahorro: congelar/reanudar el backend según se vea o no la ventana.
+  // OJO: al ocultar a bandeja se dispara `hide` → mainVisible=false → SIGSTOP
+  // del backend. Así la app en bandeja NO consume CPU (comportamiento preservado).
   ['minimize', 'hide'].forEach((ev) => win.on(ev, () => { mainVisible = false; updateBackendPower(); }));
   ['restore', 'show', 'focus'].forEach((ev) => win.on(ev, () => { mainVisible = true; updateBackendPower(); }));
+
+  // Cerrar la ventana MINIMIZA a la bandeja (estilo Steam): interceptamos el
+  // `close` y ocultamos en su lugar. Solo un Salir real (isQuitting=true) deja
+  // que la ventana se cierre de verdad. Al ocultar, los listeners de `hide`
+  // congelan el backend → 0% CPU mientras está en bandeja.
+  win.on('close', (e) => {
+    if (!isQuitting) {
+      e.preventDefault();
+      win.hide();
+    }
+  });
   // closing the main window tears down the overlay too
   win.on('closed', () => {
     if (overlay && !overlay.isDestroyed()) overlay.close();
   });
 }
+
+/* ---------- bandeja del sistema (Tray) + salir de verdad ----------
+   Click izquierdo: muestra/oculta la ventana. Menú contextual: "Salir".
+   Reusamos el icono de la app (no hay icono de bandeja dedicado en assets/). */
+function toggleMainWindow() {
+  if (!win || win.isDestroyed()) return;
+  if (win.isVisible() && !win.isMinimized()) {
+    win.hide();
+  } else {
+    win.show();
+    win.restore();
+    win.focus();
+  }
+}
+
+function createTray() {
+  if (tray) return;
+  const iconPath = path.join(__dirname, 'assets', 'icon.png');
+  let image = nativeImage.createFromPath(iconPath);
+  // Algunos entornos exigen un icono pequeño para la bandeja.
+  if (!image.isEmpty()) image = image.resize({ width: 24, height: 24 });
+  try {
+    tray = new Tray(image.isEmpty() ? iconPath : image);
+  } catch (_) {
+    return; // sin bandeja disponible: la app sigue funcionando normalmente
+  }
+  tray.setToolTip('ROG Monitor');
+  const menu = Menu.buildFromTemplate([
+    { label: 'ROG Monitor', enabled: false },
+    { type: 'separator' },
+    { label: 'Mostrar / Ocultar', click: toggleMainWindow },
+    { label: 'Salir / Quit', click: realQuit },
+  ]);
+  tray.setContextMenu(menu);
+  tray.on('click', toggleMainWindow);
+}
+
+// Salir DE VERDAD: cierra el overlay, mata el backend Python y termina la app.
+function realQuit() {
+  isQuitting = true;
+  if (overlay && !overlay.isDestroyed()) { try { overlay.close(); } catch (_) {} }
+  if (backend) {
+    // si estaba congelado (SIGSTOP), reanudar para que reciba el SIGTERM
+    if (backendPaused) { try { backend.kill('SIGCONT'); } catch (_) {} }
+    try { backend.kill(); } catch (_) {}
+  }
+  stopMusicMode(false);
+  if (tray) { try { tray.destroy(); } catch (_) {} tray = null; }
+  app.quit();
+}
+
+ipcMain.handle('app-quit', () => { realQuit(); return { ok: true }; });
 
 /* ---------- power control (A6) ----------
    Lectura vía rog_monitor.power_control CLI; escritura:
@@ -1543,9 +1612,14 @@ ipcMain.handle('set-thermal-guardian', async (_e, { enabled, cpuCeiling, gpuCeil
 
 app.whenReady().then(() => {
   createWindow();
+  createTray();
   startBackend();
   runJsonModule('rog_monitor.aura', ['apply-startup'], 10000).catch(() => {});
 });
+
+// Cualquier ruta de salida (Cmd+Q, logout, etc.) marca isQuitting para que el
+// handler de `close` no vuelva a esconder la ventana e impida cerrar.
+app.on('before-quit', () => { isQuitting = true; });
 
 app.on('window-all-closed', () => {
   if (backend) {

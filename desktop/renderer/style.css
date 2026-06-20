@@ -506,6 +506,22 @@ b, .num { font-variant-numeric: tabular-nums; }
   box-shadow: inset 0 0 10px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
+/* v16: el botón PODER lleva el mismo borde/acento de neón que .control-menu-toggle
+   activo, conservando su rol de acción primaria clara. */
+#power-btn {
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: inset 0 0 10px color-mix(in srgb, var(--accent) 16%, transparent),
+              0 0 10px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+#power-btn:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--accent) 18%, var(--chip));
+  border-color: var(--accent);
+  box-shadow: inset 0 0 12px color-mix(in srgb, var(--accent) 18%, transparent),
+              0 0 14px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
 .segment {
   display: flex;
   border: 1px solid var(--hair);
