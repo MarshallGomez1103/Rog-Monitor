@@ -82,6 +82,9 @@ function readErrorLogTail(maxLines = 60) {
 let win = null;
 let overlay = null;
 let overlayCfg = { enabled: false, displayId: null, corner: 'top-center', show: null, layout: 'row', accent: null };
+// Últimos umbrales [lo, mid, hi] de temperatura recibidos del backend; el
+// overlay los usa para colorear por nivel (mismos valores que el dashboard).
+let lastTempLimits = null;
 let backend = null;
 let musicProc = null;
 let musicMode = {
@@ -120,6 +123,10 @@ function startBackend() {
       if (!line) continue;
       try {
         const stats = JSON.parse(line);
+        // Recordar los umbrales de temperatura vivos (cpu/gpu) para que el
+        // overlay pueda colorear por nivel con los MISMOS valores que el
+        // dashboard, vía pushOverlayConfig (el stream no manda temp_colors).
+        if (stats.limits) lastTempLimits = stats.limits;
         if (win && !win.isDestroyed()) win.webContents.send('stats', stats);
         if (overlay && !overlay.isDestroyed()) overlay.webContents.send('stats', stats);
       } catch (_) { /* partial line, ignore */ }
@@ -1268,6 +1275,9 @@ function pushOverlayConfig() {
       show: overlayCfg.show || { cpu: true, gpu: true, fans: true },
       layout: overlayCfg.layout || 'row',
       accent: overlayCfg.accent || null,
+      // Umbrales de color por nivel (cpu/gpu) — si aún no hay stats, va null y
+      // el overlay degrada a sus defaults estáticos.
+      temp_colors: lastTempLimits || null,
     });
   }
 }

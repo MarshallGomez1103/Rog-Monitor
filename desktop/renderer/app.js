@@ -2201,7 +2201,10 @@ function renderFanCapEditor() {
         value="${capForFan(fan) || ''}" placeholder="${t('fan.no_cap')}">
     </label>`).join('');
   host.querySelectorAll('[data-fan-cap]').forEach((input) => {
-    input.addEventListener('input', () => {
+    // Commit en change/blur (no en cada tecla): syncFanCapInput() reescribe el
+    // input maestro y un re-render en pleno tecleo borraría parciales. Validamos
+    // y clamplamos al confirmar, dejando teclear libremente mientras tanto.
+    input.addEventListener('change', () => {
       const fan = input.dataset.fanCap;
       const next = currentCapMap();
       const value = Math.round(+input.value);
@@ -2629,7 +2632,10 @@ $('fan-modal').addEventListener('click', (e) => {
   if (e.target === $('fan-modal')) $('fan-modal').classList.add('hidden');
 });
 
-$('fan-cap').addEventListener('input', () => {
+// Aplicamos el cap al CONFIRMAR (change/blur), no en cada tecla: si lo
+// aplicáramos en 'input', syncFanCapInput() reescribiría el .value en cada
+// pulsación y borraría números parciales (<2000) → imposible teclear "4500".
+$('fan-cap').addEventListener('change', () => {
   setFanCapAll($('fan-cap').value);
   updateCapPreview();
   markFanDirty();
