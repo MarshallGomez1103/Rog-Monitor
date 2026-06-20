@@ -1094,9 +1094,19 @@
   font-family: var(--mono);
 }
 #allprocs td.pid { color: var(--dim); width: 11%; font-size: 12px; }
-#allprocs td.cpu { color: var(--accent); text-align: right; width: 14%; text-shadow: var(--neon-glow-soft, 0 0 5px currentColor); }
+#allprocs td.pname { width: 45%; }
+#allprocs td.cpu { text-align: right; width: 14%; }
 #allprocs td.cpu-core { text-align: right; width: 14%; }
 #allprocs td.mem { color: var(--dim); text-align: right; width: 16%; }
+/* neón SOLO en la columna actualmente ordenada (data-sort-col lo fija el JS) */
+#allprocs[data-sort-col="pid"]      td.pid,
+#allprocs[data-sort-col="pname"]    td.pname,
+#allprocs[data-sort-col="cpu"]      td.cpu,
+#allprocs[data-sort-col="cpu-core"] td.cpu-core,
+#allprocs[data-sort-col="mem"]      td.mem {
+  color: var(--accent);
+  text-shadow: var(--neon-glow-soft, 0 0 5px currentColor);
+}
 #allprocs tbody tr { cursor: pointer; }
 #allprocs tbody tr:hover { background: var(--chip); }
 

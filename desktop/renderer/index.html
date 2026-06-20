@@ -285,10 +285,11 @@
           </div>
           <table id="procs">
             <thead>
-              <tr><th>PID</th><th data-i18n="procs.col_name">proceso</th>
-                  <th class="r" data-i18n="procs.col_cpu" title="% del CPU total (todos los núcleos)">% CPU</th>
-                  <th class="r" data-i18n="procs.col_core" title="% de un solo núcleo (estilo top)">% NÚCLEO</th>
-                  <th class="r" data-i18n="procs.col_ram" title="Memoria RAM residente">RAM</th></tr>
+              <tr><th class="sortable" data-sort="pid">PID</th>
+                  <th class="sortable" data-sort="name" data-i18n="procs.col_name">proceso</th>
+                  <th class="r sortable" data-sort="cpu" data-i18n="procs.col_cpu" title="% del CPU total (todos los núcleos)">% CPU</th>
+                  <th class="r sortable" data-sort="cpu_core" data-i18n="procs.col_core" title="% de un solo núcleo (estilo top)">% NÚCLEO</th>
+                  <th class="r sortable" data-sort="mem_mb" data-i18n="procs.col_ram" title="Memoria RAM residente">RAM</th></tr>
             </thead>
             <tbody id="procs-body"></tbody>
           </table>

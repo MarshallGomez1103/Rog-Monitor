@@ -1266,6 +1266,35 @@ function gpuRequestToast(mode, res) {
   return `Modo ${mode} solicitado`;
 }
 
+/* Mapa clave-de-orden → clase de la celda que se resalta en neón (compartido
+   por la tabla #procs y el modal #allprocs). El atributo data-sort-col del
+   <table> lleva esta clase y el CSS resalta SOLO esa columna. */
+const PROC_COL_CLASS = { pid: 'pid', name: 'pname', cpu: 'cpu', cpu_core: 'cpu-core', mem_mb: 'mem' };
+
+function sortProcRows(rows, sortKey, sortDir) {
+  const dir = sortDir === 'asc' ? 1 : -1;
+  return rows.slice().sort((a, b) => {
+    let av = a[sortKey], bv = b[sortKey];
+    if (sortKey === 'name') return String(av).localeCompare(String(bv)) * dir;
+    av = av == null ? -Infinity : av;
+    bv = bv == null ? -Infinity : bv;
+    if (av === bv) return (b.cpu || 0) - (a.cpu || 0);
+    return (av - bv) * dir;
+  });
+}
+
+/* estado de orden de la tabla #procs (top-5 del dashboard) */
+let procsSortKey = 'cpu';
+let procsSortDir = 'desc';
+
+function updateProcsSortIndicators() {
+  document.querySelectorAll('#procs th.sortable').forEach((th) => {
+    const active = th.dataset.sort === procsSortKey;
+    th.classList.toggle('sort-active', active);
+    th.dataset.dir = active ? procsSortDir : '';
+  });
+}
+
 function update(stats) {
   lastStats = stats;
   const cpu = stats.cpu || {};
@@ -1407,18 +1436,21 @@ function update(stats) {
 
   /* processes — DOS columnas separadas: % CPU total (todos los núcleos) y
      % NÚCLEO (uso de un solo núcleo, estilo `top`). Antes iban pegados. */
-  $('procs-body').innerHTML = (stats.procs || []).map((p) => {
+  const procsTable = $('procs');
+  if (procsTable) procsTable.dataset.sortCol = PROC_COL_CLASS[procsSortKey] || '';
+  $('procs-body').innerHTML = sortProcRows(stats.procs || [], procsSortKey, procsSortDir).map((p) => {
     const core = p.cpu_core != null
       ? `<span class="procs-core" title="${p.cpu_core >= 100
             ? Math.floor(p.cpu_core / 100) + ' núcleo(s) completo(s)'
             : 'fracción de un núcleo'}">${p.cpu_core.toFixed(0)}%</span>`
       : '<span class="dim">—</span>';
     return `<tr data-pid="${p.pid}" data-name="${p.name}" title="${t('procs.kill', { name: p.name })}">
-        <td class="pid">${p.pid}</td><td>${p.name}</td>
+        <td class="pid">${p.pid}</td><td class="pname">${p.name}</td>
         <td class="cpu r">${p.cpu.toFixed(1)}%</td>
         <td class="cpu-core r">${core}</td>
         <td class="mem r">${p.mem_mb} MB</td></tr>`;
   }).join('');
+  updateProcsSortIndicators();
 
   $('backend-state').textContent =
     `sensores OK · core v${stats.version || '?'} · ${new Date().toLocaleTimeString()}`;
@@ -3006,6 +3038,22 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
   }
 })();
 
+/* ---------- ordenar la tabla #procs (top-5) al clic en su cabecera ---------- */
+(function wireProcsSort() {
+  document.querySelectorAll('#procs th.sortable').forEach((th) => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.sort;
+      if (procsSortKey === key) {
+        procsSortDir = procsSortDir === 'desc' ? 'asc' : 'desc';
+      } else {
+        procsSortKey = key;
+        procsSortDir = key === 'name' ? 'asc' : 'desc';
+      }
+      if (lastStats) update(lastStats);
+    });
+  });
+})();
+
 /* ---------- VER TODOS los procesos (modal ampliado) ---------- */
 (function wireAllProcs() {
   const modal = $('allprocs-modal');
@@ -3017,20 +3065,6 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
   let timer = null;
   let sortKey = 'cpu';   // por defecto: mayor uso de CPU primero
   let sortDir = 'desc';
-
-  function sortRows(rows) {
-    const dir = sortDir === 'asc' ? 1 : -1;
-    return rows.slice().sort((a, b) => {
-      let av = a[sortKey], bv = b[sortKey];
-      if (sortKey === 'name') {
-        return String(av).localeCompare(String(bv)) * dir;
-      }
-      av = av == null ? -Infinity : av;
-      bv = bv == null ? -Infinity : bv;
-      if (av === bv) return (b.cpu || 0) - (a.cpu || 0); // desempate estable por CPU
-      return (av - bv) * dir;
-    });
-  }
 
   function updateSortIndicators() {
     modal.querySelectorAll('#allprocs th.sortable').forEach((th) => {
@@ -3045,7 +3079,7 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
       ? `<span class="procs-core">${p.cpu_core.toFixed(0)}%</span>`
       : '<span class="dim">—</span>';
     return `<tr data-pid="${p.pid}" data-name="${escapeHtml(p.name)}" title="${t('procs.kill', { name: p.name })}">
-        <td class="pid">${p.pid}</td><td>${escapeHtml(p.name)}</td>
+        <td class="pid">${p.pid}</td><td class="pname">${escapeHtml(p.name)}</td>
         <td class="cpu r">${p.cpu.toFixed(1)}%</td>
         <td class="cpu-core r">${core}</td>
         <td class="mem r">${p.mem_mb} MB</td></tr>`;
@@ -3056,7 +3090,9 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
     let rows = q
       ? allRows.filter((p) => p.name.toLowerCase().includes(q) || String(p.pid).includes(q))
       : allRows;
-    rows = sortRows(rows);
+    rows = sortProcRows(rows, sortKey, sortDir);
+    const table = $('allprocs');
+    if (table) table.dataset.sortCol = PROC_COL_CLASS[sortKey] || '';
     body.innerHTML = rows.length
       ? rows.map(rowHtml).join('')
       : `<tr><td colspan="5" class="dim">${t('procs.all_none')}</td></tr>`;
