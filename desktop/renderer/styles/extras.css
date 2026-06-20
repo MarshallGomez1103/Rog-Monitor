@@ -439,9 +439,14 @@
   box-shadow: none;
 }
 
-/* Cabecera del item: clickable para expandir */
+/* Cabecera del item: clickable para expandir.
+   Grid de 2 columnas: [fecha·versión de ancho fijo] [título 1fr] [flecha].
+   Así TODOS los títulos arrancan en la misma columna x sin importar el
+   ancho de la fecha/versión (antes era flex con date flex-shrink:0 de ancho
+   variable → cada título empezaba en una x distinta). */
 .roadmap-item-head {
-  display: flex;
+  display: grid;
+  grid-template-columns: 9.5rem 1fr auto;
   align-items: baseline;
   gap: 0.5rem;
   cursor: pointer;
@@ -458,14 +463,16 @@
   font-size: 0.62rem;
   color: var(--dim);
   white-space: nowrap;
-  flex-shrink: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .roadmap-item-title {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--ink);
-  flex: 1;
+  min-width: 0;
 }
 
 .roadmap-item.done .roadmap-item-title {

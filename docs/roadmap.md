@@ -23,7 +23,7 @@ separate:
 The differentiator is the **combination + safety + UX**: everything in one place,
 Spanish-first and 8-language, with a guardian nobody else ships.
 
-## Current (done)
+## Current (done) — through v16
 
 * [x] Unified CPU/GPU smart guardian with separate thermal ceilings.
 * [x] Guardian modes: **Protection** and **Gaming** (fans-only, no throttling). *(v14)*
@@ -35,41 +35,59 @@ Spanish-first and 8-language, with a guardian nobody else ships.
 * [x] Profile no longer drifts by power source (auto-switch is opt-in). *(v14)*
 * [x] Overlay redesign: thin single-row top-center layout, theme-aware. *(v15)*
 * [x] Full UI internationalization across all 8 languages, incl. new events. *(v15)*
+* [x] **Competitive, multilingual in-app roadmap** (8 languages), aligned to the phases
+  below; timeline titles aligned in one column. *(v16)*
 * [x] Safe recovery commands for TTY sessions (`rog-monitor-safe-mode.sh`).
 * [x] Advanced documentation panel with vendor/component/model search.
 
-## Next — P1 (adoption blockers; do these first)
+## P0 — LAUNCH (open the repo to the public)
 
-* [ ] **Packaging for non-developers**: Flatpak / AppImage, a proper **polkit
-  policy** instead of scattered `pkexec` prompts, and **GitHub Actions CI**
-  (syntax, JSON validation, read-only sensor smoke tests). This is the single
-  biggest barrier to open-source adoption — CoolerControl/LACT already ship Flatpaks.
-* [ ] **Per-game / per-application profiles**: auto-apply a bundle of power + fan +
-  RGB + overlay settings when a game launches (process/GameMode/MangoHud detection).
-  No competitor combines all four — this is our standout feature. (`game_session.py`
-  is a starting point.)
+The essentials so anyone can install it and trust it.
 
-## Next — P2 (reach and depth)
+* [ ] **Packaging for non-developers**: Flatpak / AppImage installable without a
+  terminal or manual dependencies — CoolerControl/LACT already ship Flatpaks.
+* [ ] **Single polkit privileged helper** instead of scattered `pkexec` prompts.
+* [ ] **GitHub Actions CI**: `node --check`, `py_compile`, JSON + i18n validation,
+  and a read-only sensor smoke test.
+* [ ] **Launch polish**: README with screenshots + GIF, a short video, current
+  LICENSE / CONTRIBUTING / SECURITY, a simple GitHub Pages site, and graceful
+  degradation verified on non-ASUS / AMD machines.
+* [ ] **Community i18n**: base is ready; document how to contribute translations.
 
-* [ ] **Broader hardware**: AMD CPU (ryzenadj/RAPL), AMD GPU (CoreCtrl-style), and
-  generic machines degrading to read-only; more ASUS SKUs.
-* [ ] **Battery**: charge-limit control in the UI (asusctl exposes it) and wear/health.
-* [ ] **CoolerControl-level fans**: multiple temperature sources, mix/function curves,
-  and a GPU fan curve.
-* [ ] **RGB completion**: finish music/zones, the **Redragon** protocol (BLOCKED until
-  a Windows USB capture — Sinowealth family has documented bricks), an OpenRGB bridge
-  for non-ASUS peripherals, and an effects library. AniMe Matrix where present.
-* [ ] Manual profile beside Ahorro / Balance / Performance.
+## P1 — DIFFERENTIATORS (what nobody else bundles)
 
-## Later — P3 (polish and ecosystem)
+The standout features that make ROG Monitor unique.
 
-* [ ] Persistent history in SQLite; long-term thermal panel; optional Prometheus exporter.
-* [ ] First-run safety wizard explaining writable controls and recovery.
-* [ ] Community device-profile crowdsourcing for `device_profiles.json`; simple website.
-* [ ] Broader OEM support (Lenovo Legion, HP Omen, Dell/Alienware, Acer Predator, MSI)
-  via a generic `platform_profile` backend.
-* [ ] Plasma widget; accessibility pass; community translations.
-* [ ] Cross-platform architecture split (shared UI, Linux/Windows backends, common safety model).
+* [ ] **Per-game / per-application profiles**: on game launch, auto-apply power +
+  fan curve + RGB + overlay. Detect via process / GameMode / MangoHud — nobody
+  bundles all four. (`game_session.py` is the base.)
+* [ ] **Serious benchmarks (true torture)**: a GPU Path Tracing stress in Vulkan that
+  truly saturates the GPU and stresses the CPU via BVH build. Must degrade gracefully
+  if the GPU has no RT cores — do **not** assume RTX. CPU split AVX / int / float,
+  true multi-thread, reported per P-core / E-core, with a clear verdict:
+  stable / throttling / headroom.
+* [ ] **Guardian 2.0**: local telemetry of what it throttled and when, a scheduled
+  "silent" mode, and configurable response curves.
+
+## P2 — REACH (more hardware, more depth)
+
+* [ ] **AMD**: CPU via ryzenadj / RAPL, CoreCtrl-style amdgpu, more ASUS SKUs, and a
+  generic read-only fallback.
+* [ ] **Battery**: charge-limit control in the UI (asusctl exposes it) and wear / health.
+* [ ] **CoolerControl-level fans**: multiple temperature sources, mixed / function
+  curves, and a GPU fan curve.
+* [ ] **Full RGB**: music-by-zone, an OpenRGB bridge for non-ASUS peripherals, and
+  AniMe Matrix where present. **Redragon** stays BLOCKED until a Windows USB capture
+  (Sinowealth family, documented brick risk) — never send blind commands.
+
+## P3 — ECOSYSTEM (community and long term)
+
+* [ ] **Persistent history**: SQLite, a long-term thermal panel + export, and an
+  optional Prometheus / Grafana exporter.
+* [ ] **Crowdsourced device profiles**: community `device_profiles.json` plus a simple
+  web to share calibrated profiles.
+* [ ] **Plasma widget**, an accessibility pass, and broader OEM support
+  (Lenovo Legion, HP Omen, Acer Predator, MSI) via a generic `platform_profile` backend.
 
 ## Permanent Safety Rules
 
