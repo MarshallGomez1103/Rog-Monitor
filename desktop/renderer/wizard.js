@@ -19,8 +19,8 @@
   /* ---- idiomas disponibles: usa LANG_META de i18n.js (sin emoji/banderas).
          Fallback local por si i18n.js aún no cargó (orden de carga). ---- */
   const LANG_OPTIONS = (window.i18n && window.i18n.LANG_META) || [
-    { code: 'es', label: 'Español' },
     { code: 'en', label: 'English' },
+    { code: 'es', label: 'Español' },
     { code: 'fr', label: 'Français' },
     { code: 'it', label: 'Italiano' },
     { code: 'pt', label: 'Português' },
@@ -67,7 +67,7 @@
 
       /* ---- PASO 0 (NUEVO): Elige tu idioma ---- */
       case 0: {
-        const activeLang = (window.i18n && window.i18n.get) ? window.i18n.get() : 'es';
+        const activeLang = (window.i18n && window.i18n.get) ? window.i18n.get() : 'en';
         return `
           <h3>${t('wizard.step0_title')}</h3>
           <p>${t('wizard.step0_sub')}</p>

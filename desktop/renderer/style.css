@@ -686,6 +686,18 @@ main {
 }
 .statgrid b { font-family: var(--mono); font-size: 16px; font-weight: 600; }
 .statgrid b.small { font-size: 12.5px; font-weight: 400; }
+.statgrid .vram-stat {
+  padding: 7px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--hair));
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 9%, var(--chip));
+}
+.statgrid .vram-stat b {
+  display: block;
+  color: var(--accent);
+  font-size: 17px;
+  white-space: nowrap;
+}
 .accent { color: var(--crit) !important; }
 
 .note { margin-top: 10px; font-size: 13px; color: var(--dim); }
@@ -901,6 +913,28 @@ input[type="color"] {
   font-size: 12.5px;
 }
 .check-row input[type="checkbox"] { accent-color: var(--accent); }
+.select-row {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+.select-row select {
+  min-height: 34px;
+  border: 1px solid var(--hair);
+  border-radius: 3px;
+  background: var(--chip);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 6px 8px;
+}
+.select-row select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 28%, transparent);
+}
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -998,6 +1032,12 @@ input[type="color"] {
 
 /* ---------- system ---------- */
 .sysrow { display: grid; gap: 14px; }
+.sys-meters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 720px) { .sys-meters { grid-template-columns: 1fr; } }
 .meter label {
   display: flex; justify-content: space-between;
   font-size: 13px; color: var(--dim); margin-bottom: 4px;
@@ -1005,6 +1045,11 @@ input[type="color"] {
 .meter label b { color: var(--ink); font-family: var(--mono); font-weight: 600; }
 .meter .track { height: 8px; border-radius: 4px; background: var(--chip); overflow: hidden; }
 .meter .track > div { height: 100%; border-radius: 4px; background: var(--accent); }
+.meter .vram-track > div { background: var(--accent2); }
+.meter.disabled {
+  opacity: 0.55;
+  cursor: default;
+}
 
 .syskv { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 16px; }
 .syskv label {
@@ -1144,6 +1189,7 @@ input[type="color"] {
 /* ---------- fan control modal ---------- */
 .clickable { cursor: pointer; }
 .clickable:hover { border-color: var(--accent); }
+.meter.disabled.clickable { cursor: default; }
 .modal-card.wide { width: min(760px, 94vw); }
 .accent2 { color: var(--accent2); }
 .fan-cap-row { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; margin-bottom: 8px; }
@@ -1166,16 +1212,25 @@ input[type="number"] {
 .chart-row.grid2 { grid-template-columns: 1fr 1fr; }
 @media (max-width: 760px) { .chart-row.grid2 { grid-template-columns: 1fr; } }
 .size-title { margin-top: 16px; margin-bottom: 8px; font-size: 13px; }
-#ram-procs { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-#ram-procs th { text-align: left; font-size: 10.5px; letter-spacing: 1px;
+#ram-procs,
+#vram-procs { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+#ram-procs th,
+#vram-procs th { text-align: left; font-size: 10.5px; letter-spacing: 1px;
   text-transform: uppercase; color: var(--dim); padding: 0 6px 6px;
   border-bottom: 1px solid var(--hair); }
-#ram-procs th.r { text-align: right; }
-#ram-procs td { padding: 5px 6px; border-bottom: 1px dashed var(--hair); font-family: var(--mono); }
-#ram-procs td.pid { color: var(--dim); font-size: 12px; }
-#ram-procs td.mem { color: var(--accent); text-align: right; }
-#ram-procs tbody tr { cursor: pointer; }
-#ram-procs tbody tr:hover { background: var(--chip); }
+#ram-procs th.r,
+#vram-procs th.r { text-align: right; }
+#ram-procs td,
+#vram-procs td { padding: 5px 6px; border-bottom: 1px dashed var(--hair); font-family: var(--mono); }
+#ram-procs td.pid,
+#vram-procs td.pid { color: var(--dim); font-size: 12px; }
+#ram-procs td.mem,
+#vram-procs td.mem { color: var(--accent); text-align: right; }
+#vram-procs td.r { text-align: right; }
+#ram-procs tbody tr,
+#vram-procs tbody tr { cursor: pointer; }
+#ram-procs tbody tr:hover,
+#vram-procs tbody tr:hover { background: var(--chip); }
 #disk-health-out { user-select: text; font-family: var(--mono); font-size: 12px; }
 
 /* thin themed scrollbars (no ugly default bar) */

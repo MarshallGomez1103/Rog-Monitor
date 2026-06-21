@@ -118,6 +118,7 @@ class App:
             # cores.js). Aditivo y opcional; reusa el ciclo de read() de arriba.
             "procs_by_core": self.procs.by_core(),
             "procs_mem": self.procs.top_memory(),
+            "procs_vram": self.gpu.vram_processes(active),
             "aura": self.aura.snapshot(),
             "power_control": self.power.snapshot(),
             "fps": read_fps(),

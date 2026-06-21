@@ -15,7 +15,7 @@
 (function () {
   'use strict';
 
-  const LANGS = ['es', 'en', 'fr', 'it', 'pt', 'zh', 'ja', 'ko'];
+  const LANGS = ['en', 'es', 'fr', 'it', 'pt', 'zh', 'ja', 'ko'];
 
   /* --------------------------------------------------------
    * Diccionario CORE: topbar, títulos de bloques, labels
@@ -37,6 +37,29 @@
     'topbar.wizard':         { es: 'VER TUTORIAL', en: 'TUTORIAL', fr: 'TUTORIEL', it: 'TUTORIAL', pt: 'TUTORIAL', zh: '教程', ja: 'チュートリアル', ko: '튜토리얼' },
     'topbar.roadmap':        { es: 'ROADMAP', en: 'ROADMAP', fr: 'FEUILLE DE ROUTE', it: 'ROADMAP', pt: 'ROADMAP', zh: '路线图', ja: 'ロードマップ', ko: '로드맵' },
     'topbar.lang':           { es: 'Idioma', en: 'Language', fr: 'Langue', it: 'Lingua', pt: 'Idioma', zh: '语言', ja: '言語', ko: '언어' },
+
+    /* ---- tooltips (atributo title) ---- */
+    'tip.power':             { es: 'Centro de Poder: límites de potencia CPU/GPU (requiere contraseña para aplicar)', en: 'Power Center: CPU/GPU power limits (password required to apply)', fr: "Centre d'alimentation : limites de puissance CPU/GPU (mot de passe requis pour appliquer)", it: 'Centro di alimentazione: limiti di potenza CPU/GPU (richiede password per applicare)', pt: 'Central de Energia: limites de potência CPU/GPU (requer senha para aplicar)', zh: '电源中心：CPU/GPU 功耗限制（应用需要密码）', ja: 'パワーセンター：CPU/GPUの電力上限（適用にはパスワードが必要）', ko: '전원 센터: CPU/GPU 전력 제한 (적용하려면 비밀번호 필요)' },
+    'tip.overlay':           { es: 'Overlay de stats siempre encima para jugar (elige el monitor)', en: 'Always-on-top stats overlay for gaming (pick the monitor)', fr: "Overlay de stats toujours au premier plan pour jouer (choisissez l'écran)", it: 'Overlay statistiche sempre in primo piano per giocare (scegli il monitor)', pt: 'Overlay de stats sempre no topo para jogar (escolhe o monitor)', zh: '游戏用置顶状态悬浮窗（选择显示器）', ja: 'ゲーム用の常時最前面ステータスオーバーレイ（モニターを選択）', ko: '게임용 항상 위 스탯 오버레이 (모니터 선택)' },
+    'tip.maintenance':       { es: 'Actualizar, reinstalar/reparar o desinstalar ROG Monitor', en: 'Update, reinstall/repair or uninstall ROG Monitor', fr: 'Mettre à jour, réinstaller/réparer ou désinstaller ROG Monitor', it: 'Aggiorna, reinstalla/ripara o disinstalla ROG Monitor', pt: 'Atualizar, reinstalar/reparar ou desinstalar o ROG Monitor', zh: '更新、重新安装/修复或卸载 ROG Monitor', ja: 'ROG Monitor の更新・再インストール/修復・アンインストール', ko: 'ROG Monitor 업데이트, 재설치/복구 또는 제거' },
+    'tip.report':            { es: 'Abre un issue en el repositorio de GitHub con la información del sistema ya escrita', en: 'Opens a GitHub issue with your system info pre-filled', fr: 'Ouvre un ticket GitHub avec les infos système déjà remplies', it: 'Apre una issue su GitHub con le info di sistema già compilate', pt: 'Abre uma issue no GitHub com as informações do sistema já preenchidas', zh: '在 GitHub 上打开一个已填好系统信息的 issue', ja: 'システム情報を入力済みの GitHub issue を開く', ko: '시스템 정보가 미리 채워진 GitHub 이슈를 엽니다' },
+    'tip.wizard':            { es: 'Volver a ver el asistente de primera vez', en: 'Replay the first-time setup wizard', fr: "Revoir l'assistant de première utilisation", it: 'Rivedi la procedura guidata iniziale', pt: 'Rever o assistente de primeira vez', zh: '重新查看首次设置向导', ja: '初回セットアップウィザードをもう一度見る', ko: '최초 설정 마법사 다시 보기' },
+    'tip.roadmap':           { es: 'Roadmap: lo hecho y lo que viene', en: "Roadmap: what's done and what's coming", fr: 'Feuille de route : ce qui est fait et ce qui arrive', it: 'Roadmap: cosa è fatto e cosa arriverà', pt: 'Roadmap: o que está feito e o que vem aí', zh: '路线图：已完成与即将到来', ja: 'ロードマップ：完了済みと今後の予定', ko: '로드맵: 완료된 것과 예정된 것' },
+    'tip.cpu_freq':          { es: 'Frecuencia promedio de los núcleos (1 GHz = 1000 MHz)', en: 'Average core frequency (1 GHz = 1000 MHz)', fr: 'Fréquence moyenne des cœurs (1 GHz = 1000 MHz)', it: 'Frequenza media dei core (1 GHz = 1000 MHz)', pt: 'Frequência média dos núcleos (1 GHz = 1000 MHz)', zh: '核心平均频率（1 GHz = 1000 MHz）', ja: 'コアの平均周波数（1 GHz = 1000 MHz）', ko: '코어 평균 주파수 (1 GHz = 1000 MHz)' },
+    'tip.cpu_watts':         { es: 'Consumo actual del paquete CPU — sube y baja con la carga, bajo en reposo es normal', en: 'Current CPU package draw — rises and falls with load; low at idle is normal', fr: 'Consommation actuelle du package CPU — varie avec la charge ; faible au repos est normal', it: 'Consumo attuale del package CPU — varia con il carico; basso a riposo è normale', pt: 'Consumo atual do pacote CPU — sobe e desce com a carga; baixo em repouso é normal', zh: 'CPU 封装当前功耗 — 随负载升降，空闲时低属正常', ja: 'CPUパッケージの現在の消費電力 — 負荷で増減、アイドル時に低いのは正常', ko: '현재 CPU 패키지 소비 전력 — 부하에 따라 변동, 유휴 시 낮은 것은 정상' },
+    'tip.gpu_watts':         { es: 'Consumo actual de la GPU — depende de la carga', en: 'Current GPU draw — depends on load', fr: 'Consommation actuelle du GPU — dépend de la charge', it: 'Consumo attuale della GPU — dipende dal carico', pt: 'Consumo atual da GPU — depende da carga', zh: 'GPU 当前功耗 — 取决于负载', ja: 'GPUの現在の消費電力 — 負荷による', ko: '현재 GPU 소비 전력 — 부하에 따라 다름' },
+    'tip.gpu_clock':         { es: 'Frecuencia actual del núcleo gráfico', en: 'Current graphics core frequency', fr: 'Fréquence actuelle du cœur graphique', it: 'Frequenza attuale del core grafico', pt: 'Frequência atual do núcleo gráfico', zh: '图形核心当前频率', ja: 'グラフィックコアの現在の周波数', ko: '그래픽 코어 현재 주파수' },
+    'tip.gpu_vram_clock':    { es: 'Frecuencia actual de la memoria de video', en: 'Current video memory frequency', fr: 'Fréquence actuelle de la mémoire vidéo', it: 'Frequenza attuale della memoria video', pt: 'Frequência atual da memória de vídeo', zh: '显存当前频率', ja: 'ビデオメモリの現在の周波数', ko: '비디오 메모리 현재 주파수' },
+    'tip.fans_block':        { es: 'Clic para configurar caps y curvas de ventilación', en: 'Click to configure fan caps and curves', fr: 'Cliquez pour configurer les plafonds et courbes de ventilation', it: 'Clic per configurare limiti e curve delle ventole', pt: 'Clique para configurar limites e curvas das ventoinhas', zh: '点击配置风扇上限与曲线', ja: 'クリックしてファンの上限とカーブを設定', ko: '클릭하여 팬 상한과 곡선 설정' },
+    'tip.game_session':      { es: 'Grabar temperaturas, RPM, watts y uso mientras juegas', en: 'Record temps, RPM, watts and usage while you play', fr: 'Enregistrer températures, RPM, watts et utilisation pendant que vous jouez', it: 'Registra temperature, RPM, watt e utilizzo mentre giochi', pt: 'Gravar temperaturas, RPM, watts e uso enquanto jogas', zh: '游戏时记录温度、转速、功耗和占用', ja: 'プレイ中の温度・RPM・ワット・使用率を記録', ko: '게임 중 온도, RPM, 와트, 사용량 기록' },
+    'tip.ram_meter':         { es: 'Clic para ver qué está consumiendo la RAM', en: "Click to see what's using the RAM", fr: 'Cliquez pour voir ce qui utilise la RAM', it: 'Clic per vedere cosa sta usando la RAM', pt: 'Clique para ver o que está a usar a RAM', zh: '点击查看是什么在占用内存', ja: 'クリックして何がRAMを使っているか確認', ko: '클릭하여 RAM을 사용하는 항목 보기' },
+    'tip.vram_meter':        { es: 'Clic para ver qué está usando la VRAM', en: "Click to see what's using VRAM", fr: 'Cliquez pour voir ce qui utilise la VRAM', it: 'Clic per vedere cosa sta usando la VRAM', pt: 'Clique para ver o que está a usar a VRAM', zh: '点击查看是什么在占用显存', ja: 'クリックして何がVRAMを使っているか確認', ko: '클릭하여 VRAM을 사용하는 항목 보기' },
+    'tip.export_events':     { es: 'Guardar el registro de eventos como .txt', en: 'Save the event log as .txt', fr: "Enregistrer le journal d'événements en .txt", it: 'Salva il registro eventi come .txt', pt: 'Guardar o registo de eventos como .txt', zh: '将事件日志保存为 .txt', ja: 'イベントログを .txt で保存', ko: '이벤트 로그를 .txt로 저장' },
+    'tip.procs_all':         { es: 'Ver TODOS los procesos en una ventana ampliada', en: 'View ALL processes in an expanded window', fr: 'Voir TOUS les processus dans une fenêtre agrandie', it: 'Vedi TUTTI i processi in una finestra ampliata', pt: 'Ver TODOS os processos numa janela ampliada', zh: '在放大的窗口中查看所有进程', ja: '拡大ウィンドウですべてのプロセスを表示', ko: '확장 창에서 모든 프로세스 보기' },
+    'tip.procs_cores':       { es: 'Ver uso por núcleo individual', en: 'View usage per individual core', fr: "Voir l'utilisation par cœur individuel", it: 'Vedi utilizzo per singolo core', pt: 'Ver uso por núcleo individual', zh: '查看每个核心的使用率', ja: '個々のコアごとの使用率を表示', ko: '개별 코어별 사용량 보기' },
+    'tip.col_cpu':           { es: '% del CPU total (todos los núcleos)', en: '% of total CPU (all cores)', fr: '% du CPU total (tous les cœurs)', it: '% della CPU totale (tutti i core)', pt: '% do CPU total (todos os núcleos)', zh: '占总 CPU 的百分比（所有核心）', ja: 'CPU全体に対する％（全コア）', ko: '전체 CPU 대비 % (모든 코어)' },
+    'tip.col_core':          { es: '% de un solo núcleo (estilo top)', en: '% of a single core (top-style)', fr: "% d'un seul cœur (style top)", it: '% di un singolo core (stile top)', pt: '% de um único núcleo (estilo top)', zh: '单核百分比（类似 top）', ja: '単一コアの％（top スタイル）', ko: '단일 코어 % (top 방식)' },
+    'tip.col_ram':           { es: 'Memoria RAM residente', en: 'Resident RAM memory', fr: 'Mémoire RAM résidente', it: 'Memoria RAM residente', pt: 'Memória RAM residente', zh: '常驻内存（RAM）', ja: '常駐RAMメモリ', ko: '상주 RAM 메모리' },
 
     /* ---- estado de la batería / fuente de energía (seteado por update()) ---- */
     'topbar.ac':             { es: '⚡ CONECTADO', en: '⚡ AC POWER', fr: '⚡ BRANCHÉ', it: '⚡ CORRENTE', pt: '⚡ LIGADO', zh: '⚡ 已插电', ja: '⚡ 充電中', ko: '⚡ 전원 연결' },
@@ -200,6 +223,9 @@
     'modal.fans':            { es: 'Ventiladores', en: 'Fans', fr: 'Ventilateurs', it: 'Ventole', pt: 'Ventoinhas', zh: '风扇', ja: 'ファン', ko: '팬' },
     'modal.ram':             { es: '¿Qué está usando la RAM?', en: 'What is using RAM?', fr: 'Qu\'est-ce qui utilise la RAM ?', it: 'Cosa sta usando la RAM?', pt: 'O que está a usar a RAM?', zh: '什么在使用内存？', ja: '何がRAMを使っていますか？', ko: 'RAM을 무엇이 사용하고 있나요?' },
     'modal.ram_sub':         { es: 'Memoria residente real por proceso (clic para cerrar uno).', en: 'Real resident memory by process (click to close one).', fr: 'Mémoire résidente réelle par processus (cliquez pour en fermer un).', it: 'Memoria residente reale per processo (clic per chiuderne uno).', pt: 'Memória residente real por processo (clique para fechar um).', zh: '按进程列出的实际驻留内存（点击关闭某个）。', ja: 'プロセスごとの実際の常駐メモリ（クリックで終了）。', ko: '프로세스별 실제 상주 메모리 (클릭하여 종료).' },
+    'modal.vram':            { es: '¿Qué está usando la VRAM?', en: 'What is using VRAM?', fr: 'Qu\'est-ce qui utilise la VRAM ?', it: 'Cosa sta usando la VRAM?', pt: 'O que está a usar a VRAM?', zh: '什么在使用显存？', ja: '何がVRAMを使っていますか？', ko: 'VRAM을 무엇이 사용하고 있나요?' },
+    'modal.vram_sub':        { es: 'Memoria de video por proceso cuando el driver la expone (clic para cerrar uno).', en: 'Video memory by process when the driver exposes it (click to close one).', fr: 'Mémoire vidéo par processus quand le pilote l\'expose (cliquez pour en fermer un).', it: 'Memoria video per processo quando il driver la espone (clic per chiuderne uno).', pt: 'Memória de vídeo por processo quando o driver a expõe (clique para fechar um).', zh: '驱动提供时按进程显示显存（点击关闭某个）。', ja: 'ドライバーが公開する場合のプロセス別ビデオメモリ（クリックで終了）。', ko: '드라이버가 제공하는 경우 프로세스별 비디오 메모리 (클릭하여 종료).' },
+    'modal.vram_none':       { es: 'No hay procesos con VRAM reportada ahora.', en: 'No processes are reporting VRAM right now.', fr: 'Aucun processus ne signale de VRAM pour le moment.', it: 'Nessun processo sta riportando VRAM ora.', pt: 'Nenhum processo está a reportar VRAM agora.', zh: '当前没有进程报告显存占用。', ja: '現在VRAMを報告しているプロセスはありません。', ko: '현재 VRAM을 보고하는 프로세스가 없습니다.' },
     'modal.theme':           { es: 'Apariencia', en: 'Appearance', fr: 'Apparence', it: 'Aspetto', pt: 'Aparência', zh: '外观', ja: '外観', ko: '외관' },
     'modal.theme_sub':       { es: 'Elige el modo de color y la paleta. Se guarda automáticamente.', en: 'Choose the color mode and palette. Saved automatically.', fr: 'Choisissez le mode de couleur et la palette. Enregistré automatiquement.', it: 'Scegli la modalità colore e la palette. Salvato automaticamente.', pt: 'Escolhe o modo de cor e a paleta. Guardado automaticamente.', zh: '选择颜色模式和调色板。自动保存。', ja: 'カラーモードとパレットを選択します。自動的に保存されます。', ko: '색상 모드와 팔레트를 선택하세요. 자동으로 저장됩니다.' },
     'modal.theme_size':      { es: 'Tamaño', en: 'Size', fr: 'Taille', it: 'Dimensione', pt: 'Tamanho', zh: '大小', ja: 'サイズ', ko: '크기' },
@@ -525,9 +551,9 @@
 
   // Idioma activo
   let _lang = (function () {
-    try { return localStorage.getItem('lang') || 'es'; } catch (_) { return 'es'; }
+    try { return localStorage.getItem('lang') || 'en'; } catch (_) { return 'en'; }
   }());
-  if (!LANGS.includes(_lang)) _lang = 'es';
+  if (!LANGS.includes(_lang)) _lang = 'en';
 
   // Listeners de cambio de idioma
   const _listeners = [];
@@ -571,7 +597,7 @@
   function _t(key, vars) {
     try {
       const entry = _dict[key];
-      let str = (entry && (entry[_lang] || entry['es'])) || key;
+      let str = (entry && (entry[_lang] || entry['en'] || entry['es'])) || key;
       if (vars && typeof vars === 'object') {
         str = str.replace(/\{(\w+)\}/g, (_, k) =>
           (vars[k] !== undefined ? String(vars[k]) : `{${k}}`));
@@ -618,6 +644,7 @@
   function _set(lang) {
     if (!LANGS.includes(lang)) return;
     _lang = lang;
+    try { document.documentElement.lang = lang; } catch (_) {}
     try { localStorage.setItem('lang', lang); } catch (_) {}
     _apply();
     _listeners.forEach((cb) => { try { cb(lang); } catch (_) {} });
@@ -628,8 +655,8 @@
    * Usado por wizard.js (paso 0) y por cualquier selector.
    * -------------------------------------------------------- */
   const LANG_META = [
-    { code: 'es', label: 'Español',   native: 'Español' },
     { code: 'en', label: 'English',   native: 'English' },
+    { code: 'es', label: 'Español',   native: 'Español' },
     { code: 'fr', label: 'Français',  native: 'Français' },
     { code: 'it', label: 'Italiano',  native: 'Italiano' },
     { code: 'pt', label: 'Português', native: 'Português' },
@@ -643,6 +670,7 @@
    * -------------------------------------------------------- */
   // Registrar el diccionario CORE antes de exponer
   _register(CORE);
+  try { document.documentElement.lang = _lang; } catch (_) {}
 
   window.t = function (key, vars) { return _t(key, vars); };
 

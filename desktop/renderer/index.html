@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="magma" data-mode="dark">
+<html lang="en" data-theme="magma" data-mode="dark">
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
@@ -51,8 +51,8 @@
       <div class="control-menu">
         <button class="ghost control-menu-toggle primary-action" type="button" data-menu-toggle="tools" data-i18n="topbar.tools">HERRAMIENTAS</button>
         <div class="control-menu-panel hidden" data-menu-panel="tools">
-          <button id="power-btn" class="ghost primary-action" data-i18n="topbar.power" title="Centro de Poder: limites de potencia CPU/GPU (requiere contraseña para aplicar)">PODER</button>
-          <button id="overlay-btn" class="ghost" data-i18n="topbar.overlay" title="Overlay de stats siempre encima para jugar (elige el monitor)">OVERLAY</button>
+          <button id="power-btn" class="ghost primary-action" data-i18n="topbar.power" data-i18n-attr="title:tip.power" title="Power Center: CPU/GPU power limits (password required to apply)">PODER</button>
+          <button id="overlay-btn" class="ghost" data-i18n="topbar.overlay" data-i18n-attr="title:tip.overlay" title="Always-on-top stats overlay for gaming (pick the monitor)">OVERLAY</button>
           <button id="alerts-btn" class="ghost" data-i18n="topbar.alerts" data-i18n-attr="title:topbar.alerts_title" title="Alertas / Umbrales: avisos y colores por temperatura y potencia">ALERTAS</button>
           <button id="config-btn" class="ghost" data-i18n="topbar.config" data-i18n-attr="title:topbar.config_title" title="Configuración: idioma, apariencia, autoarranque y notificaciones">CONFIGURACIÓN</button>
         </div>
@@ -147,7 +147,7 @@
         <div class="statgrid">
           <div><label data-i18n="common.usage">Uso</label><b id="gpu-util">--</b></div>
           <div><label data-i18n="common.watts">Watts</label><b id="gpu-watts" title="Consumo actual de la GPU — depende de la carga">--</b></div>
-          <div><label data-i18n="common.vram">VRAM</label><b id="gpu-vram" class="small">--</b></div>
+          <div class="vram-stat clickable" id="gpu-vram-stat" data-i18n-attr="title:tip.vram_meter" title="Clic para ver qué está usando la VRAM"><label data-i18n="common.vram">VRAM</label><b id="gpu-vram">--</b></div>
           <div><label data-i18n="common.mhz">MHz</label><b id="gpu-clock" title="Frecuencia actual del núcleo gráfico">--</b></div>
           <div><label>VRAM MHz</label><b id="gpu-vram-clock" class="small" title="Frecuencia actual de la memoria de video">--</b></div>
           <div><label data-i18n="common.mode">Modo</label><b id="gpu-mode" class="small">--</b></div>
@@ -251,7 +251,10 @@
       <article class="block" id="system-block" data-block="system">
         <h2><i class="dash-num"></i> <span data-i18n="block.system">Sistema</span></h2>
         <div class="sysrow">
-          <div class="meter clickable" id="ram-meter" title="Clic para ver qué está consumiendo la RAM"><label>RAM <span id="ram-label"></span></label><div class="track"><div id="ram-bar"></div></div></div>
+          <div class="sys-meters">
+            <div class="meter clickable" id="ram-meter" data-i18n-attr="title:tip.ram_meter" title="Clic para ver qué está consumiendo la RAM"><label>RAM <span id="ram-label"></span></label><div class="track"><div id="ram-bar"></div></div></div>
+            <div class="meter clickable" id="vram-meter" data-i18n-attr="title:tip.vram_meter" title="Clic para ver qué está usando la VRAM"><label>VRAM <span id="vram-label"></span></label><div class="track vram-track"><div id="vram-bar"></div></div></div>
+          </div>
           <div id="disks"></div>
           <button class="ghost" id="disk-health-btn" data-i18n="system.disk_health" data-i18n-attr="title:system.disk_health_title" title="Lee el estado SMART de los discos (pide tu contraseña)">SALUD DE DISCOS</button>
           <p id="disk-health-out" class="note hidden"></p>
@@ -336,6 +339,18 @@
         <tbody id="ram-procs-body"></tbody>
       </table>
       <button class="ghost modal-close" id="ram-close" data-i18n="common.close">Cerrar</button>
+    </div>
+  </div>
+
+  <div id="vram-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3 data-i18n="modal.vram">¿Qué está usando la VRAM?</h3>
+      <p class="sub" id="vram-procs-note" data-i18n="modal.vram_sub">Memoria de video por proceso cuando el driver la expone (clic para cerrar uno).</p>
+      <table id="vram-procs">
+        <thead><tr><th>PID</th><th data-i18n="procs.col_name">proceso</th><th class="r">VRAM</th><th class="r" data-i18n="common.mode">Modo</th></tr></thead>
+        <tbody id="vram-procs-body"></tbody>
+      </table>
+      <button class="ghost modal-close" id="vram-close" data-i18n="common.close">Cerrar</button>
     </div>
   </div>
 
@@ -468,6 +483,14 @@
       <label class="check-row" for="set-autostart" data-i18n-attr="title:alerts.autostart_title" title="Crea una entrada de inicio de sesión. La app abre minimizada y el monitor queda congelado (0% CPU) hasta que la abras.">
         <input type="checkbox" id="set-autostart">
         <span data-i18n="alerts.autostart">Iniciar con el sistema (minimizado, sin consumir recursos)</span>
+      </label>
+      <label class="select-row" for="set-close-action">
+        <span data-i18n="config.close_action">Al cerrar la ventana</span>
+        <select id="set-close-action">
+          <option value="quit" data-i18n="config.close_quit">Salir completo</option>
+          <option value="tray" data-i18n="config.close_tray">Minimizar a bandeja</option>
+          <option value="ask" data-i18n="config.close_ask">Preguntar cada vez</option>
+        </select>
       </label>
       <p id="config-status" class="note hidden"></p>
       <button class="ghost modal-close" id="config-close" data-i18n="common.close">Cerrar</button>

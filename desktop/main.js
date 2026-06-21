@@ -37,6 +37,8 @@ function augmentEnv(base = process.env) {
 const APP_ENV = augmentEnv(process.env);
 process.env.PATH = APP_ENV.PATH;
 const PY_ENV = { ...APP_ENV, PYTHONPATH: path.join(REPO, 'src') };
+const CONFIG_DIR_PATH = path.join(os.homedir(), '.config', 'rog-monitor');
+const CONFIG_JSON_PATH = path.join(CONFIG_DIR_PATH, 'config.json');
 const DATA_DIR_PATH = path.join(os.homedir(), '.local', 'share', 'rog-monitor');
 const ERROR_LOG_PATH = path.join(DATA_DIR_PATH, 'errors.jsonl');
 const LAST_ISSUE_REPORT_PATH = path.join(DATA_DIR_PATH, 'last-issue-report.txt');
@@ -105,6 +107,43 @@ let musicMode = {
 app.setName('ROG Monitor');
 if (process.platform === 'linux') {
   app.setDesktopName('rog-monitor.desktop');
+}
+
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (!win || win.isDestroyed()) return;
+    mainVisible = true;
+    try {
+      if (win.isMinimized()) win.restore();
+      win.show();
+      win.focus();
+      updateBackendPower();
+    } catch (_) { /* window may be mid-destroy */ }
+  });
+}
+
+function readAppConfig() {
+  try {
+    return JSON.parse(fs.readFileSync(CONFIG_JSON_PATH, 'utf-8')) || {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function writeAppConfig(patch) {
+  try {
+    const next = { ...readAppConfig(), ...patch };
+    fs.mkdirSync(CONFIG_DIR_PATH, { recursive: true });
+    fs.writeFileSync(CONFIG_JSON_PATH, JSON.stringify(next, null, 2) + '\n', 'utf-8');
+  } catch (_) { /* close behavior must never crash the app */ }
+}
+
+function closeAction() {
+  const action = String(readAppConfig().close_action || 'quit');
+  return ['quit', 'tray', 'ask'].includes(action) ? action : 'quit';
 }
 
 function startBackend() {
@@ -648,7 +687,6 @@ ipcMain.handle('set-fps-logging', (_e, enabled) => {
    cap, perfiles Aura, umbrales). Estos botones la empaquetan en un solo JSON
    para respaldarla o llevarla a otro equipo. */
 
-const CONFIG_DIR_PATH = path.join(os.homedir(), '.config', 'rog-monitor');
 const CONFIG_FILES = ['fan-curves.json', 'aura.json', 'config.json'];
 
 ipcMain.handle('export-config', async () => {
@@ -720,12 +758,13 @@ ipcMain.handle('report-issue', async (_e, body) => {
     .replace(/^git@github\.com:/, 'https://github.com/')
     .replace(/\.git$/, '');
   const errorTail = readErrorLogTail(80);
+  // Reporte COMPLETO: se guarda en disco; el usuario lo adjunta al issue.
   const fullBody = [
     body || '',
     '',
     '---',
     '**Registro local reciente:**',
-    errorTail ? '```jsonl\n' + errorTail.slice(-12000) + '\n```' : '_Sin errores registrados._',
+    errorTail ? '```jsonl\n' + errorTail + '\n```' : '_Sin errores registrados._',
     '',
     `TXT local completo: ${LAST_ISSUE_REPORT_PATH}`,
   ].join('\n');
@@ -733,12 +772,27 @@ ipcMain.handle('report-issue', async (_e, body) => {
     fs.mkdirSync(DATA_DIR_PATH, { recursive: true });
     fs.writeFileSync(LAST_ISSUE_REPORT_PATH, fullBody + '\n', 'utf-8');
   } catch (_) { /* non-fatal */ }
-  const params = new URLSearchParams({
-    title: '[bug] ',
-    body: fullBody.slice(0, 58000),
-    labels: 'bug',
-  });
-  shell.openExternal(`${url}/issues/new?${params}`);
+  // ponytail: GitHub rechaza issues/new si la URL pasa de ~8 KB (414 "URL too long").
+  // El prefill lleva la descripción + una cola corta del log; el resto vive en el TXT local.
+  const buildUrl = (logTail) => {
+    const prefill = [
+      body || '',
+      '',
+      '---',
+      logTail ? '**Log reciente (recortado — adjunta el TXT completo):**\n```\n' + logTail + '\n```' : '',
+      `\n_Reporte completo guardado en:_ \`${LAST_ISSUE_REPORT_PATH}\``,
+    ].join('\n');
+    const params = new URLSearchParams({ title: '[bug] ', body: prefill, labels: 'bug' });
+    return `${url}/issues/new?${params}`;
+  };
+  let tailLen = 1500;
+  let issueUrl = buildUrl(errorTail ? errorTail.slice(-tailLen) : '');
+  // Recortar hasta que la URL entre cómoda bajo el límite de GitHub.
+  while (issueUrl.length > 7000 && tailLen > 0) {
+    tailLen = Math.max(0, tailLen - 500);
+    issueUrl = buildUrl(tailLen ? errorTail.slice(-tailLen) : '');
+  }
+  shell.openExternal(issueUrl);
   return { ok: true, logPath: LAST_ISSUE_REPORT_PATH };
 });
 
@@ -1359,15 +1413,41 @@ function createWindow() {
   ['minimize', 'hide'].forEach((ev) => win.on(ev, () => { mainVisible = false; updateBackendPower(); }));
   ['restore', 'show', 'focus'].forEach((ev) => win.on(ev, () => { mainVisible = true; updateBackendPower(); }));
 
-  // Cerrar la ventana MINIMIZA a la bandeja (estilo Steam): interceptamos el
-  // `close` y ocultamos en su lugar. Solo un Salir real (isQuitting=true) deja
-  // que la ventana se cierre de verdad. Al ocultar, los listeners de `hide`
-  // congelan el backend → 0% CPU mientras está en bandeja.
-  win.on('close', (e) => {
-    if (!isQuitting) {
+  // El botón X respeta la preferencia del usuario. Por defecto sale de verdad;
+  // quien quiera comportamiento tipo Steam puede elegir "bandeja" en Config.
+  let closePromptOpen = false;
+  win.on('close', async (e) => {
+    if (isQuitting) return;
+    const action = closeAction();
+    if (action === 'tray') {
       e.preventDefault();
       win.hide();
+      return;
     }
+    if (action !== 'ask') {
+      e.preventDefault();
+      realQuit();
+      return;
+    }
+    e.preventDefault();
+    if (closePromptOpen) return;
+    closePromptOpen = true;
+    const res = await dialog.showMessageBox(win, {
+      type: 'question',
+      title: 'Cerrar ROG Monitor',
+      message: '¿Qué quieres hacer con ROG Monitor?',
+      detail: 'Salir detiene el monitor y quita el icono de bandeja. Minimizar lo deja pausado en bandeja para abrirlo rápido después.',
+      buttons: ['Salir / Quit', 'Minimizar a bandeja', 'Cancelar'],
+      defaultId: 0,
+      cancelId: 2,
+      checkboxLabel: 'Recordar mi elección',
+      checkboxChecked: false,
+    });
+    closePromptOpen = false;
+    if (res.checkboxChecked && res.response === 0) writeAppConfig({ close_action: 'quit' });
+    if (res.checkboxChecked && res.response === 1) writeAppConfig({ close_action: 'tray' });
+    if (res.response === 0) realQuit();
+    else if (res.response === 1 && win && !win.isDestroyed()) win.hide();
   });
   // closing the main window tears down the overlay too
   win.on('closed', () => {
@@ -1620,12 +1700,14 @@ ipcMain.handle('set-thermal-guardian', async (_e, { enabled, cpuCeiling, gpuCeil
   };
 });
 
-app.whenReady().then(() => {
-  createWindow();
-  createTray();
-  startBackend();
-  runJsonModule('rog_monitor.aura', ['apply-startup'], 10000).catch(() => {});
-});
+if (gotSingleInstanceLock) {
+  app.whenReady().then(() => {
+    createWindow();
+    createTray();
+    startBackend();
+    runJsonModule('rog_monitor.aura', ['apply-startup'], 10000).catch(() => {});
+  });
+}
 
 // Cualquier ruta de salida (Cmd+Q, logout, etc.) marca isQuitting para que el
 // handler de `close` no vuelva a esconder la ventana e impida cerrar.

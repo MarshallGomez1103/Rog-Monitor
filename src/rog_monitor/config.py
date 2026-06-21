@@ -9,11 +9,12 @@ CONFIG_FILE = CONFIG_DIR / "config.json"
 DATA_DIR = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "rog-monitor"
 
 DEFAULTS = {
-    "lang": "auto",
+    "lang": "en",
     "theme": "rog",
     "interval": 1.0,
     "history_seconds": 900,
     "notifications": True,
+    "close_action": "quit",
     "fan_max_rpm": {},
     "alerts": {
         "cpu_temp_warn": 92,

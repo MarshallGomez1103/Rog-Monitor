@@ -248,6 +248,18 @@ function fmt(value, digits = 0, fallback = '--') {
     : Number(value).toFixed(digits);
 }
 
+function fmtGbFromMb(value, digits = 1) {
+  return value === null || value === undefined || Number.isNaN(value)
+    ? '--'
+    : `${fmt(Number(value) / 1024, digits)} G`;
+}
+
+function fmtMb(value) {
+  return value === null || value === undefined || Number.isNaN(value)
+    ? '--'
+    : `${Math.round(Number(value))} MB`;
+}
+
 // Contrato con CSS (Agente A2): #cpu-temp/#gpu-temp SIEMPRE deben llevar
 // exactamente una de estas 4 clases — el color lo decide el CSS por nivel,
 // nunca lo forzamos por JS (ver update()).
@@ -1345,7 +1357,7 @@ function update(stats) {
     $('gpu-clock').textContent = fmt(active.clock_mhz, 0);
     $('gpu-vram-clock').textContent = fmt(active.vram_clock_mhz, 0);
     $('gpu-vram').textContent = active.vram_total
-      ? `${fmt(active.vram_used, 0)}/${fmt(active.vram_total, 0)}M` : '--';
+      ? `${fmtGbFromMb(active.vram_used)}/${fmtGbFromMb(active.vram_total)}` : '--';
   } else {
     $('gpu-off-note').classList.remove('hidden');
     $('gpu-temp').textContent = '--';
@@ -1404,6 +1416,12 @@ function update(stats) {
   const sys = stats.sys || {};
   $('ram-label').textContent = `${fmt(sys.ram_used_gb, 1)}/${fmt(sys.ram_total_gb, 0)} G`;
   $('ram-bar').style.width = (sys.ram_percent || 0) + '%';
+  const vramTotal = active?.vram_total;
+  const vramUsed = active?.vram_used;
+  const vramPercent = vramTotal ? Math.max(0, Math.min(100, Math.round((vramUsed || 0) * 100 / vramTotal))) : 0;
+  $('vram-label').textContent = vramTotal ? `${fmtGbFromMb(vramUsed)}/${fmtGbFromMb(vramTotal)}` : '--';
+  $('vram-bar').style.width = `${vramPercent}%`;
+  $('vram-meter').classList.toggle('disabled', !vramTotal);
 
   const disks = $('disks');
   disks.innerHTML = (sys.disks || []).map((d) => `
@@ -1844,7 +1862,12 @@ $('alerts-save').addEventListener('click', async () => {
       'config.sub':           { es:'Idioma, apariencia, autoarranque y notificaciones. Todo se guarda automáticamente.', en:'Language, appearance, autostart and notifications. Everything is saved automatically.', fr:'Langue, apparence, démarrage automatique et notifications. Tout est enregistré automatiquement.', it:'Lingua, aspetto, avvio automatico e notifiche. Tutto viene salvato automaticamente.', pt:'Idioma, aparência, início automático e notificações. Tudo é salvo automaticamente.', zh:'语言、外观、开机启动和通知。所有内容都会自动保存。', ja:'言語、外観、自動起動、通知。すべて自動的に保存されます。', ko:'언어, 모양, 자동 시작 및 알림. 모든 것이 자동으로 저장됩니다.' },
       'config.lang_title':    { es:'Idioma', en:'Language', fr:'Langue', it:'Lingua', pt:'Idioma', zh:'语言', ja:'言語', ko:'언어' },
       'config.system_title':  { es:'Sistema', en:'System', fr:'Système', it:'Sistema', pt:'Sistema', zh:'系统', ja:'システム', ko:'시스템' },
+      'config.close_action':  { es:'Al cerrar la ventana', en:'When closing the window', fr:'À la fermeture de la fenêtre', it:'Alla chiusura della finestra', pt:'Ao fechar a janela', zh:'关闭窗口时', ja:'ウィンドウを閉じるとき', ko:'창을 닫을 때' },
+      'config.close_quit':    { es:'Salir completo', en:'Quit completely', fr:'Quitter complètement', it:'Esci completamente', pt:'Sair por completo', zh:'完全退出', ja:'完全に終了', ko:'완전히 종료' },
+      'config.close_tray':    { es:'Minimizar a bandeja', en:'Minimize to tray', fr:'Réduire dans la zone de notification', it:'Riduci nella tray', pt:'Minimizar para a bandeja', zh:'最小化到托盘', ja:'トレイに最小化', ko:'트레이로 최소화' },
+      'config.close_ask':     { es:'Preguntar cada vez', en:'Ask every time', fr:'Demander à chaque fois', it:'Chiedi ogni volta', pt:'Perguntar sempre', zh:'每次询问', ja:'毎回確認', ko:'매번 묻기' },
     });
+    window.i18n.apply();
   }
 
   /* --- selector de idioma dentro de #config-modal --- */
@@ -1885,7 +1908,13 @@ $('alerts-save').addEventListener('click', async () => {
     } catch (_) { /* no crítico */ }
     try {
       const s = await window.rog.getSettings();
-      if (s && s.ok) $('set-notifications').checked = s.notifications !== false;
+      if (s && s.ok) {
+        $('set-notifications').checked = s.notifications !== false;
+        if ($('set-close-action')) {
+          $('set-close-action').value = s.close_action || 'quit';
+          $('set-close-action').dataset.previous = $('set-close-action').value;
+        }
+      }
     } catch (_) { /* no crítico */ }
     $('config-modal').classList.remove('hidden');
   }
@@ -1916,6 +1945,22 @@ $('alerts-save').addEventListener('click', async () => {
       toast(`No pude guardar notificaciones: ${(res && res.err) || '?'}`);
       e.target.checked = !e.target.checked;
     }
+  });
+
+  if ($('set-close-action')) $('set-close-action').addEventListener('change', async (e) => {
+    const previous = e.target.dataset.previous || 'quit';
+    const res = await window.rog.saveSettings({ close_action: e.target.value });
+    if (!res || res.ok === false) {
+      toast(`No pude guardar el cierre de ventana: ${(res && res.err) || '?'}`);
+      e.target.value = previous;
+      return;
+    }
+    e.target.dataset.previous = e.target.value;
+    toast(e.target.value === 'quit'
+      ? 'El botón X ahora cierra ROG Monitor por completo.'
+      : e.target.value === 'tray'
+        ? 'El botón X ahora minimiza ROG Monitor a la bandeja.'
+        : 'El botón X preguntará qué hacer.');
   });
 
   /* --- SALIR (tipo Steam): cierra de verdad la app --- */
@@ -2939,6 +2984,40 @@ $('ram-modal').addEventListener('click', (e) => {
   if (e.target === $('ram-modal')) $('ram-modal').classList.add('hidden');
 });
 $('ram-procs-body').addEventListener('click', async (e) => {
+  const row = e.target.closest('tr[data-pid]');
+  if (!row) return;
+  const { pid, name } = row.dataset;
+  if (!confirmT('confirm.kill_proc_short', { name, pid })) return;
+  const res = await window.rog.killProcess(pid);
+  toast(res.ok ? t('proc.kill_sent', { name }) : t('proc.kill_failed', { err: res.err }));
+});
+
+/* ---------- VRAM detail ---------- */
+
+function openVramModal() {
+  const info = lastStats?.procs_vram || {};
+  const procs = info.procs || [];
+  const note = $('vram-procs-note');
+  note.textContent = info.available === false
+    ? (info.reason || t('modal.vram_none'))
+    : t('modal.vram_sub');
+  $('vram-procs-body').innerHTML = procs.length
+    ? procs.map((p) => `
+      <tr data-pid="${p.pid}" data-name="${p.name}" title="${t('procs.kill', { name: p.name })}">
+        <td class="pid">${p.pid}</td><td>${p.name}</td>
+        <td class="mem r">${fmtMb(p.vram_mb)}</td>
+        <td class="r">${p.type || '—'}</td></tr>`).join('')
+    : `<tr><td colspan="4" class="dim">${info.reason || t('modal.vram_none')}</td></tr>`;
+  $('vram-modal').classList.remove('hidden');
+}
+
+$('vram-meter')?.addEventListener('click', openVramModal);
+$('gpu-vram-stat')?.addEventListener('click', openVramModal);
+$('vram-close').addEventListener('click', () => $('vram-modal').classList.add('hidden'));
+$('vram-modal').addEventListener('click', (e) => {
+  if (e.target === $('vram-modal')) $('vram-modal').classList.add('hidden');
+});
+$('vram-procs-body').addEventListener('click', async (e) => {
   const row = e.target.closest('tr[data-pid]');
   if (!row) return;
   const { pid, name } = row.dataset;

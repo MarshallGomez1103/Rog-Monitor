@@ -1,8 +1,10 @@
 """GPU sensors: NVIDIA via nvidia-smi, AMD via hwmon, supergfx mode detection."""
 
+import re
 import shutil
 import subprocess
 import time
+from pathlib import Path
 
 from . import hwmon
 
@@ -48,6 +50,13 @@ class GpuReader:
         self._pending_action: str | None = None
         self._mode_ts = 0.0
         self._nvidia_dead_until = 0.0
+        self._vram_proc_ts = 0.0
+        self._vram_proc_cache: dict = {
+            "available": False,
+            "reason": "sin datos todavía",
+            "vendor": "nvidia" if self.has_nvidia_smi else None,
+            "procs": [],
+        }
         self.supported: list[str] = self._supported_modes()
 
     def _supported_modes(self) -> list[str]:
@@ -122,6 +131,136 @@ class GpuReader:
             "clock_mhz": _num(parts[6]) if len(parts) > 6 else None,
             "vram_clock_mhz": _num(parts[7]) if len(parts) > 7 else None,
         }
+
+    @staticmethod
+    def _proc_name(pid: int, fallback: str = "") -> str:
+        try:
+            name = Path(f"/proc/{pid}/comm").read_text().strip()
+            if name:
+                return name[:48]
+        except OSError:
+            pass
+        base = Path(fallback).name if fallback else ""
+        return (base or str(pid))[:48]
+
+    @staticmethod
+    def _merge_vram_rows(rows: list[dict]) -> list[dict]:
+        by_pid: dict[int, dict] = {}
+        for row in rows:
+            pid = row.get("pid")
+            mem = row.get("vram_mb")
+            if not isinstance(pid, int) or not isinstance(mem, (int, float)):
+                continue
+            current = by_pid.setdefault(pid, {
+                "pid": pid,
+                "name": row.get("name") or str(pid),
+                "vram_mb": 0,
+                "type": row.get("type") or "",
+            })
+            current["vram_mb"] = max(int(current["vram_mb"]), int(mem))
+            if row.get("type") and row["type"] not in current["type"]:
+                current["type"] = (current["type"] + "+" + row["type"]).strip("+")
+        out = list(by_pid.values())
+        out.sort(key=lambda r: r["vram_mb"], reverse=True)
+        return out
+
+    def _read_nvidia_vram_query(self) -> list[dict] | None:
+        # Driver versions disagree on the field name, so try both.
+        for mem_field in ("used_memory", "used_gpu_memory"):
+            out = _run([
+                "nvidia-smi",
+                f"--query-compute-apps=pid,process_name,{mem_field}",
+                "--format=csv,noheader,nounits",
+            ], timeout=2.0)
+            if out is None:
+                continue
+            rows = []
+            for line in out.splitlines():
+                parts = [p.strip() for p in line.split(",")]
+                if len(parts) < 3:
+                    continue
+                try:
+                    pid = int(parts[0])
+                    mem = int(float(parts[2].replace("MiB", "").strip()))
+                except (TypeError, ValueError):
+                    continue
+                if mem <= 0:
+                    continue
+                rows.append({
+                    "pid": pid,
+                    "name": self._proc_name(pid, parts[1]),
+                    "vram_mb": mem,
+                    "type": "C",
+                })
+            return rows
+        return None
+
+    def _read_nvidia_vram_table(self) -> list[dict] | None:
+        out = _run(["nvidia-smi"], timeout=2.5)
+        if not out:
+            return None
+        rows = []
+        # Example process row:
+        # |    0   N/A  N/A      1234      G   /usr/bin/game              2048MiB |
+        row_re = re.compile(
+            r"^\|\s*\d+\s+\S+\s+\S+\s+(\d+)\s+([A-Z+]+)\s+(.+?)\s+(\d+)\s*MiB\s*\|"
+        )
+        for line in out.splitlines():
+            match = row_re.match(line)
+            if not match:
+                continue
+            pid = int(match.group(1))
+            kind = match.group(2)
+            name = match.group(3).strip()
+            mem = int(match.group(4))
+            if mem <= 0:
+                continue
+            rows.append({
+                "pid": pid,
+                "name": self._proc_name(pid, name),
+                "vram_mb": mem,
+                "type": kind,
+            })
+        return rows
+
+    def vram_processes(self, active: dict | None = None, top: int = 12) -> dict:
+        if not self.has_nvidia_smi:
+            return {
+                "available": False,
+                "reason": "nvidia-smi no está disponible",
+                "vendor": None,
+                "procs": [],
+            }
+        if active is not None and active.get("vendor") != "nvidia":
+            return {
+                "available": False,
+                "reason": "la dGPU NVIDIA no está activa",
+                "vendor": "nvidia",
+                "procs": [],
+            }
+        now = time.monotonic()
+        if now - self._vram_proc_ts < 5:
+            return self._vram_proc_cache
+
+        query_rows = self._read_nvidia_vram_query()
+        table_rows = self._read_nvidia_vram_table()
+        if query_rows is None and table_rows is None:
+            self._vram_proc_cache = {
+                "available": False,
+                "reason": "el driver NVIDIA no expuso la lista de procesos",
+                "vendor": "nvidia",
+                "procs": [],
+            }
+        else:
+            rows = (query_rows or []) + (table_rows or [])
+            self._vram_proc_cache = {
+                "available": True,
+                "reason": "",
+                "vendor": "nvidia",
+                "procs": self._merge_vram_rows(rows)[:top],
+            }
+        self._vram_proc_ts = now
+        return self._vram_proc_cache
 
     def _read_amd(self) -> dict | None:
         if self.amd is None:
