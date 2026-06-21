@@ -105,7 +105,7 @@
         </div>
         <h2><i class="dash-num"></i> <span data-i18n="block.cpu">CPU</span> <small id="cpu-model"></small></h2>
         <div class="bignum"><span id="cpu-temp">--</span><em>°C</em></div>
-        <div class="statgrid">
+        <div class="statgrid gpu-statgrid">
           <div><label data-i18n="common.max">Máx</label><b id="cpu-max">--</b></div>
           <div><label data-i18n="common.min">Mín</label><b id="cpu-min">--</b></div>
           <div><label data-i18n="common.package">Package</label><b id="cpu-pkg">--</b></div>
@@ -260,7 +260,7 @@
           <p id="disk-health-out" class="note hidden"></p>
           <div class="syskv">
             <div><label data-i18n="common.network">Red</label><b id="net">--</b></div>
-            <div><label data-i18n="common.load">Carga</label><b id="load">--</b></div>
+            <div data-i18n-attr="title:tip.load" title="Load average: tareas activas o esperando CPU/IO en los últimos 1, 5 y 15 minutos. En este equipo, cerca de 20 equivale a todos los hilos ocupados."><label data-i18n="common.load">Carga</label><b id="load">--</b></div>
             <div><label data-i18n="common.battery">Batería</label><b id="battery">--</b></div>
             <div><label data-i18n="common.asus_profile">Perfil ASUS</label><b id="asus-profile">--</b></div>
           </div>
@@ -309,6 +309,22 @@
 
   <div id="toast" class="hidden"></div>
   <div id="chart-tip" class="hidden"></div>
+
+  <div id="confirm-modal" class="modal hidden">
+    <div class="modal-card confirm-card">
+      <h3 id="confirm-title">Confirmar</h3>
+      <p class="sub confirm-message" id="confirm-message"></p>
+      <label class="check-row hidden" id="confirm-remember-row" for="confirm-remember">
+        <input type="checkbox" id="confirm-remember">
+        <span id="confirm-remember-label">Recordar mi elección</span>
+      </label>
+      <div class="confirm-actions">
+        <button class="ghost" id="confirm-cancel" type="button">Cancelar</button>
+        <button class="ghost hidden" id="confirm-alt" type="button">Minimizar</button>
+        <button class="ghost aura-primary" id="confirm-ok" type="button">Aceptar</button>
+      </div>
+    </div>
+  </div>
 
   <!-- v10 shells (los llenan los agentes: A1 idioma, A5 roadmap) -->
   <div id="lang-modal" class="modal hidden">

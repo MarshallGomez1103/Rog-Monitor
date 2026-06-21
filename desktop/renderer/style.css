@@ -676,6 +676,13 @@ main {
   grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: 10px 14px;
 }
+.gpu-statgrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+}
+.gpu-statgrid > div {
+  min-width: 0;
+}
 .statgrid label {
   display: block;
   font-size: 11px;
@@ -687,15 +694,17 @@ main {
 .statgrid b { font-family: var(--mono); font-size: 16px; font-weight: 600; }
 .statgrid b.small { font-size: 12.5px; font-weight: 400; }
 .statgrid .vram-stat {
-  padding: 7px 9px;
-  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--hair));
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--accent) 9%, var(--chip));
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 .statgrid .vram-stat b {
   display: block;
   color: var(--accent);
-  font-size: 17px;
+  font-size: 16px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .accent { color: var(--crit) !important; }
@@ -1057,6 +1066,7 @@ input[type="color"] {
   text-transform: uppercase; color: var(--dim);
 }
 .syskv b { font-family: var(--mono); font-size: 14px; font-weight: 600; }
+.syskv [title] { cursor: help; }
 
 /* ---------- events & procs ---------- */
 .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -1156,6 +1166,36 @@ input[type="color"] {
 .modal-card h3 { font-size: 15px; margin-bottom: 4px; }
 .modal-card p.sub { font-size: 12.5px; color: var(--dim); margin-bottom: 14px; }
 .mode-row { display: flex; gap: 8px; margin-bottom: 18px; }
+.confirm-card {
+  width: min(520px, 92vw);
+  border-color: color-mix(in srgb, var(--accent) 46%, var(--hair));
+  box-shadow: 0 18px 48px color-mix(in srgb, #000 55%, transparent),
+              0 0 24px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.confirm-card h3 {
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+.confirm-message {
+  white-space: pre-line;
+  user-select: text;
+  line-height: 1.45;
+}
+.confirm-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+.confirm-actions:has(#confirm-alt.hidden) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.confirm-actions .hidden {
+  display: none !important;
+}
+@media (max-width: 520px) {
+  .confirm-actions { grid-template-columns: 1fr; }
+}
 .bench-output {
   white-space: pre-wrap;
   user-select: text;

@@ -146,6 +146,8 @@ function closeAction() {
   return ['quit', 'tray', 'ask'].includes(action) ? action : 'quit';
 }
 
+let closePromptOpen = false;
+
 function startBackend() {
   if (backend) {
     backend.removeAllListeners();
@@ -1415,7 +1417,6 @@ function createWindow() {
 
   // El botón X respeta la preferencia del usuario. Por defecto sale de verdad;
   // quien quiera comportamiento tipo Steam puede elegir "bandeja" en Config.
-  let closePromptOpen = false;
   win.on('close', async (e) => {
     if (isQuitting) return;
     const action = closeAction();
@@ -1432,22 +1433,7 @@ function createWindow() {
     e.preventDefault();
     if (closePromptOpen) return;
     closePromptOpen = true;
-    const res = await dialog.showMessageBox(win, {
-      type: 'question',
-      title: 'Cerrar ROG Monitor',
-      message: '¿Qué quieres hacer con ROG Monitor?',
-      detail: 'Salir detiene el monitor y quita el icono de bandeja. Minimizar lo deja pausado en bandeja para abrirlo rápido después.',
-      buttons: ['Salir / Quit', 'Minimizar a bandeja', 'Cancelar'],
-      defaultId: 0,
-      cancelId: 2,
-      checkboxLabel: 'Recordar mi elección',
-      checkboxChecked: false,
-    });
-    closePromptOpen = false;
-    if (res.checkboxChecked && res.response === 0) writeAppConfig({ close_action: 'quit' });
-    if (res.checkboxChecked && res.response === 1) writeAppConfig({ close_action: 'tray' });
-    if (res.response === 0) realQuit();
-    else if (res.response === 1 && win && !win.isDestroyed()) win.hide();
+    win.webContents.send('close-request');
   });
   // closing the main window tears down the overlay too
   win.on('closed', () => {
@@ -1506,6 +1492,15 @@ function realQuit() {
 }
 
 ipcMain.handle('app-quit', () => { realQuit(); return { ok: true }; });
+
+ipcMain.handle('close-choice', (_e, { choice, remember } = {}) => {
+  closePromptOpen = false;
+  if (remember && choice === 'quit') writeAppConfig({ close_action: 'quit' });
+  if (remember && choice === 'tray') writeAppConfig({ close_action: 'tray' });
+  if (choice === 'quit') realQuit();
+  else if (choice === 'tray' && win && !win.isDestroyed()) win.hide();
+  return { ok: true };
+});
 
 /* ---------- power control (A6) ----------
    Lectura vía rog_monitor.power_control CLI; escritura:

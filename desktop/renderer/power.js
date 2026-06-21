@@ -450,13 +450,14 @@
       advWrap.appendChild(advText);
       block.appendChild(advWrap);
 
-      advCheck.addEventListener('change', () => {
+      advCheck.addEventListener('change', async () => {
         if (advCheck.checked) {
           // DOBLE CONSENTIMIENTO para exceder el rango seguro hacia el absoluto.
-          const ok = window.confirm(
+          const ok = await window.rogConfirm(
             `${t('power.consentTitle')}\n\n${t('power.consentAdvanced')}\n\n` +
             `${t('power.consentOverclock')}\n\n${t('power.consentUndervolt')}\n\n` +
-            `${t('power.consentRecover')}`
+            `${t('power.consentRecover')}`,
+            { title: t('power.consentTitle') }
           );
           if (!ok) {
             advCheck.checked = false;
@@ -1519,7 +1520,7 @@
         'Los valores van acotados a los rangos seguros de tu dispositivo (doble recorte) y el firmware impone sus propios topes. Si algo falla, reinicia y usa Reset a fábrica; estos cambios no sobreviven a un apagón forzado.') + '\n\n' +
       tf('power.confirm.question', '¿Aplicar?');
 
-    if (!window.confirm(msg)) return;
+    if (!(await window.rogConfirm(msg, { title: tf('power.confirm.title', 'CENTRO DE PODER — Confirmar cambios') }))) return;
 
     // DOBLE CONSENTIMIENTO si algún cambio excede el rango seguro.
     if (beyond.length > 0) {
@@ -1533,7 +1534,7 @@
         tf('power.consentRecover',
           'Si el sistema se cuelga tras aplicar, reinicia.') + '\n\n' +
         tf('power.confirm.beyondQuestion', '¿Aplicar fuera del rango seguro?');
-      if (!window.confirm(msg2)) return;
+      if (!(await window.rogConfirm(msg2, { title: tf('power.confirm.beyondTitle', 'CONFIRMACIÓN ADICIONAL — Fuera del rango seguro') }))) return;
     }
 
     const applyBtn = $('power-apply');
@@ -1576,12 +1577,13 @@
      resetPower — restaura todos los valores a fábrica.
   ================================================================= */
   async function resetPower() {
-    if (!window.confirm(
+    if (!(await window.rogConfirm(
       tf('power.reset.title', 'RESET A FÁBRICA') + '\n\n' +
       tf('power.reset.body',
         'Restaura los límites de potencia a los valores con los que vino tu equipo, detectados y guardados la primera vez que abriste la app.') + '\n\n' +
-      tf('power.reset.question', '¿Continuar?')
-    )) return;
+      tf('power.reset.question', '¿Continuar?'),
+      { title: tf('power.reset.title', 'RESET A FÁBRICA') }
+    ))) return;
 
     const resetBtn = $('power-reset');
     if (resetBtn) { resetBtn.disabled = true; resetBtn.textContent = tf('power.resetting', 'RESETEANDO…'); }

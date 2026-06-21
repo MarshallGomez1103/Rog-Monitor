@@ -33,11 +33,117 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 /* --------------------------------------------------------------------------
- * i18n long-tail (v16 Fase A): claves para confirms nativos, toasts y estados
+ * i18n long-tail (v16 Fase A): claves para confirmaciones, toasts y estados
  * que v15 dejó en español duro. Registradas aquí (el motor i18n.js ya cargó).
- * Helper confirmT(): traduce el texto de un window.confirm en vivo.
+ * Helper confirmT(): traduce y muestra el modal custom de confirmación.
  * -------------------------------------------------------------------------- */
-function confirmT(key, vars) { return window.confirm(t(key, vars)); }
+function dialogText(key, fallback, vars) {
+  const value = t(key, vars);
+  return value === key ? fallback : value;
+}
+
+let activeConfirmResolve = null;
+
+function rogChoiceDialog({
+  title,
+  message,
+  okLabel,
+  cancelLabel,
+  altLabel,
+  rememberLabel,
+} = {}) {
+  if (activeConfirmResolve) {
+    return Promise.resolve({ choice: 'cancel', remember: false });
+  }
+  return new Promise((resolve) => {
+    const modal = $('confirm-modal');
+    const titleEl = $('confirm-title');
+    const messageEl = $('confirm-message');
+    const okBtn = $('confirm-ok');
+    const cancelBtn = $('confirm-cancel');
+    const altBtn = $('confirm-alt');
+    const rememberRow = $('confirm-remember-row');
+    const remember = $('confirm-remember');
+    const rememberText = $('confirm-remember-label');
+
+    activeConfirmResolve = resolve;
+    titleEl.textContent = title || dialogText('confirm.title', 'Confirmar');
+    messageEl.textContent = message || '';
+    okBtn.textContent = okLabel || dialogText('common.ok', 'Aceptar');
+    cancelBtn.textContent = cancelLabel || t('common.cancel');
+    if (altLabel) {
+      altBtn.textContent = altLabel;
+      altBtn.classList.remove('hidden');
+    } else {
+      altBtn.classList.add('hidden');
+    }
+    if (rememberLabel) {
+      remember.checked = false;
+      rememberText.textContent = rememberLabel;
+      rememberRow.classList.remove('hidden');
+    } else {
+      remember.checked = false;
+      rememberRow.classList.add('hidden');
+    }
+
+    const cleanup = (choice) => {
+      modal.classList.add('hidden');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      altBtn.removeEventListener('click', onAlt);
+      modal.removeEventListener('click', onBackdrop);
+      document.removeEventListener('keydown', onKey);
+      const out = { choice, remember: remember.checked };
+      const done = activeConfirmResolve;
+      activeConfirmResolve = null;
+      done(out);
+    };
+    const onOk = () => cleanup('ok');
+    const onCancel = () => cleanup('cancel');
+    const onAlt = () => cleanup('alt');
+    const onBackdrop = (event) => { if (event.target === modal) cleanup('cancel'); };
+    const onKey = (event) => {
+      if (event.key === 'Escape') cleanup('cancel');
+      if (event.key === 'Enter') cleanup('ok');
+    };
+
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    altBtn.addEventListener('click', onAlt);
+    modal.addEventListener('click', onBackdrop);
+    document.addEventListener('keydown', onKey);
+    modal.classList.remove('hidden');
+    okBtn.focus();
+  });
+}
+
+async function rogConfirm(message, options = {}) {
+  const res = await rogChoiceDialog({ message, ...options });
+  return res.choice === 'ok';
+}
+
+async function confirmT(key, vars, options = {}) {
+  return rogConfirm(t(key, vars), options);
+}
+
+window.rogConfirm = rogConfirm;
+window.rogChoiceDialog = rogChoiceDialog;
+
+if (window.rog?.onCloseRequest) {
+  window.rog.onCloseRequest(async () => {
+    const res = await rogChoiceDialog({
+      title: dialogText('close.title', 'Cerrar ROG Monitor'),
+      message: dialogText('close.message',
+        '¿Qué quieres hacer con ROG Monitor?\n\nSalir detiene el monitor y quita el icono de bandeja. Minimizar lo deja pausado en bandeja para abrirlo rápido después.'),
+      okLabel: dialogText('close.quit', 'Salir / Quit'),
+      altLabel: dialogText('close.tray', 'Minimizar a bandeja'),
+      cancelLabel: t('common.cancel'),
+      rememberLabel: dialogText('close.remember', 'Recordar mi elección'),
+    });
+    const choice = res.choice === 'ok' ? 'quit' : (res.choice === 'alt' ? 'tray' : 'cancel');
+    await window.rog.closeChoice({ choice, remember: res.remember });
+  });
+}
 
 if (window.i18n && window.i18n.register) {
   window.i18n.register({
@@ -252,6 +358,12 @@ function fmtGbFromMb(value, digits = 1) {
   return value === null || value === undefined || Number.isNaN(value)
     ? '--'
     : `${fmt(Number(value) / 1024, digits)} G`;
+}
+
+function fmtGbPairFromMb(used, total, digits = 1) {
+  return total === null || total === undefined || Number.isNaN(total)
+    ? '--'
+    : `${fmt(Number(used || 0) / 1024, digits)}/${fmt(Number(total) / 1024, digits)} G`;
 }
 
 function fmtMb(value) {
@@ -1180,9 +1292,9 @@ function deleteBenchmarkItem(id) {
   toast(t('toast.bench_cleared'));
 }
 
-function clearAllBenchmarkHistory() {
+async function clearAllBenchmarkHistory() {
   if (!benchmarkHistory.length) return;
-  if (!confirmT('confirm.bench_clear_all')) return;
+  if (!(await confirmT('confirm.bench_clear_all'))) return;
   benchmarkHistory = [];
   _saveBenchmarkHistory();
   renderBenchmarkHistory();
@@ -1357,7 +1469,7 @@ function update(stats) {
     $('gpu-clock').textContent = fmt(active.clock_mhz, 0);
     $('gpu-vram-clock').textContent = fmt(active.vram_clock_mhz, 0);
     $('gpu-vram').textContent = active.vram_total
-      ? `${fmtGbFromMb(active.vram_used)}/${fmtGbFromMb(active.vram_total)}` : '--';
+      ? fmtGbPairFromMb(active.vram_used, active.vram_total) : '--';
   } else {
     $('gpu-off-note').classList.remove('hidden');
     $('gpu-temp').textContent = '--';
@@ -1419,7 +1531,7 @@ function update(stats) {
   const vramTotal = active?.vram_total;
   const vramUsed = active?.vram_used;
   const vramPercent = vramTotal ? Math.max(0, Math.min(100, Math.round((vramUsed || 0) * 100 / vramTotal))) : 0;
-  $('vram-label').textContent = vramTotal ? `${fmtGbFromMb(vramUsed)}/${fmtGbFromMb(vramTotal)}` : '--';
+  $('vram-label').textContent = vramTotal ? fmtGbPairFromMb(vramUsed, vramTotal) : '--';
   $('vram-bar').style.width = `${vramPercent}%`;
   $('vram-meter').classList.toggle('disabled', !vramTotal);
 
@@ -1547,7 +1659,7 @@ document.querySelectorAll('#gpu-seg button').forEach((btn) => {
       toast(`Ya estás en modo ${mode}`);
       return;
     }
-    if (!window.confirm(gpuSwitchWarning(mode))) return;
+    if (!(await rogConfirm(gpuSwitchWarning(mode), { title: t('topbar.gpu_seg') }))) return;
     gpuBusy = true;
     toast(`Solicitando modo ${mode}… (puede tardar)`);
     const res = await window.rog.setGpuMode(mode);
@@ -1623,7 +1735,7 @@ $('maint-uninstall')?.addEventListener('click', async () => {
   const msg = purge
     ? t('confirm.uninstall_purge')
     : t('confirm.uninstall_keep');
-  if (!window.confirm(msg + t('confirm.uninstall_pw_note'))) return;
+  if (!(await rogConfirm(msg + t('confirm.uninstall_pw_note'), { title: t('maint.uninstall_title') }))) return;
   maintStatus('Desinstalando… (puede pedir contraseña)');
   const res = await window.rog.uninstallApp({ purge });
   if (res.ok) {
@@ -2040,7 +2152,7 @@ $('aura-profile-select').addEventListener('change', () => {
 });
 
 $('aura-setup').addEventListener('click', async () => {
-  if (!confirmT('confirm.aura_setup')) return;
+  if (!(await confirmT('confirm.aura_setup'))) return;
   setAuraStatus(t('aura.status_enabling'), 'status-live');
   const res = await window.rog.enableAuraService();
   if (!res.ok) {
@@ -2085,7 +2197,7 @@ $('aura-profile-list').addEventListener('click', async (e) => {
   const action = e.target.closest('[data-act]')?.dataset.act;
 
   if (action === 'delete') {
-    if (!confirmT('confirm.delete_profile', { name })) return;
+    if (!(await confirmT('confirm.delete_profile', { name }))) return;
     const res = await window.rog.deleteAuraProfile(name);
     if (!res.ok) { toast(`No se borró: ${res.err}`); return; }
     if (auraProfileSelection === name) auraProfileSelection = '';
@@ -2151,7 +2263,7 @@ $('procs-body').addEventListener('click', async (e) => {
   const row = e.target.closest('tr[data-pid]');
   if (!row) return;
   const { pid, name } = row.dataset;
-  if (!confirmT('confirm.kill_proc', { name, pid })) return;
+  if (!(await confirmT('confirm.kill_proc', { name, pid }))) return;
   const res = await window.rog.killProcess(pid);
   toast(res.ok ? t('proc.kill_sent', { name }) : t('proc.kill_failed', { err: res.err }));
 });
@@ -2775,7 +2887,7 @@ $('fan-dirty-jump').addEventListener('click', () => {
 });
 
 $('fan-benchmark').addEventListener('click', async () => {
-  if (!confirmT('confirm.fan_calibrate')) return;
+  if (!(await confirmT('confirm.fan_calibrate'))) return;
   toast(t('toast.calibrating'));
   const res = await window.rog.fanBenchmark();
   if (!res.ok) { toast(`No se pudo: ${res.err}`); return; }
@@ -2810,7 +2922,7 @@ $('fan-save').addEventListener('click', async () => {
     });
     if (risky) riskyLabels.push(fanProfileLabel(p));
   }
-  if (riskyLabels.length && !confirmT('confirm.fan_risk', { labels: riskyLabels.join(', ') })) return;
+  if (riskyLabels.length && !(await confirmT('confirm.fan_risk', { labels: riskyLabels.join(', ') }))) return;
 
   // Un solo guardado (un solo pkexec) con todos los perfiles editados, cada
   // uno con su propio tope independiente.
@@ -2838,7 +2950,7 @@ $('config-export').addEventListener('click', async () => {
 });
 
 $('config-import').addEventListener('click', async () => {
-  if (!confirmT('confirm.import_config')) return;
+  if (!(await confirmT('confirm.import_config'))) return;
   const res = await window.rog.importConfig();
   if (!res.ok) {
     toast(res.err === 'cancelado' ? t('config.import_cancelled') : t('config.import_failed', { err: res.err }));
@@ -2987,7 +3099,7 @@ $('ram-procs-body').addEventListener('click', async (e) => {
   const row = e.target.closest('tr[data-pid]');
   if (!row) return;
   const { pid, name } = row.dataset;
-  if (!confirmT('confirm.kill_proc_short', { name, pid })) return;
+  if (!(await confirmT('confirm.kill_proc_short', { name, pid }))) return;
   const res = await window.rog.killProcess(pid);
   toast(res.ok ? t('proc.kill_sent', { name }) : t('proc.kill_failed', { err: res.err }));
 });
@@ -3021,7 +3133,7 @@ $('vram-procs-body').addEventListener('click', async (e) => {
   const row = e.target.closest('tr[data-pid]');
   if (!row) return;
   const { pid, name } = row.dataset;
-  if (!confirmT('confirm.kill_proc_short', { name, pid })) return;
+  if (!(await confirmT('confirm.kill_proc_short', { name, pid }))) return;
   const res = await window.rog.killProcess(pid);
   toast(res.ok ? t('proc.kill_sent', { name }) : t('proc.kill_failed', { err: res.err }));
 });
@@ -3092,7 +3204,7 @@ function closeBenchmarkModal() {
 
 async function runBenchmark(kind) {
   if (benchBusy) return;
-  if (!confirmT(kind === 'cpu' ? 'confirm.bench_cpu' : 'confirm.bench_gpu')) return;
+  if (!(await confirmT(kind === 'cpu' ? 'confirm.bench_cpu' : 'confirm.bench_gpu'))) return;
   benchBusy = true;
   $('bench-status').textContent = t('bench.running', { kind: kind.toUpperCase() });
   $('bench-output').textContent = t('bench.sampling');
@@ -3316,7 +3428,7 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
     const row = e.target.closest('tr[data-pid]');
     if (!row) return;
     const { pid, name } = row.dataset;
-    if (!confirmT('confirm.kill_proc', { name, pid })) return;
+    if (!(await confirmT('confirm.kill_proc', { name, pid }))) return;
     const res = await window.rog.killProcess(pid);
     toast(res.ok ? t('proc.kill_sent', { name }) : t('proc.kill_failed', { err: res.err }));
     if (res.ok) { allRows = allRows.filter((p) => String(p.pid) !== String(pid)); render(); }
