@@ -61,8 +61,8 @@
       <div class="control-menu">
         <button class="ghost control-menu-toggle" type="button" data-menu-toggle="system" data-i18n="topbar.system">SISTEMA</button>
         <div class="control-menu-panel hidden" data-menu-panel="system">
-          <button id="maintenance-btn" class="ghost" title="Actualizar, reinstalar/reparar o desinstalar ROG Monitor" data-i18n="topbar.maintenance">MANTENIMIENTO</button>
-          <button id="report-btn" class="ghost" data-i18n="topbar.report" title="Abre un issue en el repositorio de GitHub con la información del sistema ya escrita">REPORTAR ERROR</button>
+          <button id="maintenance-btn" class="ghost" data-i18n-attr="title:tip.maintenance" title="Actualizar, reinstalar/reparar o desinstalar ROG Monitor" data-i18n="topbar.maintenance">MANTENIMIENTO</button>
+          <button id="report-btn" class="ghost" data-i18n="topbar.report" data-i18n-attr="title:tip.report" title="Abre un issue en el repositorio de GitHub con la información del sistema ya escrita">REPORTAR ERROR</button>
           <button id="quit-btn" class="ghost" data-i18n="topbar.quit" data-i18n-attr="title:topbar.quit_title" title="Cerrar ROG Monitor por completo (sale de la bandeja y detiene el monitor)">SALIR</button>
         </div>
       </div>
@@ -70,8 +70,8 @@
       <div class="control-menu">
         <button class="ghost control-menu-toggle" type="button" data-menu-toggle="help" data-i18n="topbar.help">AYUDA</button>
         <div class="control-menu-panel hidden" data-menu-panel="help">
-          <button id="wizard-btn" class="ghost" data-i18n="topbar.wizard" title="Volver a ver el asistente de primera vez">VER TUTORIAL</button>
-          <button id="roadmap-btn" class="ghost" data-i18n="topbar.roadmap" title="Roadmap: lo hecho y lo que viene">ROADMAP</button>
+          <button id="wizard-btn" class="ghost" data-i18n="topbar.wizard" data-i18n-attr="title:tip.wizard" title="Volver a ver el asistente de primera vez">VER TUTORIAL</button>
+          <button id="roadmap-btn" class="ghost" data-i18n="topbar.roadmap" data-i18n-attr="title:tip.roadmap" title="Roadmap: lo hecho y lo que viene">ROADMAP</button>
           <button id="lang-btn" class="ghost" data-i18n-attr="title:topbar.lang,aria-label:topbar.lang" title="Idioma / Language" aria-label="Idioma / Language">A文</button>
         </div>
       </div>
@@ -110,8 +110,8 @@
           <div><label data-i18n="common.min">Mín</label><b id="cpu-min">--</b></div>
           <div><label data-i18n="common.package">Package</label><b id="cpu-pkg">--</b></div>
           <div><label>&gt;90°C</label><b id="cpu-hot">--</b></div>
-          <div><label>GHz</label><b id="cpu-freq" title="Frecuencia promedio de los núcleos (1 GHz = 1000 MHz)">--</b></div>
-          <div><label data-i18n="common.watts">Watts</label><b id="cpu-watts" title="Consumo actual del paquete CPU — sube y baja con la carga, bajo en reposo es normal">--</b></div>
+          <div><label>GHz</label><b id="cpu-freq" data-i18n-attr="title:tip.cpu_freq" title="Frecuencia promedio de los núcleos (1 GHz = 1000 MHz)">--</b></div>
+          <div><label data-i18n="common.watts">Watts</label><b id="cpu-watts" data-i18n-attr="title:tip.cpu_watts" title="Consumo actual del paquete CPU — sube y baja con la carga, bajo en reposo es normal">--</b></div>
           <div><label data-i18n="common.throttle">Throttle</label><b id="cpu-throttle">--</b></div>
           <div><label>EPP</label><b id="cpu-epp" class="small">--</b></div>
         </div>
@@ -146,16 +146,16 @@
         <div class="bignum"><span id="gpu-temp">--</span><em>°C</em></div>
         <div class="statgrid">
           <div><label data-i18n="common.usage">Uso</label><b id="gpu-util">--</b></div>
-          <div><label data-i18n="common.watts">Watts</label><b id="gpu-watts" title="Consumo actual de la GPU — depende de la carga">--</b></div>
+          <div><label data-i18n="common.watts">Watts</label><b id="gpu-watts" data-i18n-attr="title:tip.gpu_watts" title="Consumo actual de la GPU — depende de la carga">--</b></div>
           <div class="vram-stat clickable" id="gpu-vram-stat" data-i18n-attr="title:tip.vram_meter" title="Clic para ver qué está usando la VRAM"><label data-i18n="common.vram">VRAM</label><b id="gpu-vram">--</b></div>
-          <div><label data-i18n="common.mhz">MHz</label><b id="gpu-clock" title="Frecuencia actual del núcleo gráfico">--</b></div>
-          <div><label>VRAM MHz</label><b id="gpu-vram-clock" class="small" title="Frecuencia actual de la memoria de video">--</b></div>
+          <div><label data-i18n="common.mhz">MHz</label><b id="gpu-clock" data-i18n-attr="title:tip.gpu_clock" title="Frecuencia actual del núcleo gráfico">--</b></div>
+          <div><label>VRAM MHz</label><b id="gpu-vram-clock" class="small" data-i18n-attr="title:tip.gpu_vram_clock" title="Frecuencia actual de la memoria de video">--</b></div>
           <div><label data-i18n="common.mode">Modo</label><b id="gpu-mode" class="small">--</b></div>
         </div>
         <p id="gpu-off-note" class="note hidden" data-i18n="widget.gpu_off">dGPU apagada (modo Integrated)</p>
       </article>
 
-      <article class="block clickable" id="fans-block" data-block="fans" title="Clic para configurar caps y curvas de ventilación">
+      <article class="block clickable" id="fans-block" data-block="fans" data-i18n-attr="title:tip.fans_block" title="Clic para configurar caps y curvas de ventilación">
         <h2><i class="dash-num"></i> <span data-i18n="block.fans">Ventiladores</span> <small data-i18n="block.fans_sub">clic para configurar</small></h2>
         <div class="fans" id="fans"></div>
       </article>
@@ -240,7 +240,7 @@
           <button class="ghost" id="bench-run-cpu-quick" data-i18n="bench.cpu">CPU 45 s</button>
           <button class="ghost" id="bench-run-gpu-quick" data-i18n="bench.gpu">GPU LOCAL 45 s</button>
           <!-- Sesión de juego integrada aquí (Task 4: consolidar topbar) -->
-          <button class="ghost bench-game-session-btn" id="bench-game-session-btn" title="Grabar temperaturas, RPM, watts y uso mientras juegas">SESIÓN DE JUEGO</button>
+          <button class="ghost bench-game-session-btn" id="bench-game-session-btn" data-i18n-attr="title:tip.game_session" title="Grabar temperaturas, RPM, watts y uso mientras juegas">SESIÓN DE JUEGO</button>
         </div>
         <p id="bench-inline-status" class="note" data-i18n="bench.no_bench">Sin benchmarks en esta sesión.</p>
         <ul id="bench-history" class="bench-history">
@@ -270,7 +270,7 @@
       <div class="split">
         <article class="block" id="events-block" data-block="events">
           <h2><i class="dash-num"></i> <span data-i18n="block.events">Eventos</span>
-            <button id="export-events" class="ghost" data-i18n="common.export" title="Guardar el registro de eventos como .txt">EXPORTAR</button>
+            <button id="export-events" class="ghost" data-i18n="common.export" data-i18n-attr="title:tip.export_events" title="Guardar el registro de eventos como .txt">EXPORTAR</button>
           </h2>
           <ul id="events"><li class="dim" data-i18n="events.none">sin eventos</li></ul>
           <p class="note dim" id="events-help" data-i18n="events.help">🌡 <b>Thermal throttling</b> = la CPU
@@ -284,16 +284,16 @@
           <h2><i class="dash-num"></i> <span data-i18n="block.procs">Procesos</span>
             <small data-i18n="block.procs_sub2">top 5 · clic en una fila para cerrarla</small></h2>
           <div class="procs-toolbar">
-            <button id="procs-all-btn" class="ghost procs-tool-btn" data-i18n="procs.view_all" title="Ver TODOS los procesos en una ventana ampliada">VER TODOS</button>
-            <button id="procs-cores-btn" class="ghost procs-tool-btn" data-i18n="cores.btn" title="Ver uso por núcleo individual">NÚCLEOS</button>
+            <button id="procs-all-btn" class="ghost procs-tool-btn" data-i18n="procs.view_all" data-i18n-attr="title:tip.procs_all" title="Ver TODOS los procesos en una ventana ampliada">VER TODOS</button>
+            <button id="procs-cores-btn" class="ghost procs-tool-btn" data-i18n="cores.btn" data-i18n-attr="title:tip.procs_cores" title="Ver uso por núcleo individual">NÚCLEOS</button>
           </div>
           <table id="procs">
             <thead>
               <tr><th class="sortable" data-sort="pid">PID</th>
                   <th class="sortable" data-sort="name" data-i18n="procs.col_name">proceso</th>
-                  <th class="r sortable" data-sort="cpu" data-i18n="procs.col_cpu" title="% del CPU total (todos los núcleos)">% CPU</th>
-                  <th class="r sortable" data-sort="cpu_core" data-i18n="procs.col_core" title="% de un solo núcleo (estilo top)">% NÚCLEO</th>
-                  <th class="r sortable" data-sort="mem_mb" data-i18n="procs.col_ram" title="Memoria RAM residente">RAM</th></tr>
+                  <th class="r sortable" data-sort="cpu" data-i18n="procs.col_cpu" data-i18n-attr="title:tip.col_cpu" title="% del CPU total (todos los núcleos)">% CPU</th>
+                  <th class="r sortable" data-sort="cpu_core" data-i18n="procs.col_core" data-i18n-attr="title:tip.col_core" title="% de un solo núcleo (estilo top)">% NÚCLEO</th>
+                  <th class="r sortable" data-sort="mem_mb" data-i18n="procs.col_ram" data-i18n-attr="title:tip.col_ram" title="Memoria RAM residente">RAM</th></tr>
             </thead>
             <tbody id="procs-body"></tbody>
           </table>
