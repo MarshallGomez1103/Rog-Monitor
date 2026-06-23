@@ -88,6 +88,7 @@ function rogChoiceDialog({
 
     const cleanup = (choice) => {
       modal.classList.add('hidden');
+      modal.classList.remove('modal-top'); // restore normal stacking
       okBtn.removeEventListener('click', onOk);
       cancelBtn.removeEventListener('click', onCancel);
       altBtn.removeEventListener('click', onAlt);
@@ -112,6 +113,9 @@ function rogChoiceDialog({
     altBtn.addEventListener('click', onAlt);
     modal.addEventListener('click', onBackdrop);
     document.addEventListener('keydown', onKey);
+    // If another modal is already visible, float this one above it (z-index 60 > 30)
+    const anyOpen = document.querySelector('.modal:not(#confirm-modal):not(.hidden)');
+    if (anyOpen) modal.classList.add('modal-top');
     modal.classList.remove('hidden');
     okBtn.focus();
   });
@@ -389,10 +393,15 @@ function tempClass(temp, limits) {
 }
 
 let toastTimer = null;
-function toast(message) {
+// kind: 'ok' (default) | 'warn' | 'err'
+function toast(message, kind) {
   const el = $('toast');
-  el.textContent = message;
-  el.classList.remove('hidden');
+  const k = kind || 'ok';
+  // rebuild inner HTML for icon + message slots
+  el.innerHTML = '<span class="toast-icon"></span><span class="toast-msg"></span>';
+  el.querySelector('.toast-msg').textContent = message;
+  el.classList.remove('hidden', 'toast-ok', 'toast-warn', 'toast-err');
+  el.classList.add('toast-' + k);
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.add('hidden'), 5000);
 }

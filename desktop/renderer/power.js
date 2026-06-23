@@ -929,18 +929,18 @@
           mode: selectedMode,
         });
       } catch (err) {
-        powerToast(`${t('power.thermalError')}: ${err.message}`);
+        powerToast(`${t('power.thermalError')}: ${err.message}`, 'err');
         toggleBtn.disabled = false;
         toggleBtn.textContent = result.active ? t('power.thermalDisable') : t('power.thermalEnable');
         return;
       }
       if (!res || res.ok === false) {
-        powerToast(`${t('power.thermalError')}: ${(res && res.err) || tf('power.err_unknown', 'error desconocido')}`);
+        powerToast(`${t('power.thermalError')}: ${(res && res.err) || tf('power.err_unknown', 'error desconocido')}`, 'err');
         toggleBtn.disabled = false;
         toggleBtn.textContent = result.active ? t('power.thermalDisable') : t('power.thermalEnable');
         return;
       }
-      powerToast(enabling ? `${tf('power.guardian.title', 'GUARDIÁN CPU/GPU')}: ${t('power.thermalActive')} ✓` : `${tf('power.guardian.title', 'GUARDIÁN CPU/GPU')}: ${t('power.thermalInactive')} ✓`);
+      powerToast(enabling ? `${tf('power.guardian.title', 'GUARDIÁN CPU/GPU')}: ${t('power.thermalActive')} ✓` : `${tf('power.guardian.title', 'GUARDIÁN CPU/GPU')}: ${t('power.thermalInactive')} ✓`, 'ok');
       await renderThermalGuardian(); // refresca con el estado real
     });
     section.appendChild(toggleBtn);
@@ -1497,7 +1497,7 @@
     // Si el panel avanzado está abierto, exigir el check "Entiendo los riesgos".
     if (!isAdvancedPanelHidden() && !advancedAck) {
       powerToast(tf('power.advanced.needAck',
-        'Marca "Entiendo los riesgos" en el panel Avanzado para aplicar.'));
+        'Marca "Entiendo los riesgos" en el panel Avanzado para aplicar.'), 'warn');
       return;
     }
 
@@ -1505,37 +1505,35 @@
     if (changes.length === 0) return;
 
     // resumen: SOLO lo que se movió
-    const lines = changes.map((c) =>
-      '  • ' + tf('power.danger.moved', 'Moviste {label} {from}→{to} {unit}', {
-        label: c.label, from: c.from, to: c.to, unit: c.unit,
-      }));
-
     const beyond = changes.filter((c) => c.beyondSafe);
 
+    // Single pre-confirm: shows exactly what changes, warns about beyond-safe values
+    // and that pkexec will ask for the user's password — no stacked dialogs.
+    const changeLines = changes.map((c) => {
+      const flag = c.beyondSafe ? ' ⚠' : '';
+      return '  • ' + tf('power.danger.moved', 'Moviste {label} {from}→{to} {unit}', {
+        label: c.label, from: c.from, to: c.to, unit: c.unit,
+      }) + flag;
+    });
+
     let msg =
-      tf('power.confirm.title', 'CENTRO DE PODER — Confirmar cambios') + '\n\n' +
       tf('power.confirm.onlyChanged', 'Vas a aplicar SOLO estos cambios:') + '\n' +
-      lines.join('\n') + '\n\n' +
+      changeLines.join('\n') + '\n\n' +
       tf('power.confirm.rails',
-        'Los valores van acotados a los rangos seguros de tu dispositivo (doble recorte) y el firmware impone sus propios topes. Si algo falla, reinicia y usa Reset a fábrica; estos cambios no sobreviven a un apagón forzado.') + '\n\n' +
-      tf('power.confirm.question', '¿Aplicar?');
+        'Los valores van acotados a los rangos seguros de tu dispositivo (doble recorte) y el firmware impone sus propios topes. Si algo falla, reinicia y usa Reset a fábrica; estos cambios no sobreviven a un apagón forzado.');
 
-    if (!(await window.rogConfirm(msg, { title: tf('power.confirm.title', 'CENTRO DE PODER — Confirmar cambios') }))) return;
-
-    // DOBLE CONSENTIMIENTO si algún cambio excede el rango seguro.
     if (beyond.length > 0) {
-      const beyondLines = beyond.map((c) =>
-        '  • ' + `${c.label}: ${c.to} ${c.unit}`);
-      const msg2 =
-        tf('power.confirm.beyondTitle', 'CONFIRMACIÓN ADICIONAL — Fuera del rango seguro') + '\n\n' +
-        tf('power.confirm.beyondBody',
-          'Estos valores superan el rango seguro recomendado para tu dispositivo. El riesgo de inestabilidad o daño es MAYOR:') + '\n' +
-        beyondLines.join('\n') + '\n\n' +
-        tf('power.consentRecover',
-          'Si el sistema se cuelga tras aplicar, reinicia.') + '\n\n' +
-        tf('power.confirm.beyondQuestion', '¿Aplicar fuera del rango seguro?');
-      if (!(await window.rogConfirm(msg2, { title: tf('power.confirm.beyondTitle', 'CONFIRMACIÓN ADICIONAL — Fuera del rango seguro') }))) return;
+      msg += '\n\n' + tf('power.confirm.beyondBody',
+        'Estos valores superan el rango seguro recomendado para tu dispositivo. El riesgo de inestabilidad o daño es MAYOR — los cambios marcados con ⚠ están fuera de ese rango.');
     }
+
+    msg += '\n\n' + tf('power.confirm.pkexec',
+      'Se pedirá tu contraseña de administrador (pkexec) para escribir en el firmware. ROG Monitor no almacena tu contraseña.');
+
+    if (!(await window.rogConfirm(msg, {
+      title: tf('power.confirm.title', 'CENTRO DE PODER — Confirmar cambios'),
+      okLabel: tf('power.confirm.continueBtn', 'CONTINUAR Y APLICAR'),
+    }))) return;
 
     const applyBtn = $('power-apply');
     if (applyBtn) {
@@ -1547,7 +1545,7 @@
     try {
       result = await window.rog.setPowerControl(pendingChanges);
     } catch (err) {
-      powerToast(`${tf('power.err', 'Error')}: ${err.message}`);
+      powerToast(`${tf('power.err', 'Error')}: ${err.message}`, 'err');
       if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = tf('power.apply', 'APLICAR'); }
       return;
     }
@@ -1555,7 +1553,7 @@
     if (applyBtn) applyBtn.textContent = tf('power.apply', 'APLICAR');
 
     if (!result || result.ok === false) {
-      powerToast(`${tf('power.err_apply', 'No se aplicó')}: ${(result && result.err) || tf('power.err_unknown', 'error desconocido')}`);
+      powerToast(`${tf('power.err_apply', 'No se aplicó')}: ${(result && result.err) || tf('power.err_unknown', 'error desconocido')}`, 'err');
       if (applyBtn) applyBtn.disabled = false;
       return;
     }
@@ -1570,7 +1568,7 @@
 
     // refrescar los paneles con los nuevos valores del hardware
     await openPowerModal();
-    powerToast(t('power.applied_ok'));
+    powerToast(t('power.applied_ok'), 'ok');
   }
 
   /* ================================================================
@@ -1592,7 +1590,7 @@
     try {
       result = await window.rog.resetPowerControl();
     } catch (err) {
-      powerToast(`${tf('power.err_reset', 'Error al resetear')}: ${err.message}`);
+      powerToast(`${tf('power.err_reset', 'Error al resetear')}: ${err.message}`, 'err');
       if (resetBtn) { resetBtn.disabled = false; resetBtn.textContent = tf('power.reset', 'RESET A FÁBRICA'); }
       return;
     }
@@ -1600,7 +1598,7 @@
     if (resetBtn) resetBtn.textContent = tf('power.reset', 'RESET A FÁBRICA');
 
     if (!result || result.ok === false) {
-      powerToast(`${tf('power.err_reset', 'No se pudo resetear')}: ${(result && result.err) || tf('power.err_unknown', 'error desconocido')}`);
+      powerToast(`${tf('power.err_reset', 'No se pudo resetear')}: ${(result && result.err) || tf('power.err_unknown', 'error desconocido')}`, 'err');
       if (resetBtn) resetBtn.disabled = false;
       return;
     }
@@ -1610,21 +1608,25 @@
 
     // refrescar toda la UI con los valores de fábrica
     await openPowerModal();
-    powerToast(t('power.reset_ok'));
+    powerToast(t('power.reset_ok'), 'ok');
   }
 
   /* ================================================================
      powerToast — usa el toast global si está disponible, o una
      implementación local como fallback.
+     kind: 'ok' | 'warn' | 'err' (default 'ok')
   ================================================================= */
-  function powerToast(msg) {
+  function powerToast(msg, kind) {
+    const k = kind || 'ok';
     if (typeof toast === 'function') {
-      toast(msg);
+      toast(msg, k);
     } else {
+      // fallback: no innerHTML variant support, plain text
       const el = $('toast');
       if (el) {
         el.textContent = msg;
-        el.classList.remove('hidden');
+        el.classList.remove('hidden', 'toast-ok', 'toast-warn', 'toast-err');
+        el.classList.add('toast-' + k);
         setTimeout(() => el.classList.add('hidden'), 5000);
       }
     }
