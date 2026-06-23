@@ -1126,12 +1126,23 @@ input[type="color"] {
   position: fixed; bottom: 48px; left: 50%; transform: translateX(-50%);
   background: var(--panel); color: var(--ink);
   border: 1px solid var(--accent);
-  padding: 11px 20px; border-radius: 2px;
+  padding: 10px 18px 10px 14px; border-radius: 2px;
   clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
   font-size: 13.5px; white-space: pre-line;
   box-shadow: 0 6px 24px rgba(0,0,0,.35);
-  z-index: 20;
+  z-index: 90; /* above all modals */
+  display: flex; align-items: center; gap: 9px;
+  max-width: min(480px, 90vw);
 }
+#toast .toast-icon { flex-shrink: 0; font-size: 15px; line-height: 1; }
+#toast .toast-msg  { flex: 1; }
+/* toast kind variants — reuse the fixed semantic color vars */
+#toast.toast-ok   { border-color: var(--okstate); }
+#toast.toast-ok   .toast-icon::before { content: "✓"; color: var(--okstate); }
+#toast.toast-warn { border-color: #ffcc33; }
+#toast.toast-warn .toast-icon::before { content: "⚠"; color: #ffcc33; }
+#toast.toast-err  { border-color: var(--crit); }
+#toast.toast-err  .toast-icon::before { content: "✕"; color: var(--crit); }
 
 /* ---------- chart hover tip ---------- */
 #chart-tip {
@@ -1158,6 +1169,9 @@ input[type="color"] {
   display: flex; align-items: center; justify-content: center;
 }
 .modal.hidden { display: none; }
+/* .modal-top: applied programmatically when a confirm/choice dialog opens over
+   an already-open modal — keeps the card + its own backdrop above the parent. */
+.modal-top { z-index: 60; } /* 60 > 30 so confirm always renders above power-modal */
 .modal-card {
   background: var(--bg); border: 1px solid var(--hair); border-radius: 2px;
   clip-path: polygon(0 0, calc(100% - 17px) 0, 100% 17px, 100% 100%, 0 100%);
