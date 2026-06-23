@@ -33,9 +33,9 @@
     <div class="controls">
       <div class="control-group control-group-performance">
         <div class="segment" id="profile-seg" data-i18n-attr="title:topbar.profiles">
-          <button data-profile="power-saver" data-i18n="profile.power_saver">AHORRO</button>
-          <button data-profile="balanced" data-i18n="profile.balanced">BALANCED</button>
-          <button data-profile="performance" data-i18n="profile.performance">PERFORMANCE</button>
+          <button data-profile="power-saver" data-i18n="profile.power_saver" data-i18n-attr="title:tip.profile_saver" title="Ahorro: bajo consumo, ventiladores quietos, máx. duración de batería.">AHORRO</button>
+          <button data-profile="balanced" data-i18n="profile.balanced" data-i18n-attr="title:tip.profile_balanced" title="Balanced: compromiso entre rendimiento y eficiencia.">BALANCED</button>
+          <button data-profile="performance" data-i18n="profile.performance" data-i18n-attr="title:tip.profile_perf" title="Performance: máxima potencia disponible. Recomendado para juegos.">PERFORMANCE</button>
         </div>
       </div>
 
@@ -358,8 +358,13 @@
     <div class="modal-card">
       <h3 data-i18n="modal.ram">¿Qué está usando la RAM?</h3>
       <p class="sub" data-i18n="modal.ram_sub">Memoria residente real por proceso (clic para cerrar uno).</p>
-      <table id="ram-procs">
-        <thead><tr><th>PID</th><th data-i18n="procs.col_name">proceso</th><th class="r">RAM</th></tr></thead>
+      <!-- v17-D: sortable headers (reuses CPU proc sort pattern) -->
+      <table id="ram-procs" data-sort-col="mem">
+        <thead><tr>
+          <th class="sortable pid" data-sort="pid" data-i18n="modal.ram_sort_pid">PID</th>
+          <th class="sortable pname" data-sort="name" data-i18n="modal.ram_sort_name">proceso</th>
+          <th class="sortable mem r" data-sort="mem_mb" data-i18n="modal.ram_sort_mem">RAM</th>
+        </tr></thead>
         <tbody id="ram-procs-body"></tbody>
       </table>
       <button class="ghost modal-close" id="ram-close" data-i18n="common.close">Cerrar</button>
@@ -371,7 +376,8 @@
       <h3 data-i18n="modal.vram">¿Qué está usando la VRAM?</h3>
       <p class="sub" id="vram-procs-note" data-i18n="modal.vram_sub">Memoria de video por proceso cuando el driver la expone (clic para cerrar uno).</p>
       <table id="vram-procs">
-        <thead><tr><th>PID</th><th data-i18n="procs.col_name">proceso</th><th class="r">VRAM</th><th class="r" data-i18n="common.mode">Modo</th></tr></thead>
+        <!-- v17-D: (i) icon explains C/G/CG mode values -->
+        <thead><tr><th>PID</th><th data-i18n="procs.col_name">proceso</th><th class="r">VRAM</th><th class="r"><span data-i18n="common.mode">Modo</span> <span class="vram-mode-info" data-i18n-attr="title:tip.vram_modes" title="C=cómputo, G=gráficos, CG=ambos">(i)</span></th></tr></thead>
         <tbody id="vram-procs-body"></tbody>
       </table>
       <button class="ghost modal-close" id="vram-close" data-i18n="common.close">Cerrar</button>

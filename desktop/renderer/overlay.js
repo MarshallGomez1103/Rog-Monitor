@@ -177,15 +177,22 @@ applyLabels();
 applyShow();
 applyLayout('row');   // por defecto, fila
 
-window.rog.onStats(render);
+/* v17-D: guard against preload not being available (dev/open file mode) */
+if (window.rog && window.rog.onStats) {
+  window.rog.onStats(render);
+} else {
+  console.warn('[overlay] window.rog.onStats not available — no live data');
+}
 
-window.rog.onOverlayConfig((cfg) => {
-  if (cfg.show) show = { ...show, ...cfg.show };
-  else show = { ...show, ...cfg };   // compat: config viejo mandaba show plano
-  // Umbrales de color por nivel (cpu/gpu) que vienen del dashboard.
-  if (cfg.temp_colors) tempLimits = cfg.temp_colors;
-  if (cfg.layout) applyLayout(cfg.layout);
-  applyAccent(cfg.accent);
-  applyShow();
-  if (lastStats) render(lastStats);
-});
+if (window.rog && window.rog.onOverlayConfig) {
+  window.rog.onOverlayConfig((cfg) => {
+    if (cfg.show) show = { ...show, ...cfg.show };
+    else show = { ...show, ...cfg };   // compat: config viejo mandaba show plano
+    // Umbrales de color por nivel (cpu/gpu) que vienen del dashboard.
+    if (cfg.temp_colors) tempLimits = cfg.temp_colors;
+    if (cfg.layout) applyLayout(cfg.layout);
+    applyAccent(cfg.accent);
+    applyShow();
+    if (lastStats) render(lastStats);
+  });
+}
