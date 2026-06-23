@@ -1757,6 +1757,13 @@ window.rog.onBackendDown(() => {
   $('backend-state').textContent = 'backend caído — reiniciando…';
   recordLocalError('backend-down', { message: 'backend caído — reiniciando' });
 });
+// Watchdog / exit handler emits this before auto-recover fires so the pill
+// shows feedback immediately instead of freezing silently.
+if (window.rog.onBackendReconnecting) {
+  window.rog.onBackendReconnecting(() => {
+    $('backend-state').textContent = t('status.reconnecting') || 'reconectando…';
+  });
+}
 window.rog.onMusicStopped(() => {
   musicModeActive = false;
   $('aura-music').textContent = 'MODO MÚSICA';
