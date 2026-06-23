@@ -588,16 +588,19 @@ main {
   flex: 1;
   display: grid;
   grid-template-columns: minmax(300px, 380px) 1fr;
+  /* align-items:start: cada bloque mide solo lo que necesita; evita que el
+     último bloque de cada columna crezca sin límite al hacer zoom alto, lo
+     que producía un void vacío con el ::after del tema sangrando hacia abajo */
+  align-items: start;
   gap: 16px;
   padding: 16px 22px;
-  /* sin align-items:start: las dos columnas miden lo mismo y el último bloque
-     de cada una crece para rellenar — adiós al hueco inferior izquierdo */
 }
 @media (max-width: 900px) {
   main { grid-template-columns: 1fr; }
 }
 .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.col > :last-child { flex: 1 0 auto; }
+/* .col > :last-child ya no crece: cada bloque tiene su altura natural.
+   Con align-items:start en main las columnas no se igualan artificialmente. */
 
 .block {
   position: relative;
@@ -979,6 +982,14 @@ input[type="color"] {
 .note.status-live { color: var(--accent2); }
 
 /* periféricos RGB de terceros detectados */
+/* #peripherals: caja con scroll propio para que nunca crezca sin límite
+   (el panel Redragon / "protocolo en análisis" puede tener texto largo) */
+#peripherals {
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent) 45%, transparent) transparent;
+}
 .periph {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   margin-top: 10px; padding: 8px 10px;
