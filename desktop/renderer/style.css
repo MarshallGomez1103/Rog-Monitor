@@ -545,6 +545,26 @@ b, .num { font-variant-numeric: tabular-nums; }
 .segment button.active { background: var(--accent); color: var(--bg); }
 .segment button.busy { opacity: .45; cursor: wait; }
 
+/* --- topbar globe (lang) + nav collapse buttons --- */
+.topbar-globe {
+  font-size: 16px;
+  padding: 5px 10px;
+  min-width: unset;
+}
+.topbar-collapse {
+  padding: 4px 8px;
+  min-width: unset;
+  font-size: 14px;
+  transition: transform .2s, color .15s, border-color .15s, box-shadow .15s, background .15s;
+}
+.topbar-collapse.nav-collapsed {
+  transform: rotate(180deg);
+}
+/* Hide controls row when collapsed; keep brand + globe + collapse visible */
+#topbar .controls.nav-collapsed > *:not(.topbar-globe):not(.topbar-collapse) {
+  display: none;
+}
+
 .ghost {
   /* v13: botones secundarios más visibles — borde con tinte de acento y texto
      más claro (antes color:dim + borde:hair se perdían sobre el panel). */

@@ -1618,6 +1618,25 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeControlMenus();
 });
 
+/* ---------- nav collapse / expand ---------- */
+(function initNavCollapse() {
+  const btn = $('nav-collapse-btn');
+  const controls = document.querySelector('#topbar .controls');
+  if (!btn || !controls) return;
+  const COLLAPSED = 'nav-collapsed';
+  function applyCollapse(collapsed) {
+    controls.classList.toggle(COLLAPSED, collapsed);
+    btn.classList.toggle(COLLAPSED, collapsed);
+    btn.setAttribute('aria-expanded', String(!collapsed));
+  }
+  applyCollapse(localStorage.getItem('navCollapsed') === '1');
+  btn.addEventListener('click', () => {
+    const next = !controls.classList.contains(COLLAPSED);
+    localStorage.setItem('navCollapsed', next ? '1' : '0');
+    applyCollapse(next);
+  });
+}());
+
 const PROFILE_KEY = {
   'power-saver': 'profile.power_saver',
   'balanced':    'profile.balanced',
@@ -1971,7 +1990,7 @@ $('alerts-save').addEventListener('click', async () => {
       'topbar.quit':          { es:'SALIR', en:'QUIT', fr:'QUITTER', it:'ESCI', pt:'SAIR', zh:'退出', ja:'終了', ko:'종료' },
       'topbar.quit_title':    { es:'Cerrar ROG Monitor por completo (sale de la bandeja y detiene el monitor)', en:'Quit ROG Monitor completely (leaves the tray and stops the monitor)', fr:'Quitter complètement ROG Monitor (quitte la zone de notification et arrête le moniteur)', it:'Chiudi completamente ROG Monitor (esce dalla tray e ferma il monitor)', pt:'Fechar o ROG Monitor por completo (sai da bandeja e para o monitor)', zh:'完全退出 ROG Monitor（离开托盘并停止监控）', ja:'ROG Monitor を完全に終了（トレイから抜けてモニターを停止）', ko:'ROG Monitor 완전히 종료 (트레이에서 나가고 모니터 중지)' },
       'config.title':         { es:'Configuración', en:'Configuration', fr:'Configuration', it:'Configurazione', pt:'Configuração', zh:'配置', ja:'設定', ko:'구성' },
-      'config.sub':           { es:'Idioma, apariencia, autoarranque y notificaciones. Todo se guarda automáticamente.', en:'Language, appearance, autostart and notifications. Everything is saved automatically.', fr:'Langue, apparence, démarrage automatique et notifications. Tout est enregistré automatiquement.', it:'Lingua, aspetto, avvio automatico e notifiche. Tutto viene salvato automaticamente.', pt:'Idioma, aparência, início automático e notificações. Tudo é salvo automaticamente.', zh:'语言、外观、开机启动和通知。所有内容都会自动保存。', ja:'言語、外観、自動起動、通知。すべて自動的に保存されます。', ko:'언어, 모양, 자동 시작 및 알림. 모든 것이 자동으로 저장됩니다.' },
+      'config.sub':           { es:'Apariencia, autoarranque y notificaciones. Todo se guarda automáticamente. Cambia el idioma con el botón 🌐 de la barra.', en:'Appearance, autostart and notifications. Everything is saved automatically. Change language with the 🌐 button in the toolbar.', fr:'Apparence, démarrage automatique et notifications. Tout est enregistré automatiquement. Changez la langue avec le bouton 🌐 de la barre.', it:'Aspetto, avvio automatico e notifiche. Tutto viene salvato automaticamente. Cambia lingua con il pulsante 🌐 nella barra.', pt:'Aparência, início automático e notificações. Tudo é salvo automaticamente. Muda o idioma com o botão 🌐 na barra.', zh:'外观、开机启动和通知。所有内容都会自动保存。通过工具栏的 🌐 按钮更改语言。', ja:'外観、自動起動、通知。すべて自動的に保存されます。ツールバーの 🌐 ボタンで言語を変更。', ko:'모양, 자동 시작 및 알림. 모든 것이 자동으로 저장됩니다. 도구 모음의 🌐 버튼으로 언어를 변경하세요.' },
       'config.lang_title':    { es:'Idioma', en:'Language', fr:'Langue', it:'Lingua', pt:'Idioma', zh:'语言', ja:'言語', ko:'언어' },
       'config.system_title':  { es:'Sistema', en:'System', fr:'Système', it:'Sistema', pt:'Sistema', zh:'系统', ja:'システム', ko:'시스템' },
       'config.close_action':  { es:'Al cerrar la ventana', en:'When closing the window', fr:'À la fermeture de la fenêtre', it:'Alla chiusura della finestra', pt:'Ao fechar a janela', zh:'关闭窗口时', ja:'ウィンドウを閉じるとき', ko:'창을 닫을 때' },
@@ -1982,38 +2001,9 @@ $('alerts-save').addEventListener('click', async () => {
     window.i18n.apply();
   }
 
-  /* --- selector de idioma dentro de #config-modal --- */
-  const LANG_FB = (window.i18n && window.i18n.LANG_META) || [
-    { code:'es', native:'Español' }, { code:'en', native:'English' },
-    { code:'fr', native:'Français' }, { code:'it', native:'Italiano' },
-    { code:'pt', native:'Português' }, { code:'zh', native:'中文' },
-    { code:'ja', native:'日本語' }, { code:'ko', native:'한국어' },
-  ];
-  function buildConfigLangGrid() {
-    const grid = $('config-lang-grid');
-    if (!grid) return;
-    const active = window.i18n ? window.i18n.get() : 'es';
-    const langs = (window.i18n && window.i18n.LANG_META) || LANG_FB;
-    grid.innerHTML = langs.map((l) => `
-      <button class="lang-option${l.code === active ? ' active' : ''}" data-lang="${l.code}" type="button">
-        <span class="lang-flag">${l.code.toUpperCase()}</span>
-        <span class="lang-name">${l.native || l.label}</span>
-      </button>`).join('');
-    grid.querySelectorAll('.lang-option').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        if (window.i18n) window.i18n.set(btn.dataset.lang);
-        grid.querySelectorAll('.lang-option').forEach((b) =>
-          b.classList.toggle('active', b.dataset.lang === btn.dataset.lang));
-      });
-    });
-  }
-  if (window.i18n && window.i18n.onChange) {
-    window.i18n.onChange(() => { if ($('config-lang-grid')) buildConfigLangGrid(); });
-  }
-
   /* --- abrir/cerrar #config-modal y cargar estados --- */
+  /* El selector de idioma vive en #lang-modal (fuente única); el botón 🌐 lo abre. */
   async function openConfigModal() {
-    buildConfigLangGrid();
     try {
       const a = await window.rog.getAutostart();
       if (a && a.ok) $('set-autostart').checked = !!a.enabled;
@@ -2030,7 +2020,10 @@ $('alerts-save').addEventListener('click', async () => {
     } catch (_) { /* no crítico */ }
     $('config-modal').classList.remove('hidden');
   }
-  if ($('config-btn')) $('config-btn').addEventListener('click', openConfigModal);
+  if ($('config-btn')) $('config-btn').addEventListener('click', () => {
+    closeControlMenus(); // cierra dropdowns abiertos antes de abrir el modal
+    openConfigModal();
+  });
   if ($('config-close')) $('config-close').addEventListener('click', () =>
     $('config-modal').classList.add('hidden'));
   $('config-modal').addEventListener('click', (e) => {
@@ -3068,17 +3061,25 @@ window.addEventListener('DOMContentLoaded', () => {
 $('report-btn').addEventListener('click', async () => {
   const s = lastStats || {};
   const body = [
-    '**Describe el problema:**', '', '_(escribe aquí)_', '',
-    '---', '**Información del sistema (autogenerada):**',
-    `- ROG Monitor: v${s.version || '?'}`,
-    `- CPU: ${s.cpu?.model || '?'}`,
-    `- GPU: ${s.gpu?.active?.name || 'N/A'} (modo ${s.gpu?.mode || '?'})`,
-    `- Perfil: ${s.asus_profile || '?'} / ${s.ppd_profile || '?'}`,
+    '## Description',
+    '',
+    '_Describe what happened and the steps to reproduce it._',
+    '',
+    '## Expected behavior',
+    '',
+    '_What did you expect to happen?_',
+    '',
+    '## System info (auto-generated)',
+    '',
+    `- **ROG Monitor:** v${s.version || '?'}`,
+    `- **CPU:** ${s.cpu?.model || '?'}`,
+    `- **GPU:** ${s.gpu?.active?.name || 'N/A'} (mode: ${s.gpu?.mode || '?'})`,
+    `- **Power profile:** ${s.asus_profile || '?'} / ${s.ppd_profile || '?'}`,
   ].join('\n');
   const res = await window.rog.reportIssue(body);
   toast(res.ok
-    ? `Abriendo GitHub para crear el issue… TXT local: ${res.logPath || 'generado'}`
-    : `No se pudo: ${res.err}`);
+    ? `Opening GitHub… full log saved to: ${res.logPath || '(generated)'}`
+    : `Could not open: ${res.err}`);
 });
 
 /* ---------- RAM detail ---------- */
