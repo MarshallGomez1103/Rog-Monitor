@@ -40,6 +40,8 @@
   grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: 9px;
   margin: 12px 0 8px;
+  /* v17-D: allow absolute tooltips to overflow row without reflowing */
+  overflow: visible;
 }
 
 .core-tile {
@@ -56,7 +58,8 @@
   flex-direction: column;
   gap: 3px;
   cursor: pointer;
-  overflow: hidden;
+  /* v17-D: visible so absolute .core-hint tooltip can escape the tile */
+  overflow: visible;
   transition: transform .1s ease, box-shadow .1s ease, border-color .1s ease;
 }
 .core-tile:hover,
@@ -125,18 +128,29 @@
   transition: width .4s ease;
 }
 
-/* ---- pista al pasar el cursor (reemplaza el toast/title que parpadeaba) ---- */
+/* ---- tooltip flotante al pasar el cursor (v17-D: no reflow de grid) ---- */
+/* El hint es absoluto para no cambiar tamaño del tile ni de la fila */
 .core-hint {
-  font-size: .58rem;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--panel) 95%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, var(--hair));
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: .62rem;
   color: var(--accent);
   letter-spacing: .02em;
+  pointer-events: none;
   opacity: 0;
-  max-height: 0;
-  overflow: hidden;
-  transition: opacity .12s ease, max-height .12s ease;
+  transition: opacity .12s ease;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,.35);
 }
 .core-tile:hover .core-hint,
-.core-tile:focus-visible .core-hint { opacity: .85; max-height: 1.2em; }
+.core-tile:focus-visible .core-hint { opacity: 1; }
 
 /* ===================================================================
    P-cores (RENDIMIENTO, para tareas pesadas) vs E-cores (EFICIENCIA,
@@ -278,6 +292,7 @@
   letter-spacing: .03em;
   margin-bottom: 12px !important;
 }
+/* v17-D: solid dot, no blink (user dislikes AI-vibe animations) */
 .core-detail-live::before {
   content: '';
   display: inline-block;
@@ -286,10 +301,8 @@
   margin-right: 6px;
   vertical-align: baseline;
   background: var(--lvl-ok, #3ce087);
-  box-shadow: 0 0 8px var(--lvl-ok, #3ce087);
-  animation: cd-pulse 1s ease-in-out infinite;
+  box-shadow: 0 0 6px var(--lvl-ok, #3ce087);
 }
-@keyframes cd-pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
 
 .core-detail-stats {
   display: grid;

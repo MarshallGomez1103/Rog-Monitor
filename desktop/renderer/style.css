@@ -259,8 +259,8 @@ b, .num { font-variant-numeric: tabular-nums; }
 .lamp.cold { background: var(--cold); box-shadow: 0 0 9px var(--cold); }
 .lamp.normal { background: var(--okstate); box-shadow: 0 0 9px var(--okstate); }
 .lamp.hot { background: var(--hot); box-shadow: 0 0 9px var(--hot); }
-.lamp.critical { background: var(--crit); box-shadow: 0 0 11px var(--crit); animation: blink .5s steps(2) infinite; }
-@keyframes blink { 50% { opacity: .35; } }
+/* v17-D: critical lamp is solid (no blink) — user dislikes AI-vibe animation */
+.lamp.critical { background: var(--crit); box-shadow: 0 0 13px var(--crit); }
 
 .lamp-label { font-size: 13px; letter-spacing: 2px; color: var(--dim); }
 .lamp-label.cold { color: var(--cold); }
@@ -540,9 +540,17 @@ b, .num { font-variant-numeric: tabular-nums; }
   letter-spacing: .5px;
   padding: 7px 13px;
   cursor: pointer;
+  /* v17-D: smooth slide for active segment highlight */
+  transition: background .18s ease, color .18s ease, box-shadow .18s ease;
+  position: relative;
+  z-index: 0;
 }
 .segment button:hover { color: var(--ink); }
-.segment button.active { background: var(--accent); color: var(--bg); }
+.segment button.active {
+  background: var(--accent);
+  color: var(--bg);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent);
+}
 .segment button.busy { opacity: .45; cursor: wait; }
 
 .ghost {
@@ -743,7 +751,9 @@ input[type="color"] {
 /* ---------- fans ---------- */
 .fans { display: flex; gap: 18px; justify-content: space-around; flex-wrap: wrap; }
 .fan { text-align: center; }
-.fan svg { width: 64px; height: 64px; }
+/* v17-D: grab cursor to signal drag-to-pause interaction */
+.fan svg { width: 64px; height: 64px; cursor: grab; }
+.fan svg:active { cursor: grabbing; }
 .fan svg g { transform-origin: 32px 32px; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .fan .rpm { font-family: var(--mono); font-size: 17px; font-weight: 700; margin-top: 6px; }
@@ -978,6 +988,17 @@ input[type="color"] {
 .note.status-ok { color: var(--okstate); }
 .note.status-live { color: var(--accent2); }
 
+/* v17-D: VRAM mode info icon */
+.vram-mode-info {
+  display: inline-block;
+  font-size: .72em;
+  color: var(--accent2);
+  cursor: help;
+  opacity: .8;
+  vertical-align: middle;
+}
+.vram-mode-info:hover { opacity: 1; }
+
 /* periféricos RGB de terceros detectados */
 .periph {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -1107,6 +1128,21 @@ input[type="color"] {
 }
 #procs tbody tr { cursor: pointer; }
 #procs tbody tr:hover { background: var(--chip); }
+
+/* v17-D: RAM modal sortable table (mirrors #procs pattern) */
+#ram-procs th.sortable { cursor: pointer; user-select: none; transition: color 0.12s; }
+#ram-procs th.sortable:hover { color: var(--ink); }
+#ram-procs th.sortable.sort-active { color: var(--accent); text-shadow: var(--neon-glow-soft, 0 0 5px currentColor); }
+#ram-procs th.sortable.sort-active[data-dir="desc"]::after { content: ' ▼'; font-size: 0.8em; }
+#ram-procs th.sortable.sort-active[data-dir="asc"]::after  { content: ' ▲'; font-size: 0.8em; }
+#ram-procs[data-sort-col="pid"]   td.pid,
+#ram-procs[data-sort-col="pname"] td.pname,
+#ram-procs[data-sort-col="mem"]   td.mem {
+  color: var(--accent);
+  text-shadow: var(--neon-glow-soft, 0 0 5px currentColor);
+}
+#ram-procs tbody tr { cursor: pointer; }
+#ram-procs tbody tr:hover { background: var(--chip); }
 
 .block-hint { font-size: 11.5px; color: var(--dim); font-weight: 400; text-transform: none; letter-spacing: 0; }
 

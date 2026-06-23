@@ -558,6 +558,9 @@ const FAN_SVG = `
   <circle cx="32" cy="32" r="6" fill="var(--accent)"/>
 </svg>`;
 
+/* v17-D: grab-to-pause — track which fan widgets are being dragged */
+const _fanGrabbed = new Set();
+
 function renderFans(fans) {
   const host = $('fans');
   if (host.childElementCount !== fans.length) {
@@ -568,18 +571,43 @@ function renderFans(fans) {
         <label></label>
         <div class="pct"></div>
       </div>`).join('');
+
+    // v17-D: wire grab-to-pause on every fan widget
+    fans.forEach((_f, i) => {
+      const el = $(`fan-${i}`);
+      el.addEventListener('mousedown', () => {
+        _fanGrabbed.add(i);
+        const g = el.querySelector('svg g');
+        if (g) g.style.animationPlayState = 'paused';
+      });
+    });
+    const resumeAll = () => {
+      _fanGrabbed.forEach((i) => {
+        const el = $(`fan-${i}`);
+        if (!el) return;
+        const g = el.querySelector('svg g');
+        // Only resume if fan is actually spinning (rpm > 0)
+        if (g && el.dataset.fanRpm > 0) g.style.animationPlayState = 'running';
+      });
+      _fanGrabbed.clear();
+    };
+    document.addEventListener('mouseup', resumeAll, { passive: true });
   }
   fans.forEach((fan, i) => {
     const el = $(`fan-${i}`);
+    el.dataset.fanRpm = fan.rpm;  // v17-D: store rpm for resume logic
     el.querySelector('.rpm').textContent = fan.rpm;
     el.querySelector('label').textContent = fan.label.replace('_fan', '').toUpperCase();
     el.querySelector('.pct').textContent = fan.percent + '%';
     const g = el.querySelector('svg g');
-    if (fan.rpm > 0) {
-      g.style.animationDuration = Math.max(0.15, 60 / (fan.rpm / 25)).toFixed(2) + 's';
-      g.style.animationPlayState = 'running';
-    } else {
-      g.style.animationPlayState = 'paused';
+    // Don't override animationPlayState if the user is currently grabbing this fan
+    if (!_fanGrabbed.has(i)) {
+      if (fan.rpm > 0) {
+        g.style.animationDuration = Math.max(0.15, 60 / (fan.rpm / 25)).toFixed(2) + 's';
+        g.style.animationPlayState = 'running';
+      } else {
+        g.style.animationPlayState = 'paused';
+      }
     }
   });
 }
@@ -1417,6 +1445,28 @@ function updateProcsSortIndicators() {
     th.classList.toggle('sort-active', active);
     th.dataset.dir = active ? procsSortDir : '';
   });
+}
+
+/* v17-D: estado de orden de la tabla RAM modal (reusa sortProcRows) */
+let ramSortKey = 'mem_mb';
+let ramSortDir = 'desc';
+
+function updateRamSortIndicators() {
+  document.querySelectorAll('#ram-procs th.sortable').forEach((th) => {
+    const active = th.dataset.sort === ramSortKey;
+    th.classList.toggle('sort-active', active);
+    th.dataset.dir = active ? ramSortDir : '';
+  });
+}
+
+function renderRamProcs(procs) {
+  const sorted = sortProcRows(procs, ramSortKey, ramSortDir);
+  $('ram-procs-body').innerHTML = sorted.map((p) => `
+    <tr data-pid="${p.pid}" data-name="${p.name}" title="${t('procs.kill', { name: p.name })}">
+      <td class="pid">${p.pid}</td><td>${p.name}</td>
+      <td class="mem r">${(p.mem_mb / 1024).toFixed(2)} GB</td></tr>`).join('');
+  $('ram-procs').dataset.sortCol = ramSortKey;
+  updateRamSortIndicators();
 }
 
 function update(stats) {
@@ -3084,11 +3134,7 @@ $('report-btn').addEventListener('click', async () => {
 /* ---------- RAM detail ---------- */
 
 $('ram-meter').addEventListener('click', () => {
-  const procs = lastStats?.procs_mem || [];
-  $('ram-procs-body').innerHTML = procs.map((p) => `
-    <tr data-pid="${p.pid}" data-name="${p.name}" title="Clic para cerrar ${p.name}">
-      <td class="pid">${p.pid}</td><td>${p.name}</td>
-      <td class="mem">${(p.mem_mb / 1024).toFixed(2)} GB</td></tr>`).join('');
+  renderRamProcs(lastStats?.procs_mem || []);
   $('ram-modal').classList.remove('hidden');
 });
 $('ram-close').addEventListener('click', () => $('ram-modal').classList.add('hidden'));
@@ -3322,6 +3368,22 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
         procsSortDir = key === 'name' ? 'asc' : 'desc';
       }
       if (lastStats) update(lastStats);
+    });
+  });
+})();
+
+/* v17-D: ordenar la tabla #ram-procs al clic en su cabecera (reusa sortProcRows) */
+(function wireRamSort() {
+  document.querySelectorAll('#ram-procs th.sortable').forEach((th) => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.sort;
+      if (ramSortKey === key) {
+        ramSortDir = ramSortDir === 'desc' ? 'asc' : 'desc';
+      } else {
+        ramSortKey = key;
+        ramSortDir = key === 'name' ? 'asc' : 'desc';
+      }
+      renderRamProcs(lastStats?.procs_mem || []);
     });
   });
 })();
