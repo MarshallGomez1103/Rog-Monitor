@@ -23,6 +23,24 @@ principales.
   ╚═══════════════════════════╝
 ```
 
+## Seguridad de un vistazo
+
+- **Cero telemetría, cero red.** No abre sockets salientes; lo único que sale a
+  internet es un `git pull` cuando *tú* pulsas ACTUALIZAR. Verificable: el código
+  no importa ningún cliente HTTP.
+- **Sin root para monitorear.** Todos los sensores se leen de sysfs/hwmon como
+  usuario normal.
+- **Acciones privilegiadas en lista blanca.** Escribir poder/ventiladores/SMART
+  pasa por `pkexec` con comandos acotados; la contraseña la gestiona polkit, la
+  app nunca la ve ni la guarda.
+- **Doble recorte en firmware.** Cada escritura de poder se valida dos veces
+  contra los `_min`/`_max` que el firmware declara; nunca se envía un valor fuera
+  de rango.
+- **Recuperación garantizada.** RESET A FÁBRICA restaura el stock y
+  `scripts/rog-monitor-safe-mode.sh` revierte desde una TTY si algo sale mal.
+
+Detalles y modelo de amenazas: [SECURITY.md](SECURITY.md).
+
 ## Características principales
 
 ### Sensores (sin root)

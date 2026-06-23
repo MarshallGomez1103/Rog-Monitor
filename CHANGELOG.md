@@ -1,5 +1,54 @@
 # Changelog
 
+## 17.0.0 — 2026-06-23
+
+Pre-launch polish pass. Stability, modal/auth UX, navigation, widget
+interactions, high-zoom layout, and a fully translated roadmap.
+
+### Fixed
+
+- **The freeze is gone.** On window restore under KDE/Wayland the
+  `restore`/`show`/`focus` events can arrive out of order, leaving the backend
+  stuck in its power-saving `SIGSTOP` so charts froze and the cursor stuck. A
+  watchdog now tracks the last stats line and force-`SIGCONT`s (then respawns)
+  the backend if it goes silent for >5 s; the UI shows a "reconnecting…" pill
+  instead of going mute. `procs.py`'s `/proc` scan is wrapped in
+  `signal.alarm(1)` so a D-state process can't hang the stream.
+- **Confirm dialogs render above the backdrop.** Chained modals (e.g. GPU
+  clock-offset confirm over the Power Center) used to appear *behind* the dim
+  layer; the active confirm now uses `.modal-top` (z-index 60, toast 90) and is
+  focused.
+- **High-zoom layout.** Removed the dark-pink void under LIGHTING (a Neon Nights
+  radial bleeding through a flex-stretched block → `main { align-items: start }`)
+  and capped the keyboard-detection box (`#peripherals` max-height + scroll) so
+  it no longer grows without bound.
+- **Core hover no longer reflows the grid.** "Click for details" is now a
+  floating tooltip instead of an inline zoom that misaligned every core.
+
+### Added
+
+- **Themed pre-confirm before pkexec.** A single ROG-styled dialog lists the
+  exact values about to be written (PL1/PL2, GPU TGP, clock offsets…) and notes
+  a password will be asked. The password stays with `pkexec` — never handled
+  in-app.
+- **Redesigned toasts** with ok / warn / error variants (color + icon).
+- **CONFIGURACIÓN is a first-level button** (one click, no longer nested in
+  Tools) and a 🌐 language globe is always visible; the duplicate in-Config
+  language grid was removed (single source). The top nav bar collapses with a
+  chevron (state persisted).
+- **Power profiles** animate on switch and carry per-button tooltips
+  (Saver / Balanced / Performance).
+- **Grab a fan to pause its spin** animation; it resumes on release.
+- **(i) info on VRAM modes** explaining C = compute, G = graphics, CG = both;
+  the RAM process list is sortable by RAM / name / PID like the CPU one.
+- **Roadmap fully translated.** The whole timeline — current capabilities and
+  the complete v1→v17 history, not just the future phases — now renders in all
+  8 languages and re-paints on language change.
+
+### Removed
+
+- The blinking "Live" indicator (over-animated; replaced with a calm lamp).
+
 ## 16.0.0 — 2026-06-20
 
 ### Fixed
