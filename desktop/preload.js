@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('rog', {
   onStats: (callback) => ipcRenderer.on('stats', (_e, stats) => callback(stats)),
   onOverlayConfig: (callback) => ipcRenderer.on('overlay-config', (_e, show) => callback(show)),
   onBackendDown: (callback) => ipcRenderer.on('backend-down', (_e, code) => callback(code)),
+  onBackendReconnecting: (callback) => ipcRenderer.on('backend-reconnecting', () => callback()),
   onMusicStopped: (callback) => ipcRenderer.on('music-stopped', () => callback()),
   onCloseRequest: (callback) => ipcRenderer.on('close-request', () => callback()),
   closeChoice: (payload) => ipcRenderer.invoke('close-choice', payload),

@@ -168,6 +168,7 @@ function startBackend() {
       if (!line) continue;
       try {
         const stats = JSON.parse(line);
+        lastStatsAt = Date.now(); // watchdog: reset on every good stats line
         // Recordar los umbrales de temperatura vivos (cpu/gpu) para que el
         // overlay pueda colorear por nivel con los MISMOS valores que el
         // dashboard, vía pushOverlayConfig (el stream no manda temp_colors).
@@ -188,6 +189,7 @@ function startBackend() {
     backendPaused = false;
     if (win && !win.isDestroyed()) {
       win.webContents.send('backend-down', code);
+      win.webContents.send('backend-reconnecting'); // show reconnecting indicator
       setTimeout(startBackend, 3000); // auto-recover
     }
   });
@@ -201,6 +203,11 @@ function startBackend() {
    ya lo throttlea Electron, así que entre ambos el costo en reposo es ínfimo. */
 let backendPaused = false;
 let mainVisible = true;
+// Watchdog: timestamp of last stats line received from the backend.
+// Reset on every valid JSON stats line; checked every WATCHDOG_INTERVAL ms.
+let lastStatsAt = Date.now();
+const WATCHDOG_INTERVAL = 5000; // ms between checks
+const WATCHDOG_STALE_MS = 5000; // tolerate up to 5s silence before acting
 
 function overlayNeedsBackend() {
   return !!(overlay && !overlay.isDestroyed()); // si existe, está mostrándose en juego
@@ -211,11 +218,54 @@ function setBackendPaused(paused) {
   try {
     backend.kill(paused ? 'SIGSTOP' : 'SIGCONT');
     backendPaused = paused;
+    // Reset the watchdog clock on resume: the first stat after SIGCONT takes
+    // up to 1 s to arrive; give it a fresh WATCHDOG_STALE_MS window.
+    if (!paused) lastStatsAt = Date.now();
   } catch (_) { /* pudo morir; el auto-recover lo recrea */ }
 }
 
 function updateBackendPower() {
   setBackendPaused(!(mainVisible || overlayNeedsBackend()));
+}
+
+/* ---------- Watchdog: fuerza SIGCONT si la ventana está visible pero los
+   stats se detuvieron. Cubre el caso en que SIGSTOP se disparó (minimize/hide)
+   pero el SIGCONT nunca llegó porque los eventos del window manager no se
+   emitieron (KDE/GNOME a veces dispara `focus` sin `show` o viceversa).
+   Lógica minimalista: un solo setInterval; resetea lastStatsAt cada stat.
+   Si detecta silencio > WATCHDOG_STALE_MS cuando la ventana debería correr:
+   1. fuerza SIGCONT (puede que solo estuviera pausado por error de evento)
+   2. si pasados otros 3 s sigue sin stats, mata y respawnea el proceso */
+function startWatchdog() {
+  setInterval(() => {
+    if (!mainVisible && !overlayNeedsBackend()) return; // ok, está pausado a propósito
+    if (!backend || backend.killed) return; // el exit handler ya maneja esto
+    if (backendPaused) {
+      // El flag dice pausado pero la ventana es visible → estado inconsistente.
+      // Forzar SIGCONT para corregir cualquier misfire del window manager.
+      console.warn('[watchdog] backend paused but window visible — forcing SIGCONT');
+      appendErrorLog('watchdog-force-cont', {});
+      setBackendPaused(false);
+      lastStatsAt = Date.now(); // darle un ciclo antes de declararlo muerto
+      return;
+    }
+    const stale = Date.now() - lastStatsAt;
+    if (stale < WATCHDOG_STALE_MS) return; // stats llegando con normalidad
+    // Silencio anormal: intentar SIGCONT primero (podría estar en SIGSTOP no registrado)
+    console.warn(`[watchdog] no stats for ${stale}ms — sending SIGCONT`);
+    appendErrorLog('watchdog-stale', { staleMs: stale });
+    if (win && !win.isDestroyed()) win.webContents.send('backend-reconnecting');
+    try { backend.kill('SIGCONT'); } catch (_) { /* ya murió */ }
+    backendPaused = false;
+    // Si en 3 s sigue sin stats, matar y respawnear
+    const snapStatsAt = lastStatsAt;
+    setTimeout(() => {
+      if (lastStatsAt !== snapStatsAt) return; // llegó algo, ok
+      console.warn('[watchdog] still no stats after SIGCONT — respawning backend');
+      appendErrorLog('watchdog-respawn', {});
+      startBackend();
+    }, 3000);
+  }, WATCHDOG_INTERVAL);
 }
 
 function run(cmd, args, timeoutMs = 10000) {
@@ -1700,6 +1750,7 @@ if (gotSingleInstanceLock) {
     createWindow();
     createTray();
     startBackend();
+    startWatchdog();
     runJsonModule('rog_monitor.aura', ['apply-startup'], 10000).catch(() => {});
   });
 }
