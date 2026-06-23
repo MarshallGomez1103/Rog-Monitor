@@ -48,15 +48,18 @@
         </div>
       </div>
 
+      <!-- TOOLS dropdown: POWER, OVERLAY, ALERTS (ordenados: acción primaria primero) -->
       <div class="control-menu">
         <button class="ghost control-menu-toggle primary-action" type="button" data-menu-toggle="tools" data-i18n="topbar.tools">HERRAMIENTAS</button>
         <div class="control-menu-panel hidden" data-menu-panel="tools">
           <button id="power-btn" class="ghost primary-action" data-i18n="topbar.power" data-i18n-attr="title:tip.power" title="Power Center: CPU/GPU power limits (password required to apply)">PODER</button>
-          <button id="overlay-btn" class="ghost" data-i18n="topbar.overlay" data-i18n-attr="title:tip.overlay" title="Always-on-top stats overlay for gaming (pick the monitor)">OVERLAY</button>
           <button id="alerts-btn" class="ghost" data-i18n="topbar.alerts" data-i18n-attr="title:topbar.alerts_title" title="Alertas / Umbrales: avisos y colores por temperatura y potencia">ALERTAS</button>
-          <button id="config-btn" class="ghost" data-i18n="topbar.config" data-i18n-attr="title:topbar.config_title" title="Configuración: idioma, apariencia, autoarranque y notificaciones">CONFIGURACIÓN</button>
+          <button id="overlay-btn" class="ghost" data-i18n="topbar.overlay" data-i18n-attr="title:tip.overlay" title="Always-on-top stats overlay for gaming (pick the monitor)">OVERLAY</button>
         </div>
       </div>
+
+      <!-- CONFIG: tab de primer nivel, 1 clic -->
+      <button id="config-btn" class="ghost control-menu-toggle" type="button" data-i18n="topbar.config" data-i18n-attr="title:topbar.config_title" title="Configuración: idioma, apariencia, autoarranque y notificaciones">CONFIGURACIÓN</button>
 
       <div class="control-menu">
         <button class="ghost control-menu-toggle" type="button" data-menu-toggle="system" data-i18n="topbar.system">SISTEMA</button>
@@ -72,9 +75,14 @@
         <div class="control-menu-panel hidden" data-menu-panel="help">
           <button id="wizard-btn" class="ghost" data-i18n="topbar.wizard" data-i18n-attr="title:tip.wizard" title="Volver a ver el asistente de primera vez">VER TUTORIAL</button>
           <button id="roadmap-btn" class="ghost" data-i18n="topbar.roadmap" data-i18n-attr="title:tip.roadmap" title="Roadmap: lo hecho y lo que viene">ROADMAP</button>
-          <button id="lang-btn" class="ghost" data-i18n-attr="title:topbar.lang,aria-label:topbar.lang" title="Idioma / Language" aria-label="Idioma / Language">A文</button>
         </div>
       </div>
+
+      <!-- 🌐 Idioma: siempre visible en la barra, fuente única = #lang-modal -->
+      <button id="lang-btn" class="ghost topbar-globe" type="button" data-i18n-attr="title:topbar.lang,aria-label:topbar.lang" title="Idioma / Language" aria-label="Idioma / Language">🌐</button>
+
+      <!-- Colapsar/expandir controles de la barra -->
+      <button id="nav-collapse-btn" class="ghost topbar-collapse" type="button" aria-label="Toggle nav" title="Toggle nav bar">&#x2303;</button>
     </div>
   </header>
 
@@ -468,12 +476,7 @@
   <div id="config-modal" class="modal hidden">
     <div class="modal-card">
       <h3 data-i18n="config.title">Configuración</h3>
-      <p class="sub" data-i18n="config.sub">Idioma, apariencia, autoarranque y notificaciones. Todo se guarda automáticamente.</p>
-
-      <h3 class="size-title" data-i18n="config.lang_title">Idioma</h3>
-      <div class="lang-grid" id="config-lang-grid">
-        <!-- Llenado por app.js (buildLangGrid) al abrir -->
-      </div>
+      <p class="sub" data-i18n="config.sub">Apariencia, autoarranque y notificaciones. Todo se guarda automáticamente. Cambia el idioma con el botón 🌐 de la barra.</p>
 
       <h3 class="size-title" data-i18n="modal.theme">Apariencia</h3>
       <p class="sub" data-i18n="modal.theme_sub">Elige el modo de color y la paleta. Se guarda automáticamente.</p>
