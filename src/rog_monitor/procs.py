@@ -1,5 +1,6 @@
 """Top processes by instantaneous CPU usage, computed from /proc deltas."""
 
+import contextlib
 import os
 import signal
 from pathlib import Path
@@ -17,6 +18,19 @@ class _Timeout(Exception):
 
 def _alarm_handler(signum, frame):  # noqa: ARG001
     raise _Timeout
+
+
+@contextlib.contextmanager
+def _scan_alarm():
+    """Hard-cap a /proc scan at _SCAN_TIMEOUT_S. On timeout the body sees
+    _Timeout (catch it to keep whatever was collected). Main-thread only."""
+    old = signal.signal(signal.SIGALRM, _alarm_handler)
+    signal.alarm(_SCAN_TIMEOUT_S)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old)
 
 
 def _total_jiffies() -> int:
@@ -43,9 +57,9 @@ class ProcReader:
         current: dict[int, int] = {}
         rows = []
 
-        old_handler = signal.signal(signal.SIGALRM, _alarm_handler)
-        signal.alarm(_SCAN_TIMEOUT_S)
-        try:
+        # Scan exceeded 1 s (e.g. a D-state process) — return whatever we
+        # managed to collect. State is partial; next cycle re-deltas from here.
+        with contextlib.suppress(_Timeout), _scan_alarm():
             for entry in Path("/proc").iterdir():
                 if not entry.name.isdigit():
                     continue
@@ -85,13 +99,6 @@ class ProcReader:
                         "last_cpu": last_cpu,
                     }
                 )
-        except _Timeout:
-            # Scan exceeded 1 s — return whatever we managed to collect.
-            # State is partially updated; next cycle will re-delta from here.
-            pass
-        finally:
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, old_handler)
 
         self._last = current
         self._last_total = total
@@ -126,23 +133,24 @@ class ProcReader:
     def top_memory(self, top: int = 8) -> list[dict]:
         """Top processes by resident RAM (no deltas needed)."""
         rows = []
-        for entry in Path("/proc").iterdir():
-            if not entry.name.isdigit():
-                continue
-            try:
-                stat = (entry / "stat").read_text()
-            except OSError:
-                continue
-            rparen = stat.rfind(")")
-            comm = stat[stat.find("(") + 1 : rparen]
-            fields = stat[rparen + 2 :].split()
-            try:
-                rss_pages = int(fields[21])
-            except (IndexError, ValueError):
-                continue
-            mem = rss_pages * PAGE_KB // 1024
-            if mem > 0:
-                rows.append({"pid": int(entry.name), "name": comm[:24], "mem_mb": mem})
+        with contextlib.suppress(_Timeout), _scan_alarm():
+            for entry in Path("/proc").iterdir():
+                if not entry.name.isdigit():
+                    continue
+                try:
+                    stat = (entry / "stat").read_text()
+                except OSError:
+                    continue
+                rparen = stat.rfind(")")
+                comm = stat[stat.find("(") + 1 : rparen]
+                fields = stat[rparen + 2 :].split()
+                try:
+                    rss_pages = int(fields[21])
+                except (IndexError, ValueError):
+                    continue
+                mem = rss_pages * PAGE_KB // 1024
+                if mem > 0:
+                    rows.append({"pid": int(entry.name), "name": comm[:24], "mem_mb": mem})
         rows.sort(key=lambda r: r["mem_mb"], reverse=True)
         return rows[:top]
 
@@ -159,4 +167,7 @@ if __name__ == "__main__":
     assert isinstance(r2, list), "read() must return a list"
     for row in r2:
         assert "pid" in row and "cpu" in row and "mem_mb" in row, f"bad row: {row}"
-    print(f"OK: {len(r2)} procs, top cpu={r2[0]['cpu'] if r2 else 'n/a'}%")
+    mem = reader.top_memory(top=5)
+    assert isinstance(mem, list) and all("mem_mb" in m for m in mem), "bad top_memory"
+    print(f"OK: {len(r2)} procs, top cpu={r2[0]['cpu'] if r2 else 'n/a'}%, "
+          f"{len(mem)} by mem")

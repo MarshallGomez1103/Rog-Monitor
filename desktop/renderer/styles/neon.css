@@ -413,7 +413,6 @@ html[data-mode="dark"] .lamp.hot {
 }
 html[data-mode="dark"] .lamp.critical {
   box-shadow: 0 0 9px var(--crit), 0 0 22px color-mix(in srgb, var(--crit) 65%, transparent);
-  animation: blink .5s steps(2) infinite;
 }
 html[data-mode="dark"] .lamp.cold {
   box-shadow: 0 0 7px var(--cold), 0 0 18px color-mix(in srgb, var(--cold) 55%, transparent);
@@ -428,7 +427,6 @@ html[data-mode="light"] .lamp.hot {
 }
 html[data-mode="light"] .lamp.critical {
   box-shadow: 0 0 7px var(--crit), 0 0 16px color-mix(in srgb, var(--crit) 70%, transparent);
-  animation: blink .5s steps(2) infinite;
 }
 html[data-mode="light"] .lamp.cold {
   box-shadow: 0 0 5px var(--cold), 0 0 12px color-mix(in srgb, var(--cold) 60%, transparent);
