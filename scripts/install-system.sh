@@ -33,5 +33,24 @@ systemctl enable --now rog-profile-sync.service || true
 # 3) Lectura de potencia CPU sin root (RAPL).
 bash "$REPO/scripts/enable-cpu-power.sh" || true
 
+# 4) smartmontools — necesario para el panel SMART de discos (pkexec smartctl -j -a).
+#    Se instala si no está presente; se detecta el gestor de paquetes disponible.
+if ! command -v smartctl >/dev/null 2>&1; then
+    printf 'Instalando smartmontools (necesario para Salud SMART de discos)…\n'
+    if command -v dnf >/dev/null 2>&1; then
+        dnf install -y smartmontools || true
+    elif command -v apt-get >/dev/null 2>&1; then
+        apt-get install -y --no-install-recommends smartmontools || true
+    elif command -v pacman >/dev/null 2>&1; then
+        pacman -S --noconfirm smartmontools || true
+    elif command -v zypper >/dev/null 2>&1; then
+        zypper install -y smartmontools || true
+    else
+        printf 'No se pudo detectar el gestor de paquetes. Instala smartmontools manualmente.\n' >&2
+    fi
+else
+    printf 'smartmontools ya instalado (%s).\n' "$(smartctl --version | head -1)"
+fi
+
 printf 'Integración de sistema instalada (ventiladores activos; guardián listo para activar desde la app).\n'
 printf 'El auto-perfil por fuente de poder NO se instaló (opt-in). Tú mandas el perfil.\n'

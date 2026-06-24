@@ -78,6 +78,7 @@
     { key: 'history', col: 'right' },
     { key: 'bench',   col: 'right' },
     { key: 'system',  col: 'right' },
+    { key: 'disks',   col: 'right' },
     { key: 'events',  col: 'right' },
     { key: 'procs',   col: 'right' },
   ];
@@ -91,6 +92,7 @@
     history: 'Historial',
     bench:   'Benchmarks',
     system:  'Sistema',
+    disks:   'Discos',
     events:  'Eventos',
     procs:   'Procesos',
   };

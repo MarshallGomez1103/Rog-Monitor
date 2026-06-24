@@ -288,6 +288,14 @@ def system_panel(state, t, th) -> Panel:
         usage = Text(f" {disk['used_gb']:.0f}/{disk['total_gb']:.0f}G ({disk['percent']}%)")
         if info["nvme_temps"] and disk["mount"] in ("/", "/var/home", "/home"):
             usage.append(f" · NVMe {max(info['nvme_temps']):.0f}°C", style="grey58")
+        # I/O rate (new in v18)
+        r_mbps = disk.get("read_mbps", 0.0)
+        w_mbps = disk.get("write_mbps", 0.0)
+        if r_mbps > 0.05 or w_mbps > 0.05:
+            usage.append(
+                f" ↓{r_mbps:.1f}↑{w_mbps:.1f}",
+                style="grey42",
+            )
         disks.add_row(
             Text(disk["label"], style="grey74"),
             bar(disk["percent"], 18, th["bar"]),

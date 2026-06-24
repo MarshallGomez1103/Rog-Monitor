@@ -1,0 +1,148 @@
+/* ROG Monitor — estilos del panel de discos en vivo + SMART (v18). */
+
+/* ---- Disk row ---- */
+.disk-row {
+  margin-bottom: 0.7rem;
+}
+.disk-row:last-child {
+  margin-bottom: 0;
+}
+
+.disk-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  margin-bottom: 0.2rem;
+}
+
+.disk-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.disk-model {
+  font-size: 0.72rem;
+  color: var(--dim);
+  font-family: var(--mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 14ch;
+}
+
+.disk-fstype {
+  font-size: 0.68rem;
+  color: var(--dim);
+  font-family: var(--mono);
+  opacity: 0.7;
+}
+
+/* Bar — same style as RAM/VRAM .track/.track > div */
+.disk-bar-track {
+  height: 6px;
+  background: var(--hair);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 0.22rem;
+}
+
+.disk-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  box-shadow: 0 0 4px var(--glow);
+  transition: width 0.4s ease;
+}
+
+/* ---- Meta row ---- */
+.disk-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.7rem;
+  font-size: 0.73rem;
+  color: var(--dim);
+}
+
+.disk-pct {
+  font-weight: 700;
+  color: var(--accent);
+  font-family: var(--mono);
+  text-shadow: var(--neon-glow-soft);
+}
+
+.disk-usage,
+.disk-temp,
+.disk-io {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+}
+
+.disk-temp {
+  color: var(--okstate);
+}
+
+/* SMART button — very small ghost, inline */
+.disk-smart-btn {
+  font-size: 0.66rem;
+  padding: 0.1rem 0.45rem;
+  height: auto;
+  line-height: 1.4;
+  opacity: 0.8;
+  transition: opacity 0.15s, box-shadow 0.15s;
+}
+.disk-smart-btn:hover {
+  opacity: 1;
+  box-shadow: var(--neon-box);
+}
+
+/* ---- SMART panel ---- */
+.disk-smart-panel {
+  margin-top: 0.35rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--chip);
+  border: 1px solid var(--hair);
+  border-left: 2px solid var(--accent);
+  font-size: 0.72rem;
+}
+
+.disk-smart-loading {
+  color: var(--dim);
+  font-style: italic;
+}
+
+.disk-smart-err {
+  color: var(--hot);
+}
+
+.disk-smart-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.disk-smart-table td {
+  padding: 0.1rem 0.5rem 0.1rem 0;
+  color: var(--dim);
+  vertical-align: top;
+}
+
+.disk-smart-table td:first-child {
+  color: var(--ink);
+  white-space: nowrap;
+  min-width: 12ch;
+}
+
+.disk-smart-ok {
+  color: var(--okstate);
+  font-weight: 700;
+  text-shadow: 0 0 5px var(--okstate);
+}
+
+.disk-smart-fail {
+  color: var(--crit);
+  font-weight: 700;
+  text-shadow: 0 0 5px var(--crit);
+}
