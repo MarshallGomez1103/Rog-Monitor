@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="styles/extras.css" />
   <link rel="stylesheet" href="styles/game-session.css" />
   <link rel="stylesheet" href="styles/cores.css" />
+  <link rel="stylesheet" href="styles/battery.css" />
 </head>
 <body>
   <header id="topbar">
@@ -273,6 +274,45 @@
             <div><label data-i18n="common.asus_profile">Perfil ASUS</label><b id="asus-profile">--</b></div>
           </div>
         </div>
+      </article>
+
+      <article class="block" id="battery-block" data-block="battery">
+        <h2><i class="dash-num"></i> <span data-i18n="block.battery">Batería</span></h2>
+        <div class="statgrid bat-statgrid">
+          <div>
+            <label data-i18n="battery.charge">Carga</label>
+            <b id="bat-charge" class="bat-bignum">--</b>
+          </div>
+          <div>
+            <label data-i18n="battery.status">Estado</label>
+            <b id="bat-status" class="small">--</b>
+          </div>
+          <div>
+            <label data-i18n="battery.watts">Watts</label>
+            <b id="bat-watts">--</b>
+          </div>
+          <div>
+            <label data-i18n="battery.health">Salud (desgaste)</label>
+            <b id="bat-health">--</b>
+          </div>
+          <div>
+            <label data-i18n="battery.cycles">Ciclos</label>
+            <b id="bat-cycles">--</b>
+          </div>
+          <div>
+            <label data-i18n="battery.limit">Límite carga</label>
+            <b id="bat-limit" class="small">--</b>
+          </div>
+          <div class="bat-cap-row">
+            <label data-i18n="battery.capacity_now">Energía actual</label>
+            <b id="bat-cap-now" class="small">--</b>
+          </div>
+          <div class="bat-cap-row">
+            <label data-i18n="battery.capacity_design">Diseño (actual / diseño)</label>
+            <b id="bat-cap-design" class="small">--</b>
+          </div>
+        </div>
+        <p id="bat-no-data" class="note hidden" data-i18n="battery.no_data">Sin datos de batería</p>
       </article>
 
       <div class="split">
@@ -741,6 +781,7 @@
   </div>
 
   <script src="i18n.js"></script>
+  <script src="battery.js"></script>
   <script src="app.js"></script>
   <script src="power.js"></script>
   <script src="widget-states.js"></script>
