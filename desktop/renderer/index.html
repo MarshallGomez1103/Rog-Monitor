@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="styles/extras.css" />
   <link rel="stylesheet" href="styles/game-session.css" />
   <link rel="stylesheet" href="styles/cores.css" />
+  <link rel="stylesheet" href="styles/diagnostics.css" />
 </head>
 <body>
   <header id="topbar">
@@ -48,13 +49,14 @@
         </div>
       </div>
 
-      <!-- TOOLS dropdown: POWER, OVERLAY, ALERTS (ordenados: acción primaria primero) -->
+      <!-- TOOLS dropdown: POWER, OVERLAY, ALERTS, DIAGNÓSTICO -->
       <div class="control-menu">
         <button class="ghost control-menu-toggle primary-action" type="button" data-menu-toggle="tools" data-i18n="topbar.tools">HERRAMIENTAS</button>
         <div class="control-menu-panel hidden" data-menu-panel="tools">
           <button id="power-btn" class="ghost primary-action" data-i18n="topbar.power" data-i18n-attr="title:tip.power" title="Power Center: CPU/GPU power limits (password required to apply)">PODER</button>
           <button id="alerts-btn" class="ghost" data-i18n="topbar.alerts" data-i18n-attr="title:topbar.alerts_title" title="Alertas / Umbrales: avisos y colores por temperatura y potencia">ALERTAS</button>
           <button id="overlay-btn" class="ghost" data-i18n="topbar.overlay" data-i18n-attr="title:tip.overlay" title="Always-on-top stats overlay for gaming (pick the monitor)">OVERLAY</button>
+          <button id="diag-btn" class="ghost" data-i18n="topbar.diag" data-i18n-attr="title:tip.diag" title="Hub de diagnóstico: info del hardware y tests de teclado, sonido y pantalla">DIAGNÓSTICO</button>
         </div>
       </div>
 
@@ -750,5 +752,6 @@
   <script src="game-session.js"></script>
   <script src="cores.js"></script>
   <script src="bench-detail.js"></script>
+  <script src="diagnostics.js"></script>
 </body>
 </html>
