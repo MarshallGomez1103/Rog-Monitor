@@ -456,6 +456,15 @@
     </div>
   </div>
 
+  <!-- event-detail.js injects this modal dynamically; the static shell is here for CSP compliance -->
+  <div id="event-detail-modal" class="modal hidden">
+    <div class="modal-card event-detail-card">
+      <h3 id="event-detail-title"></h3>
+      <div class="event-detail-body" id="event-detail-body"></div>
+      <button class="ghost modal-close" id="event-detail-close" data-i18n="event.detail.close">Cerrar</button>
+    </div>
+  </div>
+
   <div id="fan-modal" class="modal hidden">
     <div class="modal-card wide">
       <h3><span data-i18n="fan.modal_title">Ventiladores — perfil activo:</span> <span id="fan-profile" class="accent2"></span></h3>
@@ -801,5 +810,6 @@
   <script src="cores.js"></script>
   <script src="bench-detail.js"></script>
   <script src="diagnostics.js"></script>
+  <script src="event-detail.js"></script>
 </body>
 </html>
