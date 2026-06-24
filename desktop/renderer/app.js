@@ -962,7 +962,7 @@ function benchmarkSummaryText(result) {
   const fanText = Object.entries(s.fan_rpm_max || {})
     .map(([k, v]) => `${k}: ${v} RPM`).join(' · ') || t('bench.no_fan_data');
   const lines = [
-    `${result.kind.toUpperCase()} · ${result.tool} · ${result.seconds}s`,
+    `${result.kind.toUpperCase()} · ${result.kind === 'gpu' ? t('bench.tool_gpu') : t('bench.tool_cpu')} · ${result.seconds}s`,
     t('bench.summary_cpu_max', { temp: fmt(s.cpu_temp_max, 1), pkg: fmt(s.cpu_package_max, 1), watts: fmt(s.cpu_watts_max, 1) }),
     t('bench.summary_gpu_max', { temp: fmt(s.gpu_temp_max, 1), watts: fmt(s.gpu_watts_max, 1), util: fmt(s.gpu_util_max, 0) }),
     t('bench.summary_throttle', { events: s.throttle_events ?? 0, ms: s.throttle_ms ?? 0 }),
@@ -1147,7 +1147,7 @@ function _benchCardHtml(item) {
 
   // tool info
   const toolHtml = item.tool
-    ? `<div class="bench-detail-tool">Herramienta: ${escapeHtml(item.tool)}</div>`
+    ? `<div class="bench-detail-tool">${escapeHtml(t('bench.detail.tool_label'))}: ${escapeHtml(item.kind === 'gpu' ? t('bench.tool_gpu') : t('bench.tool_cpu'))}</div>`
     : '';
 
   return `
@@ -3521,7 +3521,7 @@ $('export-events').addEventListener('click', async (e) => {
   const events = lastStats?.events || [];
   if (!events.length) { toast(t('toast.no_events_export')); return; }
   const today = new Date().toLocaleDateString();
-  const text = `ROG Monitor — registro de eventos (${today})\n\n`
+  const text = t('bench.detail.header', { date: today }) + '\n\n'
     + events.map(([ts, level, msg]) => `${ts}  [${level.toUpperCase()}]  ${msg}`).join('\n') + '\n';
   const res = await window.rog.exportEvents(text);
   toast(res.ok ? t('events.exported', { path: res.path }) : t('events.export_failed', { err: res.err }));

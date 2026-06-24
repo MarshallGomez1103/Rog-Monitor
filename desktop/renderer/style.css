@@ -1146,7 +1146,7 @@ input[type="color"] {
 #procs td { padding: 5px 6px; border-bottom: 1px dashed var(--hair); font-family: var(--mono); }
 #procs td.pid { color: var(--dim); width: 12%; font-size: 12px; }
 #procs td.cpu { text-align: right; width: 18%; }
-#procs td.cpu-core { text-align: right; }
+#procs td.cpu-core { color: var(--ink); text-align: right; }
 #procs td.mem { color: var(--dim); text-align: right; width: 22%; }
 /* neón SOLO en la columna actualmente ordenada (data-sort-col lo fija el JS) */
 #procs[data-sort-col="pid"]      td.pid,
