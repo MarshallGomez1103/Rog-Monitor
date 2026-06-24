@@ -1594,12 +1594,19 @@ function update(stats) {
   $('vram-bar').style.width = `${vramPercent}%`;
   $('vram-meter').classList.toggle('disabled', !vramTotal);
 
-  const disks = $('disks');
-  disks.innerHTML = (sys.disks || []).map((d) => `
-    <div class="meter">
-      <label>${d.label} <b>${fmt(d.used_gb, 0)}/${fmt(d.total_gb, 0)} G</b></label>
-      <div class="track"><div style="width:${d.percent}%"></div></div>
-    </div>`).join('');
+  // Legacy disk meters in system block (keep for backward compat / system widget)
+  const disksEl = $('disks');
+  if (disksEl) {
+    disksEl.innerHTML = (sys.disks || []).map((d) => `
+      <div class="meter">
+        <label>${d.label} <b>${fmt(d.used_gb, 0)}/${fmt(d.total_gb, 0)} G</b></label>
+        <div class="track"><div style="width:${d.percent}%"></div></div>
+      </div>`).join('');
+  }
+  // Rich disk panel (disks block)
+  if (window.disksModule) {
+    window.disksModule.render(sys.disks || [], sys.nvme_temps || []);
+  }
 
   $('net').textContent = `↓${fmt(sys.rx_mbps, 1)} ↑${fmt(sys.tx_mbps, 1)} Mb/s`;
   $('load').textContent = (sys.load || []).map((l) => l.toFixed(2)).join(' ');

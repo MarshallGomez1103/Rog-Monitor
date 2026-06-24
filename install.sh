@@ -39,6 +39,7 @@ printf 'Se pedirá sudo UNA vez para:\n'
 printf '  1) Instalar el servicio de control de ventiladores (rog-profile-sync).\n'
 printf '  2) Dejar lista la unidad del guardián térmico (se activa luego desde la app).\n'
 printf '  3) Permitir leer la potencia de la CPU sin root (RAPL).\n'
+printf '  4) Instalar smartmontools (necesario para el panel SMART de discos).\n'
 printf 'NO se instalará ningún cambio automático de perfil ni de GPU.\n'
 printf '────────────────────────────────────────────\n'
 read -r -p '¿Instalar la integración de sistema ahora? [S/n] ' ans

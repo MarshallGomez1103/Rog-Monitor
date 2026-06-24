@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="styles/game-session.css" />
   <link rel="stylesheet" href="styles/cores.css" />
   <link rel="stylesheet" href="styles/battery.css" />
+  <link rel="stylesheet" href="styles/disks.css" />
 </head>
 <body>
   <header id="topbar">
@@ -313,6 +314,11 @@
           </div>
         </div>
         <p id="bat-no-data" class="note hidden" data-i18n="battery.no_data">Sin datos de batería</p>
+      </article>
+
+      <article class="block" id="disks-block" data-block="disks">
+        <h2><i class="dash-num"></i> <span data-i18n="disks.title">Discos</span></h2>
+        <div id="disks-live"></div>
       </article>
 
       <div class="split">
@@ -782,6 +788,7 @@
 
   <script src="i18n.js"></script>
   <script src="battery.js"></script>
+  <script src="disks.js"></script>
   <script src="app.js"></script>
   <script src="power.js"></script>
   <script src="widget-states.js"></script>
