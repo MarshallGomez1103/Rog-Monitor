@@ -1651,6 +1651,9 @@ function update(stats) {
 
   $('backend-state').textContent =
     `sensores OK · core v${stats.version || '?'} · ${new Date().toLocaleTimeString()}`;
+
+  /* v18: diagnóstico hub — actualizar cards si el modal está abierto */
+  try { if (typeof window.diagUpdateInfo === 'function') window.diagUpdateInfo(stats); } catch (_) {}
 }
 
 /* ---------- actions ---------- */

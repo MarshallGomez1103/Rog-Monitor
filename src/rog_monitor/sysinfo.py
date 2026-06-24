@@ -6,6 +6,42 @@ import time
 
 from . import hwmon
 
+# ---------------------------------------------------------------------------
+# DMI / motherboard info (root-free, /sys/class/dmi/id/)
+# ---------------------------------------------------------------------------
+_DMI_BASE = "/sys/class/dmi/id"
+_DMI_FIELDS = {
+    "board_vendor": "board_vendor",
+    "board_name":   "board_name",
+    "bios_version": "bios_version",
+    "product_name": "product_name",
+}
+
+
+def dmi_info() -> dict[str, str | None]:
+    """Return a dict with motherboard DMI fields; values are None when unreadable."""
+    result: dict[str, str | None] = {}
+    for key, filename in _DMI_FIELDS.items():
+        path = f"{_DMI_BASE}/{filename}"
+        try:
+            with open(path) as fh:
+                value = fh.read().strip()
+            result[key] = value or None
+        except OSError:
+            result[key] = None
+    return result
+
+
+# Cache DMI at import-time (it never changes at runtime)
+_DMI_CACHE: dict[str, str | None] | None = None
+
+
+def get_dmi() -> dict[str, str | None]:
+    global _DMI_CACHE
+    if _DMI_CACHE is None:
+        _DMI_CACHE = dmi_info()
+    return _DMI_CACHE
+
 
 def _meminfo() -> dict[str, int]:
     info: dict[str, int] = {}
@@ -222,6 +258,7 @@ class SysReader:
             "smart_block_devices": _smart_block_devices(),
             "load": os.getloadavg(),
             "uptime_h": uptime / 3600,
+            "dmi": get_dmi(),
         }
 
 
@@ -308,6 +345,26 @@ if __name__ == "__main__":
     assert r2["reallocated"]    == 0,      f"ATA realloc wrong: {r2}"
     assert r2["temp_c"]         == 45,     f"ATA temp wrong: {r2}"
     print(f"[OK] ATA  SMART parse: passed={r2['passed']} hours={r2['power_on_hours']} cycles={r2['power_cycles']} realloc={r2['reallocated']} temp={r2['temp_c']}°C")
+
+    # (c) DMI getter returns a dict with expected keys; values are str or None.
+    _EXPECTED_KEYS = {"board_vendor", "board_name", "bios_version", "product_name"}
+    info = get_dmi()
+    assert isinstance(info, dict), "dmi_info() must return a dict"
+    assert _EXPECTED_KEYS <= info.keys(), f"Missing DMI keys: {_EXPECTED_KEYS - info.keys()}"
+    for k, v in info.items():
+        assert v is None or isinstance(v, str), f"DMI key {k!r} must be str or None, got {type(v)}"
+    print("[OK] DMI info:", info)
+
+    # Check that a missing path returns None (not an exception)
+    import rog_monitor.sysinfo as _self  # noqa: F401
+    _orig_base = _self._DMI_BASE
+    _self._DMI_BASE = "/nonexistent/path/dmi"
+    _self._DMI_CACHE = None  # force re-read
+    fallback = _self.dmi_info()
+    assert all(v is None for v in fallback.values()), "Unreadable paths must return None"
+    _self._DMI_BASE = _orig_base
+    _self._DMI_CACHE = None
+    print("[OK] DMI fallback (all None):", fallback)
 
     if errors:
         print("FAILED:", errors, file=sys.stderr)
