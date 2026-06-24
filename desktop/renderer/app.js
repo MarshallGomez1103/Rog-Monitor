@@ -1616,12 +1616,18 @@ function update(stats) {
     src.className = 'power-source ' + (bat.on_ac ? 'ac' : 'bat');
   }
 
-  /* events */
+  /* events — 4th element is category key (tolerate old 3-tuples) */
   const events = (stats.events || []).slice(-30).reverse();
-  $('events').innerHTML = events.length
-    ? events.map(([ts, level, msg]) =>
-        `<li class="${level}"><time>${ts}</time>${msg}</li>`).join('')
-    : '<li class="dim">sin eventos</li>';
+  if (window.RogEventDetail) window.RogEventDetail.renderList(events);
+  else {
+    $('events').innerHTML = events.length
+      ? events.map((e) => {
+          const [ts, level, msg, key] = e;
+          const k = key || 'info';
+          return `<li class="${level}" data-key="${k}"><time>${ts}</time>${msg}</li>`;
+        }).join('')
+      : `<li class="dim">${t('events.none')}</li>`;
+  }
 
   /* processes — DOS columnas separadas: % CPU total (todos los núcleos) y
      % NÚCLEO (uso de un solo núcleo, estilo `top`). Antes iban pegados. */
@@ -3514,6 +3520,11 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
   });
 })();
 
+/* ---------- event-detail init hook (event-detail.js loaded after app.js) ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.RogEventDetail) window.RogEventDetail.init();
+});
+
 /* ---------- export events ---------- */
 
 $('export-events').addEventListener('click', async (e) => {
@@ -3522,7 +3533,7 @@ $('export-events').addEventListener('click', async (e) => {
   if (!events.length) { toast(t('toast.no_events_export')); return; }
   const today = new Date().toLocaleDateString();
   const text = `ROG Monitor — registro de eventos (${today})\n\n`
-    + events.map(([ts, level, msg]) => `${ts}  [${level.toUpperCase()}]  ${msg}`).join('\n') + '\n';
+    + events.map((e) => { const [ts, level, msg, key] = e; return `${ts}  [${level.toUpperCase()}]  [${key || 'info'}]  ${msg}`; }).join('\n') + '\n';
   const res = await window.rog.exportEvents(text);
   toast(res.ok ? t('events.exported', { path: res.path }) : t('events.export_failed', { err: res.err }));
 });
