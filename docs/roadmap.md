@@ -23,7 +23,7 @@ separate:
 The differentiator is the **combination + safety + UX**: everything in one place,
 Spanish-first and 8-language, with a guardian nobody else ships.
 
-## Current (done) — through v16
+## Current (done) — through v18
 
 * [x] Unified CPU/GPU smart guardian with separate thermal ceilings.
 * [x] Guardian modes: **Protection** and **Gaming** (fans-only, no throttling). *(v14)*
@@ -39,6 +39,17 @@ Spanish-first and 8-language, with a guardian nobody else ships.
   below; timeline titles aligned in one column. *(v16)*
 * [x] Safe recovery commands for TTY sessions (`rog-monitor-safe-mode.sh`).
 * [x] Advanced documentation panel with vendor/component/model search.
+* [x] **Battery health panel**: wear / health %, charge cycles, current vs design
+  capacity, live charge / watts. *(v18)*
+* [x] **Disk health panel**: live usage, temperature, model, filesystem and read/write
+  I/O rates, plus on-demand **SMART** (power-on hours, cycles, SSD wear, reallocated
+  sectors) via a single `pkexec smartctl` call. *(v18)*
+* [x] **Hardware diagnostics hub**: one place with CPU/GPU/iGPU/battery/fans/motherboard
+  info cards plus interactive **keyboard, speaker and display** tests. *(v18)*
+* [x] **Clickable, categorized events** with a per-type explanation modal in all 8
+  languages. *(v18)*
+* [x] Benchmark detail fully internationalized; benchmark / event exports now generated
+  in the active language; process "per-core" column neon fixed. *(v18)*
 
 ## P0 — LAUNCH (open the repo to the public)
 
@@ -73,7 +84,9 @@ The standout features that make ROG Monitor unique.
 
 * [ ] **AMD**: CPU via ryzenadj / RAPL, CoreCtrl-style amdgpu, more ASUS SKUs, and a
   generic read-only fallback.
-* [ ] **Battery**: charge-limit control in the UI (asusctl exposes it) and wear / health.
+* [ ] **Battery**: charge-limit control in the UI (asusctl exposes it). *(wear / health done in v18)*
+* [ ] **Disk depth**: SMART self-tests, predictive-failure alerts and per-disk temperature
+  history (live read-only stats + on-demand SMART shipped in v18).
 * [ ] **CoolerControl-level fans**: multiple temperature sources, mixed / function
   curves, and a GPU fan curve.
 * [ ] **Full RGB**: music-by-zone, an OpenRGB bridge for non-ASUS peripherals, and

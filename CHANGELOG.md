@@ -1,5 +1,28 @@
 # Changelog
 
+## 18.0.0 — 2026-06-24
+
+Hardware diagnostics release. Disk and battery health, a diagnostics hub with
+interactive hardware tests, explainable events, and i18n/UI bug fixes.
+
+### Added
+- Battery health panel: wear / health %, charge cycles, current vs design
+  capacity, live charge and watts (backend fields also surfaced in the TUI).
+- Disk panel: live usage, temperature, model, filesystem and read/write I/O
+  rates, plus on-demand **SMART** (power-on hours, cycles, SSD wear, reallocated
+  sectors) via a single `pkexec smartctl -j` call, cached per session.
+  `smartmontools` added to the installer dependencies.
+- Diagnostics hub (HERRAMIENTAS → DIAGNÓSTICO): CPU/GPU/iGPU/battery/fans/
+  motherboard info cards plus interactive keyboard, speaker (L/R) and display
+  (full-screen color) tests. Motherboard info read from DMI without root.
+- Events are now clickable and categorized by type, with a per-type explanation
+  modal translated into all 8 languages, and a type filter.
+
+### Fixed
+- Benchmark detail strings now go through i18n (were hardcoded Spanish).
+- Benchmark and event exports are generated in the active language.
+- Processes "per-core" (% NÚCLEO) column neon now renders like the other columns.
+
 ## 17.0.0 — 2026-06-23
 
 Pre-launch polish pass. Stability, modal/auth UX, navigation, widget
