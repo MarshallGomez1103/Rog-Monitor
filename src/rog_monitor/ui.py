@@ -210,6 +210,13 @@ def profile_panel(state, t, th) -> Panel:
         text.append(")", style="grey58")
         if battery.get("watts") and not battery.get("on_ac"):
             text.append(f" {battery['watts']} W", style="yellow")
+        # Health % and cycle count (v18 — appended inline, no redesign)
+        if battery.get("health_percent") is not None:
+            health = battery["health_percent"]
+            style = "green" if health >= 80 else ("yellow" if health >= 60 else "bold red")
+            text.append(f"  salud {health}%", style=style)
+        if battery.get("cycle_count") is not None:
+            text.append(f"  {battery['cycle_count']} ciclos", style="grey58")
         _kv(table, t("battery"), text)
     return Panel(table, title=Text(f" {t('profile')} ", style=th["title"]), border_style=th["border"])
 

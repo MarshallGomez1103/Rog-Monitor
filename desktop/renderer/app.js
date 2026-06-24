@@ -1607,6 +1607,7 @@ function update(stats) {
   $('battery').textContent = bat && bat.capacity != null
     ? `${bat.capacity}%${bat.charge_limit ? ' (límite ' + bat.charge_limit + '%)' : ''}`
     : '--';
+  if (window.RogBattery) window.RogBattery.render(bat);
   $('asus-profile').textContent = stats.asus_profile || '--';
 
   /* power source */
