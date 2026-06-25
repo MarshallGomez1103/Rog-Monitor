@@ -15,9 +15,9 @@
    Para actualizar: edita estos objetos; el render es automático.
    ============================================================ */
 
-// NOTA: mantener esta versión (v17.0.0) sincronizada con desktop/package.json ("version").
+// NOTA: mantener esta versión (v18.0.0) sincronizada con desktop/package.json ("version").
 const ROADMAP_CURRENT = {
-  version: 'v17.0.0',
+  version: 'v18.0.0',
   label: {
     es: 'Armoury Crate para Linux — seguro, bonito, todo-en-uno, sin telemetría',
     en: 'Armoury Crate for Linux — safe, beautiful, all-in-one, no telemetry',
@@ -1516,6 +1516,72 @@ const ROADMAP_DONE = [
         zh: '路线图 100% 翻译为 8 种语言（完整历史，不只是未来）',
         ja: 'ロードマップを 8 言語に 100% 翻訳（未来だけでなく履歴全体）',
         ko: '로드맵을 8개 언어로 100% 번역(미래뿐 아니라 전체 기록)',
+      },
+    ],
+  },
+  {
+    date: '2026-06-24',
+    version: 'v18.0.0',
+    title: {
+      es: 'Diagnóstico de hardware: discos, batería, hub de pruebas y eventos explicados',
+      en: 'Hardware diagnostics: disks, battery, test hub and explained events',
+      fr: 'Diagnostic matériel : disques, batterie, hub de tests et événements expliqués',
+      it: 'Diagnostica hardware: dischi, batteria, hub di test ed eventi spiegati',
+      pt: 'Diagnóstico de hardware: discos, bateria, hub de testes e eventos explicados',
+      zh: '硬件诊断：磁盘、电池、测试中心和事件说明',
+      ja: 'ハードウェア診断: ディスク、バッテリー、テストハブ、イベント解説',
+      ko: '하드웨어 진단: 디스크, 배터리, 테스트 허브 및 이벤트 설명',
+    },
+    points: [
+      {
+        es: 'Panel de salud de batería: desgaste / salud %, ciclos de carga, capacidad actual vs diseño y consumo en vivo',
+        en: 'Battery health panel: wear / health %, charge cycles, current vs design capacity and live draw',
+        fr: 'Panneau de santé de la batterie : usure / santé %, cycles de charge, capacité actuelle vs conception et consommation en direct',
+        it: 'Pannello salute batteria: usura / salute %, cicli di carica, capacità attuale vs progetto e consumo in tempo reale',
+        pt: 'Painel de saúde da bateria: desgaste / saúde %, ciclos de carga, capacidade atual vs projeto e consumo ao vivo',
+        zh: '电池健康面板：损耗/健康 %、充电循环、当前与设计容量及实时功耗',
+        ja: 'バッテリー健康パネル: 劣化/健康 %、充電サイクル、現在対設計容量、リアルタイム消費',
+        ko: '배터리 건강 패널: 마모/건강 %, 충전 주기, 현재 대 설계 용량, 실시간 소비',
+      },
+      {
+        es: 'Panel de discos en vivo (uso, temperatura, modelo, sistema de archivos, lectura/escritura) + SMART bajo demanda con pkexec: horas encendido, ciclos, desgaste SSD y sectores reasignados',
+        en: 'Live disk panel (usage, temperature, model, filesystem, read/write) + on-demand SMART via pkexec: power-on hours, cycles, SSD wear and reallocated sectors',
+        fr: 'Panneau de disques en direct (utilisation, température, modèle, système de fichiers, lecture/écriture) + SMART à la demande via pkexec : heures de fonctionnement, cycles, usure SSD et secteurs réalloués',
+        it: 'Pannello dischi in tempo reale (uso, temperatura, modello, filesystem, lettura/scrittura) + SMART su richiesta via pkexec: ore di accensione, cicli, usura SSD e settori riallocati',
+        pt: 'Painel de discos ao vivo (uso, temperatura, modelo, sistema de arquivos, leitura/escrita) + SMART sob demanda via pkexec: horas ligado, ciclos, desgaste SSD e setores realocados',
+        zh: '实时磁盘面板（使用率、温度、型号、文件系统、读/写）+ 通过 pkexec 按需 SMART：通电时间、循环次数、SSD 损耗和重映射扇区',
+        ja: 'ライブディスクパネル（使用率、温度、モデル、ファイルシステム、読み書き）+ pkexec によるオンデマンド SMART: 通電時間、サイクル、SSD 劣化、代替処理済みセクタ',
+        ko: '실시간 디스크 패널(사용량, 온도, 모델, 파일시스템, 읽기/쓰기) + pkexec를 통한 온디맨드 SMART: 전원 켜짐 시간, 주기, SSD 마모, 재할당 섹터',
+      },
+      {
+        es: 'Hub de Diagnóstico: tarjetas de CPU/GPU/iGPU/batería/ventiladores/placa madre + pruebas interactivas de teclado, sonido (canales L/R) y pantalla (colores a pantalla completa)',
+        en: 'Diagnostics hub: CPU/GPU/iGPU/battery/fans/motherboard cards + interactive keyboard, sound (L/R channels) and display (full-screen colors) tests',
+        fr: 'Hub de diagnostic : cartes CPU/GPU/iGPU/batterie/ventilateurs/carte mère + tests interactifs clavier, son (canaux G/D) et écran (couleurs plein écran)',
+        it: 'Hub diagnostica: schede CPU/GPU/iGPU/batteria/ventole/scheda madre + test interattivi di tastiera, audio (canali L/R) e schermo (colori a tutto schermo)',
+        pt: 'Hub de diagnóstico: cartões de CPU/GPU/iGPU/bateria/ventoinhas/placa-mãe + testes interativos de teclado, som (canais E/D) e tela (cores em tela cheia)',
+        zh: '诊断中心：CPU/GPU/iGPU/电池/风扇/主板信息卡 + 交互式键盘、声音（左/右声道）和显示（全屏颜色）测试',
+        ja: '診断ハブ: CPU/GPU/iGPU/バッテリー/ファン/マザーボードのカード + 対話式のキーボード、音（L/R チャンネル）、ディスプレイ（全画面カラー）テスト',
+        ko: '진단 허브: CPU/GPU/iGPU/배터리/팬/메인보드 카드 + 대화형 키보드, 소리(L/R 채널), 디스플레이(전체 화면 색상) 테스트',
+      },
+      {
+        es: 'Eventos clicables y categorizados por tipo, con un modal que explica qué es y cómo funciona cada evento en los 8 idiomas',
+        en: 'Clickable events categorized by type, with a modal explaining what each event is and how it works in all 8 languages',
+        fr: 'Événements cliquables et catégorisés par type, avec une fenêtre expliquant ce qu\'est chaque événement et son fonctionnement dans les 8 langues',
+        it: 'Eventi cliccabili e categorizzati per tipo, con un modale che spiega cos\'è e come funziona ogni evento nelle 8 lingue',
+        pt: 'Eventos clicáveis e categorizados por tipo, com um modal que explica o que é e como funciona cada evento nos 8 idiomas',
+        zh: '可点击并按类型分类的事件，提供以 8 种语言解释每个事件是什么及如何工作的弹窗',
+        ja: 'タイプ別に分類されたクリック可能なイベント。各イベントが何で、どう動くかを 8 言語で説明するモーダル付き',
+        ko: '유형별로 분류된 클릭 가능한 이벤트와 각 이벤트가 무엇이며 어떻게 작동하는지 8개 언어로 설명하는 모달',
+      },
+      {
+        es: 'Detalle de benchmark traducido y exportaciones (benchmark/eventos) generadas en el idioma activo; arreglado el neón de la columna por-núcleo en Procesos',
+        en: 'Benchmark detail translated and exports (benchmark/events) generated in the active language; fixed the per-core column neon in Processes',
+        fr: 'Détail du benchmark traduit et exports (benchmark/événements) générés dans la langue active ; correction du néon de la colonne par cœur dans Processus',
+        it: 'Dettaglio benchmark tradotto ed esportazioni (benchmark/eventi) generate nella lingua attiva; corretto il neon della colonna per-core in Processi',
+        pt: 'Detalhe do benchmark traduzido e exportações (benchmark/eventos) geradas no idioma ativo; corrigido o neon da coluna por núcleo em Processos',
+        zh: 'Benchmark 详情已翻译，导出（benchmark/事件）按当前语言生成；修复了进程中按核心列的霓虹效果',
+        ja: 'ベンチマーク詳細を翻訳、エクスポート（ベンチマーク/イベント）をアクティブ言語で生成；プロセスのコア別カラムのネオンを修正',
+        ko: '벤치마크 상세 번역 및 내보내기(벤치마크/이벤트)를 활성 언어로 생성; 프로세스의 코어별 열 네온 수정',
       },
     ],
   },

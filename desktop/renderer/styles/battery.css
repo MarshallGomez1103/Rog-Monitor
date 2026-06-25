@@ -1,0 +1,35 @@
+/* ROG Monitor — Battery health panel styles (v18).
+ * Reuses existing .statgrid, .block, .note, neon tokens.
+ * No new design tokens introduced. */
+
+/* Battery-specific statgrid: 4 columns for wider blocks */
+.bat-statgrid {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+}
+
+/* Large charge percentage display */
+.bat-bignum {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+  text-shadow: var(--neon-glow-soft, none);
+}
+
+/* Health color states — traffic-light pattern matching CPU temp colors */
+#bat-health.bat-health-good {
+  color: var(--okstate);
+}
+
+#bat-health.bat-health-warn {
+  color: var(--hot);
+}
+
+#bat-health.bat-health-crit {
+  color: var(--crit);
+}
+
+/* Capacity row: spans 2 columns so it's readable */
+.bat-cap-row {
+  grid-column: span 2;
+}

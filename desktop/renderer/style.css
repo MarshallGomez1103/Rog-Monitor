@@ -1146,7 +1146,7 @@ input[type="color"] {
 #procs td { padding: 5px 6px; border-bottom: 1px dashed var(--hair); font-family: var(--mono); }
 #procs td.pid { color: var(--dim); width: 12%; font-size: 12px; }
 #procs td.cpu { text-align: right; width: 18%; }
-#procs td.cpu-core { text-align: right; }
+#procs td.cpu-core { color: var(--ink); text-align: right; }
 #procs td.mem { color: var(--dim); text-align: right; width: 22%; }
 /* neón SOLO en la columna actualmente ordenada (data-sort-col lo fija el JS) */
 #procs[data-sort-col="pid"]      td.pid,
@@ -1382,6 +1382,35 @@ body::-webkit-scrollbar { width: 0; }
 .settings-grid label.f-fan { border-left-color: var(--cold); }
 .settings-grid label.f-time { border-left-color: var(--dim); }
 #events-help { margin-top: 8px; }
+
+/* ---------- event filter chips ---------- */
+.event-filter-bar {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px;
+}
+.event-chip {
+  font-size: 11px; padding: 2px 8px; border-radius: 2px;
+  border: 1px solid var(--hair); background: transparent; color: var(--dim);
+  cursor: pointer; transition: border-color 0.15s, color 0.15s;
+}
+.event-chip:hover { border-color: var(--accent); color: var(--ink); }
+.event-chip.active {
+  border-color: var(--accent); color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* ---------- event item badge + hover ---------- */
+#events li.event-item { position: relative; padding-right: 64px; }
+#events li.event-item:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.event-key-badge {
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  font-size: 9.5px; color: var(--dim); text-transform: uppercase;
+  letter-spacing: 0.04em; white-space: nowrap;
+}
+
+/* ---------- event detail modal ---------- */
+.event-detail-card { max-width: min(560px, 92vw); }
+.event-detail-body { font-size: 13px; line-height: 1.55; color: var(--ink); margin-bottom: 8px; }
+.event-detail-body b { color: var(--accent); }
 
 /* ==== theme flourishes ==== */
 /* El glow de .bignum, bordes, chips y lámparas se define en styles/neon.css

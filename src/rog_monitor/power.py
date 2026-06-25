@@ -96,10 +96,52 @@ class BatteryReader:
             if current and voltage:
                 power_uw = current * voltage // 1_000_000
         on_ac = any(hwmon.read_int(p) == 1 for p in self.ac_paths)
+
+        # Battery health fields — root-free, all in /sys/class/power_supply/BAT*
+        energy_full = hwmon.read_int(self.path / "energy_full")
+        energy_full_design = hwmon.read_int(self.path / "energy_full_design")
+        energy_now = hwmon.read_int(self.path / "energy_now")
+
+        # Some laptops use charge_* (µAh) instead of energy_* (µWh)
+        if energy_full is None:
+            energy_full = hwmon.read_int(self.path / "charge_full")
+            energy_full_design = hwmon.read_int(self.path / "charge_full_design")
+            energy_now = hwmon.read_int(self.path / "charge_now")
+
+        energy_full_wh = round(energy_full / 1_000_000, 2) if energy_full is not None else None
+        energy_full_design_wh = round(energy_full_design / 1_000_000, 2) if energy_full_design is not None else None
+        energy_now_wh = round(energy_now / 1_000_000, 2) if energy_now is not None else None
+
+        health_percent = None
+        if energy_full is not None and energy_full_design:
+            health_percent = round(energy_full * 100 / energy_full_design, 1)
+
         return {
             "capacity": hwmon.read_int(self.path / "capacity"),
             "status": hwmon.read_str(self.path / "status"),
             "watts": round(power_uw / 1_000_000, 1) if power_uw else None,
             "charge_limit": hwmon.read_int(self.path / "charge_control_end_threshold"),
             "on_ac": on_ac,
+            "energy_full_wh": energy_full_wh,
+            "energy_full_design_wh": energy_full_design_wh,
+            "energy_now_wh": energy_now_wh,
+            "health_percent": health_percent,
+            "cycle_count": hwmon.read_int(self.path / "cycle_count"),
         }
+
+
+if __name__ == "__main__":
+    # Self-check: verify health_percent math
+    full = 79898000
+    design = 90001000
+    expected = round(full * 100 / design, 1)
+    assert abs(expected - 88.8) < 0.1, f"health_percent math failed: got {expected}"
+    print(f"health_percent self-check OK: {full}/{design} = {expected}%")
+
+    # Live read
+    reader = BatteryReader()
+    data = reader.read()
+    if data:
+        print("Live battery:", data)
+    else:
+        print("No battery found (OK in CI/desktop without battery)")

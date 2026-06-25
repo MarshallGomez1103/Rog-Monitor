@@ -962,7 +962,7 @@ function benchmarkSummaryText(result) {
   const fanText = Object.entries(s.fan_rpm_max || {})
     .map(([k, v]) => `${k}: ${v} RPM`).join(' · ') || t('bench.no_fan_data');
   const lines = [
-    `${result.kind.toUpperCase()} · ${result.tool} · ${result.seconds}s`,
+    `${result.kind.toUpperCase()} · ${result.kind === 'gpu' ? t('bench.tool_gpu') : t('bench.tool_cpu')} · ${result.seconds}s`,
     t('bench.summary_cpu_max', { temp: fmt(s.cpu_temp_max, 1), pkg: fmt(s.cpu_package_max, 1), watts: fmt(s.cpu_watts_max, 1) }),
     t('bench.summary_gpu_max', { temp: fmt(s.gpu_temp_max, 1), watts: fmt(s.gpu_watts_max, 1), util: fmt(s.gpu_util_max, 0) }),
     t('bench.summary_throttle', { events: s.throttle_events ?? 0, ms: s.throttle_ms ?? 0 }),
@@ -1147,7 +1147,7 @@ function _benchCardHtml(item) {
 
   // tool info
   const toolHtml = item.tool
-    ? `<div class="bench-detail-tool">Herramienta: ${escapeHtml(item.tool)}</div>`
+    ? `<div class="bench-detail-tool">${escapeHtml(t('bench.detail.tool_label'))}: ${escapeHtml(item.kind === 'gpu' ? t('bench.tool_gpu') : t('bench.tool_cpu'))}</div>`
     : '';
 
   return `
@@ -1345,20 +1345,26 @@ function _ensureBenchClearAllButton() {
     const btn = document.createElement('button');
     btn.className = 'ghost';
     btn.id = 'bench-clear-all-btn';
-    btn.textContent = 'BORRAR TODOS LOS ANTERIORES';
-    btn.title = 'Borra todo el historial de benchmarks guardado';
+    btn.setAttribute('data-i18n', 'bench.clear_all_long');
+    btn.setAttribute('data-i18n-attr', 'title:tip.bench_clear_all');
+    btn.textContent = t('bench.clear_all_long');
+    btn.title = t('tip.bench_clear_all');
     btn.addEventListener('click', clearAllBenchmarkHistory);
     actions.appendChild(btn);
+    if (window.i18n && window.i18n.apply) window.i18n.apply(btn);
   }
   const modalActions = document.querySelector('#benchmark-modal .mode-row');
   if (modalActions && !document.getElementById('bench-clear-all-modal-btn')) {
     const btn = document.createElement('button');
     btn.className = 'ghost';
     btn.id = 'bench-clear-all-modal-btn';
-    btn.textContent = 'BORRAR TODOS';
-    btn.title = 'Borra todo el historial de benchmarks guardado';
+    btn.setAttribute('data-i18n', 'bench.clear_all');
+    btn.setAttribute('data-i18n-attr', 'title:tip.bench_clear_all');
+    btn.textContent = t('bench.clear_all');
+    btn.title = t('tip.bench_clear_all');
     btn.addEventListener('click', clearAllBenchmarkHistory);
     modalActions.appendChild(btn);
+    if (window.i18n && window.i18n.apply) window.i18n.apply(btn);
   }
 }
 
@@ -1594,12 +1600,10 @@ function update(stats) {
   $('vram-bar').style.width = `${vramPercent}%`;
   $('vram-meter').classList.toggle('disabled', !vramTotal);
 
-  const disks = $('disks');
-  disks.innerHTML = (sys.disks || []).map((d) => `
-    <div class="meter">
-      <label>${d.label} <b>${fmt(d.used_gb, 0)}/${fmt(d.total_gb, 0)} G</b></label>
-      <div class="track"><div style="width:${d.percent}%"></div></div>
-    </div>`).join('');
+  // Disk panel (dedicated "Discos" block — disks.js renders into #disks-live)
+  if (window.disksModule) {
+    window.disksModule.render(sys.disks || [], sys.nvme_temps || []);
+  }
 
   $('net').textContent = `↓${fmt(sys.rx_mbps, 1)} ↑${fmt(sys.tx_mbps, 1)} Mb/s`;
   $('load').textContent = (sys.load || []).map((l) => l.toFixed(2)).join(' ');
@@ -1607,6 +1611,7 @@ function update(stats) {
   $('battery').textContent = bat && bat.capacity != null
     ? `${bat.capacity}%${bat.charge_limit ? ' (límite ' + bat.charge_limit + '%)' : ''}`
     : '--';
+  if (window.RogBattery) window.RogBattery.render(bat);
   $('asus-profile').textContent = stats.asus_profile || '--';
 
   /* power source */
@@ -1616,12 +1621,18 @@ function update(stats) {
     src.className = 'power-source ' + (bat.on_ac ? 'ac' : 'bat');
   }
 
-  /* events */
+  /* events — 4th element is category key (tolerate old 3-tuples) */
   const events = (stats.events || []).slice(-30).reverse();
-  $('events').innerHTML = events.length
-    ? events.map(([ts, level, msg]) =>
-        `<li class="${level}"><time>${ts}</time>${msg}</li>`).join('')
-    : '<li class="dim">sin eventos</li>';
+  if (window.RogEventDetail) window.RogEventDetail.renderList(events);
+  else {
+    $('events').innerHTML = events.length
+      ? events.map((e) => {
+          const [ts, level, msg, key] = e;
+          const k = key || 'info';
+          return `<li class="${level}" data-key="${k}"><time>${ts}</time>${msg}</li>`;
+        }).join('')
+      : `<li class="dim">${t('events.none')}</li>`;
+  }
 
   /* processes — DOS columnas separadas: % CPU total (todos los núcleos) y
      % NÚCLEO (uso de un solo núcleo, estilo `top`). Antes iban pegados. */
@@ -1643,6 +1654,9 @@ function update(stats) {
 
   $('backend-state').textContent =
     `sensores OK · core v${stats.version || '?'} · ${new Date().toLocaleTimeString()}`;
+
+  /* v18: diagnóstico hub — actualizar cards si el modal está abierto */
+  try { if (typeof window.diagUpdateInfo === 'function') window.diagUpdateInfo(stats); } catch (_) {}
 }
 
 /* ---------- actions ---------- */
@@ -3201,17 +3215,9 @@ $('vram-procs-body').addEventListener('click', async (e) => {
   toast(res.ok ? t('proc.kill_sent', { name }) : t('proc.kill_failed', { err: res.err }));
 });
 
-/* ---------- disk health ---------- */
-
-$('disk-health-btn').addEventListener('click', async () => {
-  toast(t('toast.reading_smart'));
-  const res = await window.rog.diskHealth();
-  const out = $('disk-health-out');
-  if (!res.ok) { toast(`No se pudo: ${res.err}`); return; }
-  out.innerHTML = res.disks.map((d) =>
-    `<b>${d.device}</b><br>${d.info.join('<br>') || 'sin datos SMART'}`).join('<br><br>');
-  out.classList.remove('hidden');
-});
+/* ---------- disk health ----------
+ * Reemplazado en v18 por el botón "Salud SMART" por disco del bloque Discos
+ * (disks.js → window.rog.readSmart). El botón global y su handler se retiraron. */
 
 /* ---------- draggable modals ---------- */
 
@@ -3514,6 +3520,11 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
   });
 })();
 
+/* ---------- event-detail init hook (event-detail.js loaded after app.js) ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.RogEventDetail) window.RogEventDetail.init();
+});
+
 /* ---------- export events ---------- */
 
 $('export-events').addEventListener('click', async (e) => {
@@ -3521,8 +3532,8 @@ $('export-events').addEventListener('click', async (e) => {
   const events = lastStats?.events || [];
   if (!events.length) { toast(t('toast.no_events_export')); return; }
   const today = new Date().toLocaleDateString();
-  const text = `ROG Monitor — registro de eventos (${today})\n\n`
-    + events.map(([ts, level, msg]) => `${ts}  [${level.toUpperCase()}]  ${msg}`).join('\n') + '\n';
+  const text = t('bench.detail.header', { date: today }) + '\n\n'
+    + events.map((e) => { const [ts, level, msg, key] = e; return `${ts}  [${level.toUpperCase()}]  [${key || 'info'}]  ${msg}`; }).join('\n') + '\n';
   const res = await window.rog.exportEvents(text);
   toast(res.ok ? t('events.exported', { path: res.path }) : t('events.export_failed', { err: res.err }));
 });

@@ -78,6 +78,8 @@
     { key: 'history', col: 'right' },
     { key: 'bench',   col: 'right' },
     { key: 'system',  col: 'right' },
+    { key: 'battery', col: 'right' },
+    { key: 'disks',   col: 'right' },
     { key: 'events',  col: 'right' },
     { key: 'procs',   col: 'right' },
   ];
@@ -91,6 +93,8 @@
     history: 'Historial',
     bench:   'Benchmarks',
     system:  'Sistema',
+    battery: 'Batería',
+    disks:   'Discos',
     events:  'Eventos',
     procs:   'Procesos',
   };

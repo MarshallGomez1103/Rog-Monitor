@@ -878,6 +878,33 @@ ipcMain.handle('disk-health', async () => {
   return { ok: true, disks };
 });
 
+// SMART completo en JSON nativo — bajo demanda, un disco a la vez.
+// Usa pkexec para elevar privilegios (igual que fan-benchmark / set-thermal-guardian).
+// Devuelve el JSON de smartctl directamente, o {ok:false, err} si falla/cancela.
+ipcMain.handle('readSmart', async (_e, device) => {
+  // Validar que el dispositivo sea un bloque real y no algo malicioso.
+  if (typeof device !== 'string' || !/^\/dev\/(nvme\d+n\d+|sd[a-z])$/.test(device)) {
+    return { ok: false, err: `Dispositivo no permitido: ${device}` };
+  }
+  // smartctl -j -a: salida JSON completa; pkexec eleva privilegios.
+  const res = await run('pkexec', ['smartctl', '-j', '-a', device], 30000);
+  // smartctl devuelve código ≠ 0 si hay atributos de fallo (bits 2..7).
+  // Pero si pkexec fue cancelado (código 126/127) o smartctl no existe (127),
+  // no hay JSON útil → reportar error.
+  if (!res.out) {
+    const cancelled = (res.err || '').toLowerCase().includes('cancel') ||
+                      (res.err || '').includes('126') ||
+                      String(res.out || '').trim() === '';
+    return { ok: false, err: cancelled ? 'pkexec cancelado o smartctl no disponible' : (res.err || 'sin salida') };
+  }
+  try {
+    const json = JSON.parse(res.out);
+    return { ok: true, ...json };
+  } catch (err) {
+    return { ok: false, err: `JSON inválido de smartctl: ${err.message}` };
+  }
+});
+
 /* ---------- settings (alert thresholds / colors) ---------- */
 
 ipcMain.handle('get-settings', async () =>

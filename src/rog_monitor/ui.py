@@ -210,6 +210,13 @@ def profile_panel(state, t, th) -> Panel:
         text.append(")", style="grey58")
         if battery.get("watts") and not battery.get("on_ac"):
             text.append(f" {battery['watts']} W", style="yellow")
+        # Health % and cycle count (v18 — appended inline, no redesign)
+        if battery.get("health_percent") is not None:
+            health = battery["health_percent"]
+            style = "green" if health >= 80 else ("yellow" if health >= 60 else "bold red")
+            text.append(f"  salud {health}%", style=style)
+        if battery.get("cycle_count") is not None:
+            text.append(f"  {battery['cycle_count']} ciclos", style="grey58")
         _kv(table, t("battery"), text)
     return Panel(table, title=Text(f" {t('profile')} ", style=th["title"]), border_style=th["border"])
 
@@ -288,6 +295,14 @@ def system_panel(state, t, th) -> Panel:
         usage = Text(f" {disk['used_gb']:.0f}/{disk['total_gb']:.0f}G ({disk['percent']}%)")
         if info["nvme_temps"] and disk["mount"] in ("/", "/var/home", "/home"):
             usage.append(f" · NVMe {max(info['nvme_temps']):.0f}°C", style="grey58")
+        # I/O rate (new in v18)
+        r_mbps = disk.get("read_mbps", 0.0)
+        w_mbps = disk.get("write_mbps", 0.0)
+        if r_mbps > 0.05 or w_mbps > 0.05:
+            usage.append(
+                f" ↓{r_mbps:.1f}↑{w_mbps:.1f}",
+                style="grey42",
+            )
         disks.add_row(
             Text(disk["label"], style="grey74"),
             bar(disk["percent"], 18, th["bar"]),
