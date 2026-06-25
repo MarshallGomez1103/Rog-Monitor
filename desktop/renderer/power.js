@@ -1529,6 +1529,9 @@
 
     msg += '\n\n' + tf('power.confirm.pkexec',
       'Se pedirá tu contraseña de administrador (pkexec) para escribir en el firmware. ROG Monitor no almacena tu contraseña.');
+    // Transparencia: muestra el comando literal que se ejecutará.
+    const _powerCmd = (window.RogCommands || []).find((c) => c.what === 'cmd.power.what');
+    if (_powerCmd) msg += '\n\n$ ' + _powerCmd.argv;
 
     if (!(await window.rogConfirm(msg, {
       title: tf('power.confirm.title', 'CENTRO DE PODER — Confirmar cambios'),

@@ -46,5 +46,8 @@ jobs:
             echo "checking $f"; node --check "$f"
           done
 
+      - name: Validate i18n (base langs, no undefined data-i18n, command texts)
+        run: node scripts/validate-i18n.mjs
+
       - name: apply-power-control.sh syntax
         run: bash -n scripts/apply-power-control.sh

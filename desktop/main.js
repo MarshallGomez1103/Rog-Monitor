@@ -7,7 +7,9 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const REPO = path.resolve(__dirname, '..');
+// En dev: la raíz del repo es el padre de desktop/. Empaquetado (AppImage): el
+// backend Python, scripts y VERSION viajan como extraResources en resourcesPath.
+const REPO = app.isPackaged ? process.resourcesPath : path.resolve(__dirname, '..');
 const VENV_PY = path.join(REPO, '.venv', 'bin', 'python');
 const PYTHON = fs.existsSync(VENV_PY) ? VENV_PY : 'python3';
 const VERSION_FILE = path.join(REPO, 'VERSION');

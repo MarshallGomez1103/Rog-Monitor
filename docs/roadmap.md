@@ -23,7 +23,7 @@ separate:
 The differentiator is the **combination + safety + UX**: everything in one place,
 Spanish-first and 8-language, with a guardian nobody else ships.
 
-## Current (done) — through v18
+## Current (done) — through v19
 
 * [x] Unified CPU/GPU smart guardian with separate thermal ceilings.
 * [x] Guardian modes: **Protection** and **Gaming** (fans-only, no throttling). *(v14)*
@@ -50,25 +50,43 @@ Spanish-first and 8-language, with a guardian nobody else ships.
   languages. *(v18)*
 * [x] Benchmark detail fully internationalized; benchmark / event exports now generated
   in the active language; process "per-core" column neon fixed. *(v18)*
+* [x] **Privileged-command transparency**: AYUDA → COMANDOS DEL SISTEMA lists every
+  `pkexec` command with the literal command + what it does + why it needs root, in all
+  8 languages; the literal command also shows in the Power confirm and SMART panel. *(v19)*
+* [x] **AppImage packaging** via electron-builder (`npm run dist`), Python backend
+  bundled as resources. *(v19 — Flatpak still pending below)*
+* [x] **CI i18n validation** (`scripts/validate-i18n.mjs`) + **`TRANSLATING.md`**
+  contributor guide. *(v19)*
+* [x] Diagnostics hub open bug fixed (global `_t` collision with roadmap.js); dashboard
+  bottom-left dead space rebalanced. *(v19)*
 
 ## P0 — LAUNCH (open the repo to the public)
 
-The essentials so anyone can install it and trust it.
+The essentials so anyone can install it and trust it. **Mostly done in v19** — only
+the items that need a human (captures) or a heavier build (Flatpak) remain.
 
-* [ ] **Packaging for non-developers**: Flatpak / AppImage installable without a
-  terminal or manual dependencies — CoolerControl/LACT already ship Flatpaks.
-* [ ] **Single polkit privileged helper** instead of scattered `pkexec` prompts.
-* [ ] **GitHub Actions CI**: `node --check`, `py_compile`, JSON + i18n validation,
-  and a read-only sensor smoke test.
-* [ ] **Launch polish**: README with screenshots + GIF, a short video, current
-  LICENSE / CONTRIBUTING / SECURITY, a simple GitHub Pages site, and graceful
-  degradation verified on non-ASUS / AMD machines.
-* [ ] **Community i18n**: base is ready; document how to contribute translations.
+* [x] **GitHub Actions CI**: `node --check`, `py_compile`, JSON + **i18n validation**,
+  and a read-only sensor smoke test. *(v19)*
+* [x] **Community i18n**: documented in `docs/TRANSLATING.md` + validator that flags gaps. *(v19)*
+* [x] **Packaging — AppImage**: installable without a terminal (`npm run dist`). *(v19)*
+* [x] **Launch polish (docs)**: LICENSE / CONTRIBUTING / SECURITY / TRANSLATING +
+  graceful degradation verified by CI smoke on non-ASUS. *(v19)*
+* [ ] **Launch polish (media)**: README screenshots + a short GIF/video — needs a human
+  with the GUI (slots ready in `assets/screenshots/`).
+* [ ] **Packaging — Flatpak**: fast-follow after AppImage (manifest + runtime).
+* [ ] **Single polkit privileged helper** instead of scattered `pkexec` prompts —
+  deferred to P1 (risky refactor; v19 ships full *transparency* of the current prompts).
+* [ ] **GitHub Pages**: optional simple site (can serve the README).
 
 ## P1 — DIFFERENTIATORS (what nobody else bundles)
 
 The standout features that make ROG Monitor unique.
 
+* [ ] **Customizable overlay**: many overlay themes/skins, free placement and per-monitor
+  choice (multi-monitor users can park it on a second screen), and a picker for exactly
+  which metrics to show — FPS, CPU, GPU, fans, RAM, VRAM, disks, battery. Must stay
+  lightweight (no measurable FPS cost). Single-monitor users can keep it minimal; the
+  point is *the user decides what and where*.
 * [ ] **Per-game / per-application profiles**: on game launch, auto-apply power +
   fan curve + RGB + overlay. Detect via process / GameMode / MangoHud — nobody
   bundles all four. (`game_session.py` is the base.)

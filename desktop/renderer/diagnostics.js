@@ -43,6 +43,8 @@ if (window.i18n && typeof window.i18n.register === 'function') {
     'diag.kb_hint':       { es: 'Pulsa cualquier tecla. Las teclas tocadas se iluminan con neón.', en: 'Press any key. Touched keys light up with neon.', fr: 'Appuyez sur une touche. Les touches pressées s\'allument.', it: 'Premi un tasto. I tasti premuti si illuminano.', pt: 'Carrega numa tecla. As teclas tocadas iluminam-se.', zh: '按下任意键，按过的键会发光。', ja: '任意のキーを押してください。押したキーがネオンで光ります。', ko: '아무 키나 누르세요. 눌린 키가 네온으로 빛납니다.' },
     'diag.kb_count':      { es: 'Teclas únicas pulsadas: {n}', en: 'Unique keys pressed: {n}', fr: 'Touches uniques pressées : {n}', it: 'Tasti unici premuti: {n}', pt: 'Teclas únicas pressionadas: {n}', zh: '按下的唯一按键数：{n}', ja: '押した固有キー数：{n}', ko: '누른 고유 키 수: {n}' },
     'diag.kb_reset':      { es: 'REINICIAR', en: 'RESET', fr: 'RÉINITIALISER', it: 'RESET', pt: 'REINICIAR', zh: '重置', ja: 'リセット', ko: '초기화' },
+    'diag.kb_activate':   { es: 'CLIC PARA PROBAR EL TECLADO', en: 'CLICK TO TEST THE KEYBOARD', fr: 'CLIQUEZ POUR TESTER LE CLAVIER', it: 'CLICCA PER TESTARE LA TASTIERA', pt: 'CLICA PARA TESTAR O TECLADO', zh: '点击以测试键盘', ja: 'クリックしてキーボードをテスト', ko: '클릭하여 키보드 테스트' },
+    'diag.kb_exit_hint':  { es: 'Test activo · Shift+Esc para salir', en: 'Test active · Shift+Esc to exit', fr: 'Test actif · Shift+Échap pour quitter', it: 'Test attivo · Shift+Esc per uscire', pt: 'Teste ativo · Shift+Esc para sair', zh: '测试中 · Shift+Esc 退出', ja: 'テスト中 · Shift+Esc で終了', ko: '테스트 중 · Shift+Esc로 종료' },
 
     /* --- sound test --- */
     'diag.sound_title':   { es: 'Test de sonido', en: 'Sound Test', fr: 'Test audio', it: 'Test audio', pt: 'Teste de som', zh: '声音测试', ja: 'サウンドテスト', ko: '사운드 테스트' },
@@ -63,13 +65,13 @@ if (window.i18n && typeof window.i18n.register === 'function') {
    DOM helpers
    ============================================================ */
 const _$ = (id) => document.getElementById(id);
-const _t  = (k, vars) => (window.t ? window.t(k, vars) : k);
+const _dt  = (k, vars) => (window.t ? window.t(k, vars) : k);
 
 /* ============================================================
    INFO CARDS — leer de lastStats (referencia a la var de app.js)
    ============================================================ */
 function _diagFmt(v, decimals = 0, unit = '') {
-  if (v == null || v !== v) return _t('diag.no_data');
+  if (v == null || v !== v) return _dt('diag.no_data');
   return (typeof v === 'number' ? v.toFixed(decimals) : v) + (unit ? ' ' + unit : '');
 }
 
@@ -87,25 +89,25 @@ function _buildInfoCards(stats) {
   const fanRPMs = fans
     .filter((f) => f && f.rpm != null)
     .map((f) => `${f.label || '?'}: ${f.rpm} RPM`)
-    .join(' · ') || _t('diag.no_data');
+    .join(' · ') || _dt('diag.no_data');
 
   const batText = bat.capacity != null
     ? `${bat.capacity}%${bat.on_ac ? ' ⚡' : ' 🔋'}${bat.charge_limit ? ' (lím. ' + bat.charge_limit + '%)' : ''}`
-    : _t('diag.no_data');
+    : _dt('diag.no_data');
 
   const cards = [
-    { label: _t('diag.cpu_model'),  value: cpu.model  || _t('diag.no_data') },
-    { label: _t('diag.cpu_temp'),   value: _diagFmt(cpu.avg, 1), sub: cpu.package != null ? `pkg ${cpu.package.toFixed(0)}°C` : '' },
-    { label: _t('diag.cpu_freq'),   value: _diagFmt(cpu.freq_ghz, 2), sub: 'GHz' },
-    { label: _t('diag.gpu_name'),   value: active.name || _t('diag.no_data') },
-    { label: _t('diag.gpu_temp'),   value: _diagFmt(active.temp, 1), sub: active.temp != null ? '°C' : '' },
-    { label: _t('diag.gpu_util'),   value: active.util != null ? `${active.util.toFixed(0)}%` : _t('diag.no_data') },
-    { label: _t('diag.igpu_mode'),  value: gpu.mode   || _t('diag.no_data') },
-    { label: _t('diag.battery'),    value: batText },
-    { label: _t('diag.fans'),       value: fanRPMs, small: true },
-    { label: _t('diag.mb_vendor'),  value: dmi.board_vendor || _t('diag.no_data') },
-    { label: _t('diag.mb_name'),    value: dmi.board_name   || _t('diag.no_data') },
-    { label: _t('diag.bios'),       value: dmi.bios_version || _t('diag.no_data'), sub: dmi.product_name || '' },
+    { label: _dt('diag.cpu_model'),  value: cpu.model  || _dt('diag.no_data') },
+    { label: _dt('diag.cpu_temp'),   value: _diagFmt(cpu.avg, 1), sub: cpu.package != null ? `pkg ${cpu.package.toFixed(0)}°C` : '' },
+    { label: _dt('diag.cpu_freq'),   value: _diagFmt(cpu.freq_ghz, 2), sub: 'GHz' },
+    { label: _dt('diag.gpu_name'),   value: active.name || _dt('diag.no_data') },
+    { label: _dt('diag.gpu_temp'),   value: _diagFmt(active.temp, 1), sub: active.temp != null ? '°C' : '' },
+    { label: _dt('diag.gpu_util'),   value: active.util != null ? `${active.util.toFixed(0)}%` : _dt('diag.no_data') },
+    { label: _dt('diag.igpu_mode'),  value: gpu.mode   || _dt('diag.no_data') },
+    { label: _dt('diag.battery'),    value: batText },
+    { label: _dt('diag.fans'),       value: fanRPMs, small: true },
+    { label: _dt('diag.mb_vendor'),  value: dmi.board_vendor || _dt('diag.no_data') },
+    { label: _dt('diag.mb_name'),    value: dmi.board_name   || _dt('diag.no_data') },
+    { label: _dt('diag.bios'),       value: dmi.bios_version || _dt('diag.no_data'), sub: dmi.product_name || '' },
   ];
 
   return cards.map(({ label, value, sub, small }) => `
@@ -179,48 +181,50 @@ function _buildDiagModal() {
   return `
   <div id="diag-modal" class="modal hidden">
     <div class="modal-card diag-card">
-      <h3 data-i18n="diag.title">${_t('diag.title')}</h3>
+      <h3 data-i18n="diag.title">${_dt('diag.title')}</h3>
 
-      <p class="diag-section-title" data-i18n="diag.info_section">${_t('diag.info_section')}</p>
+      <p class="diag-section-title" data-i18n="diag.info_section">${_dt('diag.info_section')}</p>
       <div class="diag-cards-grid" id="diag-info-grid"></div>
 
-      <p class="diag-section-title" data-i18n="diag.test_section">${_t('diag.test_section')}</p>
+      <p class="diag-section-title" data-i18n="diag.test_section">${_dt('diag.test_section')}</p>
 
       <!-- Keyboard test -->
-      <p class="sub" style="font-weight:700;margin:0 0 0.25rem" data-i18n="diag.kb_title">${_t('diag.kb_title')}</p>
-      <p class="sub dim" style="margin:0 0 0.4rem" data-i18n="diag.kb_hint">${_t('diag.kb_hint')}</p>
-      <div class="diag-kb-wrap">
+      <p class="sub" style="font-weight:700;margin:0 0 0.25rem" data-i18n="diag.kb_title">${_dt('diag.kb_title')}</p>
+      <p class="sub dim" style="margin:0 0 0.4rem" data-i18n="diag.kb_hint">${_dt('diag.kb_hint')}</p>
+      <div class="diag-kb-wrap" id="diag-kb-wrap">
         ${_buildKeyboard()}
+        <button type="button" class="diag-kb-activate" id="diag-kb-activate" data-i18n="diag.kb_activate">${_dt('diag.kb_activate')}</button>
       </div>
       <div class="diag-kb-counter">
-        <span data-i18n="diag.kb_count" data-i18n-vars='{"n":0}'>${_t('diag.kb_count', { n: 0 })}</span>
+        <span data-i18n="diag.kb_count" data-i18n-vars='{"n":0}'>${_dt('diag.kb_count', { n: 0 })}</span>
         &nbsp;&nbsp;
-        <button class="ghost" id="diag-kb-reset" style="font-size:0.7rem;padding:0.15rem 0.6rem" data-i18n="diag.kb_reset">${_t('diag.kb_reset')}</button>
+        <button class="ghost" id="diag-kb-reset" style="font-size:0.7rem;padding:0.15rem 0.6rem" data-i18n="diag.kb_reset">${_dt('diag.kb_reset')}</button>
+        <span class="dim diag-kb-exit-hint" id="diag-kb-exit-hint" style="display:none;margin-left:8px" data-i18n="diag.kb_exit_hint">${_dt('diag.kb_exit_hint')}</span>
       </div>
 
       <!-- Sound test -->
-      <p class="sub" style="font-weight:700;margin:1rem 0 0.25rem" data-i18n="diag.sound_title">${_t('diag.sound_title')}</p>
-      <p class="sub dim" style="margin:0 0 0.25rem" data-i18n="diag.sound_hint">${_t('diag.sound_hint')}</p>
+      <p class="sub" style="font-weight:700;margin:1rem 0 0.25rem" data-i18n="diag.sound_title">${_dt('diag.sound_title')}</p>
+      <p class="sub dim" style="margin:0 0 0.25rem" data-i18n="diag.sound_hint">${_dt('diag.sound_hint')}</p>
       <div class="diag-sound-btns">
-        <button class="ghost" id="diag-snd-left"  data-i18n="diag.sound_left">${_t('diag.sound_left')}</button>
-        <button class="ghost" id="diag-snd-right" data-i18n="diag.sound_right">${_t('diag.sound_right')}</button>
-        <button class="ghost" id="diag-snd-both"  data-i18n="diag.sound_both">${_t('diag.sound_both')}</button>
+        <button class="ghost" id="diag-snd-left"  data-i18n="diag.sound_left">${_dt('diag.sound_left')}</button>
+        <button class="ghost" id="diag-snd-right" data-i18n="diag.sound_right">${_dt('diag.sound_right')}</button>
+        <button class="ghost" id="diag-snd-both"  data-i18n="diag.sound_both">${_dt('diag.sound_both')}</button>
       </div>
 
       <!-- Display test -->
-      <p class="sub" style="font-weight:700;margin:1rem 0 0.25rem" data-i18n="diag.display_title">${_t('diag.display_title')}</p>
-      <p class="sub dim" style="margin:0 0 0.25rem" data-i18n="diag.display_hint">${_t('diag.display_hint')}</p>
+      <p class="sub" style="font-weight:700;margin:1rem 0 0.25rem" data-i18n="diag.display_title">${_dt('diag.display_title')}</p>
+      <p class="sub dim" style="margin:0 0 0.25rem" data-i18n="diag.display_hint">${_dt('diag.display_hint')}</p>
       <div class="diag-display-btns">
-        <button class="ghost" id="diag-display-start" data-i18n="diag.display_start">${_t('diag.display_start')}</button>
+        <button class="ghost" id="diag-display-start" data-i18n="diag.display_start">${_dt('diag.display_start')}</button>
       </div>
 
-      <button class="ghost modal-close" id="diag-close" style="margin-top:1.2rem" data-i18n="common.close">${_t('common.close') !== 'common.close' ? _t('common.close') : 'Cerrar'}</button>
+      <button class="ghost modal-close" id="diag-close" style="margin-top:1.2rem" data-i18n="common.close">${_dt('common.close') !== 'common.close' ? _dt('common.close') : 'Cerrar'}</button>
     </div>
   </div>
 
   <!-- Display test fullscreen overlay (outside modal-card to cover everything) -->
   <div id="diag-display-overlay" class="hidden">
-    <span class="diag-display-hint" id="diag-display-hint" data-i18n="diag.display_click">${_t('diag.display_click')}</span>
+    <span class="diag-display-hint" id="diag-display-hint" data-i18n="diag.display_click">${_dt('diag.display_click')}</span>
   </div>`;
 }
 
@@ -326,10 +330,34 @@ function _startDisplayTest() {
    ============================================================ */
 let _diagKbPressed  = new Set(); // currently held
 let _diagKbTouched  = new Set(); // ever pressed since reset
-let _diagKbActive   = false;     // modal open?
+let _diagKbActive   = false;     // ¿test de teclado activo? (clic para activar)
+
+// Activa/desactiva la captura de teclas. Solo cuando está activo se "contienen"
+// las teclas (preventDefault) para que el fondo no scrollee ni dispare atajos.
+function _activateKb() {
+  _diagKbActive = true;
+  const wrap = _$('diag-kb-wrap'); if (wrap) wrap.classList.add('kb-on');
+  const hint = _$('diag-kb-exit-hint'); if (hint) hint.style.display = '';
+}
+function _deactivateKb() {
+  _diagKbActive = false;
+  _diagKbPressed.clear();
+  document.querySelectorAll('.diag-key.pressed').forEach((el) => el.classList.remove('pressed'));
+  const wrap = _$('diag-kb-wrap'); if (wrap) wrap.classList.remove('kb-on');
+  const hint = _$('diag-kb-exit-hint'); if (hint) hint.style.display = 'none';
+}
 
 function _onDiagKeyDown(e) {
   if (!_diagKbActive) return;
+  // Salir SOLO con Shift+Escape, así Escape puede probarse como una tecla más.
+  if (e.key === 'Escape' && e.shiftKey) {
+    e.preventDefault(); e.stopPropagation();
+    _deactivateKb();
+    return;
+  }
+  // Contener: la tecla se queda en el test, no afecta al fondo.
+  e.preventDefault();
+  e.stopPropagation();
   const code = e.code;
   _diagKbPressed.add(code);
   _diagKbTouched.add(code);
@@ -340,6 +368,8 @@ function _onDiagKeyDown(e) {
 
 function _onDiagKeyUp(e) {
   if (!_diagKbActive) return;
+  e.preventDefault();
+  e.stopPropagation();
   const code = e.code;
   _diagKbPressed.delete(code);
   const el = document.querySelector(`.diag-key[data-kcode="${code}"]`);
@@ -348,7 +378,7 @@ function _onDiagKeyUp(e) {
 
 function _updateKbCounter() {
   const span = document.querySelector('.diag-kb-counter span');
-  if (span) span.textContent = _t('diag.kb_count', { n: _diagKbTouched.size });
+  if (span) span.textContent = _dt('diag.kb_count', { n: _diagKbTouched.size });
 }
 
 function _resetKbTest() {
@@ -394,6 +424,9 @@ function _ensureDiagModal() {
   const kbResetBtn = _$('diag-kb-reset');
   if (kbResetBtn) kbResetBtn.addEventListener('click', _resetKbTest);
 
+  const kbActivate = _$('diag-kb-activate');
+  if (kbActivate) kbActivate.addEventListener('click', _activateKb);
+
   const sndLeft  = _$('diag-snd-left');
   const sndRight = _$('diag-snd-right');
   const sndBoth  = _$('diag-snd-both');
@@ -413,7 +446,7 @@ function openDiag() {
   const modal = _ensureDiagModal();
   if (!modal) return;
   modal.classList.remove('hidden');
-  _diagKbActive = true;
+  _deactivateKb(); // el test de teclado arranca apagado; se activa con clic
   try { if (typeof lastStats !== 'undefined' && lastStats) diagUpdateInfo(lastStats); } catch (_) {}
   if (window.i18n && window.i18n.apply) window.i18n.apply(modal);
 }
@@ -421,25 +454,27 @@ function openDiag() {
 function closeDiag() {
   const modal = _$('diag-modal');
   if (modal) modal.classList.add('hidden');
-  _diagKbActive = false;
+  _deactivateKb();
 }
+
+// Publicar a nivel de módulo (no dentro de init): app.js cablea #diag-btn por el
+// camino probado y llama window.openDiag al hacer clic.
+window.openDiag = openDiag;
+window.closeDiag = closeDiag;
 
 function initDiagnostics() {
   try {
-    // Topbar button: wired first and independently of the modal build, so it
-    // always opens even if something else throws.
-    const diagBtn = _$('diag-btn');
-    if (diagBtn) diagBtn.addEventListener('click', () => {
-      try { if (typeof closeControlMenus === 'function') closeControlMenus(); } catch (_) {}
-      openDiag();
-    });
+    // #diag-btn se cablea en app.js (camino probado). Aquí solo lo global del modal.
 
-    // Keyboard test: global keydown/keyup while active
-    document.addEventListener('keydown', _onDiagKeyDown);
-    document.addEventListener('keyup',   _onDiagKeyUp);
+    // Keyboard test: captura en fase de captura (true) para que, al estar activo,
+    // stopPropagation impida que los atajos del fondo (app.js) reciban la tecla.
+    document.addEventListener('keydown', _onDiagKeyDown, true);
+    document.addEventListener('keyup',   _onDiagKeyUp,   true);
 
-    // Escape closes modal (unless the display overlay is active)
+    // Escape closes modal (unless the display overlay is active, or the keyboard
+    // test is capturing — ahí Escape es una tecla más; se sale con Shift+Esc)
     document.addEventListener('keydown', (e) => {
+      if (_diagKbActive) return;
       const modal = _$('diag-modal');
       if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
         const overlay = _$('diag-display-overlay');

@@ -714,6 +714,8 @@
     onChange: function (cb) {
       if (typeof cb === 'function') _listeners.push(cb);
     },
+    // Solo lectura, para tooling/CI (scripts/validate-i18n.mjs). No usar en la UI.
+    dump: function () { return _dict; },
   };
 
   // Aplicar al DOM cuando esté listo (este script corre antes de app.js)

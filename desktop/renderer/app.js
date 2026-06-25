@@ -2029,6 +2029,11 @@ async function openAlertsModal() {
 }
 
 $('alerts-btn').addEventListener('click', openAlertsModal);
+// Diagnóstico: se cablea aquí (camino probado, igual que alerts/overlay) porque el
+// init propio de diagnostics.js no surtía efecto en vivo. openDiag se publica en
+// window al cargar diagnostics.js (después de app.js); el callback lo resuelve tarde.
+$('diag-btn').addEventListener('click', () => { closeControlMenus(); if (window.openDiag) window.openDiag(); });
+$('commands-btn').addEventListener('click', () => { closeControlMenus(); if (window.openCommands) window.openCommands(); });
 $('alerts-close').addEventListener('click', () => $('alerts-modal').classList.add('hidden'));
 $('alerts-modal').addEventListener('click', (e) => {
   if (e.target === $('alerts-modal')) $('alerts-modal').classList.add('hidden');

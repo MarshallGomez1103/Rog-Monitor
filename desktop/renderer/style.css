@@ -460,7 +460,10 @@ b, .num { font-variant-numeric: tabular-nums; }
 
 .control-menu-toggle {
   min-width: 112px;
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease;
 }
+.control-menu-toggle:hover { border-color: color-mix(in srgb, var(--accent) 55%, var(--hair)); }
+.control-menu-toggle:active { transform: translateY(1px); }
 
 .control-menu-toggle.active {
   color: var(--ink);
@@ -544,6 +547,7 @@ b, .num { font-variant-numeric: tabular-nums; }
   transition: background .18s ease, color .18s ease, box-shadow .18s ease;
   position: relative;
   z-index: 0;
+  overflow: hidden; /* recorta el barrido de selección a cada botón */
 }
 .segment button:hover { color: var(--ink); }
 .segment button.active {
@@ -552,6 +556,20 @@ b, .num { font-variant-numeric: tabular-nums; }
   box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent);
 }
 .segment button.busy { opacity: .45; cursor: wait; }
+/* Animación al seleccionar perfil (AHORRO/BALANCED/PERFORMANCE) y modo GPU:
+   un brillo que barre de izquierda a derecha. Solo transform/opacity (barato). */
+.segment button.active::after {
+  content: '';
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(100deg, transparent 20%,
+    color-mix(in srgb, #fff 38%, transparent) 50%, transparent 80%);
+  transform: translateX(-110%);
+  animation: seg-sweep .55s ease-out 1;
+}
+@keyframes seg-sweep { to { transform: translateX(110%); } }
+@media (prefers-reduced-motion: reduce) {
+  .segment button.active::after { animation: none; display: none; }
+}
 
 /* --- topbar globe (lang) + nav collapse buttons --- */
 .topbar-globe {
@@ -616,10 +634,10 @@ main {
   flex: 1;
   display: grid;
   grid-template-columns: minmax(300px, 380px) 1fr;
-  /* align-items:start: cada bloque mide solo lo que necesita; evita que el
-     último bloque de cada columna crezca sin límite al hacer zoom alto, lo
-     que producía un void vacío con el ::after del tema sangrando hacia abajo */
-  align-items: start;
+  /* stretch: ambas columnas llegan a la misma altura; el último bloque de cada una
+     crece para llenarla (regla .col > .block:last-child), así NO queda el hueco de
+     abajo-izquierda. Como el bloque sí crece, no hay void del ::after del tema. */
+  align-items: stretch;
   gap: 16px;
   padding: 16px 22px;
 }
@@ -627,8 +645,8 @@ main {
   main { grid-template-columns: 1fr; }
 }
 .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-/* .col > :last-child ya no crece: cada bloque tiene su altura natural.
-   Con align-items:start en main las columnas no se igualan artificialmente. */
+/* El último bloque de cada columna se estira para llenar la altura → sin hueco. */
+.col > .block:last-child { flex: 1 1 auto; }
 
 .block {
   position: relative;
@@ -1318,6 +1336,17 @@ input[type="color"] {
 .clickable:hover { border-color: var(--accent); }
 .meter.disabled.clickable { cursor: default; }
 .modal-card.wide { width: min(760px, 94vw); }
+
+/* Transparencia de comandos (commands.js) */
+.cmd-row { margin: 0 0 14px; padding-bottom: 12px; border-bottom: 1px solid var(--hair); }
+.cmd-row:last-child { border-bottom: 0; }
+.cmd-argv { display: block; white-space: pre-wrap; word-break: break-all;
+  font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.45;
+  color: var(--accent); background: rgba(255,255,255,.04);
+  border: 1px solid var(--hair); border-radius: 2px; padding: 8px 10px; }
+.cmd-what { margin: 8px 0 3px; font-size: 13px; }
+.cmd-why { font-size: 12px; }
+
 .accent2 { color: var(--accent2); }
 .fan-cap-row { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; margin-bottom: 8px; }
 .fan-cap-row label { display: block; font-size: 11px; letter-spacing: 1px;

@@ -23,6 +23,12 @@ principales.
   ╚═══════════════════════════╝
 ```
 
+## Capturas
+
+> Pendientes en `assets/screenshots/` (añadir antes del anuncio público):
+> dashboard completo · Centro de Poder · Diagnóstico · Comandos del sistema ·
+> overlay en juego. Un GIF corto del cambio de idioma en vivo vende solo.
+
 ## Seguridad de un vistazo
 
 - **Cero telemetría, cero red.** No abre sockets salientes; lo único que sale a
@@ -152,6 +158,18 @@ Lanza con:
 monitor            # terminal (TUI)
 monitor --desktop  # app de escritorio, o ábrela desde el menú/escritorio
 ```
+
+### AppImage (sin terminal)
+
+Para quien no quiere tocar la terminal: descarga el `.AppImage` desde *Releases*,
+dale permiso de ejecución (una vez) y ábrelo con doble clic.
+
+```bash
+chmod +x ROG-Monitor-*.AppImage
+```
+
+Necesita `python3` instalado (viene en casi todas las distros). Para construirlo tú
+mismo: `cd desktop && npm install && npm run dist` → queda en `desktop/dist/`.
 
 ## Desinstalación (una línea)
 

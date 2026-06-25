@@ -91,12 +91,26 @@
    KEYBOARD TEST
    ========================================================= */
 .diag-kb-wrap {
+  position: relative;
   background: var(--bg, #0c0c0c);
   border: 1px solid var(--hair);
   border-radius: 3px;
   padding: 0.6rem;
   overflow-x: auto;
 }
+/* Overlay "clic para activar": cubre el teclado hasta que el usuario entra al test */
+.diag-kb-activate {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--bg, #0c0c0c) 78%, transparent);
+  color: var(--accent); font-weight: 700; letter-spacing: 0.04em;
+  border: 0; cursor: pointer; z-index: 2;
+  transition: background 0.15s;
+}
+.diag-kb-activate:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+/* Activo: oculta el overlay y resalta el marco con neón */
+.diag-kb-wrap.kb-on { border-color: var(--accent); box-shadow: var(--neon-glow-soft, 0 0 6px var(--accent)); }
+.diag-kb-wrap.kb-on .diag-kb-activate { display: none; }
 
 .diag-kb {
   display: flex;

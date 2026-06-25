@@ -5,6 +5,7 @@ __pycache__/
 .directory
 node_modules/
 package-lock.json
+desktop/dist/
 .claude/
 
 # Memoria interna multiagente y specs de construcción: NO van al repo público.

@@ -130,6 +130,19 @@
         'battery.on_bat':          '배터리 사용 중',
       },
     });
+    // Claves extra (formato clave→idiomas) que explican valores que confunden.
+    window.i18n.register({
+      'battery.watts_idle': {
+        es: '0 W = enchufado y sin cargar (la batería está en o por encima del límite de carga). Normal.',
+        en: '0 W = plugged in and not charging (battery is at or above the charge limit). Normal.',
+        fr: '0 W = branché et ne charge pas (la batterie est au niveau ou au-dessus de la limite de charge). Normal.',
+        it: '0 W = collegato e non in carica (la batteria è al limite di carica o oltre). Normale.',
+        pt: '0 W = ligado e sem carregar (a bateria está no limite de carga ou acima). Normal.',
+        zh: '0 W = 已插电但未充电（电池已达到或超过充电限制）。正常。',
+        ja: '0 W = 接続中で充電していない（バッテリーが充電制限以上）。正常です。',
+        ko: '0 W = 연결됨, 충전 안 함(배터리가 충전 제한 이상). 정상입니다.',
+      },
+    });
   }
 
   /* ---- helpers ---- */
@@ -179,9 +192,13 @@
       statusEl.textContent = s;
     }
 
-    // Watts (draw or charge rate)
+    // Watts (draw or charge rate). 0 W enchufado = sin cargar (normal): lo aclaramos.
     const wattsEl = $('bat-watts');
-    if (wattsEl) wattsEl.textContent = fmt(bat.watts, ' W');
+    if (wattsEl) {
+      wattsEl.textContent = fmt(bat.watts, ' W');
+      if (bat.watts === 0 && bat.on_ac) wattsEl.title = t('battery.watts_idle');
+      else wattsEl.removeAttribute('title');
+    }
 
     // Health %
     const healthEl = $('bat-health');

@@ -37,7 +37,13 @@ python3 -m py_compile src/rog_monitor/*.py
 for f in desktop/main.js desktop/preload.js desktop/renderer/*.js; do node --check "$f"; done
 python3 -c "import json; json.load(open('src/rog_monitor/device_profiles.json'))"
 PYTHONPATH=src python3 -m rog_monitor --json | python3 -m json.tool > /dev/null && echo "JSON OK"
+node scripts/validate-i18n.mjs        # 8 idiomas / data-i18n / textos de comandos
 ```
+
+## Traducciones
+
+8 idiomas (`en es fr it pt zh ja ko`). Cómo añadir o corregir uno:
+[`docs/TRANSLATING.md`](docs/TRANSLATING.md).
 
 ## Agregar tu portátil
 

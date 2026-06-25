@@ -1,5 +1,41 @@
 # Changelog
 
+## 19.0.0 — 2026-06-25
+
+Launch-prep release: command transparency, the Diagnostics fix, and P0/Launch
+readiness (AppImage, i18n CI, contributor docs).
+
+### Added
+- **Command transparency** (AYUDA → COMANDOS DEL SISTEMA): lists every privileged
+  command the app can run with `pkexec`, showing the literal command exactly as
+  executed plus *what it does* and *why it needs root*, in all 8 languages. The
+  literal command is also shown in the Power confirm dialog and the SMART panel.
+- **AppImage packaging** via `electron-builder` (`cd desktop && npm run dist`); the
+  Python backend, scripts and VERSION are bundled as `extraResources`.
+- **i18n validation in CI** (`scripts/validate-i18n.mjs`): fails on a missing base
+  language (es/en), any undefined `data-i18n` in `index.html`, or a transparency
+  command without its texts; warns on untranslated non-base languages.
+- `docs/TRANSLATING.md` — how to add or fix a language.
+- **Keyboard test is now click-to-activate**: keys are captured *only* while the test is
+  on (no more background scrolling), and you exit with **Shift+Esc** (so Escape itself can
+  be tested).
+- **Selection animations**: a lightweight CSS sweep when picking a power profile
+  (AHORRO/BALANCED/PERFORMANCE) or GPU mode, plus a subtle glow on the top-bar menus
+  (respects `prefers-reduced-motion`).
+- **Battery clarity**: hovering WATTS when it reads `0 W` on AC explains it (plugged in,
+  battery at/above the charge limit = normal); CYCLES `N/A` keeps its "firmware doesn't
+  report it" tooltip.
+- Roadmap (P1): **customizable overlay** — themes, per-monitor placement, and a picker for
+  which metrics to show (8 languages, in-app and docs).
+
+### Fixed
+- **Diagnostics hub opened nothing**: `diagnostics.js` and `roadmap.js` both declared
+  a global `_t`, so the browser failed to parse `diagnostics.js` entirely. Renamed the
+  diagnostics helper to `_dt`; the button is also wired on the proven path.
+- **Dead space bottom-left** on the dashboard: instead of moving blocks between columns
+  (reverted), the last block of each column now stretches to fill its height via CSS, so
+  no gap remains. A one-time migration corrects layouts touched by the earlier attempt.
+
 ## 18.0.0 — 2026-06-24
 
 Hardware diagnostics release. Disk and battery health, a diagnostics hub with

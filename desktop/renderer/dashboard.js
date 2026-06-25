@@ -70,6 +70,9 @@
   const EDIT_MODE_KEY = 'dashboardEditMode';
 
   /* Orden y columna por defecto (data-block → columna) */
+  // Izquierda = hardware + iluminación; derecha = datos/listas. El hueco de abajo
+  // se cierra por CSS dejando que el último bloque de cada columna llene su altura
+  // (ver style.css main/.col), no moviendo bloques de columna.
   const DEFAULT_ORDER = [
     { key: 'cpu',     col: 'left'  },
     { key: 'gpu',     col: 'left'  },
@@ -117,11 +120,22 @@
   }
 
   /* ---- persistencia ---- */
+  // ponytail: corrección única de columnas. La V1 (battery/disks a la izquierda) fue
+  // un error; esta V2 reasigna las columnas al default bueno una sola vez para deshacerla
+  // en instalaciones que ya la aplicaron. (Sobrescribe columnas movidas a mano: aceptable
+  // por ser un parche puntual; el orden dentro de cada columna se conserva.)
+  const COLS_RESET_KEY = 'dashboardLayout.colsResetV2';
   function loadLayout() {
     try {
       const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
       if (raw && Array.isArray(raw.order) && Array.isArray(raw.hidden)) {
-        return { order: raw.order, hidden: new Set(raw.hidden) };
+        let order = raw.order;
+        if (!localStorage.getItem(COLS_RESET_KEY)) {
+          const colByKey = Object.fromEntries(DEFAULT_ORDER.map((d) => [d.key, d.col]));
+          order = order.map((o) => (colByKey[o.key] ? { ...o, col: colByKey[o.key] } : o));
+          try { localStorage.setItem(COLS_RESET_KEY, '1'); } catch (_) {}
+        }
+        return { order, hidden: new Set(raw.hidden) };
       }
     } catch (_) { /* ignorar */ }
     return { order: DEFAULT_ORDER.map((d) => ({ ...d })), hidden: new Set() };

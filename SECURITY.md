@@ -25,6 +25,10 @@ Root is only used for allowlisted hardware/system actions:
 Privileged services must not call `pkexec`; if a process already runs as root,
 it must write through the allowlisted scripts directly.
 
+Every one of these commands is listed in the app under **AYUDA → COMANDOS DEL
+SISTEMA**, showing the literal command and why it needs root, so users can audit
+exactly what runs as root (source: `desktop/renderer/commands.js`).
+
 ## Hard safety rules
 
 - Never run `supergfxctl --mode` from boot, udev, AC/battery hooks, or systemd
@@ -52,3 +56,10 @@ To remove installed root integrations while keeping user config:
 ```bash
 sudo bash scripts/rog-monitor-safe-mode.sh uninstall
 ```
+
+## Reporting a vulnerability
+
+Report privately: open a **GitHub Security Advisory** (repo → Security → Report a
+vulnerability) instead of a public issue, especially for anything that could apply
+unsafe firmware/system settings. Include your model, distro, and steps to
+reproduce. Public issues are fine for non-exploitable bugs.

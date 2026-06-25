@@ -274,9 +274,12 @@
     if (s.reallocated  != null) rows.push([t('disks.smart_realloc'), s.reallocated]);
     if (s.temp_c       != null) rows.push([t('disks.smart_temp'),  `${s.temp_c}°C`]);
 
-    panel.innerHTML = `<table class="disk-smart-table">${
-      rows.map(([k, v]) => `<tr><td class="dsk">${k}</td><td>${v}</td></tr>`).join('')
-    }</table>`;
+    // Transparencia: muestra el comando exacto que produjo estos datos.
+    const devArg = device.startsWith('/dev/') ? device : `/dev/${device}`;
+    panel.innerHTML = `<code class="cmd-argv" style="margin-bottom:8px">pkexec smartctl -j -a ${devArg}</code>` +
+      `<table class="disk-smart-table">${
+        rows.map(([k, v]) => `<tr><td class="dsk">${k}</td><td>${v}</td></tr>`).join('')
+      }</table>`;
   }
 
   /* ---- Toggle SMART panel: read on first click, show/hide after ---- */
