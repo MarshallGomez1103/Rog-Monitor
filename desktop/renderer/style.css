@@ -1157,6 +1157,12 @@ input[type="color"] {
   color: var(--accent);
   text-shadow: var(--neon-glow-soft, 0 0 5px currentColor);
 }
+/* el % por-núcleo va dentro de <span class="procs-core"> (color base --dim);
+   cuando esa columna está seleccionada el span debe tomar el neón igual que las demás. */
+#procs[data-sort-col="cpu-core"] td.cpu-core .procs-core {
+  color: var(--accent);
+  text-shadow: var(--neon-glow-soft, 0 0 5px currentColor);
+}
 #procs tbody tr { cursor: pointer; }
 #procs tbody tr:hover { background: var(--chip); }
 
@@ -1345,8 +1351,10 @@ input[type="number"] {
 #vram-procs td { padding: 5px 6px; border-bottom: 1px dashed var(--hair); font-family: var(--mono); }
 #ram-procs td.pid,
 #vram-procs td.pid { color: var(--dim); font-size: 12px; }
-#ram-procs td.mem,
+/* vram no es ordenable → mem siempre neón; ram es ordenable → mem neón solo
+   cuando es la columna seleccionada (regla #ram-procs[data-sort-col="mem"]). */
 #vram-procs td.mem { color: var(--accent); text-align: right; }
+#ram-procs td.mem { color: var(--ink); text-align: right; }
 #vram-procs td.r { text-align: right; }
 #ram-procs tbody tr,
 #vram-procs tbody tr { cursor: pointer; }

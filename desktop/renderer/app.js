@@ -1154,8 +1154,8 @@ function _benchCardHtml(item) {
     <div class="bench-card-header">
       <span class="bench-card-kind kind-${escapeHtml((item.kind || 'cpu'))}">${escapeHtml(kind)}</span>
       <span class="bench-card-when">${escapeHtml(item.when || '')}</span>
-      <span class="bench-card-expand">ampliar ▸</span>
-      <button type="button" class="bench-card-delete" data-bid-del="${escapeHtml(item.id || '')}" title="Borrar este benchmark">&#10005;</button>
+      <span class="bench-card-expand">${escapeHtml(t('bench.expand'))}</span>
+      <button type="button" class="bench-card-delete" data-bid-del="${escapeHtml(item.id || '')}" title="${escapeHtml(t('bench.delete_one'))}">&#10005;</button>
     </div>
     <div class="bench-card-statline">${statLine}</div>
     <div class="bench-card-body">
@@ -1478,9 +1478,11 @@ function renderRamProcs(procs) {
   const sorted = sortProcRows(procs, ramSortKey, ramSortDir);
   $('ram-procs-body').innerHTML = sorted.map((p) => `
     <tr data-pid="${p.pid}" data-name="${p.name}" title="${t('procs.kill', { name: p.name })}">
-      <td class="pid">${p.pid}</td><td>${p.name}</td>
+      <td class="pid">${p.pid}</td><td class="pname">${p.name}</td>
       <td class="mem r">${(p.mem_mb / 1024).toFixed(2)} GB</td></tr>`).join('');
-  $('ram-procs').dataset.sortCol = ramSortKey;
+  // El neón sigue a la columna seleccionada: mapear la clave de orden a la clase
+  // de columna (pid/pname/mem) que usa el CSS — antes se ponía 'mem_mb' y no casaba.
+  $('ram-procs').dataset.sortCol = ({ pid: 'pid', name: 'pname', mem_mb: 'mem' })[ramSortKey] || '';
   updateRamSortIndicators();
 }
 

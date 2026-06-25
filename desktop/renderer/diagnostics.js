@@ -374,59 +374,26 @@ function diagUpdateInfo(stats) {
 /* ============================================================
    INIT — inject modal HTML, wire events
    ============================================================ */
-function initDiagnostics() {
-  // Inject modal into body
+// Build + wire the modal lazily (idempotent). Robust: if anything in the
+// DOMContentLoaded init failed before, the modal is still built on first click.
+let _diagModalWired = false;
+function _ensureDiagModal() {
+  let modal = _$('diag-modal');
+  if (modal) return modal;
   const wrap = document.createElement('div');
   wrap.innerHTML = _buildDiagModal();
   while (wrap.firstChild) document.body.appendChild(wrap.firstChild);
+  modal = _$('diag-modal');
+  if (_diagModalWired) return modal;
+  _diagModalWired = true;
 
-  const modal     = _$('diag-modal');
-  const closeBtn  = _$('diag-close');
-  const overlay   = _$('diag-display-overlay');
-
-  // Open / close helpers
-  function openDiag() {
-    modal.classList.remove('hidden');
-    _diagKbActive = true;
-    // Fill info cards with latest data
-    if (typeof lastStats !== 'undefined') diagUpdateInfo(lastStats);
-    // Apply i18n inside modal
-    if (window.i18n && window.i18n.apply) window.i18n.apply(modal);
-  }
-
-  function closeDiag() {
-    modal.classList.add('hidden');
-    _diagKbActive = false;
-  }
-
-  // Topbar button click
-  const diagBtn = _$('diag-btn');
-  if (diagBtn) diagBtn.addEventListener('click', () => {
-    if (typeof closeControlMenus === 'function') closeControlMenus();
-    openDiag();
-  });
-
-  // Close button
+  const closeBtn = _$('diag-close');
   if (closeBtn) closeBtn.addEventListener('click', closeDiag);
-  modal.addEventListener('click', (e) => { if (e.target === modal) closeDiag(); });
+  if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeDiag(); });
 
-  // Keyboard test: global keydown/keyup while active
-  document.addEventListener('keydown', _onDiagKeyDown);
-  document.addEventListener('keyup',   _onDiagKeyUp);
-
-  // Keyboard reset button
   const kbResetBtn = _$('diag-kb-reset');
   if (kbResetBtn) kbResetBtn.addEventListener('click', _resetKbTest);
 
-  // Escape closes modal (if display overlay is not active)
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
-      if (overlay && !overlay.classList.contains('hidden')) return; // display test gets it
-      closeDiag();
-    }
-  });
-
-  // Sound test buttons
   const sndLeft  = _$('diag-snd-left');
   const sndRight = _$('diag-snd-right');
   const sndBoth  = _$('diag-snd-both');
@@ -434,28 +401,72 @@ function initDiagnostics() {
   if (sndRight) sndRight.addEventListener('click', () => _playTone(1));
   if (sndBoth)  sndBoth.addEventListener('click',  () => _playTone(0));
 
-  // Display test
   const dispStart = _$('diag-display-start');
   if (dispStart) dispStart.addEventListener('click', _startDisplayTest);
+  const overlay = _$('diag-display-overlay');
+  if (overlay) overlay.addEventListener('click', _advanceDisplayColor);
 
-  if (overlay) {
-    overlay.addEventListener('click', _advanceDisplayColor);
-    // When all colors cycled (wrap-around back to black), auto-close after last one
-    // Actually just let the user exit with Esc; wrap-around is fine.
-  }
+  return modal;
+}
 
-  // Re-apply i18n when language changes
-  if (window.i18n && window.i18n.onChange) {
-    window.i18n.onChange(() => {
-      if (!modal.classList.contains('hidden')) {
-        if (window.i18n.apply) window.i18n.apply(modal);
-        _updateKbCounter();
+function openDiag() {
+  const modal = _ensureDiagModal();
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  _diagKbActive = true;
+  try { if (typeof lastStats !== 'undefined' && lastStats) diagUpdateInfo(lastStats); } catch (_) {}
+  if (window.i18n && window.i18n.apply) window.i18n.apply(modal);
+}
+
+function closeDiag() {
+  const modal = _$('diag-modal');
+  if (modal) modal.classList.add('hidden');
+  _diagKbActive = false;
+}
+
+function initDiagnostics() {
+  try {
+    // Topbar button: wired first and independently of the modal build, so it
+    // always opens even if something else throws.
+    const diagBtn = _$('diag-btn');
+    if (diagBtn) diagBtn.addEventListener('click', () => {
+      try { if (typeof closeControlMenus === 'function') closeControlMenus(); } catch (_) {}
+      openDiag();
+    });
+
+    // Keyboard test: global keydown/keyup while active
+    document.addEventListener('keydown', _onDiagKeyDown);
+    document.addEventListener('keyup',   _onDiagKeyUp);
+
+    // Escape closes modal (unless the display overlay is active)
+    document.addEventListener('keydown', (e) => {
+      const modal = _$('diag-modal');
+      if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+        const overlay = _$('diag-display-overlay');
+        if (overlay && !overlay.classList.contains('hidden')) return;
+        closeDiag();
       }
     });
-  }
 
-  // Expose for app.js update() hook
-  window.diagUpdateInfo = diagUpdateInfo;
+    // Re-apply i18n inside the modal when language changes
+    if (window.i18n && window.i18n.onChange) {
+      window.i18n.onChange(() => {
+        const modal = _$('diag-modal');
+        if (modal && !modal.classList.contains('hidden')) {
+          if (window.i18n.apply) window.i18n.apply(modal);
+          _updateKbCounter();
+        }
+      });
+    }
+
+    // Build the modal up front too (so first click is instant); harmless if it
+    // fails — openDiag() will rebuild lazily.
+    try { _ensureDiagModal(); } catch (e) { console.warn('[diag] modal build deferred:', e); }
+
+    window.diagUpdateInfo = diagUpdateInfo;
+  } catch (e) {
+    console.error('[diag] init failed:', e);
+  }
 }
 
 // Auto-init when the DOM is ready

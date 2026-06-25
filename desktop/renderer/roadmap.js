@@ -1878,6 +1878,54 @@ const ROADMAP_TODO = [
       },
       {
         title: {
+          es: 'Gestor de drivers',
+          en: 'Driver manager',
+          fr: 'Gestionnaire de pilotes',
+          it: 'Gestore driver',
+          pt: 'Gestor de drivers',
+          zh: '驱动管理器',
+          ja: 'ドライバーマネージャー',
+          ko: '드라이버 관리자',
+        },
+        points: [
+          {
+            es: 'Ver qué drivers hay (GPU/Wi-Fi/chipset) y sus versiones, marcar los desactualizados y ofrecer actualización segura (NVIDIA/Mesa/firmware) vía el gestor de paquetes — inventario de solo lectura primero, con ruta de recuperación',
+            en: 'See installed drivers (GPU/Wi-Fi/chipset) and versions, flag outdated ones and offer safe updates (NVIDIA/Mesa/firmware) via the package manager — read-only inventory first, with a recovery path',
+            fr: 'Voir les pilotes installés (GPU/Wi-Fi/chipset) et leurs versions, signaler les obsolètes et proposer des mises à jour sûres (NVIDIA/Mesa/firmware) via le gestionnaire de paquets — inventaire en lecture seule d\'abord, avec voie de récupération',
+            it: 'Vedere i driver installati (GPU/Wi-Fi/chipset) e le versioni, segnalare quelli obsoleti e offrire aggiornamenti sicuri (NVIDIA/Mesa/firmware) tramite il gestore pacchetti — prima inventario in sola lettura, con percorso di recupero',
+            pt: 'Ver os drivers instalados (GPU/Wi-Fi/chipset) e versões, assinalar os desatualizados e oferecer atualizações seguras (NVIDIA/Mesa/firmware) via gestor de pacotes — inventário só-leitura primeiro, com via de recuperação',
+            zh: '查看已安装的驱动（GPU/Wi-Fi/芯片组）及版本，标记过时项并通过包管理器提供安全更新（NVIDIA/Mesa/固件）——先只读清单，带恢复路径',
+            ja: 'インストール済みドライバー（GPU/Wi-Fi/チップセット）とバージョンを表示し、古いものを警告、パッケージマネージャー経由で安全に更新（NVIDIA/Mesa/ファームウェア）— まず読み取り専用の一覧、復旧手段付き',
+            ko: '설치된 드라이버(GPU/Wi-Fi/칩셋)와 버전 확인, 오래된 항목 표시, 패키지 관리자를 통한 안전한 업데이트(NVIDIA/Mesa/펌웨어) 제공 — 먼저 읽기 전용 목록, 복구 경로 포함',
+          },
+        ],
+      },
+      {
+        title: {
+          es: 'Diseño inteligente que aprovecha el espacio',
+          en: 'Smarter, space-aware layout',
+          fr: 'Disposition intelligente qui exploite l\'espace',
+          it: 'Layout intelligente che sfrutta lo spazio',
+          pt: 'Layout inteligente que aproveita o espaço',
+          zh: '善用空间的智能布局',
+          ja: 'スペースを活かすスマートなレイアウト',
+          ko: '공간을 활용하는 스마트 레이아웃',
+        },
+        points: [
+          {
+            es: 'Rellenar automáticamente los huecos (p. ej. el espacio que deja Iluminación cuando es corto), tarjetas más densas en ventanas pequeñas y un orden por defecto limpio sin grandes zonas vacías',
+            en: 'Auto-fill empty areas (e.g. the gap the Lighting block leaves when short), denser cards on small windows and a clean default arrangement with no large dead space',
+            fr: 'Remplir automatiquement les zones vides (p. ex. l\'espace laissé par Éclairage quand il est court), des cartes plus denses sur petites fenêtres et un agencement par défaut net sans grandes zones mortes',
+            it: 'Riempire automaticamente le aree vuote (es. lo spazio lasciato da Illuminazione quando è corto), schede più dense su finestre piccole e una disposizione predefinita pulita senza grandi spazi morti',
+            pt: 'Preencher automaticamente as áreas vazias (ex. o espaço que a Iluminação deixa quando é curta), cartões mais densos em janelas pequenas e um arranjo padrão limpo sem grandes zonas mortas',
+            zh: '自动填充空白区域（例如灯效块较短时留下的空隙），小窗口下更紧凑的卡片，以及没有大片空白的整洁默认布局',
+            ja: '空き領域を自動で埋める（例: ライティングが短いときの隙間）、小さいウィンドウでは密なカード、大きな余白のない整然とした既定配置',
+            ko: '빈 영역 자동 채우기(예: 조명 블록이 짧을 때 생기는 공백), 작은 창에서 더 조밀한 카드, 큰 빈 공간 없는 깔끔한 기본 배치',
+          },
+        ],
+      },
+      {
+        title: {
           es: 'Ventiladores nivel CoolerControl',
           en: 'CoolerControl-level fans',
           fr: 'Ventilateurs niveau CoolerControl',

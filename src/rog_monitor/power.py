@@ -119,7 +119,8 @@ class BatteryReader:
         return {
             "capacity": hwmon.read_int(self.path / "capacity"),
             "status": hwmon.read_str(self.path / "status"),
-            "watts": round(power_uw / 1_000_000, 1) if power_uw else None,
+            # 0 es válido (enchufado y sin cargar = 0 W); solo None si no se pudo leer.
+            "watts": round(power_uw / 1_000_000, 1) if power_uw is not None else None,
             "charge_limit": hwmon.read_int(self.path / "charge_control_end_threshold"),
             "on_ac": on_ac,
             "energy_full_wh": energy_full_wh,

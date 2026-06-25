@@ -87,6 +87,12 @@ The standout features that make ROG Monitor unique.
 * [ ] **Battery**: charge-limit control in the UI (asusctl exposes it). *(wear / health done in v18)*
 * [ ] **Disk depth**: SMART self-tests, predictive-failure alerts and per-disk temperature
   history (live read-only stats + on-demand SMART shipped in v18).
+* [ ] **Driver manager**: detect installed GPU/Wi-Fi/chipset drivers and their versions,
+  flag outdated ones, and offer safe updates (NVIDIA/Mesa/firmware) via the distro's
+  package manager — read-only inventory first, guided updates with a recovery path.
+* [ ] **Smarter, space-aware layout**: auto-fill empty areas (e.g. the gap left when the
+  Lighting block is short), denser cards on small windows, and a tidy default arrangement
+  so no large dead space remains.
 * [ ] **CoolerControl-level fans**: multiple temperature sources, mixed / function
   curves, and a GPU fan curve.
 * [ ] **Full RGB**: music-by-zone, an OpenRGB bridge for non-ASUS peripherals, and

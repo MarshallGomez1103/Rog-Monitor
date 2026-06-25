@@ -190,9 +190,18 @@
       healthEl.className = healthClass(bat.health_percent);
     }
 
-    // Cycle count
+    // Cycle count — 0 en sysfs casi siempre = "no reportado por el firmware"
+    // (típico en ASUS), no cero real; lo mostramos como N/D con explicación.
     const cyclesEl = $('bat-cycles');
-    if (cyclesEl) cyclesEl.textContent = fmt(bat.cycle_count);
+    if (cyclesEl) {
+      if (bat.cycle_count) {
+        cyclesEl.textContent = bat.cycle_count;
+        cyclesEl.removeAttribute('title');
+      } else {
+        cyclesEl.textContent = na();
+        cyclesEl.title = (window.t ? window.t('battery.cycles_unreported') : '');
+      }
+    }
 
     // Charge limit
     const limitEl = $('bat-limit');

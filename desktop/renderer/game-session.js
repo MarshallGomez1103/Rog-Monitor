@@ -1041,11 +1041,19 @@
   }
 
   function wireSessionChartHover(canvas, tipEl, geomGetter, redrawFn) {
-    canvas.addEventListener('mousemove', (e) => {
+    // Coalescer por frame: los eventos mousemove disparan más rápido que el
+    // refresco de pantalla; redibujar la gráfica neón en cada uno la dejaba
+    // lenta. Guardamos solo las últimas coords y procesamos 1 vez por frame.
+    let pendingX = null, rafId = 0;
+
+    function process() {
+      rafId = 0;
+      if (pendingX == null) return;
+      const clientX = pendingX; pendingX = null;
       let chart = geomGetter ? geomGetter() : canvas._gsChart;
       if (!chart) { tipEl.classList.add('hidden'); return; }
       const rect = canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
+      const mx = clientX - rect.left;
       if (mx < chart.padL || mx > chart.padL + chart.plotW) {
         tipEl.classList.add('hidden');
         if (redrawFn) redrawFn();
@@ -1074,8 +1082,15 @@
       const maxLeft = canvas.offsetLeft + rect.width - 8;
       tipEl.style.left = Math.min(maxLeft, Math.max(canvas.offsetLeft + 8, tipX)) + 'px';
       tipEl.style.top = Math.max(2, tipTop) + 'px';
+    }
+
+    canvas.addEventListener('mousemove', (e) => {
+      pendingX = e.clientX;
+      if (!rafId) rafId = requestAnimationFrame(process);
     });
     canvas.addEventListener('mouseleave', () => {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+      pendingX = null;
       tipEl.classList.add('hidden');
       if (redrawFn) redrawFn();
     });
