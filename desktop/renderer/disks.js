@@ -1,5 +1,5 @@
 /* ROG Monitor — panel de discos en vivo + SMART bajo demanda (v18).
- * Reemplaza el bloque <div id="disks"> del bloque sistema con métricas enriquecidas:
+ * Renderiza en el bloque dedicado "Discos" (#disks-live) con métricas enriquecidas:
  * barra de uso, %, total/usado, temp NVMe, modelo, fstype, tasas I/O.
  * El botón "Salud SMART" per-disco llama window.rog.readSmart (pkexec), muestra
  * spinner, cachea resultado en sesión y presenta: salud, horas, ciclos, desgaste,
@@ -303,7 +303,8 @@
     }
     smartLoading.add(device);
     renderSmartPanel(device, container); // shows spinner
-    window.rog.readSmart(device).then((result) => {
+    const devArg = device.startsWith('/dev/') ? device : `/dev/${device}`;
+    window.rog.readSmart(devArg).then((result) => {
       smartLoading.delete(device);
       smartCache.set(device, result);
       renderSmartPanel(device, container);
@@ -316,7 +317,7 @@
 
   /* ---- Main render: called from app.js on each stats tick ---- */
   function renderDisks(disks, nvme_temps) {
-    const container = document.getElementById('disks');
+    const container = document.getElementById('disks-live');
     if (!container) return;
     if (!disks || !disks.length) {
       container.innerHTML = `<p class="dim">${t('disks.no_data')}</p>`;
@@ -387,7 +388,6 @@
     const modelHtml = d.model ? `<span class="disk-model">${d.model}</span>` : '';
     const fstypeHtml = d.fstype ? `<span class="disk-fstype">${d.fstype}</span>` : '';
     const ioHtml = `<span class="disk-io">${buildIoText(d)}</span>`;
-    const smartDevArg = device.startsWith('/dev/') ? device : `/dev/${device}`;
     return `
 <div class="disk-row" data-device="${device}">
   <div class="disk-header">
@@ -401,7 +401,7 @@
     <span class="disk-usage">${t('disks.used')}: ${d.used_gb.toFixed(0)} ${t('disks.of')} ${d.total_gb.toFixed(0)} G</span>
     ${tempHtml}
     ${ioHtml}
-    <button class="ghost disk-smart-btn" data-device="${smartDevArg}">${t('disks.smart_btn')}</button>
+    <button class="ghost disk-smart-btn" data-device="${device}">${t('disks.smart_btn')}</button>
   </div>
   <div class="disk-smart-panel hidden" id="${panelId}"></div>
 </div>`;

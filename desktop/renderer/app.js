@@ -1345,20 +1345,26 @@ function _ensureBenchClearAllButton() {
     const btn = document.createElement('button');
     btn.className = 'ghost';
     btn.id = 'bench-clear-all-btn';
-    btn.textContent = 'BORRAR TODOS LOS ANTERIORES';
-    btn.title = 'Borra todo el historial de benchmarks guardado';
+    btn.setAttribute('data-i18n', 'bench.clear_all_long');
+    btn.setAttribute('data-i18n-attr', 'title:tip.bench_clear_all');
+    btn.textContent = t('bench.clear_all_long');
+    btn.title = t('tip.bench_clear_all');
     btn.addEventListener('click', clearAllBenchmarkHistory);
     actions.appendChild(btn);
+    if (window.i18n && window.i18n.apply) window.i18n.apply(btn);
   }
   const modalActions = document.querySelector('#benchmark-modal .mode-row');
   if (modalActions && !document.getElementById('bench-clear-all-modal-btn')) {
     const btn = document.createElement('button');
     btn.className = 'ghost';
     btn.id = 'bench-clear-all-modal-btn';
-    btn.textContent = 'BORRAR TODOS';
-    btn.title = 'Borra todo el historial de benchmarks guardado';
+    btn.setAttribute('data-i18n', 'bench.clear_all');
+    btn.setAttribute('data-i18n-attr', 'title:tip.bench_clear_all');
+    btn.textContent = t('bench.clear_all');
+    btn.title = t('tip.bench_clear_all');
     btn.addEventListener('click', clearAllBenchmarkHistory);
     modalActions.appendChild(btn);
+    if (window.i18n && window.i18n.apply) window.i18n.apply(btn);
   }
 }
 
@@ -1594,16 +1600,7 @@ function update(stats) {
   $('vram-bar').style.width = `${vramPercent}%`;
   $('vram-meter').classList.toggle('disabled', !vramTotal);
 
-  // Legacy disk meters in system block (keep for backward compat / system widget)
-  const disksEl = $('disks');
-  if (disksEl) {
-    disksEl.innerHTML = (sys.disks || []).map((d) => `
-      <div class="meter">
-        <label>${d.label} <b>${fmt(d.used_gb, 0)}/${fmt(d.total_gb, 0)} G</b></label>
-        <div class="track"><div style="width:${d.percent}%"></div></div>
-      </div>`).join('');
-  }
-  // Rich disk panel (disks block)
+  // Disk panel (dedicated "Discos" block — disks.js renders into #disks-live)
   if (window.disksModule) {
     window.disksModule.render(sys.disks || [], sys.nvme_temps || []);
   }
@@ -3218,17 +3215,9 @@ $('vram-procs-body').addEventListener('click', async (e) => {
   toast(res.ok ? t('proc.kill_sent', { name }) : t('proc.kill_failed', { err: res.err }));
 });
 
-/* ---------- disk health ---------- */
-
-$('disk-health-btn').addEventListener('click', async () => {
-  toast(t('toast.reading_smart'));
-  const res = await window.rog.diskHealth();
-  const out = $('disk-health-out');
-  if (!res.ok) { toast(`No se pudo: ${res.err}`); return; }
-  out.innerHTML = res.disks.map((d) =>
-    `<b>${d.device}</b><br>${d.info.join('<br>') || 'sin datos SMART'}`).join('<br><br>');
-  out.classList.remove('hidden');
-});
+/* ---------- disk health ----------
+ * Reemplazado en v18 por el botón "Salud SMART" por disco del bloque Discos
+ * (disks.js → window.rog.readSmart). El botón global y su handler se retiraron. */
 
 /* ---------- draggable modals ---------- */
 

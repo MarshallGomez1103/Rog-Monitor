@@ -32,6 +32,8 @@
     'topbar.theme':          { es: 'TEMA', en: 'THEME', fr: 'THÈME', it: 'TEMA', pt: 'TEMA', zh: '主题', ja: 'テーマ', ko: '테마' },
     'topbar.power':          { es: 'PODER', en: 'POWER', fr: 'ALIMENTATION', it: 'ALIMENTAZ.', pt: 'ENERGIA', zh: '电源', ja: 'パワー', ko: '전원' },
     'topbar.tools':          { es: 'HERRAMIENTAS', en: 'TOOLS', fr: 'OUTILS', it: 'STRUMENTI', pt: 'FERRAMENTAS', zh: '工具', ja: 'ツール', ko: '도구' },
+    'topbar.diag':           { es: 'DIAGNÓSTICO', en: 'DIAGNOSTICS', fr: 'DIAGNOSTIC', it: 'DIAGNOSTICA', pt: 'DIAGNÓSTICO', zh: '诊断', ja: '診断', ko: '진단' },
+    'tip.diag':              { es: 'Hub de diagnóstico: info del hardware y tests de teclado, sonido y pantalla', en: 'Diagnostics hub: hardware info and keyboard, sound and display tests', fr: 'Hub de diagnostic : infos matériel et tests clavier, son et écran', it: 'Hub di diagnostica: info hardware e test tastiera, audio e schermo', pt: 'Hub de diagnóstico: info de hardware e testes de teclado, som e ecrã', zh: '诊断中心：硬件信息及键盘、声音和显示器测试', ja: '診断ハブ：ハードウェア情報とキーボード・サウンド・ディスプレイテスト', ko: '진단 허브: 하드웨어 정보와 키보드, 사운드, 디스플레이 테스트' },
     'topbar.system':         { es: 'SISTEMA', en: 'SYSTEM', fr: 'SYSTÈME', it: 'SISTEMA', pt: 'SISTEMA', zh: '系统', ja: 'システム', ko: '시스템' },
     'topbar.help':           { es: 'AYUDA', en: 'HELP', fr: 'AIDE', it: 'AIUTO', pt: 'AJUDA', zh: '帮助', ja: 'ヘルプ', ko: '도움말' },
     'topbar.wizard':         { es: 'VER TUTORIAL', en: 'TUTORIAL', fr: 'TUTORIEL', it: 'TUTORIAL', pt: 'TUTORIAL', zh: '教程', ja: 'チュートリアル', ko: '튜토리얼' },
@@ -170,6 +172,9 @@
 
     /* ---- benchmark ---- */
     'bench.open':            { es: 'ABRIR BENCHMARKS', en: 'OPEN BENCHMARKS', fr: 'OUVRIR BENCHMARKS', it: 'APRI BENCHMARK', pt: 'ABRIR BENCHMARKS', zh: '打开基准测试', ja: 'ベンチマークを開く', ko: '벤치마크 열기' },
+    'bench.clear_all_long':  { es: 'BORRAR TODOS LOS ANTERIORES', en: 'DELETE ALL PREVIOUS', fr: 'SUPPRIMER TOUS LES PRÉCÉDENTS', it: 'ELIMINA TUTTI I PRECEDENTI', pt: 'APAGAR TODOS OS ANTERIORES', zh: '删除所有先前的', ja: '以前のものをすべて削除', ko: '이전 항목 모두 삭제' },
+    'bench.clear_all':       { es: 'BORRAR TODOS', en: 'DELETE ALL', fr: 'TOUT SUPPRIMER', it: 'ELIMINA TUTTI', pt: 'APAGAR TODOS', zh: '全部删除', ja: 'すべて削除', ko: '모두 삭제' },
+    'tip.bench_clear_all':   { es: 'Borra todo el historial de benchmarks guardado', en: 'Delete all saved benchmark history', fr: 'Supprime tout l\'historique de benchmarks enregistré', it: 'Elimina tutta la cronologia dei benchmark salvata', pt: 'Apaga todo o histórico de benchmarks guardado', zh: '删除所有已保存的基准测试历史', ja: '保存されたベンチマーク履歴をすべて削除', ko: '저장된 모든 벤치마크 기록 삭제' },
     'bench.cpu':             { es: 'CPU 45 s', en: 'CPU 45 s', fr: 'CPU 45 s', it: 'CPU 45 s', pt: 'CPU 45 s', zh: 'CPU 45秒', ja: 'CPU 45秒', ko: 'CPU 45초' },
     'bench.gpu':             { es: 'GPU LOCAL 45 s', en: 'GPU LOCAL 45 s', fr: 'GPU LOCAL 45 s', it: 'GPU LOCAL 45 s', pt: 'GPU LOCAL 45 s', zh: 'GPU本地45秒', ja: 'GPUローカル45秒', ko: 'GPU 로컬 45초' },
 
