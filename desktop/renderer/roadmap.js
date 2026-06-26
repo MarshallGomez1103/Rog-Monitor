@@ -15,7 +15,7 @@
    Para actualizar: edita estos objetos; el render es automático.
    ============================================================ */
 
-// NOTA: mantener esta versión (v18.0.0) sincronizada con desktop/package.json ("version").
+// NOTA: mantener esta versión (v20.0.0) sincronizada con desktop/package.json ("version").
 const ROADMAP_CURRENT = {
   version: 'v20.0.0',
   label: {
@@ -1382,14 +1382,14 @@ const ROADMAP_DONE = [
         ko: '재포지셔닝된 로드맵: "Linux용 Armoury Crate" — 안전하고 아름다운 올인원, 텔레메트리 없음',
       },
       {
-        es: 'Fases claras orientadas al lanzamiento (P0 LANZAMIENTO → P1 DIFERENCIADORES → P2 ALCANCE → P3 ECOSISTEMA)',
-        en: 'Clear launch-oriented phases (P0 LAUNCH → P1 DIFFERENTIATORS → P2 REACH → P3 ECOSYSTEM)',
-        fr: 'Phases claires orientées lancement (P0 LANCEMENT → P1 DIFFÉRENCIATEURS → P2 PORTÉE → P3 ÉCOSYSTÈME)',
-        it: 'Fasi chiare orientate al lancio (P0 LANCIO → P1 DIFFERENZIATORI → P2 PORTATA → P3 ECOSISTEMA)',
-        pt: 'Fases claras orientadas ao lançamento (P0 LANÇAMENTO → P1 DIFERENCIAIS → P2 ALCANCE → P3 ECOSSISTEMA)',
-        zh: '面向发布的清晰阶段（P0 发布 → P1 差异化 → P2 覆盖 → P3 生态）',
-        ja: 'ローンチ志向の明確なフェーズ（P0 ローンチ → P1 差別化 → P2 リーチ → P3 エコシステム）',
-        ko: '출시 지향의 명확한 단계(P0 출시 → P1 차별화 → P2 도달 범위 → P3 생태계)',
+        es: 'Fases claras de post-lanzamiento (seguimiento → P1 DIFERENCIADORES → P2 ALCANCE → P3 ECOSISTEMA)',
+        en: 'Clear post-launch phases (follow-up → P1 DIFFERENTIATORS → P2 REACH → P3 ECOSYSTEM)',
+        fr: 'Phases claires post-lancement (suivi → P1 DIFFÉRENCIATEURS → P2 PORTÉE → P3 ÉCOSYSTÈME)',
+        it: 'Fasi chiare post-lancio (follow-up → P1 DIFFERENZIATORI → P2 PORTATA → P3 ECOSISTEMA)',
+        pt: 'Fases claras de pós-lançamento (acompanhamento → P1 DIFERENCIAIS → P2 ALCANCE → P3 ECOSSISTEMA)',
+        zh: '清晰的发布后阶段（跟进 → P1 差异化 → P2 覆盖 → P3 生态）',
+        ja: '明確なローンチ後フェーズ（フォローアップ → P1 差別化 → P2 リーチ → P3 エコシステム）',
+        ko: '명확한 출시 후 단계(후속 → P1 차별화 → P2 도달 범위 → P3 생태계)',
       },
       {
         es: 'Roadmap multilingüe en los 8 idiomas; se re-renderiza al cambiar de idioma',
@@ -1634,30 +1634,30 @@ const ROADMAP_DONE = [
 ];
 
 // Pendientes (por hacer) — roadmap COMPETITIVO en 4 fases orientadas al
-// lanzamiento: P0 LANZAMIENTO → P1 DIFERENCIADORES → P2 ALCANCE → P3 ECOSISTEMA.
+// seguimiento de lanzamiento: seguimiento → P1 DIFERENCIADORES → P2 ALCANCE → P3 ECOSISTEMA.
 // Posicionamiento: "Armoury Crate para Linux — seguro, bonito, todo-en-uno,
 // sin telemetría". Todos los campos de texto son mapas {es,en,…} (8 idiomas).
 const ROADMAP_TODO = [
   {
     phase: {
-      es: 'P0 · LANZAMIENTO — abrir el repo al público',
-      en: 'P0 · LAUNCH — open the repo to the public',
-      fr: 'P0 · LANCEMENT — ouvrir le dépôt au public',
-      it: 'P0 · LANCIO — aprire il repo al pubblico',
-      pt: 'P0 · LANÇAMENTO — abrir o repo ao público',
-      zh: 'P0 · 发布 — 向公众开放仓库',
-      ja: 'P0 · ローンチ — リポジトリを一般公開',
-      ko: 'P0 · 출시 — 저장소 공개',
+      es: 'Seguimiento de lanzamiento',
+      en: 'Launch follow-up',
+      fr: 'Suivi de lancement',
+      it: 'Follow-up del lancio',
+      pt: 'Acompanhamento do lançamento',
+      zh: '发布后跟进',
+      ja: 'ローンチ後フォローアップ',
+      ko: '출시 후 후속',
     },
     note: {
-      es: 'Lo imprescindible para que cualquiera lo instale y confíe en él.',
-      en: 'The essentials so anyone can install it and trust it.',
-      fr: 'L\'essentiel pour que n\'importe qui l\'installe et lui fasse confiance.',
-      it: 'L\'essenziale perché chiunque lo installi e si fidi.',
-      pt: 'O essencial para que qualquer um instale e confie nele.',
-      zh: '让任何人都能安装并信任它的必需项。',
-      ja: '誰でもインストールして信頼できるための必須項目。',
-      ko: '누구나 설치하고 신뢰할 수 있게 하는 필수 요소.',
+      es: 'Pendientes de validación real antes de cerrar el ciclo de lanzamiento.',
+      en: 'Items still needing real validation before the release cycle is closed.',
+      fr: 'Éléments nécessitant encore une validation réelle avant de clore le cycle de lancement.',
+      it: 'Elementi che richiedono ancora una validazione reale prima di chiudere il ciclo di lancio.',
+      pt: 'Itens que ainda precisam de validação real antes de fechar o ciclo de lançamento.',
+      zh: '在关闭发布周期前仍需真实验证的项目。',
+      ja: 'ローンチサイクルを閉じる前に実地検証が必要な項目。',
+      ko: '출시 사이클을 닫기 전에 실제 검증이 필요한 항목.',
     },
     items: [
       {

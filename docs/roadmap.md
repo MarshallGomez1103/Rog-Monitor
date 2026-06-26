@@ -52,13 +52,13 @@ English-first public docs and an 8-language UI, with a guardian nobody else ship
   in the active language; process "per-core" column neon fixed. *(v18)*
 * [x] **Privileged-command transparency**: Help → System Commands lists every
   `pkexec` command with the literal command + what it does + why it needs root, in all
-  8 languages; the literal command also shows in the Power confirm and SMART panel. *(v19)*
+  8 languages; the literal command also shows in the Power confirm and SMART panel. *(v20)*
 * [x] **AppImage packaging** via electron-builder (`npm run dist`), Python backend
-  bundled as resources. *(v19 — Flatpak still pending below)*
+  bundled as resources. *(v20 — Flatpak still pending below)*
 * [x] **CI i18n validation** (`scripts/validate-i18n.mjs`) + **`TRANSLATING.md`**
-  contributor guide. *(v19)*
+  contributor guide. *(v20)*
 * [x] Diagnostics hub open bug fixed (global `_t` collision with roadmap.js); dashboard
-  bottom-left dead space rebalanced. *(v19)*
+  bottom-left dead space rebalanced. *(v20)*
 
 ## Launch Complete
 
@@ -66,11 +66,11 @@ The public release checklist is done. The remaining items are post-launch follow
 not blockers for opening the repo.
 
 * [x] **GitHub Actions CI**: `node --check`, `py_compile`, JSON + **i18n validation**,
-  and a read-only sensor smoke test. *(v19)*
-* [x] **Community i18n**: documented in `docs/TRANSLATING.md` + validator that flags gaps. *(v19)*
-* [x] **Packaging — AppImage**: installable without a terminal (`npm run dist`). *(v19)*
+  and a read-only sensor smoke test. *(v20)*
+* [x] **Community i18n**: documented in `docs/TRANSLATING.md` + validator that flags gaps. *(v20)*
+* [x] **Packaging — AppImage**: installable without a terminal (`npm run dist`). *(v20)*
 * [x] **Launch polish (docs)**: LICENSE / CONTRIBUTING / SECURITY / TRANSLATING +
-  graceful degradation verified by CI smoke on non-ASUS. *(v19)*
+  graceful degradation verified by CI smoke on non-ASUS. *(v20)*
 * [x] **Privacy / repo hygiene**: full tree **and git history** audited — no secrets,
   keys, emails, server IPs or real home paths; internal multi-agent notes
   (AGENTS / HANDOFF / build-specs) kept untracked. *(launch audit)*
@@ -80,7 +80,7 @@ not blockers for opening the repo.
   hardware testing because Flatpak's sandbox conflicts with direct `/sys`, udev,
   `pkexec`, and systemd workflows unless permissions/portals are designed carefully.
 * [ ] **Single polkit privileged helper** instead of scattered `pkexec` prompts —
-  deferred to P1 (risky refactor; v19 ships full *transparency* of the current prompts).
+  deferred to P1 (risky refactor; v20 ships full *transparency* of the current prompts).
 
 ## P1 — DIFFERENTIATORS (what nobody else bundles)
 
