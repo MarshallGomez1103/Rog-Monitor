@@ -10,4 +10,10 @@ if [[ ! -d "$DIR/node_modules" ]]; then
 fi
 
 # --class/--name make the window match rog-monitor.desktop (taskbar icon/name)
-exec "$DIR/node_modules/.bin/electron" "$DIR" --class=rog-monitor --name=rog-monitor "$@"
+# ponytail: exec the real electron binary, not the node .bin shim — the shim is a node
+# process that just spawns electron and idles holding ~45MB. The packaged AppImage already
+# launches the binary directly; this makes dev match it. Falls back to the shim if the
+# electron layout ever changes.
+BIN="$DIR/node_modules/electron/dist/electron"
+[[ -x "$BIN" ]] || BIN="$DIR/node_modules/.bin/electron"
+exec "$BIN" "$DIR" --class=rog-monitor --name=rog-monitor "$@"
