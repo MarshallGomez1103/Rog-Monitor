@@ -1,237 +1,243 @@
 # ROG Monitor
 
-Monitor de hardware en tiempo real para portátiles ASUS ROG en Linux — terminal
-y app de escritorio. Sin telemetría, sin red, sin root para las funciones
-principales.
+Real-time hardware monitor and control center for ASUS ROG laptops on Linux,
+available as a terminal UI and an Electron desktop app. No telemetry, no
+background network calls, and no root access for the main monitoring path.
 
-> ⚠️ **Versión temprana — en mejora activa.** Se usa a diario y funciona, pero
-> sigue evolucionando: habrá cambios, fallos y funciones a medio pulir.
-> **Solo Linux por ahora** (una app de Windows está en el [roadmap](docs/roadmap.md)).
-> Probado sobre todo en ASUS ROG; en otro hardware las funciones no soportadas
-> degradan a solo-lectura en vez de adivinar. Las acciones privilegiadas
-> (poder/ventiladores/firmware) son seguras por diseño y reversibles, pero úsalas
-> con criterio. Reportes de errores y PRs muy bienvenidos.
+> ⚠️ **Early release — actively improving.** ROG Monitor is used daily and works,
+> but it is still evolving: expect bugs, rough edges, and fast-moving features.
+> **Linux only for now**. A Windows companion app is listed in the
+> [roadmap](docs/roadmap.md). The project is tested mostly on ASUS ROG hardware;
+> unsupported machines degrade to read-only instead of guessing. Privileged
+> actions for power, fans, and firmware are designed to be reversible, but use
+> them with care. Bug reports and pull requests are welcome.
 
 ```
-  ╔═ 01 CPU ══════════════════╗  ╔═ 05 Historial ════════════╗
+  ╔═ 01 CPU ══════════════════╗  ╔═ 05 History ══════════════╗
   ║  Avg 58.4 °C  Pkg 69 °C  ║  ║  CPU temp ▁▃▅▇█▇▅▃▁  ▲   ║
-  ║  Potencia  28.4 W         ║  ║  GPU temp ▂▄▆▇▇▇▆▄▂  │   ║
+  ║  Power     28.4 W         ║  ║  GPU temp ▂▄▆▇▇▇▆▄▂  │   ║
   ╚═══════════════════════════╝  ╚═══════════════════════════╝
   ╔═ 02 GPU ══════════════════╗  ╔═ 06 Benchmarks ═══════════╗
-  ║  Modo  Hybrid             ║  ║  [BENCHMARK]  [EXPORTAR]  ║
+  ║  Mode  Hybrid             ║  ║  [BENCHMARK]  [EXPORT]    ║
   ║  RTX 4060  51 °C  Use 12% ║  ╚═══════════════════════════╝
   ╚═══════════════════════════╝
-  ╔═ 03 Ventiladores ═════════╗
+  ╔═ 03 Fans ═════════════════╗
   ║  CPU ████████░  3 300 RPM ║
   ║  GPU ██████░░░  2 600 RPM ║
   ╚═══════════════════════════╝
-  ╔═ 04 Iluminación ══════════╗
+  ╔═ 04 Lighting ═════════════╗
   ║  [●] Rainbow  [○] Breathe ║
-  ║  Brillo ●●●○  [APLICAR]   ║
+  ║  Bright ●●●○  [APPLY]     ║
   ╚═══════════════════════════╝
 ```
 
-## Capturas
+## Screenshots
 
-> Pendientes en `assets/screenshots/` (añadir antes del anuncio público):
-> dashboard completo · Centro de Poder · Diagnóstico · Comandos del sistema ·
-> overlay en juego. Un GIF corto del cambio de idioma en vivo vende solo.
+Current screenshots from the v20 release candidate:
 
-## Seguridad de un vistazo
+<table>
+  <tr>
+    <td align="center"><img src="assets/screenshots/01-dashboard.png" alt="Dashboard" width="320"><br>Dashboard</td>
+    <td align="center"><img src="assets/screenshots/02-configuration.png" alt="Configuration" width="320"><br>Configuration</td>
+    <td align="center"><img src="assets/screenshots/03-benchmarks-session.png" alt="Benchmarks and session" width="320"><br>Benchmarks & session</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/screenshots/04-fans.png" alt="Fans" width="320"><br>Fans</td>
+    <td align="center"><img src="assets/screenshots/05-system-battery.png" alt="System and battery" width="320"><br>System & battery</td>
+    <td align="center"><img src="assets/screenshots/06-cpu-cores.png" alt="CPU cores" width="320"><br>CPU cores</td>
+  </tr>
+  <tr>
+    <td align="center" colspan="3"><img src="assets/screenshots/07-tui.png" alt="TUI" width="640"><br>TUI</td>
+  </tr>
+</table>
 
-- **Cero telemetría, cero red.** No abre sockets salientes; lo único que sale a
-  internet es un `git pull` cuando *tú* pulsas ACTUALIZAR. Verificable: el código
-  no importa ningún cliente HTTP.
-- **Sin root para monitorear.** Todos los sensores se leen de sysfs/hwmon como
-  usuario normal.
-- **Acciones privilegiadas en lista blanca.** Escribir poder/ventiladores/SMART
-  pasa por `pkexec` con comandos acotados; la contraseña la gestiona polkit, la
-  app nunca la ve ni la guarda.
-- **Doble recorte en firmware.** Cada escritura de poder se valida dos veces
-  contra los `_min`/`_max` que el firmware declara; nunca se envía un valor fuera
-  de rango.
-- **Recuperación garantizada.** RESET A FÁBRICA restaura el stock y
-  `scripts/rog-monitor-safe-mode.sh` revierte desde una TTY si algo sale mal.
+## Security at a glance
 
-Detalles y modelo de amenazas: [SECURITY.md](SECURITY.md).
+- **No telemetry, no background network.** The app opens no outgoing sockets.
+  The only intended internet use is `git fetch` when you press **UPDATE**.
+- **No root required for monitoring.** Sensors are read from sysfs/hwmon as a
+  normal user.
+- **Allowlisted privileged actions.** Power, fan, SMART, and service changes go
+  through explicit `pkexec` prompts and bounded scripts. Polkit handles the
+  password; ROG Monitor never sees or stores it.
+- **Double clamp before firmware writes.** Power values are clamped by the UI and
+  again by the privileged helper against firmware-reported `_min` / `_max`
+  values.
+- **Recovery path included.** **RESET TO FACTORY** restores firmware defaults and
+  `scripts/rog-monitor-safe-mode.sh` can disable root integrations from a TTY.
 
-## Características principales
+Threat model and reporting process: [SECURITY.md](SECURITY.md).
 
-### Sensores (sin root)
-- **CPU**: temperatura por núcleo, promedio/máx/mín, temperatura de Package,
-  frecuencia, conteo de núcleos >90 °C, contador de thermal throttling.
-- **GPU**: NVIDIA (`nvidia-smi`) y AMD (`hwmon/amdgpu`) — temperatura, uso,
-  potencia, VRAM, frecuencias de núcleo y memoria. Detecta modo Hybrid /
-  Integrated / AsusMuxDgpu (MUX) vía `supergfxctl`; maneja la dGPU apagada.
-  Potencia con `power.draw.average` en NVIDIA (no la muestra instantánea que
-  cae a 1-3 W al dormir la GPU).
-- **Ventiladores**: RPM + barras proporcionales, calibración PWM→RPM real,
-  cap de RPM aplicado en runtime por el servicio root.
-- **Sistema**: RAM, todos los discos reales (con temperatura NVMe, ostree-aware),
-  red, carga, uptime, batería con charge limit.
-- **Procesos**: top por CPU (% del total del sistema) y top por memoria;
-  cierre con confirmación.
-- **Salud SMART**: `smartctl` vía pkexec (un solo clic en Sistema).
-- **FPS en overlay**: vía registro de MangoHud (opt-in).
+## Main features
 
-### App de escritorio (Electron + Python)
-- 9 bloques numerados: 01 CPU, 02 GPU, 03 Ventiladores, 04 Iluminación,
-  05 Historial, 06 Benchmarks, 07 Sistema, 08 Eventos, 09 Procesos.
-- **Centro de Poder**: control calibrado de límites de potencia CPU/GPU,
-  con doble recorte contra firmware — ver [sección más abajo](#centro-de-poder).
-- **12 temas** × claro/oscuro con identidad visual propia (Magma, Nébula,
-  Océano, Glaciar, Reactor, Grafito, Neón, Atardecer, Neon Nights, Cyberpunk,
-  Aurora, Alba). Sin tarjetas genéricas: esquinas cortadas, números en placas
-  inclinadas, fondos con brillo del acento.
-- **Historial** con gráficas canvas interactivas: hover muestra el valor
-  exacto y hace cuántos segundos fue. CPU temp y W arriba, GPU temp y W abajo.
-- **Overlay para juegos**: ventana sin marco, transparente, siempre encima,
-  click-through, para cualquier monitor y esquina.
-- **Wizard de primera vez** (v9): detecta ventiladores → calibra con pkexec →
-  benchmark CPU/GPU → tour de funciones. Nunca dice "medido" sin medir.
-- **UX de 4 estados por widget** (v9): con datos / cargando / sin datos /
-  error (ej.: ventilador dañado → icono quieto, no spinner de carga).
-- Modales arrastrables; exportar/importar toda la configuración en un JSON.
-- Tamaño de letra configurable (A−/Normal/A+/A++).
+### Sensors (no root)
 
-### Iluminación RGB (Aura + periféricos)
-- Grid de 9 modos Aura: modos hardware detectados cuando el firmware los expone
-  (Estático, Respirar, Rainbow Cycle, Rainbow Wave, Pulso) + Música funcional
-  + 3 modos visibles pero honestos sobre su estado de soporte.
-- **Modo Música**: captura el audio del sistema (PipeWire, `pw-record --target
-  <sink>`) y ajusta brillo/color de Aura en tiempo real.
-- Perfiles de Aura guardados en `~/.config/rog-monitor/aura.json`.
-- Detección de teclados RGB USB de terceros; el control por OpenRGB llegará
-  cuando el protocolo del periférico esté verificado.
+- **CPU**: per-core temperature, average/max/min, package temperature,
+  frequency, count of cores over 90 °C, and thermal-throttling counter.
+- **GPU**: NVIDIA (`nvidia-smi`) and AMD (`hwmon/amdgpu`) telemetry:
+  temperature, utilization, power, VRAM, core clock, and memory clock. Detects
+  Hybrid / Integrated / AsusMuxDgpu (MUX) through `supergfxctl` and handles the
+  dGPU being powered down.
+- **Fans**: RPM, proportional bars, real PWM-to-RPM calibration, and runtime RPM
+  caps applied by the root service.
+- **System**: RAM, real disks with NVMe temperature, network, load, uptime, and
+  battery charge limit.
+- **Processes**: top CPU and memory consumers with confirmation before closing a
+  process.
+- **SMART health**: `smartctl` through one explicit `pkexec` prompt.
+- **FPS overlay**: MangoHud log integration, opt-in.
 
-### Centro de Poder
+### Desktop app (Electron + Python)
 
-> ROG Monitor lee los rangos seguros directamente desde `asus-armoury` en
-> sysfs o desde un perfil de dispositivo (`~/.config/rog-monitor/device.json`).
-> Nunca escribe un valor fuera de los mínimos y máximos que el firmware declara.
+- Numbered blocks: CPU, GPU, Fans, Lighting, History, Benchmarks, System, Events,
+  and Processes.
+- **Power Center**: calibrated CPU/GPU power limit control with firmware clamps.
+- **12 palettes** x light/dark mode: Magma, Nebula, Ocean, Glacier, Reactor,
+  Graphite, Neon, Sunset, Neon Nights, Cyberpunk, Aurora, and Dawn.
+- **Interactive history charts**: hover shows the exact value and how many
+  seconds ago it was recorded.
+- **Gaming overlay**: transparent, frameless, always-on-top, click-through
+  window for any monitor/corner.
+- **First-run wizard**: detects fans, calibrates with `pkexec`, runs CPU/GPU
+  benchmarks, and tours the app.
+- **Four widget states**: data, loading, empty, and error.
+- Draggable modals, full JSON export/import, and configurable text size.
 
-Parámetros controlables cuando el firmware ASUS los expone:
+### RGB lighting (Aura + peripherals)
 
-| Parámetro            | Sysfs (`asus-armoury`)        |
-|----------------------|-------------------------------|
-| CPU PL1 (sostenido)  | `ppt_pl1_spl`                 |
-| CPU PL2 (ráfaga)     | `ppt_pl2_sppt`                |
-| GPU Dynamic Boost    | `nv_dynamic_boost`            |
-| Thermal Target       | `nv_temp_target`              |
+- Aura grid with firmware-detected hardware modes when exposed by ASUS.
+- **Music Mode**: captures system audio through PipeWire and drives Aura
+  brightness/color in real time.
+- Aura profiles stored in `~/.config/rog-monitor/aura.json`.
+- Third-party USB RGB keyboard detection is present; write control is blocked
+  until the protocol is verified.
 
-**Garantías de seguridad:**
-1. Cada escritura se valida contra los `_max` / `_min` que el firmware declara
-   en sysfs; nunca se envía un valor fuera de ese rango.
-2. Al abrir el Centro de Poder, la app muestra los valores actuales (los que ya
-   estaban, no los que escribe) y requiere un diálogo de consentimiento antes
-   de cualquier cambio.
-3. El botón **RESET A FÁBRICA** restaura todos los valores al stock del firmware.
-4. Por defecto, la app no toca nada y arranca con los valores que el firmware
-   ya tiene.
+### Power Center
 
-GPU Base Clock Offset y Memory Clock Offset se aplican por NVML cuando el driver
-lo permite. Requieren confirmación adicional porque pueden causar inestabilidad.
+ROG Monitor reads safe ranges from `asus-armoury` sysfs or from a device profile
+at `~/.config/rog-monitor/device.json`. It never writes outside firmware-declared
+minimum and maximum values.
 
-Para agregar tu propio equipo o ajustar rangos, ver
+| Control | Sysfs (`asus-armoury`) |
+| --- | --- |
+| CPU PL1 (sustained) | `ppt_pl1_spl` |
+| CPU PL2 (burst) | `ppt_pl2_sppt` |
+| GPU Dynamic Boost | `nv_dynamic_boost` |
+| Thermal Target | `nv_temp_target` |
+
+Safety guarantees:
+
+1. Every write is clamped against firmware `_max` / `_min` values.
+2. The Power Center shows current values before changing anything and requires
+   explicit consent before applying.
+3. **RESET TO FACTORY** restores firmware stock values.
+4. Startup is read-only by default; the app does not change power or GPU mode on
+   its own.
+
+GPU Base Clock Offset and Memory Clock Offset use NVML when the driver supports
+them. They require an extra confirmation because unstable offsets can crash the
+session.
+
+To add your own machine or tune ranges, see
 [docs/supported-devices.md](docs/supported-devices.md).
 
 ### TUI (terminal)
-- Gráficas Rich sin parpadeos, actualización 1/s.
-- Colores semánticos consistentes con la app: azul = frío, verde = normal,
-  naranja = cerca del límite, rojo = crítico.
-- Mouse tracking correcto (la rueda no descuadra la pantalla).
 
----
+- Rich charts without flicker, refreshed once per second.
+- Semantic colors shared with the desktop app: blue = cold, green = normal,
+  orange = near limit, red = critical.
+- Mouse tracking that does not break scrolling.
 
-## Instalación (una línea)
-
-```bash
-git clone https://github.com/<tu-usuario>/Rog-Monitor && cd Rog-Monitor && bash install.sh
-```
-
-Eso es todo. `install.sh`:
-
-1. Crea el entorno de Python y el comando **`monitor`** (terminal) — sin sudo.
-2. Instala la **app de escritorio** y crea el icono en el menú y en el escritorio
-   (si tienes Node.js/npm) — sin sudo.
-3. Solo al final, y **avisando exactamente para qué**, pide sudo **una vez** para
-   la integración de sistema opcional (servicio de ventiladores, dejar listo el
-   guardián térmico y permitir leer la potencia de la CPU). Puedes decir que no.
-
-No instala nada que cambie el perfil o la GPU automáticamente.
-
-Lanza con:
+## Installation
 
 ```bash
-monitor            # terminal (TUI)
-monitor --desktop  # app de escritorio, o ábrela desde el menú/escritorio
+git clone https://github.com/MarshallGomez1103/Rog-Monitor.git
+cd Rog-Monitor
+bash install.sh
 ```
 
-### AppImage (sin terminal)
+`install.sh`:
 
-Para quien no quiere tocar la terminal: descarga el `.AppImage` desde *Releases*,
-dale permiso de ejecución (una vez) y ábrelo con doble clic.
+1. Creates the Python environment and the `monitor` command without sudo.
+2. Installs the desktop app and launchers when Node.js/npm are available.
+3. At the end, asks for sudo once for optional system integration: fan service,
+   thermal guardian setup, and CPU power read permissions. You can say no.
+
+It does not install anything that automatically changes your GPU mode or power
+profile.
+
+Run it with:
+
+```bash
+monitor            # terminal UI
+monitor --desktop  # desktop app, or open it from the app launcher
+```
+
+### AppImage
+
+Download the `.AppImage` from Releases, make it executable once, and open it:
 
 ```bash
 chmod +x ROG-Monitor-*.AppImage
 ```
 
-Necesita `python3` instalado (viene en casi todas las distros). Para construirlo tú
-mismo: `cd desktop && npm install && npm run dist` → queda en `desktop/dist/`.
-
-## Desinstalación (una línea)
+It needs `python3`, which ships with most Linux distributions. To build it
+locally:
 
 ```bash
-bash uninstall.sh            # quita app, lanzadores, autoarranque y servicios;
-                             # CONSERVA tu configuración (~/.config/rog-monitor)
-bash uninstall.sh --purge    # quita también la configuración (vuelta a cero)
+cd desktop
+npm install
+npm run dist
 ```
 
-También puedes **Actualizar / Reinstalar / Desinstalar** desde la app:
-menú **Sistema → Mantenimiento**.
+The output lands in `desktop/dist/`.
 
-### Rescate desde TTY
-
-Si algo del stack de servicios root causa problemas y solo puedes entrar por
-TTY (`Ctrl+Alt+F3`):
+## Uninstall
 
 ```bash
-sudo bash scripts/rog-monitor-safe-mode.sh disable   # apaga todo lo automático
-sudo bash scripts/rog-monitor-safe-mode.sh no-auto-profile  # solo el auto-perfil por AC/batería
+bash uninstall.sh            # removes app, launchers, autostart and services;
+                             # keeps ~/.config/rog-monitor
+bash uninstall.sh --purge    # also removes configuration
 ```
 
----
+You can also update, reinstall, or uninstall from
+**System -> Maintenance** inside the app.
 
-## Teclas (TUI)
+### TTY recovery
 
-| Tecla | Acción |
-|-------|--------|
-| `q` | Salir |
-| `p` | Ciclar perfil de energía (power-saver → balanced → performance) |
-| `g` | Cambiar modo GPU (Hybrid ↔ Integrated); pulsar de nuevo durante cambio pendiente = cancelar |
-| `t` | Ciclar tema de color |
-| `v` | Ver log de eventos completo |
-| `e` | Exportar historial como JSON + CSV |
-| `h` | Ayuda |
+If a root integration causes trouble and you can only enter through a TTY
+(`Ctrl+Alt+F3`):
 
----
+```bash
+sudo bash scripts/rog-monitor-safe-mode.sh disable
+sudo bash scripts/rog-monitor-safe-mode.sh no-auto-profile
+```
+
+## TUI keys
+
+| Key | Action |
+| --- | --- |
+| `q` | Quit |
+| `p` | Cycle power profile (`power-saver` -> `balanced` -> `performance`) |
+| `g` | Change GPU mode (`Hybrid` <-> `Integrated`); press again while pending to cancel |
+| `t` | Cycle color theme |
+| `v` | View full event log |
+| `e` | Export history as JSON + CSV |
+| `h` | Help |
 
 ## CLI
 
-```
+```text
 monitor [--once] [--json] [--json-stream] [--desktop] [--interval S]
-        [--no-gpu] [--theme TEMA] [--lang es|en] [--version]
+        [--no-gpu] [--theme THEME] [--lang en|es] [--version]
 ```
 
-`--json` / `--json-stream` emiten NDJSON con todos los sensores — es la API
-que consume la app de escritorio y el punto de integración para widgets o
-scripts externos.
+`--json` and `--json-stream` emit NDJSON with all sensors. The desktop app uses
+that stream, and external widgets/scripts can consume it too.
 
----
+## Configuration
 
-## Configuración
-
-`~/.config/rog-monitor/config.json` (se crea al hacer el primer guardado):
+`~/.config/rog-monitor/config.json` is created on first save:
 
 ```json
 {
@@ -255,58 +261,47 @@ scripts externos.
 }
 ```
 
-`temp_colors` define tus límites personales `[verde_antes, amarillo_antes,
-naranja_antes]` — por encima del último valor todo aparece en rojo.
+`temp_colors` defines personal temperature bands: `[green_before,
+yellow_before, orange_before]`. Above the last value, the UI turns red.
 
-Todos estos valores son editables directamente desde el modal **ALERTAS** de
-la app de escritorio.
+These values are editable from the desktop app's **ALERTS** modal.
 
----
+## Supported hardware
 
-## Hardware soportado
+### Calibrated profiles
 
-### Perfiles calibrados
+The repo includes community-calibrated profiles and can also read live firmware
+ranges from sysfs. Public profiles must avoid personal data and use only the
+technical identifiers needed to detect the device.
 
-El repo incluye perfiles calibrados comunitarios y también puede leer rangos en
-vivo desde sysfs. Para publicar un perfil nuevo, evita datos personales y usa
-solo identificadores técnicos de firmware cuando sean necesarios para detectar
-el dispositivo.
+### Generic sensors
 
-### Sensores genéricos
-
-La capa de sensores enumera hwmon directamente; cualquier equipo con los
-chips estándar funciona sin configuración extra:
+The sensor layer enumerates hwmon directly. Any machine exposing standard chips
+works without extra configuration:
 
 - **CPU**: `coretemp` (Intel), `k10temp` / `zenpower` (AMD)
-- **GPU**: NVIDIA vía `nvidia-smi`; AMD vía `amdgpu` hwmon
-- **Ventiladores**: cualquier chip que exponga `fan*_input` (el chip `asus`
-  da los tres ventiladores del ROG etiquetados cpu/gpu/mid)
-- **Perfiles de energía**: `asus-wmi` / `asus-armoury`, con fallback a
-  `platform_profile` genérico cuando no hay `asus-wmi`
+- **GPU**: NVIDIA through `nvidia-smi`; AMD through `amdgpu` hwmon
+- **Fans**: any chip exposing `fan*_input`
+- **Power profiles**: `asus-wmi` / `asus-armoury`, with a generic
+  `platform_profile` fallback
 
-Los sensores que falten degradan a `N/A` en silencio, sin spam de errores.
+Missing sensors degrade quietly to `N/A`.
 
-### Cómo agregar tu equipo
+### Add your machine
 
-Ver [docs/supported-devices.md](docs/supported-devices.md) para:
-- Cómo leer tus rangos seguros desde `asus-armoury` en sysfs (o desde
-  Armoury Crate en Windows).
-- El esquema del archivo `src/rog_monitor/device_profiles.json`.
-- Cómo crear un perfil personalizado en
-  `~/.config/rog-monitor/device.json`.
-- La lista de modelos con perfiles ya incluidos.
+See [docs/supported-devices.md](docs/supported-devices.md) for:
 
----
+- Reading safe ranges from `asus-armoury` sysfs or Armoury Crate on Windows.
+- The schema for `src/rog_monitor/device_profiles.json`.
+- Creating a local profile at `~/.config/rog-monitor/device.json`.
+- Current public model support.
 
-## Sin telemetría, sin red
+## No telemetry, no network
 
-No se envía ningún dato a ningún servidor. El único uso de red permitido
-es el botón de actualización (un `git fetch` sobre tu propio clon) y el
-botón de reportar error (abre GitHub en el navegador con información del
-sistema prellenada). Nunca se hace `git push` automáticamente.
+No data is sent to any server. The only allowed network actions are the update
+button (`git fetch` on your own clone) and the report button, which opens GitHub
+with system information pre-filled. ROG Monitor never runs `git push`.
 
----
-
-## Licencia
+## License
 
 MIT

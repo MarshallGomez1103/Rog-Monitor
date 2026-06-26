@@ -260,8 +260,8 @@ def _save_baseline(values: dict) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w") as fh:
             json.dump({
-                "_comment": "Valores de fabrica detectados de ESTE equipo en el primer arranque. "
-                            "RESET A FABRICA vuelve aqui (no a los valores de las fotos/DB).",
+                "_comment": "Factory values detected on THIS machine at first launch. "
+                            "RESET TO FACTORY restores these values, not photo/DB values.",
                 "captured_at": time.strftime("%Y-%m-%d %H:%M:%S"),
                 "values": values,
             }, fh, indent=2)
@@ -325,8 +325,8 @@ def _controls_from_profile(entry: dict, wayland: bool,
                 c["writable"] = False
                 c["nvml_ok"] = False
                 c["reason"] = (
-                    "NVML no disponible (¿driver NVIDIA no cargado?). "
-                    "Reinicia la app cuando el driver esté activo."
+                    "NVML unavailable (is the NVIDIA driver loaded?). "
+                    "Restart the app when the driver is active."
                 )
 
         controls.append(c)
@@ -343,7 +343,7 @@ def _auto_profile(db: dict, wayland: bool) -> dict:
     # the NVML-live values. writable=False only if NVML is missing (handled there).
     return {
         "id": "auto",
-        "name": "Genérico (auto-detectado)",
+        "name": "Generic (auto-detected)",
         "calibrated": False,
         "controls": [
             {"key": k, "attr": k.replace("pl1", "ppt_pl1_spl")
@@ -467,14 +467,14 @@ class PowerControl:
                 else:
                     return {
                         "ok": False,
-                        "err": "No se pudo leer los offsets actuales de NVML para rellenar el faltante.",
+                        "err": "Could not read current NVML offsets to fill the missing value.",
                     }
 
             gpu_script_path = str(_GPU_CLOCKS_SCRIPT)
             if not Path(gpu_script_path).exists():
                 return {
                     "ok": False,
-                    "err": f"Script no encontrado: {gpu_script_path}",
+                    "err": f"Script not found: {gpu_script_path}",
                 }
 
             gpu_cmd = ["bash", gpu_script_path] if run_as_root else ["pkexec", "bash", gpu_script_path]
@@ -489,9 +489,9 @@ class PowerControl:
                     stdin=subprocess.DEVNULL,
                 )
             except (OSError, subprocess.SubprocessError) as exc:
-                return {"ok": False, "err": f"Error ejecutando apply-gpu-clocks.sh: {exc}"}
+                return {"ok": False, "err": f"Error running apply-gpu-clocks.sh: {exc}"}
             if gpu_proc.returncode != 0:
-                err = (gpu_proc.stderr or gpu_proc.stdout or "Error desconocido.").strip()
+                err = (gpu_proc.stderr or gpu_proc.stdout or "Unknown error.").strip()
                 return {"ok": False, "err": f"GPU clocks: {err}"}
             # Parse JSON output from gpu_clocks.py
             try:
@@ -502,7 +502,7 @@ class PowerControl:
                 applied["base_clock_offset"] = gpu_result.get("core_applied", core_mhz)
                 applied["mem_clock_offset"] = gpu_result.get("mem_applied", mem_mhz)
             else:
-                err = gpu_result.get("err", "Error desconocido al aplicar clocks de GPU.")
+                err = gpu_result.get("err", "Unknown error while applying GPU clocks.")
                 return {"ok": False, "err": f"GPU clocks: {err}"}
 
         # Invalidate cache and return fresh state.
@@ -517,7 +517,7 @@ class PowerControl:
         baseline = st.get("baseline") or {}
         values = {k: int(v) for k, v in baseline.items() if k in _ATTR_KEYS}
         if not values:
-            return {"ok": False, "err": "No encontré los valores de fábrica de este equipo."}
+            return {"ok": False, "err": "Factory values for this machine were not found."}
         return self.apply(values)
 
     def apply_for_profile(self, profile: str | None) -> dict:
@@ -539,7 +539,7 @@ class PowerControl:
         """
         canon = _canonical_profile(profile)
         if canon is None:
-            return {"ok": False, "err": f"Perfil no reconocido: '{profile}'."}
+            return {"ok": False, "err": f"Unknown profile: '{profile}'."}
 
         values = profile_power_for(canon, _active_profile_entry())
         if not values:
@@ -593,8 +593,8 @@ class PowerControl:
                 profile = _auto_profile(db, wayland)
                 device_info = {
                     "id": "auto",
-                    "name": profile.get("name", "Genérico"),
-                    "friendly_name": profile.get("name", "Genérico"),
+                    "name": profile.get("name", "Generic"),
+                    "friendly_name": profile.get("name", "Generic"),
                     "calibrated": False,
                     "source": "auto",
                 }
@@ -602,8 +602,8 @@ class PowerControl:
         controls_list = _controls_from_profile(profile, wayland, nvml_data)
 
         # Factory baseline: capture once (firmware default_value, else current),
-        # save locally; RESET A FÁBRICA restores it. `default` shown in the UI is
-        # this baseline, so "fábrica: N" reflects how THIS machine shipped.
+        # save locally; RESET TO FACTORY restores it. `default` shown in the UI is
+        # this baseline, so "factory: N" reflects how THIS machine shipped.
         baseline = _load_baseline()
         if not baseline:
             for c in controls_list:
@@ -615,11 +615,11 @@ class PowerControl:
                         baseline[c["key"]] = int(fav)
             _save_baseline(baseline)
 
-        # Emit controls as an OBJECT keyed by control id (the UI contract) with a
-        # Spanish `label`; default = local factory baseline when known.
+        # Emit controls as an OBJECT keyed by control id (the UI contract) with an
+        # English base `label`; default = local factory baseline when known.
         controls: dict[str, dict] = {}
         for c in controls_list:
-            c["label"] = c.get("label_es", c["key"])
+            c["label"] = c.get("label_en") or c.get("label_es") or c["key"]
             if c["key"] in baseline:
                 c["default"] = baseline[c["key"]]
             controls[c["key"]] = c
@@ -667,29 +667,29 @@ class PowerControl:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m rog_monitor.power_control",
-        description="Control de potencia ROG (lectura segura; escritura vía pkexec).",
+        description="ROG power control (safe reads; writes through pkexec).",
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    sub.add_parser("state", help="Mostrar estado actual (JSON).")
+    sub.add_parser("state", help="Show current state (JSON).")
 
-    apply_p = sub.add_parser("apply", help="Aplicar cambios (JSON).")
+    apply_p = sub.add_parser("apply", help="Apply changes (JSON).")
     apply_p.add_argument(
         "--json", required=True, metavar="JSON",
-        help='Objeto JSON con claves pl1/pl2/dynamic_boost/thermal_target/'
+        help='JSON object with keys pl1/pl2/dynamic_boost/thermal_target/'
              'base_clock_offset/mem_clock_offset.',
     )
 
-    sub.add_parser("reset", help="Restaurar valores por defecto del firmware.")
+    sub.add_parser("reset", help="Restore firmware default values.")
 
     prof_p = sub.add_parser(
         "apply-profile",
-        help="Aplicar los límites de poder calibrados de un perfil "
+        help="Apply calibrated power limits for a profile "
              "(quiet/balanced/performance).",
     )
     prof_p.add_argument(
         "profile", metavar="PROFILE",
-        help="quiet | balanced | performance (acepta power-saver = quiet).",
+        help="quiet | balanced | performance (accepts power-saver = quiet).",
     )
 
     args = parser.parse_args(argv)

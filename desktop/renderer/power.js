@@ -194,6 +194,11 @@
   ================================================================= */
   const CLOCK_OFFSET_KEYS = ['base_clock_offset', 'mem_clock_offset'];
 
+  function controlLabel(ctrl, key) {
+    const lang = currentLang();
+    return ctrl[`label_${lang}`] || ctrl.label_en || ctrl.label_es || ctrl.label || key;
+  }
+
   function buildSliders(controls, tabKeys) {
     const wrap = document.createElement('div');
 
@@ -213,7 +218,7 @@
 
       const labelSpan = document.createElement('span');
       labelSpan.className = 'power-control-label';
-      labelSpan.textContent = ctrl.label || key;
+      labelSpan.textContent = controlLabel(ctrl, key);
 
       const unitSpan = document.createElement('span');
       unitSpan.className = 'power-control-unit';
@@ -595,7 +600,7 @@
         (safeMax !== undefined && safeMax !== null && to > safeMax);
       out.push({
         key,
-        label: ctrl.label || key,
+        label: controlLabel(ctrl, key),
         unit: ctrl.unit || '',
         from,
         to,
@@ -1409,7 +1414,7 @@
   }
 
   function currentLang() {
-    return window.i18n && typeof window.i18n.get === 'function' ? window.i18n.get() : 'es';
+    return window.i18n && typeof window.i18n.get === 'function' ? window.i18n.get() : 'en';
   }
 
   function safeRuleText(entry) {

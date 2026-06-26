@@ -82,6 +82,27 @@
                                        zh: '功耗：{from} W → {to} W（最大 {max} W）。',
                                        ja: '電力：{from} W → {to} W（最大 {max} W）。',
                                        ko: '전력: {from} W → {to} W (최대 {max} W).' },
+      'bench.detail.chart_gpu_temp': { es: 'GPU · Temperatura', en: 'GPU · Temperature', fr: 'GPU · Température', it: 'GPU · Temperatura', pt: 'GPU · Temperatura', zh: 'GPU · 温度', ja: 'GPU · 温度', ko: 'GPU · 온도' },
+      'bench.detail.chart_gpu_power':{ es: 'GPU · Consumo', en: 'GPU · Power', fr: 'GPU · Puissance', it: 'GPU · Consumo', pt: 'GPU · Consumo', zh: 'GPU · 功耗', ja: 'GPU · 電力', ko: 'GPU · 전력' },
+      'bench.detail.chart_gpu_util': { es: 'GPU · Uso', en: 'GPU · Usage', fr: 'GPU · Utilisation', it: 'GPU · Uso', pt: 'GPU · Uso', zh: 'GPU · 使用率', ja: 'GPU · 使用率', ko: 'GPU · 사용량' },
+      'bench.detail.chart_cpu_temp': { es: 'CPU · Temperatura', en: 'CPU · Temperature', fr: 'CPU · Température', it: 'CPU · Temperatura', pt: 'CPU · Temperatura', zh: 'CPU · 温度', ja: 'CPU · 温度', ko: 'CPU · 온도' },
+      'bench.detail.chart_cpu_power':{ es: 'CPU · Consumo', en: 'CPU · Power', fr: 'CPU · Puissance', it: 'CPU · Consumo', pt: 'CPU · Consumo', zh: 'CPU · 功耗', ja: 'CPU · 電力', ko: 'CPU · 전력' },
+      'bench.detail.series_gpu_temp':{ es: 'Temp GPU', en: 'GPU Temp', fr: 'Temp GPU', it: 'Temp GPU', pt: 'Temp GPU', zh: 'GPU 温度', ja: 'GPU 温度', ko: 'GPU 온도' },
+      'bench.detail.series_watts':   { es: 'Vatios', en: 'Watts', fr: 'Watts', it: 'Watt', pt: 'Watts', zh: '瓦特', ja: 'ワット', ko: '와트' },
+      'bench.detail.series_gpu_util':{ es: 'Uso', en: 'Usage', fr: 'Utilisation', it: 'Uso', pt: 'Uso', zh: '使用率', ja: '使用率', ko: '사용량' },
+      'bench.detail.series_cpu_avg': { es: 'Núcleos (prom.)', en: 'Cores (avg)', fr: 'Cœurs (moy.)', it: 'Core (media)', pt: 'Núcleos (méd.)', zh: '核心（平均）', ja: 'コア（平均）', ko: '코어(평균)' },
+      'bench.detail.series_cpu_pkg': { es: 'Paquete', en: 'Package', fr: 'Paquet', it: 'Pacchetto', pt: 'Pacote', zh: '封装', ja: 'パッケージ', ko: '패키지' },
+      'bench.detail.series_rapl':    { es: 'Vatios (RAPL)', en: 'Watts (RAPL)', fr: 'Watts (RAPL)', it: 'Watt (RAPL)', pt: 'Watts (RAPL)', zh: '瓦特 (RAPL)', ja: 'ワット (RAPL)', ko: '와트 (RAPL)' },
+      'bench.detail.stat_gpu_temp_max': { es: 'GPU máx', en: 'GPU max', fr: 'GPU max', it: 'GPU max', pt: 'GPU máx', zh: 'GPU 最大', ja: 'GPU 最大', ko: 'GPU 최대' },
+      'bench.detail.stat_gpu_watts_max':{ es: 'GPU W máx', en: 'GPU W max', fr: 'GPU W max', it: 'GPU W max', pt: 'GPU W máx', zh: 'GPU W 最大', ja: 'GPU W 最大', ko: 'GPU W 최대' },
+      'bench.detail.stat_gpu_util_max': { es: 'GPU uso máx', en: 'GPU usage max', fr: 'Util. GPU max', it: 'Uso GPU max', pt: 'Uso GPU máx', zh: 'GPU 使用率最大', ja: 'GPU 使用率最大', ko: 'GPU 사용량 최대' },
+      'bench.detail.stat_cpu_temp_max': { es: 'CPU máx', en: 'CPU max', fr: 'CPU max', it: 'CPU max', pt: 'CPU máx', zh: 'CPU 最大', ja: 'CPU 最大', ko: 'CPU 최대' },
+      'bench.detail.stat_cpu_package':  { es: 'CPU paquete', en: 'CPU package', fr: 'Package CPU', it: 'Package CPU', pt: 'CPU pacote', zh: 'CPU 封装', ja: 'CPU パッケージ', ko: 'CPU 패키지' },
+      'bench.detail.stat_cpu_watts_max':{ es: 'CPU W máx', en: 'CPU W max', fr: 'CPU W max', it: 'CPU W max', pt: 'CPU W máx', zh: 'CPU W 最大', ja: 'CPU W 最大', ko: 'CPU W 최대' },
+      'bench.detail.stat_throttle':  { es: 'Throttle', en: 'Throttle', fr: 'Throttle', it: 'Throttle', pt: 'Throttle', zh: '降频', ja: 'スロットル', ko: '스로틀' },
+      'bench.detail.stat_duration':  { es: 'Duración', en: 'Duration', fr: 'Durée', it: 'Durata', pt: 'Duração', zh: '时长', ja: '時間', ko: '시간' },
+      'bench.detail.throttle_value': { es: '{count} ev · {ms} ms', en: '{count} ev · {ms} ms', fr: '{count} év · {ms} ms', it: '{count} ev · {ms} ms', pt: '{count} ev · {ms} ms', zh: '{count} 次 · {ms} ms', ja: '{count} 件 · {ms} ms', ko: '{count}회 · {ms} ms' },
+      'bench.detail.fans_max':       { es: 'Ventiladores (máx): {fans}', en: 'Fans (max): {fans}', fr: 'Ventilateurs (max) : {fans}', it: 'Ventole (max): {fans}', pt: 'Ventoinhas (máx): {fans}', zh: '风扇（最大）：{fans}', ja: 'ファン（最大）: {fans}', ko: '팬(최대): {fans}' },
       'bench.tool_cpu':              { es: 'CPU al 100% (carga sintética)',
                                        en: 'CPU at 100% (synthetic load)',
                                        fr: 'CPU à 100% (charge synthétique)',
@@ -353,22 +374,22 @@
     const green = '#4cc38a';
     if (isGpu) {
       return [
-        { title: 'GPU · Temperatura', unit: '°C',
-          series: [{ key: 'gpu_temp', color: accent, label: 'Temp GPU' }] },
-        { title: 'GPU · Consumo', unit: ' W',
-          series: [{ key: 'gpu_watts', color: accent2, label: 'Watts' }] },
-        { title: 'GPU · Uso', unit: '%',
-          series: [{ key: 'gpu_util', color: green, label: 'Uso' }] },
+        { title: _t('bench.detail.chart_gpu_temp'), unit: '°C',
+          series: [{ key: 'gpu_temp', color: accent, label: _t('bench.detail.series_gpu_temp') }] },
+        { title: _t('bench.detail.chart_gpu_power'), unit: ' W',
+          series: [{ key: 'gpu_watts', color: accent2, label: _t('bench.detail.series_watts') }] },
+        { title: _t('bench.detail.chart_gpu_util'), unit: '%',
+          series: [{ key: 'gpu_util', color: green, label: _t('bench.detail.series_gpu_util') }] },
       ];
     }
     return [
-      { title: 'CPU · Temperatura', unit: '°C',
+      { title: _t('bench.detail.chart_cpu_temp'), unit: '°C',
         series: [
-          { key: 'cpu_temp', color: accent, label: 'Núcleos (avg)' },
-          { key: 'cpu_package', color: accent2, label: 'Paquete' },
+          { key: 'cpu_temp', color: accent, label: _t('bench.detail.series_cpu_avg') },
+          { key: 'cpu_package', color: accent2, label: _t('bench.detail.series_cpu_pkg') },
         ] },
-      { title: 'CPU · Consumo', unit: ' W',
-        series: [{ key: 'cpu_watts', color: green, label: 'Watts (RAPL)' }] },
+      { title: _t('bench.detail.chart_cpu_power'), unit: ' W',
+        series: [{ key: 'cpu_watts', color: green, label: _t('bench.detail.series_rapl') }] },
     ];
   }
 
@@ -413,25 +434,25 @@
   function statsGrid(item, isGpu) {
     const s = item.summary || {};
     const cells = isGpu ? [
-      { l: 'GPU máx', v: s.gpu_temp_max != null ? `${_fmt(s.gpu_temp_max, 1)} °C` : '--', accent: s.gpu_temp_max >= 85 },
-      { l: 'GPU W máx', v: s.gpu_watts_max != null ? `${_fmt(s.gpu_watts_max, 1)} W` : '--' },
-      { l: 'GPU uso máx', v: s.gpu_util_max != null ? `${_fmt(s.gpu_util_max, 0)} %` : '--' },
-      { l: 'Throttle', v: `${s.throttle_events ?? 0} ev · ${s.throttle_ms ?? 0} ms`, accent: (s.throttle_events ?? 0) > 10 },
-      { l: 'Duración', v: item.seconds != null ? `${item.seconds} s` : '--' },
+      { l: _t('bench.detail.stat_gpu_temp_max'), v: s.gpu_temp_max != null ? `${_fmt(s.gpu_temp_max, 1)} °C` : '--', accent: s.gpu_temp_max >= 85 },
+      { l: _t('bench.detail.stat_gpu_watts_max'), v: s.gpu_watts_max != null ? `${_fmt(s.gpu_watts_max, 1)} W` : '--' },
+      { l: _t('bench.detail.stat_gpu_util_max'), v: s.gpu_util_max != null ? `${_fmt(s.gpu_util_max, 0)} %` : '--' },
+      { l: _t('bench.detail.stat_throttle'), v: _t('bench.detail.throttle_value', { count: s.throttle_events ?? 0, ms: s.throttle_ms ?? 0 }), accent: (s.throttle_events ?? 0) > 10 },
+      { l: _t('bench.detail.stat_duration'), v: item.seconds != null ? `${item.seconds} s` : '--' },
     ] : [
-      { l: 'CPU máx', v: s.cpu_temp_max != null ? `${_fmt(s.cpu_temp_max, 1)} °C` : '--', accent: s.cpu_temp_max >= 90 },
-      { l: 'CPU paquete', v: s.cpu_package_max != null ? `${_fmt(s.cpu_package_max, 1)} °C` : '--' },
-      { l: 'CPU W máx', v: s.cpu_watts_max != null ? `${_fmt(s.cpu_watts_max, 1)} W` : '--' },
-      { l: 'Throttle', v: `${s.throttle_events ?? 0} ev · ${s.throttle_ms ?? 0} ms`, accent: (s.throttle_events ?? 0) > 10 },
-      { l: 'Duración', v: item.seconds != null ? `${item.seconds} s` : '--' },
+      { l: _t('bench.detail.stat_cpu_temp_max'), v: s.cpu_temp_max != null ? `${_fmt(s.cpu_temp_max, 1)} °C` : '--', accent: s.cpu_temp_max >= 90 },
+      { l: _t('bench.detail.stat_cpu_package'), v: s.cpu_package_max != null ? `${_fmt(s.cpu_package_max, 1)} °C` : '--' },
+      { l: _t('bench.detail.stat_cpu_watts_max'), v: s.cpu_watts_max != null ? `${_fmt(s.cpu_watts_max, 1)} W` : '--' },
+      { l: _t('bench.detail.stat_throttle'), v: _t('bench.detail.throttle_value', { count: s.throttle_events ?? 0, ms: s.throttle_ms ?? 0 }), accent: (s.throttle_events ?? 0) > 10 },
+      { l: _t('bench.detail.stat_duration'), v: item.seconds != null ? `${item.seconds} s` : '--' },
     ];
     let grid = `<div class="bench-detail-grid">${cells.map((c) =>
       `<div class="bench-detail-cell"><label>${_esc(c.l)}</label><b${c.accent ? ' class="accent"' : ''}>${_esc(c.v)}</b></div>`).join('')}</div>`;
 
     const fanEntries = Object.entries(s.fan_rpm_max || {});
     if (fanEntries.length) {
-      grid += `<div class="bench-detail-fans">Ventiladores (máx): ${
-        fanEntries.map(([k, v]) => `<b>${_esc(k)}: ${v} RPM</b>`).join(' · ')}</div>`;
+      const fans = fanEntries.map(([k, v]) => `<b>${_esc(k)}: ${v} RPM</b>`).join(' · ');
+      grid += `<div class="bench-detail-fans">${_t('bench.detail.fans_max', { fans })}</div>`;
     }
     return grid;
   }

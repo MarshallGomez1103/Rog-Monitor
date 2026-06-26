@@ -9,8 +9,8 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "electron": "^33.0.0",
-    "electron-builder": "^25.0.0"
+    "electron": "^42.5.0",
+    "electron-builder": "^26.15.3"
   },
   "productName": "ROG Monitor",
   "build": {

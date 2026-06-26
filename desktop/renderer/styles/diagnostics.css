@@ -1,13 +1,13 @@
 /* ROG Monitor — Diagnóstico hub (v18, cards + tests interactivos).
    Paleta: --accent / --accent2 / --panel / --hair / --ink / --dim.
    Esquema visual coherente con el resto: esquinas cortadas (clip-path),
-   chips numerados, tipografía grande, glow neón del tema activo. */
+   chips numerados y acentos del tema activo sin sacrificar legibilidad. */
 
 /* =========================================================
    MODAL
    ========================================================= */
 .diag-card {
-  width: min(92vw, 860px);
+  width: min(94vw, 1120px);
   max-height: 88vh;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -22,9 +22,9 @@
 .diag-card h3 {
   margin: 0 0 0.2rem;
   font-size: 1.15rem;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.07em;
   color: var(--accent);
-  text-shadow: var(--neon-glow-soft);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
 /* =========================================================
@@ -32,39 +32,51 @@
    ========================================================= */
 .diag-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 0.65rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
   margin: 0.9rem 0 1.2rem;
 }
 
 .diag-card-item {
   background: var(--panel);
-  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--hair));
-  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 15%, transparent),
-              inset 0 0 8px color-mix(in srgb, var(--accent) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--hair));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 4%, transparent);
   clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
-  padding: 0.6rem 0.75rem 0.5rem;
+  min-height: 112px;
+  padding: 0.68rem 0.8rem 0.62rem;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  justify-content: flex-start;
+  gap: 0.2rem;
 }
 
 .diag-card-label {
   font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--dim);
+  letter-spacing: 0.09em;
+  color: color-mix(in srgb, var(--dim) 82%, var(--ink));
   text-transform: uppercase;
 }
 
 .diag-card-value {
-  font-size: 1.1rem;
+  font-size: 1.04rem;
   font-weight: 700;
   font-family: var(--mono);
-  color: var(--accent);
-  text-shadow: var(--neon-glow-soft);
-  word-break: break-all;
-  line-height: 1.2;
+  color: color-mix(in srgb, var(--accent) 82%, var(--ink));
+  text-shadow: none;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  line-height: 1.18;
+}
+
+.diag-card-value.long {
+  font-size: 0.9rem;
+  line-height: 1.22;
+}
+
+.diag-card-value.small {
+  font-size: 0.76rem;
+  line-height: 1.28;
 }
 
 .diag-card-sub {
@@ -79,8 +91,8 @@
 .diag-section-title {
   font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: 0.15em;
-  color: var(--dim);
+  letter-spacing: 0.13em;
+  color: color-mix(in srgb, var(--dim) 88%, var(--ink));
   border-bottom: 1px solid var(--hair);
   padding-bottom: 0.3rem;
   margin: 1.1rem 0 0.7rem;

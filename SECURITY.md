@@ -25,8 +25,8 @@ Root is only used for allowlisted hardware/system actions:
 Privileged services must not call `pkexec`; if a process already runs as root,
 it must write through the allowlisted scripts directly.
 
-Every one of these commands is listed in the app under **AYUDA → COMANDOS DEL
-SISTEMA**, showing the literal command and why it needs root, so users can audit
+Every one of these commands is listed in the app under **Help -> System
+Commands**, showing the literal command and why it needs root, so users can audit
 exactly what runs as root (source: `desktop/renderer/commands.js`).
 
 ## Hard safety rules
@@ -46,7 +46,7 @@ exactly what runs as root (source: `desktop/renderer/commands.js`).
 From a TTY, disable all root integrations:
 
 ```bash
-cd ~/MyFiles/Dev/Rog-Monitor
+cd /path/to/Rog-Monitor
 sudo bash scripts/rog-monitor-safe-mode.sh disable
 sudo reboot
 ```

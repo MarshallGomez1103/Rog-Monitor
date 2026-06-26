@@ -17,7 +17,7 @@
 
 // NOTA: mantener esta versión (v18.0.0) sincronizada con desktop/package.json ("version").
 const ROADMAP_CURRENT = {
-  version: 'v19.0.0',
+  version: 'v20.0.0',
   label: {
     es: 'Armoury Crate para Linux — seguro, bonito, todo-en-uno, sin telemetría',
     en: 'Armoury Crate for Linux — safe, beautiful, all-in-one, no telemetry',
@@ -1587,7 +1587,7 @@ const ROADMAP_DONE = [
   },
   {
     date: '2026-06-25',
-    version: 'v19.0.0',
+    version: 'v20.0.0',
     title: {
       es: 'Transparencia, arreglo de Diagnóstico y listo para lanzar',
       en: 'Transparency, Diagnostics fix and launch-ready',
@@ -1662,25 +1662,25 @@ const ROADMAP_TODO = [
     items: [
       {
         title: {
-          es: 'Casi listo (v19) — solo falta esto para lanzar',
-          en: 'Almost there (v19) — only these remain to launch',
-          fr: 'Presque prêt (v19) — il ne reste que ça pour lancer',
-          it: 'Quasi pronto (v19) — manca solo questo per il lancio',
-          pt: 'Quase lá (v19) — só falta isto para lançar',
-          zh: '即将就绪（v19）— 发布前只剩这些',
-          ja: 'あと少し（v19）— ローンチに残るのはこれだけ',
-          ko: '거의 완료(v19) — 출시까지 이것만 남음',
+          es: 'Casi listo (v20) — solo falta esto para lanzar',
+          en: 'Almost there (v20) — only these remain to launch',
+          fr: 'Presque prêt (v20) — il ne reste que ça pour lancer',
+          it: 'Quasi pronto (v20) — manca solo questo per il lancio',
+          pt: 'Quase lá (v20) — só falta isto para lançar',
+          zh: '即将就绪（v20）— 发布前只剩这些',
+          ja: 'あと少し（v20）— ローンチに残るのはこれだけ',
+          ko: '거의 완료(v20) — 출시까지 이것만 남음',
         },
         points: [
           {
-            es: 'Hecho en v19: AppImage (instala sin terminal), CI con validación i18n, docs (LICENSE/CONTRIBUTING/SECURITY/TRANSLATING) y transparencia total de comandos',
-            en: 'Done in v19: AppImage (no-terminal install), CI with i18n validation, docs (LICENSE/CONTRIBUTING/SECURITY/TRANSLATING) and full command transparency',
-            fr: 'Fait en v19 : AppImage (install sans terminal), CI avec validation i18n, docs (LICENSE/CONTRIBUTING/SECURITY/TRANSLATING) et transparence totale des commandes',
-            it: 'Fatto in v19: AppImage (installazione senza terminale), CI con validazione i18n, docs (LICENSE/CONTRIBUTING/SECURITY/TRANSLATING) e trasparenza totale dei comandi',
-            pt: 'Feito na v19: AppImage (instala sem terminal), CI com validação i18n, docs (LICENSE/CONTRIBUTING/SECURITY/TRANSLATING) e transparência total dos comandos',
-            zh: 'v19 已完成：AppImage（免终端安装）、含 i18n 校验的 CI、文档（LICENSE/CONTRIBUTING/SECURITY/TRANSLATING）以及命令全透明',
-            ja: 'v19 で完了: AppImage（ターミナル不要インストール）、i18n 検証付き CI、ドキュメント（LICENSE/CONTRIBUTING/SECURITY/TRANSLATING）、コマンドの完全な透明性',
-            ko: 'v19 완료: AppImage(터미널 없이 설치), i18n 검증 포함 CI, 문서(LICENSE/CONTRIBUTING/SECURITY/TRANSLATING), 명령 완전 투명성',
+            es: 'Hecho en v20: AppImage (instala sin terminal), CI con validación i18n, docs (LICENSE/CONTRIBUTING/SECURITY/TRANSLATING) y transparencia total de comandos',
+            en: 'Done in v20: AppImage (no-terminal install), CI with i18n validation, docs (LICENSE/CONTRIBUTING/SECURITY/TRANSLATING) and full command transparency',
+            fr: 'Fait en v20 : AppImage (install sans terminal), CI avec validation i18n, docs (LICENSE/CONTRIBUTING/SECURITY/TRANSLATING) et transparence totale des commandes',
+            it: 'Fatto in v20: AppImage (installazione senza terminale), CI con validazione i18n, docs (LICENSE/CONTRIBUTING/SECURITY/TRANSLATING) e trasparenza totale dei comandi',
+            pt: 'Feito na v20: AppImage (instala sem terminal), CI com validação i18n, docs (LICENSE/CONTRIBUTING/SECURITY/TRANSLATING) e transparência total dos comandos',
+            zh: 'v20 已完成：AppImage（免终端安装）、含 i18n 校验的 CI、文档（LICENSE/CONTRIBUTING/SECURITY/TRANSLATING）以及命令全透明',
+            ja: 'v20 で完了: AppImage（ターミナル不要インストール）、i18n 検証付き CI、ドキュメント（LICENSE/CONTRIBUTING/SECURITY/TRANSLATING）、コマンドの完全な透明性',
+            ko: 'v20 완료: AppImage(터미널 없이 설치), i18n 검증 포함 CI, 문서(LICENSE/CONTRIBUTING/SECURITY/TRANSLATING), 명령 완전 투명성',
           },
           {
             es: 'Falta capturas + GIF/vídeo corto para el README (requiere la GUI)',

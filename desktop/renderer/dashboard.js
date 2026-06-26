@@ -21,7 +21,10 @@
   'use strict';
 
   /* ---- i18n seguro ---- */
-  const t = (key, fb) => (window.t ? window.t(key) || fb || key : fb || key);
+  const t = (key, fb) => {
+    const value = window.t ? window.t(key) : key;
+    return value && value !== key ? value : (fb || key);
+  };
 
   /* Registrar nuestras claves */
   if (window.i18n && window.i18n.register) {
@@ -43,6 +46,7 @@
         'dash.edit_off':        'MODO EDICIÓN',
         'dash.edit_title_on':   'Modo edición activo: arrastra, oculta o reordena bloques. Clic para salir.',
         'dash.edit_title_off':  'Activa el modo edición para poder arrastrar/ocultar/reordenar bloques.',
+        'dash.show_btn':        '+ Mostrar',
       },
       en: {
         'dash.handle_title':    'Drag to move',
@@ -61,6 +65,121 @@
         'dash.edit_off':        'EDIT MODE',
         'dash.edit_title_on':   'Edit mode active: drag, hide or reorder blocks. Click to exit.',
         'dash.edit_title_off':  'Turn on edit mode to drag/hide/reorder blocks.',
+        'dash.show_btn':        '+ Show',
+      },
+      fr: {
+        'dash.handle_title':    'Faire glisser pour déplacer',
+        'dash.hide_title':      'Masquer ce bloc',
+        'dash.panel_title':     'Paramètres du tableau',
+        'dash.panel_sub':       'Afficher ou masquer des blocs et rétablir l\'ordre par défaut.',
+        'dash.reset_btn':       'Réinitialiser le tableau',
+        'dash.show_hidden':     'Blocs masqués',
+        'dash.no_hidden':       'Tous les blocs sont visibles.',
+        'dash.close':           'Fermer',
+        'dash.btn_topbar':      'MISE EN PAGE',
+        'dash.col_left':        'Colonne gauche',
+        'dash.col_right':       'Colonne droite',
+        'dash.drag_here':       'Déposez ici',
+        'dash.edit_on':         'MODE ÉDITION : ACTIF',
+        'dash.edit_off':        'MODE ÉDITION',
+        'dash.edit_title_on':   'Mode édition actif : faites glisser, masquez ou réordonnez les blocs. Cliquez pour sortir.',
+        'dash.edit_title_off':  'Activez le mode édition pour glisser/masquer/réordonner les blocs.',
+        'dash.show_btn':        '+ Afficher',
+      },
+      it: {
+        'dash.handle_title':    'Trascina per spostare',
+        'dash.hide_title':      'Nascondi questo blocco',
+        'dash.panel_title':     'Impostazioni dashboard',
+        'dash.panel_sub':       'Mostra o nascondi blocchi e ripristina l\'ordine predefinito.',
+        'dash.reset_btn':       'Ripristina dashboard',
+        'dash.show_hidden':     'Blocchi nascosti',
+        'dash.no_hidden':       'Tutti i blocchi sono visibili.',
+        'dash.close':           'Chiudi',
+        'dash.btn_topbar':      'LAYOUT',
+        'dash.col_left':        'Colonna sinistra',
+        'dash.col_right':       'Colonna destra',
+        'dash.drag_here':       'Rilascia qui',
+        'dash.edit_on':         'MODALITÀ MODIFICA: ATTIVA',
+        'dash.edit_off':        'MODALITÀ MODIFICA',
+        'dash.edit_title_on':   'Modalità modifica attiva: trascina, nascondi o riordina i blocchi. Clic per uscire.',
+        'dash.edit_title_off':  'Attiva la modalità modifica per trascinare/nascondere/riordinare i blocchi.',
+        'dash.show_btn':        '+ Mostra',
+      },
+      pt: {
+        'dash.handle_title':    'Arrastar para mover',
+        'dash.hide_title':      'Ocultar este bloco',
+        'dash.panel_title':     'Configurações do painel',
+        'dash.panel_sub':       'Mostra ou oculta blocos e repõe a ordem predefinida.',
+        'dash.reset_btn':       'Repor painel',
+        'dash.show_hidden':     'Blocos ocultos',
+        'dash.no_hidden':       'Todos os blocos estão visíveis.',
+        'dash.close':           'Fechar',
+        'dash.btn_topbar':      'LAYOUT',
+        'dash.col_left':        'Coluna esquerda',
+        'dash.col_right':       'Coluna direita',
+        'dash.drag_here':       'Solta aqui',
+        'dash.edit_on':         'MODO EDIÇÃO: ATIVO',
+        'dash.edit_off':        'MODO EDIÇÃO',
+        'dash.edit_title_on':   'Modo edição ativo: arrasta, oculta ou reordena blocos. Clique para sair.',
+        'dash.edit_title_off':  'Ativa o modo edição para arrastar/ocultar/reordenar blocos.',
+        'dash.show_btn':        '+ Mostrar',
+      },
+      zh: {
+        'dash.handle_title':    '拖动以移动',
+        'dash.hide_title':      '隐藏此区块',
+        'dash.panel_title':     '仪表板设置',
+        'dash.panel_sub':       '显示或隐藏区块并恢复默认顺序。',
+        'dash.reset_btn':       '重置仪表板',
+        'dash.show_hidden':     '隐藏的区块',
+        'dash.no_hidden':       '所有区块均可见。',
+        'dash.close':           '关闭',
+        'dash.btn_topbar':      '布局',
+        'dash.col_left':        '左列',
+        'dash.col_right':       '右列',
+        'dash.drag_here':       '放在这里',
+        'dash.edit_on':         '编辑模式：开启',
+        'dash.edit_off':        '编辑模式',
+        'dash.edit_title_on':   '编辑模式已开启：拖动、隐藏或重新排序区块。点击退出。',
+        'dash.edit_title_off':  '开启编辑模式以拖动/隐藏/重新排序区块。',
+        'dash.show_btn':        '+ 显示',
+      },
+      ja: {
+        'dash.handle_title':    'ドラッグして移動',
+        'dash.hide_title':      'このブロックを非表示',
+        'dash.panel_title':     'ダッシュボード設定',
+        'dash.panel_sub':       'ブロックの表示/非表示と既定順へのリセット。',
+        'dash.reset_btn':       'ダッシュボードをリセット',
+        'dash.show_hidden':     '非表示のブロック',
+        'dash.no_hidden':       'すべてのブロックが表示されています。',
+        'dash.close':           '閉じる',
+        'dash.btn_topbar':      'レイアウト',
+        'dash.col_left':        '左列',
+        'dash.col_right':       '右列',
+        'dash.drag_here':       'ここにドロップ',
+        'dash.edit_on':         '編集モード: オン',
+        'dash.edit_off':        '編集モード',
+        'dash.edit_title_on':   '編集モード中: ブロックをドラッグ、非表示、並べ替えできます。クリックで終了。',
+        'dash.edit_title_off':  '編集モードをオンにしてブロックをドラッグ/非表示/並べ替えします。',
+        'dash.show_btn':        '+ 表示',
+      },
+      ko: {
+        'dash.handle_title':    '드래그하여 이동',
+        'dash.hide_title':      '이 블록 숨기기',
+        'dash.panel_title':     '대시보드 설정',
+        'dash.panel_sub':       '블록을 표시/숨기고 기본 순서로 되돌립니다.',
+        'dash.reset_btn':       '대시보드 초기화',
+        'dash.show_hidden':     '숨겨진 블록',
+        'dash.no_hidden':       '모든 블록이 표시됩니다.',
+        'dash.close':           '닫기',
+        'dash.btn_topbar':      '레이아웃',
+        'dash.col_left':        '왼쪽 열',
+        'dash.col_right':       '오른쪽 열',
+        'dash.drag_here':       '여기에 놓기',
+        'dash.edit_on':         '편집 모드: 켜짐',
+        'dash.edit_off':        '편집 모드',
+        'dash.edit_title_on':   '편집 모드 활성: 블록을 드래그, 숨김 또는 재정렬합니다. 클릭하여 종료.',
+        'dash.edit_title_off':  '편집 모드를 켜서 블록을 드래그/숨김/재정렬하세요.',
+        'dash.show_btn':        '+ 표시',
       },
     });
   }
@@ -88,18 +207,18 @@
   ];
 
   /* Títulos legibles por bloque (para el panel de configuración) */
-  const BLOCK_LABELS = {
-    cpu:     'CPU',
-    gpu:     'GPU',
-    fans:    'Ventiladores',
-    aura:    'Iluminación',
-    history: 'Historial',
-    bench:   'Benchmarks',
-    system:  'Sistema',
-    battery: 'Batería',
-    disks:   'Discos',
-    events:  'Eventos',
-    procs:   'Procesos',
+  const BLOCK_LABEL_KEYS = {
+    cpu:     'block.cpu',
+    gpu:     'block.gpu',
+    fans:    'block.fans',
+    aura:    'block.aura',
+    history: 'block.history',
+    bench:   'block.bench_session',
+    system:  'block.system',
+    battery: 'block.battery',
+    disks:   'disks.title',
+    events:  'block.events',
+    procs:   'block.procs',
   };
 
   /* ---- estado ---- */
@@ -561,11 +680,11 @@
 
     hiddenList.forEach(({ key }) => {
       const li = document.createElement('li');
-      const label = BLOCK_LABELS[key] || key;
+      const label = t(BLOCK_LABEL_KEYS[key] || key, key);
       li.innerHTML = `<span>${label}</span>`;
       const btn = document.createElement('button');
       btn.className = 'ghost dash-show-btn';
-      btn.textContent = '+ Mostrar';
+      btn.textContent = t('dash.show_btn', '+ Show');
       btn.addEventListener('click', () => showBlock(key));
       li.appendChild(btn);
       list.appendChild(li);

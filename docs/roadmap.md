@@ -21,9 +21,9 @@ separate:
 | Thermal automation | (mostly DIY scripts) | **Smart guardian** (Protection / Gaming) — unique |
 
 The differentiator is the **combination + safety + UX**: everything in one place,
-Spanish-first and 8-language, with a guardian nobody else ships.
+English-first public docs and an 8-language UI, with a guardian nobody else ships.
 
-## Current (done) — through v19
+## Current (done) — through v20
 
 * [x] Unified CPU/GPU smart guardian with separate thermal ceilings.
 * [x] Guardian modes: **Protection** and **Gaming** (fans-only, no throttling). *(v14)*
@@ -50,7 +50,7 @@ Spanish-first and 8-language, with a guardian nobody else ships.
   languages. *(v18)*
 * [x] Benchmark detail fully internationalized; benchmark / event exports now generated
   in the active language; process "per-core" column neon fixed. *(v18)*
-* [x] **Privileged-command transparency**: AYUDA → COMANDOS DEL SISTEMA lists every
+* [x] **Privileged-command transparency**: Help → System Commands lists every
   `pkexec` command with the literal command + what it does + why it needs root, in all
   8 languages; the literal command also shows in the Power confirm and SMART panel. *(v19)*
 * [x] **AppImage packaging** via electron-builder (`npm run dist`), Python backend
@@ -60,10 +60,10 @@ Spanish-first and 8-language, with a guardian nobody else ships.
 * [x] Diagnostics hub open bug fixed (global `_t` collision with roadmap.js); dashboard
   bottom-left dead space rebalanced. *(v19)*
 
-## P0 — LAUNCH (open the repo to the public)
+## Launch Complete
 
-The essentials so anyone can install it and trust it. **Mostly done in v19** — only
-the items that need a human (captures) or a heavier build (Flatpak) remain.
+The public release checklist is done. The remaining items are post-launch follow-up,
+not blockers for opening the repo.
 
 * [x] **GitHub Actions CI**: `node --check`, `py_compile`, JSON + **i18n validation**,
   and a read-only sensor smoke test. *(v19)*
@@ -74,12 +74,13 @@ the items that need a human (captures) or a heavier build (Flatpak) remain.
 * [x] **Privacy / repo hygiene**: full tree **and git history** audited — no secrets,
   keys, emails, server IPs or real home paths; internal multi-agent notes
   (AGENTS / HANDOFF / build-specs) kept untracked. *(launch audit)*
-* [ ] **Launch polish (media)**: README screenshots + a short GIF/video — needs a human
-  with the GUI (slots ready in `assets/screenshots/`).
-* [ ] **Packaging — Flatpak**: fast-follow after AppImage (manifest + runtime).
+* [x] **Launch polish (media)**: README screenshots are now in place; a short GIF/video
+  can come later if useful.
+* [ ] **Packaging — Flatpak**: optional post-launch package format. Needs real
+  hardware testing because Flatpak's sandbox conflicts with direct `/sys`, udev,
+  `pkexec`, and systemd workflows unless permissions/portals are designed carefully.
 * [ ] **Single polkit privileged helper** instead of scattered `pkexec` prompts —
   deferred to P1 (risky refactor; v19 ships full *transparency* of the current prompts).
-* [ ] **GitHub Pages**: optional simple site (can serve the README).
 
 ## P1 — DIFFERENTIATORS (what nobody else bundles)
 

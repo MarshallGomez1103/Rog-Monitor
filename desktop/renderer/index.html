@@ -27,9 +27,9 @@
            Los IDs y el comportamiento de update() en app.js se preservan íntegros. -->
       <div class="status-pill" id="status-pill">
         <span id="thermal-lamp" class="lamp"></span>
-        <span id="thermal-label" class="lamp-label">—</span>
+        <span id="thermal-label" class="lamp-label" title="Thermal state" data-i18n-attr="title:thermal.unknown_title">—</span>
         <span class="status-divider"></span>
-        <span id="power-source" class="power-source" title="Fuente de energía" data-i18n-attr="title:topbar.lang">—</span>
+        <span id="power-source" class="power-source" title="Power source" data-i18n-attr="title:topbar.power_source_unknown_title">—</span>
       </div>
     </div>
 
@@ -239,10 +239,10 @@
       <article class="block charts" id="history-block" data-block="history">
         <h2><i class="dash-num"></i> <span data-i18n="block.history">Historial</span> <small data-i18n="block.history_sub">pasa el cursor por una gráfica para ver cada punto</small></h2>
         <div class="chart-row grid2">
-          <div class="chart"><label>CPU · Temperatura °C</label><canvas id="chart-cpu"></canvas></div>
-          <div class="chart"><label>CPU · Consumo W</label><canvas id="chart-power"></canvas></div>
-          <div class="chart"><label>GPU · Temperatura °C</label><canvas id="chart-gpu"></canvas></div>
-          <div class="chart"><label>GPU · Consumo W</label><canvas id="chart-gpu-power"></canvas></div>
+          <div class="chart"><label data-i18n="chart.cpu_temp">CPU · Temperature °C</label><canvas id="chart-cpu"></canvas></div>
+          <div class="chart"><label data-i18n="chart.cpu_power">CPU · Power W</label><canvas id="chart-power"></canvas></div>
+          <div class="chart"><label data-i18n="chart.gpu_temp">GPU · Temperature °C</label><canvas id="chart-gpu"></canvas></div>
+          <div class="chart"><label data-i18n="chart.gpu_power">GPU · Power W</label><canvas id="chart-gpu-power"></canvas></div>
         </div>
       </article>
 

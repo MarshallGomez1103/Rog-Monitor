@@ -1,29 +1,29 @@
 ---
-name: Solicitud de dispositivo
-about: Pide soporte calibrado para tu portátil (Centro de Poder)
+name: Device request
+about: Request calibrated laptop support for the Power Center
 title: "[device] "
 labels: device
 ---
 
-**Modelo**
+**Model**
 - `cat /sys/class/dmi/id/product_name`:
-- Nombre comercial (ej. "ROG Zephyrus G14 2024"):
+- Marketing name, for example "ROG Zephyrus G14 2024":
 - CPU:
 - GPU:
-- Distro + sesión (X11/Wayland):
+- Distro + session (X11/Wayland):
 
-**Rangos del firmware** (pégalos tal cual):
-```
-# Salida de:
+**Firmware ranges** (paste exactly):
+```bash
+# Output of:
 for a in ppt_pl1_spl ppt_pl2_sppt nv_dynamic_boost nv_temp_target; do
   d=/sys/class/firmware-attributes/asus-armoury/attributes/$a
-  echo "$a: current=$(cat $d/current_value) min=$(cat $d/min_value) max=$(cat $d/max_value)"
+  echo "$a: current=$(cat "$d/current_value") min=$(cat "$d/min_value") max=$(cat "$d/max_value")"
 done
 ```
 
-**Si NO tienes `asus-armoury`**, pega los mín/máx de cada slider del modo
-manual de Armoury Crate (Windows): PL1, PL2, Dynamic Boost, Thermal Target,
+**If you do NOT have `asus-armoury`**, paste the min/max values from Armoury
+Crate manual mode on Windows: PL1, PL2, Dynamic Boost, Thermal Target, and
 Base/Memory Clock Offset.
 
-> Con esos datos armamos tu entrada en `device_profiles.json`.
-> Ver `docs/supported-devices.md`.
+> With this data, maintainers can add an entry to `device_profiles.json`.
+> See `docs/supported-devices.md`.

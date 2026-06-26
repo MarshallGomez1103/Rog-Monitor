@@ -186,6 +186,24 @@ if (window.i18n && window.i18n.register) {
     'aura.asusctl_unavailable': { es: 'asusctl no disponible', en: 'asusctl not available', fr: 'asusctl non disponible', it: 'asusctl non disponibile', pt: 'asusctl não disponível', zh: 'asusctl 不可用', ja: 'asusctl は利用できません', ko: 'asusctl를 사용할 수 없습니다' },
     'aura.effect_fallback': { es: 'efecto', en: 'effect', fr: 'effet', it: 'effetto', pt: 'efeito', zh: '效果', ja: 'エフェクト', ko: '효과' },
     'aura.applied_ok': { es: 'Aura aplicada ✓', en: 'Aura applied ✓', fr: 'Aura appliqué ✓', it: 'Aura applicata ✓', pt: 'Aura aplicada ✓', zh: 'Aura 已应用 ✓', ja: 'Aura を適用しました ✓', ko: 'Aura가 적용되었습니다 ✓' },
+    'aura.no_modes': { es: 'sin modos detectados', en: 'no modes detected', fr: 'aucun mode détecté', it: 'nessuna modalità rilevata', pt: 'sem modos detectados', zh: '未检测到模式', ja: 'モードが検出されません', ko: '감지된 모드 없음' },
+    'aura.no_rgb': { es: 'No encontré controladores RGB disponibles. Instala asusctl/asusd para Aura.', en: 'No RGB controllers found. Install asusctl/asusd for Aura.', fr: 'Aucun contrôleur RGB trouvé. Installez asusctl/asusd pour Aura.', it: 'Nessun controller RGB trovato. Installa asusctl/asusd per Aura.', pt: 'Nenhum controlador RGB encontrado. Instala asusctl/asusd para Aura.', zh: '未找到 RGB 控制器。请为 Aura 安装 asusctl/asusd。', ja: 'RGB コントローラーが見つかりません。Aura 用に asusctl/asusd をインストールしてください。', ko: 'RGB 컨트롤러를 찾을 수 없습니다. Aura용 asusctl/asusd를 설치하세요.' },
+    'aura.no_effects': { es: 'Sin efectos detectados', en: 'No effects detected', fr: 'Aucun effet détecté', it: 'Nessun effetto rilevato', pt: 'Sem efeitos detectados', zh: '未检测到效果', ja: 'エフェクトが検出されません', ko: '감지된 효과 없음' },
+    'aura.saved_profiles': { es: 'perfiles guardados…', en: 'saved profiles…', fr: 'profils enregistrés…', it: 'profili salvati…', pt: 'perfis guardados…', zh: '已保存配置…', ja: '保存済みプロファイル…', ko: '저장된 프로파일…' },
+    'aura.openrgb_ready': { es: 'OpenRGB detectado con SDK local activo.', en: 'OpenRGB detected with the local SDK active.', fr: 'OpenRGB détecté avec le SDK local actif.', it: 'OpenRGB rilevato con SDK locale attivo.', pt: 'OpenRGB detectado com o SDK local ativo.', zh: '检测到 OpenRGB，本地 SDK 已启用。', ja: 'OpenRGB を検出し、ローカル SDK が有効です。', ko: 'OpenRGB가 감지되었고 로컬 SDK가 활성화되었습니다.' },
+    'aura.openrgb_no_sdk': { es: 'OpenRGB detectado, pero su SDK local no responde aún.', en: 'OpenRGB detected, but its local SDK is not responding yet.', fr: 'OpenRGB détecté, mais son SDK local ne répond pas encore.', it: 'OpenRGB rilevato, ma il suo SDK locale non risponde ancora.', pt: 'OpenRGB detectado, mas o SDK local ainda não responde.', zh: '检测到 OpenRGB，但其本地 SDK 尚未响应。', ja: 'OpenRGB を検出しましたが、ローカル SDK はまだ応答していません。', ko: 'OpenRGB가 감지되었지만 로컬 SDK가 아직 응답하지 않습니다.' },
+    'aura.music_stop_failed': { es: 'No se pudo apagar música: {err}', en: 'Could not turn Music Mode off: {err}', fr: 'Impossible de désactiver le mode musique : {err}', it: 'Impossibile disattivare la modalità musica: {err}', pt: 'Não foi possível desligar o modo música: {err}', zh: '无法关闭音乐模式：{err}', ja: 'ミュージックモードをオフにできませんでした: {err}', ko: '뮤직 모드를 끌 수 없습니다: {err}' },
+    'aura.profile_save_failed': { es: 'No se guardó: {err}', en: 'Could not save: {err}', fr: 'Impossible d\'enregistrer : {err}', it: 'Impossibile salvare: {err}', pt: 'Não foi possível guardar: {err}', zh: '无法保存：{err}', ja: '保存できませんでした: {err}', ko: '저장할 수 없습니다: {err}' },
+    'aura.profile_saved': { es: 'Perfil "{name}" guardado ✓', en: 'Profile "{name}" saved ✓', fr: 'Profil « {name} » enregistré ✓', it: 'Profilo "{name}" salvato ✓', pt: 'Perfil "{name}" guardado ✓', zh: '配置“{name}”已保存 ✓', ja: 'プロファイル「{name}」を保存しました ✓', ko: '프로파일 "{name}" 저장됨 ✓' },
+    'aura.profile_delete_failed': { es: 'No se borró: {err}', en: 'Could not delete: {err}', fr: 'Impossible de supprimer : {err}', it: 'Impossibile eliminare: {err}', pt: 'Não foi possível apagar: {err}', zh: '无法删除：{err}', ja: '削除できませんでした: {err}', ko: '삭제할 수 없습니다: {err}' },
+    'aura.profile_deleted': { es: 'Perfil "{name}" borrado', en: 'Profile "{name}" deleted', fr: 'Profil « {name} » supprimé', it: 'Profilo "{name}" eliminato', pt: 'Perfil "{name}" apagado', zh: '配置“{name}”已删除', ja: 'プロファイル「{name}」を削除しました', ko: '프로파일 "{name}" 삭제됨' },
+    'aura.profile_loading': { es: 'Perfil "{name}" cargado. Aplicando…', en: 'Profile "{name}" loaded. Applying…', fr: 'Profil « {name} » chargé. Application…', it: 'Profilo "{name}" caricato. Applicazione…', pt: 'Perfil "{name}" carregado. A aplicar…', zh: '配置“{name}”已加载。正在应用…', ja: 'プロファイル「{name}」を読み込みました。適用中…', ko: '프로파일 "{name}" 불러옴. 적용 중…' },
+    'aura.profile_applied': { es: 'Perfil "{name}" aplicado ✓', en: 'Profile "{name}" applied ✓', fr: 'Profil « {name} » appliqué ✓', it: 'Profilo "{name}" applicato ✓', pt: 'Perfil "{name}" aplicado ✓', zh: '配置“{name}”已应用 ✓', ja: 'プロファイル「{name}」を適用しました ✓', ko: '프로파일 "{name}" 적용됨 ✓' },
+    'aura.profile_loaded_dirty': { es: 'Perfil "{name}" cargado. Falta aplicar.', en: 'Profile "{name}" loaded. Apply is still needed.', fr: 'Profil « {name} » chargé. Il reste à appliquer.', it: 'Profilo "{name}" caricato. Serve ancora applicare.', pt: 'Perfil "{name}" carregado. Ainda falta aplicar.', zh: '配置“{name}”已加载。仍需应用。', ja: 'プロファイル「{name}」を読み込みました。まだ適用が必要です。', ko: '프로파일 "{name}" 불러옴. 아직 적용해야 합니다.' },
+    'aura.profile_loaded_form': { es: 'Perfil "{name}" cargado en el formulario', en: 'Profile "{name}" loaded into the form', fr: 'Profil « {name} » chargé dans le formulaire', it: 'Profilo "{name}" caricato nel modulo', pt: 'Perfil "{name}" carregado no formulário', zh: '配置“{name}”已加载到表单', ja: 'プロファイル「{name}」をフォームに読み込みました', ko: '프로파일 "{name}" 양식에 불러옴' },
+    'aura.startup_failed': { es: 'No se pudo: {err}', en: 'Could not save startup profile: {err}', fr: 'Impossible d\'enregistrer le profil de démarrage : {err}', it: 'Impossibile salvare il profilo di avvio: {err}', pt: 'Não foi possível guardar o perfil de arranque: {err}', zh: '无法保存启动配置：{err}', ja: '起動プロファイルを保存できませんでした: {err}', ko: '시작 프로파일을 저장할 수 없습니다: {err}' },
+    'aura.startup_enabled': { es: 'Perfil {name} marcado para inicio', en: 'Profile {name} marked for startup', fr: 'Profil {name} marqué pour le démarrage', it: 'Profilo {name} segnato per l\'avvio', pt: 'Perfil {name} marcado para arranque', zh: '配置 {name} 已标记为启动时应用', ja: 'プロファイル {name} を起動時用に設定しました', ko: '프로파일 {name} 시작 시 적용으로 표시됨' },
+    'aura.startup_disabled': { es: 'Inicio automático de Aura desactivado', en: 'Aura startup disabled', fr: 'Démarrage Aura désactivé', it: 'Avvio Aura disattivato', pt: 'Arranque automático do Aura desativado', zh: 'Aura 启动应用已禁用', ja: 'Aura の起動時適用を無効化しました', ko: 'Aura 시작 적용 꺼짐' },
 
     /* ---- estados de alertas (setAlertsStatus) ---- */
     'alerts.status_saving': { es: 'Guardando y reiniciando el monitor…', en: 'Saving and restarting the monitor…', fr: 'Enregistrement et redémarrage du moniteur…', it: 'Salvataggio e riavvio del monitor…', pt: 'A guardar e reiniciar o monitor…', zh: '正在保存并重启监视器…', ja: '保存してモニターを再起動中…', ko: '저장하고 모니터를 다시 시작하는 중…' },
@@ -218,6 +236,9 @@ if (window.i18n && window.i18n.register) {
     /* ---- fan: calibración y guardado ---- */
     'fan.calib_done': { es: 'Calibración lista ✓ Máximos reales: {max} RPM', en: 'Calibration ready ✓ Real maxima: {max} RPM', fr: 'Calibration prête ✓ Maxima réels : {max} RPM', it: 'Calibrazione pronta ✓ Massimi reali: {max} RPM', pt: 'Calibração pronta ✓ Máximos reais: {max} RPM', zh: '校准完成 ✓ 真实最大值：{max} RPM', ja: 'キャリブレーション完了 ✓ 実測最大値：{max} RPM', ko: '캘리브레이션 완료 ✓ 실측 최대값: {max} RPM' },
     'fan.saved_ok': { es: 'Guardado ✓ {labels} — cada perfil con su propio tope (persiste al reiniciar).', en: 'Saved ✓ {labels} — each profile with its own cap (persists across reboots).', fr: 'Enregistré ✓ {labels} — chaque profil avec sa propre limite (persiste au redémarrage).', it: 'Salvato ✓ {labels} — ogni profilo con il proprio limite (persiste al riavvio).', pt: 'Guardado ✓ {labels} — cada perfil com o seu próprio cap (persiste ao reiniciar).', zh: '已保存 ✓ {labels} — 每个配置都有自己的上限（重启后保留）。', ja: '保存しました ✓ {labels} — 各プロファイルに独自の上限（再起動後も保持）。', ko: '저장됨 ✓ {labels} — 각 프로파일마다 고유한 상한 (재부팅 후에도 유지).' },
+    'fan.max_note': { es: 'Curvas {source} (perfil {profile}). Máximos {state}: {max} RPM · {count} ventiladores detectados.', en: '{source} curves ({profile} profile). Maxima {state}: {max} RPM · {count} fans detected.', fr: 'Courbes {source} (profil {profile}). Maxima {state} : {max} RPM · {count} ventilateurs détectés.', it: 'Curve {source} (profilo {profile}). Massimi {state}: {max} RPM · {count} ventole rilevate.', pt: 'Curvas {source} (perfil {profile}). Máximos {state}: {max} RPM · {count} ventoinhas detectadas.', zh: '{source} 曲线（{profile} 配置）。最大值{state}：{max} RPM · 检测到 {count} 个风扇。', ja: '{source} カーブ（{profile} プロファイル）。最大値 {state}: {max} RPM · {count} 個のファンを検出。', ko: '{source} 커브({profile} 프로파일). 최대값 {state}: {max} RPM · 팬 {count}개 감지.' },
+    'fan.max_measured': { es: 'medidos ✓', en: 'measured ✓', fr: 'mesurés ✓', it: 'misurati ✓', pt: 'medidos ✓', zh: '已测量 ✓', ja: '測定済み ✓', ko: '측정됨 ✓' },
+    'fan.max_estimated': { es: 'ESTIMADOS (sin medir)', en: 'ESTIMATED (not measured)', fr: 'ESTIMÉS (non mesurés)', it: 'STIMATI (non misurati)', pt: 'ESTIMADOS (não medidos)', zh: '估算值（未测量）', ja: '推定値（未測定）', ko: '추정됨(미측정)' },
 
     /* ---- config export / import (toasts) ---- */
     'config.exported': { es: 'Configuración exportada a {path}\n({items})', en: 'Configuration exported to {path}\n({items})', fr: 'Configuration exportée vers {path}\n({items})', it: 'Configurazione esportata in {path}\n({items})', pt: 'Configuração exportada para {path}\n({items})', zh: '配置已导出到 {path}\n（{items}）', ja: '設定を {path} にエクスポートしました\n（{items}）', ko: '구성을 {path}에 내보냈습니다\n({items})' },
@@ -227,6 +248,50 @@ if (window.i18n && window.i18n.register) {
     'config.import_failed': { es: 'No se importó: {err}', en: 'Not imported: {err}', fr: 'Non importé : {err}', it: 'Non importato: {err}', pt: 'Não importado: {err}', zh: '未导入：{err}', ja: 'インポートされませんでした：{err}', ko: '가져오지 않음: {err}' },
     'config.imported': { es: 'Importado: {items} ✓\nAbre VENTILADORES → GUARDAR Y APLICAR para mandar las curvas al sistema.', en: 'Imported: {items} ✓\nOpen FANS → SAVE & APPLY to push the curves to the system.', fr: 'Importé : {items} ✓\nOuvrez VENTILATEURS → ENREGISTRER & APPLIQUER pour envoyer les courbes au système.', it: 'Importato: {items} ✓\nApri VENTOLE → SALVA E APPLICA per inviare le curve al sistema.', pt: 'Importado: {items} ✓\nAbre VENTOINHAS → GUARDAR E APLICAR para enviar as curvas ao sistema.', zh: '已导入：{items} ✓\n打开“风扇”→“保存并应用”将曲线发送到系统。', ja: 'インポートしました：{items} ✓\n「ファン」→「保存して適用」を開いてカーブをシステムに送信してください。', ko: '가져옴: {items} ✓\n"팬" → "저장 및 적용"을 열어 커브를 시스템에 전송하세요.' },
     'config.current_lang': { es: 'Idioma: {lang}', en: 'Language: {lang}', fr: 'Langue : {lang}', it: 'Lingua: {lang}', pt: 'Idioma: {lang}', zh: '语言：{lang}', ja: '言語：{lang}', ko: '언어: {lang}' },
+    'config.autostart_failed': { es: 'No pude cambiar el autoarranque: {err}', en: 'Could not change autostart: {err}', fr: 'Impossible de modifier le démarrage automatique : {err}', it: 'Impossibile modificare l\'avvio automatico: {err}', pt: 'Não foi possível alterar o autoarranque: {err}', zh: '无法更改自动启动：{err}', ja: '自動起動を変更できませんでした: {err}', ko: '자동 시작을 변경할 수 없습니다: {err}' },
+    'config.autostart_on': { es: 'Autoarranque activado: la app abrirá minimizada al iniciar sesión.', en: 'Autostart enabled: the app will open minimized when you sign in.', fr: 'Démarrage automatique activé : l\'app s\'ouvrira minimisée à la connexion.', it: 'Avvio automatico attivato: l\'app si aprirà minimizzata all\'accesso.', pt: 'Autoarranque ativado: a app abrirá minimizada ao iniciar sessão.', zh: '自动启动已启用：登录时应用将最小化打开。', ja: '自動起動を有効化しました。サインイン時にアプリは最小化して開きます。', ko: '자동 시작이 켜졌습니다. 로그인할 때 앱이 최소화되어 열립니다.' },
+    'config.autostart_off': { es: 'Autoarranque desactivado.', en: 'Autostart disabled.', fr: 'Démarrage automatique désactivé.', it: 'Avvio automatico disattivato.', pt: 'Autoarranque desativado.', zh: '自动启动已禁用。', ja: '自動起動を無効化しました。', ko: '자동 시작이 꺼졌습니다.' },
+    'config.notifications_failed': { es: 'No pude guardar notificaciones: {err}', en: 'Could not save notifications: {err}', fr: 'Impossible d\'enregistrer les notifications : {err}', it: 'Impossibile salvare le notifiche: {err}', pt: 'Não foi possível guardar notificações: {err}', zh: '无法保存通知：{err}', ja: '通知を保存できませんでした: {err}', ko: '알림을 저장할 수 없습니다: {err}' },
+    'config.close_failed': { es: 'No pude guardar el cierre de ventana: {err}', en: 'Could not save the window close action: {err}', fr: 'Impossible d\'enregistrer l\'action de fermeture : {err}', it: 'Impossibile salvare l\'azione di chiusura finestra: {err}', pt: 'Não foi possível guardar a ação de fecho da janela: {err}', zh: '无法保存窗口关闭操作：{err}', ja: 'ウィンドウを閉じる動作を保存できませんでした: {err}', ko: '창 닫기 동작을 저장할 수 없습니다: {err}' },
+    'config.close_saved_quit': { es: 'El botón X ahora cierra ROG Monitor por completo.', en: 'The X button now quits ROG Monitor completely.', fr: 'Le bouton X quitte maintenant complètement ROG Monitor.', it: 'Il pulsante X ora chiude completamente ROG Monitor.', pt: 'O botão X agora fecha o ROG Monitor por completo.', zh: 'X 按钮现在会完全退出 ROG Monitor。', ja: 'X ボタンで ROG Monitor を完全に終了するようになりました。', ko: 'X 버튼이 이제 ROG Monitor를 완전히 종료합니다.' },
+    'config.close_saved_tray': { es: 'El botón X ahora minimiza ROG Monitor a la bandeja.', en: 'The X button now minimizes ROG Monitor to the tray.', fr: 'Le bouton X réduit maintenant ROG Monitor dans la zone de notification.', it: 'Il pulsante X ora riduce ROG Monitor nella tray.', pt: 'O botão X agora minimiza o ROG Monitor para a bandeja.', zh: 'X 按钮现在会将 ROG Monitor 最小化到托盘。', ja: 'X ボタンで ROG Monitor をトレイに最小化するようになりました。', ko: 'X 버튼이 이제 ROG Monitor를 트레이로 최소화합니다.' },
+    'config.close_saved_ask': { es: 'El botón X preguntará qué hacer.', en: 'The X button will ask what to do.', fr: 'Le bouton X demandera quoi faire.', it: 'Il pulsante X chiederà cosa fare.', pt: 'O botão X perguntará o que fazer.', zh: 'X 按钮会询问要执行的操作。', ja: 'X ボタンはどうするか確認します。', ko: 'X 버튼이 무엇을 할지 묻습니다.' },
+    'maint.status_checking': { es: 'Buscando actualización…', en: 'Checking for updates…', fr: 'Recherche de mises à jour…', it: 'Ricerca aggiornamenti…', pt: 'A procurar atualização…', zh: '正在检查更新…', ja: '更新を確認中…', ko: '업데이트 확인 중…' },
+    'maint.status_check_failed': { es: 'No se pudo verificar: {err}', en: 'Could not check for updates: {err}', fr: 'Impossible de vérifier les mises à jour : {err}', it: 'Impossibile verificare aggiornamenti: {err}', pt: 'Não foi possível verificar atualizações: {err}', zh: '无法检查更新：{err}', ja: '更新を確認できませんでした: {err}', ko: '업데이트를 확인할 수 없습니다: {err}' },
+    'maint.status_installing': { es: 'Hay {n} cambio(s). Instalando…', en: '{n} change(s) available. Installing…', fr: '{n} changement(s) disponible(s). Installation…', it: '{n} modifica/modifiche disponibili. Installazione…', pt: 'Há {n} alteração(ões). A instalar…', zh: '有 {n} 个更改。正在安装…', ja: '{n} 件の変更があります。インストール中…', ko: '변경 {n}개 있음. 설치 중…' },
+    'maint.status_updated': { es: 'Actualizado y backend reiniciado ✓', en: 'Updated and backend restarted ✓', fr: 'Mis à jour et backend redémarré ✓', it: 'Aggiornato e backend riavviato ✓', pt: 'Atualizado e backend reiniciado ✓', zh: '已更新并重启后端 ✓', ja: '更新し、バックエンドを再起動しました ✓', ko: '업데이트 및 백엔드 재시작 완료 ✓' },
+    'maint.status_current': { es: 'Ya estás al día ✓', en: 'Already up to date ✓', fr: 'Déjà à jour ✓', it: 'Già aggiornato ✓', pt: 'Já está atualizado ✓', zh: '已是最新 ✓', ja: 'すでに最新です ✓', ko: '이미 최신 상태 ✓' },
+    'maint.status_reinstalling': { es: 'Reinstalando dependencias…', en: 'Reinstalling dependencies…', fr: 'Réinstallation des dépendances…', it: 'Reinstallazione dipendenze…', pt: 'A reinstalar dependências…', zh: '正在重新安装依赖…', ja: '依存関係を再インストール中…', ko: '종속성 재설치 중…' },
+    'maint.status_reinstalled': { es: 'Reinstalado y backend reiniciado ✓', en: 'Reinstalled and backend restarted ✓', fr: 'Réinstallé et backend redémarré ✓', it: 'Reinstallato e backend riavviato ✓', pt: 'Reinstalado e backend reiniciado ✓', zh: '已重新安装并重启后端 ✓', ja: '再インストールし、バックエンドを再起動しました ✓', ko: '재설치 및 백엔드 재시작 완료 ✓' },
+    'maint.status_uninstalling': { es: 'Desinstalando… (puede pedir contraseña)', en: 'Uninstalling… (may ask for your password)', fr: 'Désinstallation… (peut demander votre mot de passe)', it: 'Disinstallazione… (può chiedere la password)', pt: 'A desinstalar… (pode pedir senha)', zh: '正在卸载…（可能要求输入密码）', ja: 'アンインストール中…（パスワードを求められる場合があります）', ko: '제거 중… (비밀번호를 요청할 수 있음)' },
+    'maint.status_uninstalled': { es: 'Desinstalado. La app se cerrará…', en: 'Uninstalled. The app will close…', fr: 'Désinstallé. L\'app va se fermer…', it: 'Disinstallato. L\'app si chiuderà…', pt: 'Desinstalado. A app vai fechar…', zh: '已卸载。应用将关闭…', ja: 'アンインストールしました。アプリを閉じます…', ko: '제거 완료. 앱이 닫힙니다…' },
+    'maint.status_error': { es: 'Error: {err}', en: 'Error: {err}', fr: 'Erreur : {err}', it: 'Errore: {err}', pt: 'Erro: {err}', zh: '错误：{err}', ja: 'エラー: {err}', ko: '오류: {err}' },
+
+    /* ---- theme picker ---- */
+    'theme.magma.name': { es: 'Magma', en: 'Magma', fr: 'Magma', it: 'Magma', pt: 'Magma', zh: '岩浆', ja: 'マグマ', ko: '마그마' },
+    'theme.magma.desc': { es: 'Rojo volcánico — firma ROG', en: 'Volcanic red — ROG signature', fr: 'Rouge volcanique — signature ROG', it: 'Rosso vulcanico — firma ROG', pt: 'Vermelho vulcânico — assinatura ROG', zh: '火山红 — ROG 标志色', ja: '火山の赤 — ROG の象徴', ko: '화산 레드 — ROG 시그니처' },
+    'theme.nebula.name': { es: 'Nébula', en: 'Nebula', fr: 'Nébuleuse', it: 'Nebulosa', pt: 'Nébula', zh: '星云', ja: 'ネビュラ', ko: '성운' },
+    'theme.nebula.desc': { es: 'Violeta espacial con magenta', en: 'Space violet with magenta', fr: 'Violet spatial avec magenta', it: 'Viola spaziale con magenta', pt: 'Violeta espacial com magenta', zh: '太空紫与品红', ja: '宇宙の紫とマゼンタ', ko: '우주 보라와 마젠타' },
+    'theme.oceano.name': { es: 'Océano', en: 'Ocean', fr: 'Océan', it: 'Oceano', pt: 'Oceano', zh: '海洋', ja: 'オーシャン', ko: '오션' },
+    'theme.oceano.desc': { es: 'Teal profundo, calmado', en: 'Deep, calm teal', fr: 'Sarcelle profonde et calme', it: 'Teal profondo e calmo', pt: 'Verde-azulado profundo e calmo', zh: '深沉平静的青绿色', ja: '深く穏やかなティール', ko: '깊고 차분한 틸' },
+    'theme.glaciar.name': { es: 'Glaciar', en: 'Glacier', fr: 'Glacier', it: 'Ghiacciaio', pt: 'Glaciar', zh: '冰川', ja: 'グレイシャー', ko: '빙하' },
+    'theme.glaciar.desc': { es: 'Azul hielo sobre azul noche', en: 'Ice blue over night blue', fr: 'Bleu glace sur bleu nuit', it: 'Blu ghiaccio su blu notte', pt: 'Azul gelo sobre azul noite', zh: '夜蓝上的冰蓝', ja: '夜の青に氷の青', ko: '나이트 블루 위 아이스 블루' },
+    'theme.reactor.name': { es: 'Reactor', en: 'Reactor', fr: 'Réacteur', it: 'Reattore', pt: 'Reator', zh: '反应堆', ja: 'リアクター', ko: '리액터' },
+    'theme.reactor.desc': { es: 'Verde fosforescente de máquina', en: 'Machine phosphor green', fr: 'Vert phosphore de machine', it: 'Verde fosforo da macchina', pt: 'Verde fósforo de máquina', zh: '机器荧光绿', ja: '機械的な蛍光グリーン', ko: '기계적인 형광 그린' },
+    'theme.grafito.name': { es: 'Grafito', en: 'Graphite', fr: 'Graphite', it: 'Grafite', pt: 'Grafite', zh: '石墨', ja: 'グラファイト', ko: '흑연' },
+    'theme.grafito.desc': { es: 'Escala de grises, sin ruido', en: 'Quiet grayscale, no noise', fr: 'Niveaux de gris calmes, sans bruit', it: 'Scala di grigi pulita, senza rumore', pt: 'Escala de cinza discreta, sem ruído', zh: '安静灰阶，无噪声', ja: '静かなグレースケール', ko: '조용한 그레이스케일' },
+    'theme.neon.name': { es: 'Neón', en: 'Neon', fr: 'Néon', it: 'Neon', pt: 'Neon', zh: '霓虹', ja: 'ネオン', ko: '네온' },
+    'theme.neon.desc': { es: 'Cian y magenta de arcade', en: 'Arcade cyan and magenta', fr: 'Cyan et magenta arcade', it: 'Ciano e magenta arcade', pt: 'Ciano e magenta de arcade', zh: '街机青色与品红', ja: 'アーケードのシアンとマゼンタ', ko: '아케이드 시안과 마젠타' },
+    'theme.atardecer.name': { es: 'Atardecer', en: 'Sunset', fr: 'Coucher de soleil', it: 'Tramonto', pt: 'Pôr do sol', zh: '日落', ja: '夕暮れ', ko: '석양' },
+    'theme.atardecer.desc': { es: 'Oro y rosa sobre púrpura', en: 'Gold and rose over purple', fr: 'Or et rose sur pourpre', it: 'Oro e rosa su porpora', pt: 'Ouro e rosa sobre púrpura', zh: '紫色上的金色与玫瑰色', ja: '紫に重なる金とローズ', ko: '보라 위 골드와 로즈' },
+    'theme.neon-nights.name': { es: 'Neon Nights', en: 'Neon Nights', fr: 'Neon Nights', it: 'Neon Nights', pt: 'Neon Nights', zh: '霓虹之夜', ja: 'ネオンナイツ', ko: '네온 나이츠' },
+    'theme.neon-nights.desc': { es: 'Synthwave Miami: magenta y cian', en: 'Miami synthwave: magenta and cyan', fr: 'Synthwave Miami : magenta et cyan', it: 'Synthwave Miami: magenta e ciano', pt: 'Synthwave Miami: magenta e ciano', zh: '迈阿密合成波：品红与青色', ja: 'マイアミ・シンセウェーブ: マゼンタとシアン', ko: '마이애미 신스웨이브: 마젠타와 시안' },
+    'theme.cyberpunk.name': { es: 'Cyberpunk', en: 'Cyberpunk', fr: 'Cyberpunk', it: 'Cyberpunk', pt: 'Cyberpunk', zh: '赛博朋克', ja: 'サイバーパンク', ko: '사이버펑크' },
+    'theme.cyberpunk.desc': { es: 'Night City: amarillo y cian', en: 'Night City: yellow and cyan', fr: 'Night City : jaune et cyan', it: 'Night City: giallo e ciano', pt: 'Night City: amarelo e ciano', zh: '夜之城：黄色与青色', ja: 'ナイトシティ: イエローとシアン', ko: '나이트 시티: 옐로와 시안' },
+    'theme.aurora.name': { es: 'Aurora', en: 'Aurora', fr: 'Aurore', it: 'Aurora', pt: 'Aurora', zh: '极光', ja: 'オーロラ', ko: '오로라' },
+    'theme.aurora.desc': { es: 'Teal boreal virando a violeta', en: 'Boreal teal shifting to violet', fr: 'Sarcelle boréale virant au violet', it: 'Teal boreale che vira al viola', pt: 'Verde-azulado boreal virando a violeta', zh: '北境青绿渐变为紫色', ja: '北方のティールからバイオレットへ', ko: '북방 틸에서 바이올렛으로' },
+    'theme.alba.name': { es: 'Alba', en: 'Dawn', fr: 'Aube', it: 'Alba', pt: 'Alvorada', zh: '黎明', ja: '夜明け', ko: '새벽' },
+    'theme.alba.desc': { es: 'Marfil cálido con oro y rosa', en: 'Warm ivory with gold and rose', fr: 'Ivoire chaud avec or et rose', it: 'Avorio caldo con oro e rosa', pt: 'Marfim quente com ouro e rosa', zh: '温暖象牙色配金色与玫瑰色', ja: '暖かいアイボリーに金とローズ', ko: '따뜻한 아이보리와 골드, 로즈' },
 
     /* ---- kill process (toasts) ---- */
     'proc.kill_sent': { es: 'Señal de cierre enviada a {name}', en: 'Close signal sent to {name}', fr: 'Signal de fermeture envoyé à {name}', it: 'Segnale di chiusura inviato a {name}', pt: 'Sinal de fecho enviado para {name}', zh: '已向 {name} 发送关闭信号', ja: '{name} に終了シグナルを送信しました', ko: '{name}에 종료 신호를 보냈습니다' },
@@ -301,18 +366,18 @@ const AURA_PRIMARY_EFFECTS = ['static', 'breathe', 'rainbow-cycle', 'rainbow-wav
 
 const THEMES = [
   // id, name, description, [dark bg, dark accent], [light bg, light accent]
-  ['magma',      'Magma',       'Rojo volcánico — firma ROG',       ['#140d0b', '#f25c3d'], ['#f5e0d6', '#c2401f']],
-  ['nebula',     'Nébula',      'Violeta espacial con magenta',     ['#120c1c', '#b07af5'], ['#e8ddf7', '#6f2fd0']],
-  ['oceano',     'Océano',      'Teal profundo, calmado',           ['#0a1416', '#2fbfb0'], ['#cde8e4', '#0c7f72']],
-  ['glaciar',    'Glaciar',     'Azul hielo sobre azul noche',      ['#0d1420', '#6fb7ff'], ['#d4e6f5', '#1f66b8']],
-  ['reactor',    'Reactor',     'Verde fosforescente de máquina',   ['#070d07', '#46e873'], ['#d6edce', '#18843a']],
-  ['grafito',    'Grafito',     'Escala de grises, sin ruido',      ['#101113', '#c8cdd4'], ['#e2e5e9', '#2f353b']],
-  ['neon',       'Neón',        'Cian y magenta de arcade',         ['#0c0a18', '#2de2e6'], ['#d4edf0', '#067a8c']],
-  ['atardecer',  'Atardecer',   'Oro y rosa sobre púrpura',         ['#160f1e', '#ff9d4d'], ['#f9e4cc', '#c45f10']],
-  ['neon-nights','Neon Nights', 'Synthwave Miami: magenta y cian',  ['#0d0619', '#f72585'], ['#f0d6f5', '#9b1dbd']],
-  ['cyberpunk',  'Cyberpunk',   'Night City: amarillo y cian',      ['#080808', '#f7e02b'], ['#e8e4c8', '#8a7200']],
-  ['aurora',     'Aurora',      'Teal boreal virando a violeta',    ['#060d10', '#00d4aa'], ['#cce8e4', '#077a6b']],
-  ['alba',       'Alba',        'Marfil cálido con oro y rosa',     ['#13100d', '#d4a017'], ['#f8f2e6', '#9e6a00']],
+  ['magma',      'Magma',       'Volcanic red — ROG signature',     ['#140d0b', '#f25c3d'], ['#f5e0d6', '#c2401f']],
+  ['nebula',     'Nebula',      'Space violet with magenta',        ['#120c1c', '#b07af5'], ['#e8ddf7', '#6f2fd0']],
+  ['oceano',     'Ocean',       'Deep, calm teal',                  ['#0a1416', '#2fbfb0'], ['#cde8e4', '#0c7f72']],
+  ['glaciar',    'Glacier',     'Ice blue over night blue',         ['#0d1420', '#6fb7ff'], ['#d4e6f5', '#1f66b8']],
+  ['reactor',    'Reactor',     'Machine phosphor green',           ['#070d07', '#46e873'], ['#d6edce', '#18843a']],
+  ['grafito',    'Graphite',    'Quiet grayscale, no noise',        ['#101113', '#c8cdd4'], ['#e2e5e9', '#2f353b']],
+  ['neon',       'Neon',        'Arcade cyan and magenta',          ['#0c0a18', '#2de2e6'], ['#d4edf0', '#067a8c']],
+  ['atardecer',  'Sunset',      'Gold and rose over purple',        ['#160f1e', '#ff9d4d'], ['#f9e4cc', '#c45f10']],
+  ['neon-nights','Neon Nights', 'Miami synthwave: magenta and cyan', ['#0d0619', '#f72585'], ['#f0d6f5', '#9b1dbd']],
+  ['cyberpunk',  'Cyberpunk',   'Night City: yellow and cyan',      ['#080808', '#f7e02b'], ['#e8e4c8', '#8a7200']],
+  ['aurora',     'Aurora',      'Boreal teal shifting to violet',   ['#060d10', '#00d4aa'], ['#cce8e4', '#077a6b']],
+  ['alba',       'Dawn',        'Warm ivory with gold and rose',    ['#13100d', '#d4a017'], ['#f8f2e6', '#9e6a00']],
 ];
 
 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
@@ -676,7 +741,7 @@ function renderModeGrid(selectedValue) {
   const host = $('aura-mode-grid');
   const tiles = auraState?.mode_grid;
   if (!tiles || !tiles.length) {
-    host.innerHTML = '<span class="dim">sin modos detectados</span>';
+    host.innerHTML = `<span class="dim">${escapeHtml(t('aura.no_modes'))}</span>`;
     return;
   }
   host.innerHTML = tiles.map((tile) => {
@@ -816,10 +881,10 @@ function renderAura(aura, resetForm = false) {
   const openrgb = $('openrgb-note');
 
   if (!aura?.available) {
-    note.textContent = 'No encontré controladores RGB disponibles. Instala asusctl/asusd para Aura.';
+    note.textContent = t('aura.no_rgb');
     $('aura-apply').disabled = true;
     $('aura-music').disabled = true;
-    fillSelect(effectSel, [], '', 'Sin efectos detectados');
+    fillSelect(effectSel, [], '', t('aura.no_effects'));
     return;
   }
 
@@ -827,7 +892,7 @@ function renderAura(aura, resetForm = false) {
     effectSel,
     auraEffects().map((fx) => ({ value: fx.id, label: fx.label })),
     auraSelectedEffect || effectSel.value || aura.current?.effect || 'static',
-    'Sin efectos detectados',
+    t('aura.no_effects'),
   );
   auraSelectedEffect = effectSel.value || auraSelectedEffect;
   renderAuraEffectControls(auraSelectedEffect);
@@ -842,7 +907,7 @@ function renderAura(aura, resetForm = false) {
     ? auraProfileSelection
     : (aura.startup_profile || profiles[0]?.name || '');
   auraProfileSelection = selected;
-  profileSel.innerHTML = ['<option value="">perfiles guardados…</option>']
+  profileSel.innerHTML = [`<option value="">${escapeHtml(t('aura.saved_profiles'))}</option>`]
     .concat(profiles.map((p) => `<option value="${p.name}">${p.name}</option>`))
     .join('');
   profileSel.value = selected;
@@ -871,7 +936,7 @@ function renderAura(aura, resetForm = false) {
     setupBtn.classList.add('hidden');
   }
   openrgb.textContent = aura.openrgb?.available
-    ? `OpenRGB detectado${aura.openrgb.sdk_reachable ? ' con SDK local activo' : ', pero su SDK local no responde aún'}.`
+    ? (aura.openrgb.sdk_reachable ? t('aura.openrgb_ready') : t('aura.openrgb_no_sdk'))
     : aura.openrgb?.hint || '';
   openrgb.classList.toggle('hidden', !openrgb.textContent);
   renderPeripherals(aura.peripherals);
@@ -934,11 +999,11 @@ async function applyAuraState(state, successMessage) {
   if (musicModeActive) {
     const off = await window.rog.setMusicMode({ enabled: false, state });
     if (!off.ok) {
-      toast(`No se pudo apagar música: ${off.err}`);
+      toast(t('aura.music_stop_failed', { err: off.err }));
       return null;
     }
     musicModeActive = false;
-    $('aura-music').textContent = 'MODO MÚSICA';
+    $('aura-music').textContent = t('aura.music');
   }
   const res = await window.rog.applyAura(state);
   if (!res.ok) {
@@ -1380,7 +1445,10 @@ function updateBenchClearAllVisibility() {
 /* ---------- main update ---------- */
 
 const LAMP_STATES = [
-  ['cold', 'FRÍO'], ['normal', 'NORMAL'], ['hot', 'CALIENTE'], ['critical', 'CRÍTICO'],
+  ['cold', 'thermal.cold', 'thermal.cold_title'],
+  ['normal', 'thermal.normal', 'thermal.normal_title'],
+  ['hot', 'thermal.hot', 'thermal.hot_title'],
+  ['critical', 'thermal.critical', 'thermal.critical_title'],
 ];
 
 // Nombre corto de la dGPU detectada (p. ej. "RTX 4060"); se recuerda para que
@@ -1499,8 +1567,11 @@ function update(stats) {
   const cls = rawCls === 'very-hot' ? 'critical' : rawCls;
   lamp.className = 'lamp ' + cls;
   const lampIdx = { cold: 0, normal: 1, hot: 2, critical: 3 }[cls];
+  const lampState = lampIdx != null ? LAMP_STATES[lampIdx] : null;
   const label = $('thermal-label');
-  label.textContent = lampIdx != null ? LAMP_STATES[lampIdx][1] : '—';
+  label.textContent = lampState ? t(lampState[1]) : '—';
+  label.title = lampState ? t(lampState[2], { temp: fmt(cpu.avg, 1) }) : t('thermal.unknown_title');
+  label.setAttribute('aria-label', label.title);
   label.className = 'lamp-label ' + cls;
 
   /* cpu */
@@ -1611,7 +1682,7 @@ function update(stats) {
   $('load').textContent = (sys.load || []).map((l) => l.toFixed(2)).join(' ');
   const bat = stats.battery;
   $('battery').textContent = bat && bat.capacity != null
-    ? `${bat.capacity}%${bat.charge_limit ? ' (límite ' + bat.charge_limit + '%)' : ''}`
+    ? `${bat.capacity}%${bat.charge_limit ? ' (' + t('battery.charge_limit_inline', { pct: bat.charge_limit }) + ')' : ''}`
     : '--';
   if (window.RogBattery) window.RogBattery.render(bat);
   $('asus-profile').textContent = stats.asus_profile || '--';
@@ -1619,8 +1690,18 @@ function update(stats) {
   /* power source */
   const src = $('power-source');
   if (bat) {
-    src.textContent = bat.on_ac ? '⚡ CONECTADO' : '🔋 BATERÍA';
+    const pct = bat.capacity != null ? bat.capacity : '--';
+    src.textContent = bat.on_ac ? t('topbar.ac') : t('topbar.battery');
+    src.title = bat.on_ac
+      ? t('topbar.power_source_ac_title', { pct })
+      : t('topbar.power_source_battery_title', { pct });
+    src.setAttribute('aria-label', src.title);
     src.className = 'power-source ' + (bat.on_ac ? 'ac' : 'bat');
+  } else {
+    src.textContent = '—';
+    src.title = t('topbar.power_source_unknown_title');
+    src.setAttribute('aria-label', src.title);
+    src.className = 'power-source';
   }
 
   /* events — 4th element is category key (tolerate old 3-tuples) */
@@ -1808,21 +1889,21 @@ $('maintenance-modal')?.addEventListener('click', (e) => {
   if (e.target === $('maintenance-modal')) $('maintenance-modal').classList.add('hidden');
 });
 $('maint-update')?.addEventListener('click', async () => {
-  maintStatus('Buscando actualización…');
+  maintStatus(t('maint.status_checking'));
   const res = await window.rog.checkUpdate();
-  if (!res.ok) { maintStatus(`No se pudo verificar: ${res.err}`); return; }
+  if (!res.ok) { maintStatus(t('maint.status_check_failed', { err: res.err })); return; }
   if (res.behind > 0) {
-    maintStatus(`Hay ${res.behind} cambio(s). Instalando…`);
+    maintStatus(t('maint.status_installing', { n: res.behind }));
     const up = await window.rog.doUpdate();
-    maintStatus(up.ok ? 'Actualizado y backend reiniciado ✓' : `Error: ${up.err}`);
+    maintStatus(up.ok ? t('maint.status_updated') : t('maint.status_error', { err: up.err }));
   } else {
-    maintStatus('Ya estás al día ✓');
+    maintStatus(t('maint.status_current'));
   }
 });
 $('maint-reinstall')?.addEventListener('click', async () => {
-  maintStatus('Reinstalando dependencias…');
+  maintStatus(t('maint.status_reinstalling'));
   const res = await window.rog.reinstallApp();
-  maintStatus(res.ok ? 'Reinstalado y backend reiniciado ✓' : `Error: ${res.err || res.out}`);
+  maintStatus(res.ok ? t('maint.status_reinstalled') : t('maint.status_error', { err: res.err || res.out }));
 });
 $('maint-uninstall')?.addEventListener('click', async () => {
   const purge = $('maint-purge').checked;
@@ -1830,12 +1911,12 @@ $('maint-uninstall')?.addEventListener('click', async () => {
     ? t('confirm.uninstall_purge')
     : t('confirm.uninstall_keep');
   if (!(await rogConfirm(msg + t('confirm.uninstall_pw_note'), { title: t('maint.uninstall_title') }))) return;
-  maintStatus('Desinstalando… (puede pedir contraseña)');
+  maintStatus(t('maint.status_uninstalling'));
   const res = await window.rog.uninstallApp({ purge });
   if (res.ok) {
-    maintStatus('Desinstalado. La app se cerrará…');
+    maintStatus(t('maint.status_uninstalled'));
   } else {
-    maintStatus(`Error: ${res.err || 'no se pudo desinstalar'}`);
+    maintStatus(t('maint.status_error', { err: res.err || 'could not uninstall' }));
   }
 });
 
@@ -1848,8 +1929,8 @@ wireChartHover('chart-gpu-power', 'W');
 
 window.rog.onStats(update);
 window.rog.onBackendDown(() => {
-  $('backend-state').textContent = 'backend caído — reiniciando…';
-  recordLocalError('backend-down', { message: 'backend caído — reiniciando' });
+  $('backend-state').textContent = t('status.backend_down');
+  recordLocalError('backend-down', { message: 'backend down — restarting' });
 });
 // Watchdog / exit handler emits this before auto-recover fires so the pill
 // shows feedback immediately instead of freezing silently.
@@ -1860,7 +1941,7 @@ if (window.rog.onBackendReconnecting) {
 }
 window.rog.onMusicStopped(() => {
   musicModeActive = false;
-  $('aura-music').textContent = 'MODO MÚSICA';
+  $('aura-music').textContent = t('aura.music');
   markAuraDirty(false);
   refreshAuraState();
 });
@@ -1939,6 +2020,7 @@ if (window.i18n) {
   window.i18n.onChange((lang) => {
     window.i18n.apply();
     buildLangGrid();
+    renderThemeGrid();
     // Re-pintar contenido dinámico ya visible (estados que no son data-i18n).
     // Cada llamada va protegida: un elemento/estado ausente nunca debe lanzar.
     try { if (typeof auraState !== 'undefined' && auraState) renderAura(auraState); } catch (_) {}
@@ -1960,19 +2042,31 @@ if (window.i18n) {
 
 /* ---------- theme picker ---------- */
 
-$('theme-grid').innerHTML = THEMES.map(([id, name, desc]) => `
-  <button class="theme-card" data-theme="${id}">
-    <span class="swatch"><i class="a"></i><i></i><i></i></span>
-    <span class="name">${name}</span>
-    <span class="desc">${desc}</span>
-  </button>`).join('');
+function themeText(id, part, fallback) {
+  const key = `theme.${id}.${part}`;
+  const value = t(key);
+  return value === key ? fallback : value;
+}
 
-document.querySelectorAll('.theme-card').forEach((card) => {
-  card.addEventListener('click', () => {
-    localStorage.setItem('theme', card.dataset.theme);
-    applyAppearance();
+function renderThemeGrid() {
+  const grid = $('theme-grid');
+  if (!grid) return;
+  grid.innerHTML = THEMES.map(([id, name, desc]) => `
+    <button class="theme-card" data-theme="${id}">
+      <span class="swatch"><i class="a"></i><i></i><i></i></span>
+      <span class="name">${escapeHtml(themeText(id, 'name', name))}</span>
+      <span class="desc">${escapeHtml(themeText(id, 'desc', desc))}</span>
+    </button>`).join('');
+  grid.querySelectorAll('.theme-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      localStorage.setItem('theme', card.dataset.theme);
+      applyAppearance();
+    });
   });
-});
+  applyAppearance();
+}
+
+renderThemeGrid();
 
 document.querySelectorAll('#mode-seg button').forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -2121,20 +2215,20 @@ $('alerts-save').addEventListener('click', async () => {
   $('set-autostart').addEventListener('change', async (e) => {
     const res = await window.rog.setAutostart(e.target.checked);
     if (!res || res.ok === false) {
-      toast(`No pude cambiar el autoarranque: ${(res && res.err) || '?'}`);
+      toast(t('config.autostart_failed', { err: (res && res.err) || '?' }));
       e.target.checked = !e.target.checked;
       return;
     }
     toast(e.target.checked
-      ? 'Autoarranque activado: la app abrirá minimizada al iniciar sesión.'
-      : 'Autoarranque desactivado.');
+      ? t('config.autostart_on')
+      : t('config.autostart_off'));
   });
 
   /* --- notificaciones: merge en settings.json (no reinicia perfiles) --- */
   $('set-notifications').addEventListener('change', async (e) => {
     const res = await window.rog.saveSettings({ notifications: e.target.checked });
     if (!res || res.ok === false) {
-      toast(`No pude guardar notificaciones: ${(res && res.err) || '?'}`);
+      toast(t('config.notifications_failed', { err: (res && res.err) || '?' }));
       e.target.checked = !e.target.checked;
     }
   });
@@ -2143,16 +2237,16 @@ $('alerts-save').addEventListener('click', async () => {
     const previous = e.target.dataset.previous || 'quit';
     const res = await window.rog.saveSettings({ close_action: e.target.value });
     if (!res || res.ok === false) {
-      toast(`No pude guardar el cierre de ventana: ${(res && res.err) || '?'}`);
+      toast(t('config.close_failed', { err: (res && res.err) || '?' }));
       e.target.value = previous;
       return;
     }
     e.target.dataset.previous = e.target.value;
     toast(e.target.value === 'quit'
-      ? 'El botón X ahora cierra ROG Monitor por completo.'
+      ? t('config.close_saved_quit')
       : e.target.value === 'tray'
-        ? 'El botón X ahora minimiza ROG Monitor a la bandeja.'
-        : 'El botón X preguntará qué hacer.');
+        ? t('config.close_saved_tray')
+        : t('config.close_saved_ask'));
   });
 
   /* --- SALIR (tipo Steam): cierra de verdad la app --- */
@@ -2252,10 +2346,10 @@ $('aura-save-profile').addEventListener('click', async () => {
   const name = $('aura-profile-name').value.trim() || auraProfileSelection;
   if (!name) { toast(t('toast.write_profile_name')); return; }
   const res = await window.rog.saveAuraProfile({ name, state: currentAuraFormState() });
-  if (!res.ok) { toast(`No se guardó: ${res.err}`); return; }
+  if (!res.ok) { toast(t('aura.profile_save_failed', { err: res.err })); return; }
   auraProfileSelection = name;
   $('aura-profile-name').value = name;
-  toast(`Perfil "${name}" guardado ✓`);
+  toast(t('aura.profile_saved', { name }));
   await refreshAuraState();
 });
 
@@ -2279,9 +2373,9 @@ $('aura-profile-list').addEventListener('click', async (e) => {
   if (action === 'delete') {
     if (!(await confirmT('confirm.delete_profile', { name }))) return;
     const res = await window.rog.deleteAuraProfile(name);
-    if (!res.ok) { toast(`No se borró: ${res.err}`); return; }
+    if (!res.ok) { toast(t('aura.profile_delete_failed', { err: res.err })); return; }
     if (auraProfileSelection === name) auraProfileSelection = '';
-    toast(`Perfil "${name}" borrado`);
+    toast(t('aura.profile_deleted', { name }));
     await refreshAuraState(true);
     return;
   }
@@ -2291,13 +2385,13 @@ $('aura-profile-list').addEventListener('click', async (e) => {
 
   if (action === 'apply') {
     setAuraForm(profile.state);
-    markAuraDirty(true, `Perfil "${name}" cargado. Aplicando…`);
-    await applyAuraState(profile.state, `Perfil "${name}" aplicado ✓`);
+    markAuraDirty(true, t('aura.profile_loading', { name }));
+    await applyAuraState(profile.state, t('aura.profile_applied', { name }));
   } else {
     // click on the row body: load into the form (no apply yet)
     setAuraForm(profile.state);
-    markAuraDirty(true, `Perfil "${name}" cargado. Falta aplicar.`);
-    toast(`Perfil "${name}" cargado en el formulario`);
+    markAuraDirty(true, t('aura.profile_loaded_dirty', { name }));
+    toast(t('aura.profile_loaded_form', { name }));
   }
 });
 
@@ -2311,19 +2405,19 @@ $('aura-startup').addEventListener('change', async (e) => {
   const res = await window.rog.setAuraStartup({ name, enabled: e.target.checked });
   if (!res.ok) {
     e.target.checked = !e.target.checked;
-    toast(`No se pudo: ${res.err}`);
+    toast(t('aura.startup_failed', { err: res.err }));
     return;
   }
-  toast(res.apply_on_startup ? `Perfil ${name} marcado para inicio` : 'Inicio automático de Aura desactivado');
+  toast(res.apply_on_startup ? t('aura.startup_enabled', { name }) : t('aura.startup_disabled'));
   await refreshAuraState();
 });
 
 $('aura-music').addEventListener('click', async () => {
   if (musicModeActive) {
     const res = await window.rog.setMusicMode({ enabled: false, state: currentAuraFormState() });
-  if (!res.ok) { toast(`No se pudo apagar: ${res.err}`); return; }
+  if (!res.ok) { toast(t('aura.music_stop_failed', { err: res.err })); return; }
   musicModeActive = false;
-  $('aura-music').textContent = 'MODO MÚSICA';
+  $('aura-music').textContent = t('aura.music');
   markAuraDirty(false);
   toast(t('toast.music_off'));
   await refreshAuraState();
@@ -2857,10 +2951,13 @@ function fanMaxSummary() {
 function refreshFanNotes() {
   const calibrated = Object.keys(fanCfg.curves).some(fanCalibrated);
   const editLabel = fanProfileLabel(fanEditingProfile);
-  $('fan-max-note').textContent =
-    `Curvas ${fanCfg.source} (perfil ${editLabel}). ` +
-    `Máximos ${calibrated ? 'medidos ✓' : 'ESTIMADOS (sin medir)'}: ` +
-    `${fanMaxSummary()} RPM · ${Object.keys(fanCfg.curves).length} ventiladores detectados.`;
+  $('fan-max-note').textContent = t('fan.max_note', {
+    source: fanCfg.source,
+    profile: editLabel,
+    state: calibrated ? t('fan.max_measured') : t('fan.max_estimated'),
+    max: fanMaxSummary(),
+    count: Object.keys(fanCfg.curves).length,
+  });
   $('fan-calib-banner').classList.toggle('hidden', calibrated);
   $('fan-benchmark').classList.toggle('attention', !calibrated);
   updateCapPreview();

@@ -1,60 +1,68 @@
-# Contribuir a ROG Monitor
+# Contributing to ROG Monitor
 
-¡Gracias por tu interés! ROG Monitor es un monitor y centro de control de
-hardware para portátiles ASUS ROG en Linux, sin telemetría y sin depender de la
-nube.
+Thanks for your interest. ROG Monitor is a Linux hardware monitor and control
+center for ASUS ROG laptops, built without telemetry and without cloud
+dependencies.
 
-## Reglas del proyecto (importantes)
+## Project rules
 
-- **Sin telemetría ni red**, salvo el botón de actualizar (git) y el de reportar
-  error (abre GitHub). Nada de analytics.
-- **Español primero** en la interfaz (i18n es/en en `src/rog_monitor/i18n.py`).
-- **No dañar el equipo:** los cambios de sistema (root) van por `pkexec` desde la
-  app o por un script que el usuario ejecuta. El control de poder se recorta a
-  los mín/máx del firmware **dos veces** y exige consentimiento.
-- **Identidad visual propia:** que no parezca "hecha por IA". Esquinas cortadas,
-  placas numeradas inclinadas, paletas propias. Nada de tarjetas redondeadas
-  genéricas.
-- **Rutas genéricas** en docs y código (nada de `/home/<usuario>` hardcodeado).
-- **Archivar, nunca borrar** archivos preexistentes.
+- **No telemetry or background network calls**, except the explicit update button
+  (`git`) and the report button, which opens GitHub in the browser. No analytics.
+- **English is the public base language.** The UI ships in 8 languages
+  (`en es fr it pt zh ja ko`); every user-facing string must have at least
+  English and Spanish, and new public docs should be written in English.
+- **Do not damage hardware.** Root/system changes go through explicit `pkexec`
+  prompts or scripts the user chooses to run. Power controls are clamped to
+  firmware min/max values twice and require consent.
+- **Keep the visual identity.** Cut corners, angled number plates, custom
+  palettes, and semantic thermal colors are intentional. Avoid generic rounded
+  cards and stock dashboard styling.
+- **Use generic paths** in docs and code. Do not hard-code personal home paths.
+- **Archive before deleting** existing files unless the change is explicitly a
+  cleanup.
 
-## Entorno y pruebas
+## Environment and checks
 
 ```bash
-# Núcleo Python
-bash scripts/install.sh        # venv + deps
-PYTHONPATH=src python3 -m rog_monitor --json    # un snapshot JSON
-PYTHONPATH=src python3 -m rog_monitor           # TUI
+# Python core
+bash scripts/install.sh
+PYTHONPATH=src python3 -m rog_monitor --json
+PYTHONPATH=src python3 -m rog_monitor
 
-# App de escritorio (Electron)
+# Desktop app
 bash scripts/install-desktop.sh
 ```
 
-Antes de abrir un PR, comprueba localmente lo que corre la CI:
+Before opening a PR, run the same checks as CI where possible:
 
 ```bash
 python3 -m py_compile src/rog_monitor/*.py
-for f in desktop/main.js desktop/preload.js desktop/renderer/*.js; do node --check "$f"; done
 python3 -c "import json; json.load(open('src/rog_monitor/device_profiles.json'))"
-PYTHONPATH=src python3 -m rog_monitor --json | python3 -m json.tool > /dev/null && echo "JSON OK"
-node scripts/validate-i18n.mjs        # 8 idiomas / data-i18n / textos de comandos
+PYTHONPATH=src python3 -m rog_monitor --json | python3 -m json.tool > /dev/null
+for f in desktop/main.js desktop/preload.js desktop/renderer/*.js; do node --check "$f"; done
+node scripts/validate-i18n.mjs
+cd desktop && npm ci && npx electron-builder --linux dir --publish never
 ```
 
-## Traducciones
+## Translations
 
-8 idiomas (`en es fr it pt zh ja ko`). Cómo añadir o corregir uno:
-[`docs/TRANSLATING.md`](docs/TRANSLATING.md).
+Translation guide: [docs/TRANSLATING.md](docs/TRANSLATING.md).
 
-## Agregar tu portátil
+Do not leave new UI text hard-coded in one language. Use `data-i18n`,
+`data-i18n-attr`, or `window.t(...)` depending on where the string is rendered.
 
-Mira [`docs/supported-devices.md`](docs/supported-devices.md). En resumen: añade
-una entrada a `src/rog_monitor/device_profiles.json` con los rangos seguros de
-tu firmware (o de Armoury Crate) y abre un PR, o usa la plantilla de issue
-**Solicitud de dispositivo**.
+## Add your laptop
 
-## Estilo
+See [docs/supported-devices.md](docs/supported-devices.md). In short: add a
+profile to `src/rog_monitor/device_profiles.json` with firmware-safe ranges for
+your exact model, or open a **Device request** issue with the requested data.
 
-- Python: estándar de la librería, sin dependencias nuevas salvo necesidad real.
-- JS del renderer: archivos por feature, suscriptores propios de
-  `window.rog.onStats` (no reescribir `update()`); CSS por feature usando las
-  variables de tema (`--accent`, `--panel`, etc.).
+## Style
+
+- Python: standard library first; add dependencies only when they solve a real
+  problem.
+- Renderer JS: keep feature code in feature files, use local
+  `window.rog.onStats` subscribers where possible, and avoid rewriting the
+  central `update()` path for unrelated work.
+- CSS: use theme variables such as `--accent`, `--panel`, `--hair`, and the
+  semantic thermal colors.

@@ -1,27 +1,26 @@
 ---
-name: Reportar un error
-about: Algo no funciona como debería
+name: Bug report
+about: Something is not working as expected
 title: "[bug] "
 labels: bug
 ---
 
-**¿Qué pasó?**
-<!-- Descripción clara del problema. -->
+**What happened?**
+<!-- Clear description of the problem. -->
 
-**¿Qué esperabas que pasara?**
+**What did you expect to happen?**
 
-**Pasos para reproducirlo**
+**Steps to reproduce**
 1.
 2.
 
-**Información del sistema**
-<!-- El botón REPORTAR ERROR de la app llena esto solo. Si no, complétalo: -->
-- ROG Monitor (versión):
-- Modelo (`cat /sys/class/dmi/id/product_name`):
+**System information**
+<!-- The REPORT BUG button fills this automatically. If not, complete it here: -->
+- ROG Monitor version:
+- Model (`cat /sys/class/dmi/id/product_name`):
 - CPU / GPU:
-- Distro + sesión (X11/Wayland):
-- ASUS: `asusctl --version` / `systemctl is-active asusd` (si aplica):
+- Distro + session (X11/Wayland):
+- ASUS: `asusctl --version` / `systemctl is-active asusd` (if applicable):
 
 **Logs**
-<!-- ~/.local/share/rog-monitor/error.log y, si es la app de escritorio,
-     la salida de la consola. -->
+<!-- ~/.local/share/rog-monitor/error.log and, for the desktop app, console output. -->

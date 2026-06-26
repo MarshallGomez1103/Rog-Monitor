@@ -39,6 +39,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Install desktop deps
+        working-directory: desktop
+        run: npm ci
 
       - name: node --check desktop JS
         run: |
@@ -48,6 +54,10 @@ jobs:
 
       - name: Validate i18n (base langs, no undefined data-i18n, command texts)
         run: node scripts/validate-i18n.mjs
+
+      - name: Electron package smoke (unpacked dir, no AppImage)
+        working-directory: desktop
+        run: npx electron-builder --linux dir --publish never
 
       - name: apply-power-control.sh syntax
         run: bash -n scripts/apply-power-control.sh

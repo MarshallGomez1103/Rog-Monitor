@@ -11,7 +11,7 @@ no framework.
   `window.i18n.register({...})` inside its own file
   (e.g. `battery.js`, `disks.js`, `diagnostics.js`, `commands.js`, `roadmap.js`).
 - At runtime, `window.t('some.key')` returns the string for the active language.
-  Missing languages **fall back** to `es`/`en`, so an untranslated key shows in a
+  Missing languages **fall back** to `en`/`es`, so an untranslated key shows in a
   base language rather than breaking.
 - Markup uses `data-i18n="some.key"` (text) and
   `data-i18n-attr="title:some.tip"` (attributes); these re-render live on language
@@ -40,7 +40,7 @@ window.i18n.register({
    node scripts/validate-i18n.mjs
    ```
 
-   It **fails** if a key is missing a base language (`es`/`en`), if any
+   It **fails** if a key is missing a base language (`en`/`es`), if any
    `data-i18n` in `index.html` has no definition, or if a transparency command
    lacks its texts. It **warns** (does not fail) when a non-base language is
    missing, and prints how many per module — that list is the current translation
@@ -50,7 +50,7 @@ window.i18n.register({
 
 ## Current translation debt
 
-Some larger modules are currently only complete in `es`/`en` and fall back for the
+Some larger modules are currently only complete in `en`/`es` and fall back for the
 other six languages. Run `node scripts/validate-i18n.mjs` to see the live counts by
 module (today: `power`, `game-session`, `cores`). Finishing these is a great
 first contribution — pick a module, fill the six languages, and the warning count

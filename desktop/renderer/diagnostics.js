@@ -37,6 +37,10 @@ if (window.i18n && typeof window.i18n.register === 'function') {
     'diag.mb_name':       { es: 'Modelo placa', en: 'Board Model', fr: 'Modèle carte', it: 'Modello scheda', pt: 'Modelo placa', zh: '主板型号', ja: 'マザーボードモデル', ko: '보드 모델' },
     'diag.bios':          { es: 'BIOS', en: 'BIOS', fr: 'BIOS', it: 'BIOS', pt: 'BIOS', zh: 'BIOS', ja: 'BIOS', ko: 'BIOS' },
     'diag.no_data':       { es: 'sin datos', en: 'no data', fr: 'pas de données', it: 'nessun dato', pt: 'sem dados', zh: '无数据', ja: 'データなし', ko: '데이터 없음' },
+    'diag.waiting_backend': { es: 'Esperando datos del backend…', en: 'Waiting for backend data…', fr: 'En attente des données du backend…', it: 'In attesa dei dati del backend…', pt: 'A aguardar dados do backend…', zh: '正在等待后端数据…', ja: 'バックエンドのデータを待機中…', ko: '백엔드 데이터 대기 중…' },
+    'diag.ac_short':      { es: 'AC', en: 'AC', fr: 'Secteur', it: 'AC', pt: 'AC', zh: '外接电源', ja: 'AC', ko: 'AC' },
+    'diag.battery_short': { es: 'Batería', en: 'Battery', fr: 'Batterie', it: 'Batteria', pt: 'Bateria', zh: '电池', ja: 'バッテリー', ko: '배터리' },
+    'diag.charge_limit_short': { es: 'lím. {pct}%', en: 'limit {pct}%', fr: 'lim. {pct} %', it: 'lim. {pct}%', pt: 'lim. {pct}%', zh: '上限 {pct}%', ja: '上限 {pct}%', ko: '제한 {pct}%' },
 
     /* --- keyboard test --- */
     'diag.kb_title':      { es: 'Test de teclado', en: 'Keyboard Test', fr: 'Test du clavier', it: 'Test tastiera', pt: 'Teste de teclado', zh: '键盘测试', ja: 'キーボードテスト', ko: '키보드 테스트' },
@@ -76,7 +80,7 @@ function _diagFmt(v, decimals = 0, unit = '') {
 }
 
 function _buildInfoCards(stats) {
-  if (!stats) return '<p class="dim" style="padding:0.5rem">Esperando datos del backend…</p>';
+  if (!stats) return `<p class="dim" style="padding:0.5rem">${_dt('diag.waiting_backend')}</p>`;
 
   const cpu   = stats.cpu   || {};
   const gpu   = stats.gpu   || {};
@@ -92,7 +96,11 @@ function _buildInfoCards(stats) {
     .join(' · ') || _dt('diag.no_data');
 
   const batText = bat.capacity != null
-    ? `${bat.capacity}%${bat.on_ac ? ' ⚡' : ' 🔋'}${bat.charge_limit ? ' (lím. ' + bat.charge_limit + '%)' : ''}`
+    ? [
+        `${bat.capacity}%`,
+        bat.on_ac ? `⚡ ${_dt('diag.ac_short')}` : `🔋 ${_dt('diag.battery_short')}`,
+        bat.charge_limit ? _dt('diag.charge_limit_short', { pct: bat.charge_limit }) : '',
+      ].filter(Boolean).join(' · ')
     : _dt('diag.no_data');
 
   const cards = [
@@ -110,12 +118,16 @@ function _buildInfoCards(stats) {
     { label: _dt('diag.bios'),       value: dmi.bios_version || _dt('diag.no_data'), sub: dmi.product_name || '' },
   ];
 
-  return cards.map(({ label, value, sub, small }) => `
+  return cards.map(({ label, value, sub, small }) => {
+    const text = String(value || '');
+    const long = !small && text.length > 24;
+    return `
     <div class="diag-card-item">
       <span class="diag-card-label">${label}</span>
-      <span class="diag-card-value${small ? ' small' : ''}" style="${small ? 'font-size:0.72rem' : ''}">${value}</span>
+      <span class="diag-card-value${small ? ' small' : ''}${long ? ' long' : ''}">${value}</span>
       ${sub ? `<span class="diag-card-sub">${sub}</span>` : ''}
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 /* ============================================================

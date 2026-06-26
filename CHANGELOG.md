@@ -6,14 +6,14 @@ Launch-prep release: command transparency, the Diagnostics fix, and P0/Launch
 readiness (AppImage, i18n CI, contributor docs).
 
 ### Added
-- **Command transparency** (AYUDA → COMANDOS DEL SISTEMA): lists every privileged
+- **Command transparency** (Help → System Commands): lists every privileged
   command the app can run with `pkexec`, showing the literal command exactly as
   executed plus *what it does* and *why it needs root*, in all 8 languages. The
   literal command is also shown in the Power confirm dialog and the SMART panel.
 - **AppImage packaging** via `electron-builder` (`cd desktop && npm run dist`); the
   Python backend, scripts and VERSION are bundled as `extraResources`.
 - **i18n validation in CI** (`scripts/validate-i18n.mjs`): fails on a missing base
-  language (es/en), any undefined `data-i18n` in `index.html`, or a transparency
+  language (en/es), any undefined `data-i18n` in `index.html`, or a transparency
   command without its texts; warns on untranslated non-base languages.
 - `docs/TRANSLATING.md` — how to add or fix a language.
 - **Keyboard test is now click-to-activate**: keys are captured *only* while the test is
@@ -48,7 +48,7 @@ interactive hardware tests, explainable events, and i18n/UI bug fixes.
   rates, plus on-demand **SMART** (power-on hours, cycles, SSD wear, reallocated
   sectors) via a single `pkexec smartctl -j` call, cached per session.
   `smartmontools` added to the installer dependencies.
-- Diagnostics hub (HERRAMIENTAS → DIAGNÓSTICO): CPU/GPU/iGPU/battery/fans/
+- Diagnostics hub (Tools → Diagnostics): CPU/GPU/iGPU/battery/fans/
   motherboard info cards plus interactive keyboard, speaker (L/R) and display
   (full-screen color) tests. Motherboard info read from DMI without root.
 - Events are now clickable and categorized by type, with a per-type explanation
@@ -57,7 +57,7 @@ interactive hardware tests, explainable events, and i18n/UI bug fixes.
 ### Fixed
 - Benchmark detail strings now go through i18n (were hardcoded Spanish).
 - Benchmark and event exports are generated in the active language.
-- Processes "per-core" (% NÚCLEO) column neon now renders like the other columns.
+- Processes "per-core" (% CORE) column neon now renders like the other columns.
 
 ## 17.0.0 — 2026-06-23
 
@@ -91,7 +91,7 @@ interactions, high-zoom layout, and a fully translated roadmap.
   a password will be asked. The password stays with `pkexec` — never handled
   in-app.
 - **Redesigned toasts** with ok / warn / error variants (color + icon).
-- **CONFIGURACIÓN is a first-level button** (one click, no longer nested in
+- **CONFIGURATION is a first-level button** (one click, no longer nested in
   Tools) and a 🌐 language globe is always visible; the duplicate in-Config
   language grid was removed (single source). The top nav bar collapses with a
   chevron (state persisted).
@@ -133,12 +133,12 @@ interactions, high-zoom layout, and a fully translated roadmap.
 - **Overlay temps colored by level.** Temperatures use the dashboard's thresholds
   (passed main→overlay via `pushOverlayConfig`), labels are legible light-gray, and
   the numbers are larger. Degrades to static colors if thresholds are absent.
-- **Settings split into CONFIGURACIÓN and ALERTAS / UMBRALES.** New `#config-modal`
+- **Settings split into CONFIGURATION and ALERTS / THRESHOLDS.** New `#config-modal`
   groups language, appearance (mode/theme/size, moved out of the old theme modal),
   autostart and notifications; the alerts modal now holds only thresholds + colors.
-  Tools menu is `Poder · Overlay · Alertas · Configuración`.
+  Tools menu is `Power · Overlay · Alerts · Configuration`.
 - **System tray + real Quit (Steam-style).** Closing the window minimizes to tray
-  (backend stays SIGSTOP-suspended); a tray menu and a **SALIR** item in the System
+  (backend stays SIGSTOP-suspended); a tray menu and a **Quit** item in the System
   menu fully quit — closing the overlay and killing the backend.
 - **One dashboard button.** Layout and edit-mode merged into a single `#dash-btn`
   with the edit-mode toggle inside the dashboard modal.
@@ -153,14 +153,14 @@ interactions, high-zoom layout, and a fully translated roadmap.
 ### Fixed
 
 - **Per-profile fan caps now persist independently.** Setting a different RPM cap
-  for Ahorro / Balance / Performance no longer collapses all three to the last one
+  for Saver / Balanced / Performance no longer collapses all three to the last one
   saved. The global `cap_rpm` mirror (the contamination source) was removed; each
   profile keeps its own cap. Editing several profiles and saving once now persists
   them all in a single privileged step.
 
 ### Added
 
-- **Guardian Gaming: configurable fan cap.** A "Tope en Gaming (RPM)" field (default
+- **Guardian Gaming: configurable fan cap.** A "Gaming cap (RPM)" field (default
   = measured maximum) lets fans climb above the normal cap while gaming, enforced by
   the fan service only when the guardian is in active Gaming mode (decoupled, no extra
   password prompt).
@@ -177,7 +177,7 @@ interactions, high-zoom layout, and a fully translated roadmap.
 - **Maintenance/Settings cleanup.** The duplicate "Update" button was removed from the
   System menu (it lives in **Maintenance** now: Update / Reinstall-Repair / Uninstall);
   the uninstall button is visually uniform with the others; "Alerts" became
-  **"Configuración"** grouping autostart, notifications, thresholds and colors.
+  **"Configuration"** grouping autostart, notifications, thresholds and colors.
 - **README**: one-line install and one-line uninstall up top, with a clear note about
   what the single sudo step does.
 

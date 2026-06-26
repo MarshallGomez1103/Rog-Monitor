@@ -1,82 +1,95 @@
-# Redragon K734WCG-RGB-PRO — protocolo (en análisis)
+# Redragon K734WCG-RGB-PRO — protocol notes (under analysis)
 
-> Estado 2026-06-12: **detección lista** (la app lo muestra en Iluminación).
-> **Control: BLOQUEADO a propósito hasta tener capturas USB reales.**
+> Status as of 2026-06-12: **detection is ready**; the app can show the device
+> in Lighting. **Control is intentionally blocked until real USB captures are
+> available.**
 
-## ⚠️ Por qué NO mandamos comandos todavía
+## Why we do not send commands yet
 
-Los teclados Sinowealth/BY Tech (VID 0x258a) **se han brickeado** con
-comandos adivinados: OpenRGB deshabilitó su controlador "Sinowealth keyboard"
-porque el mismo VID:PID se reutiliza entre ICs distintos y un comando de un
-modelo puede ser el comando de *flasheo* de otro. El KB.ini de este teclado
-trae `CmdReset=0` e `IC2481=1` — hay comandos de reset/ISP en el firmware.
+Sinowealth/BY Tech keyboards (VID `0x258a`) have been bricked by guessed
+commands. OpenRGB disabled its "Sinowealth keyboard" driver because the same
+VID:PID is reused across different ICs, and a command for one model may be a
+firmware flashing command for another. This keyboard's `KB.ini` contains
+`CmdReset=0` and `IC2481=1`, so reset/ISP commands exist in the firmware.
 
-**Regla: ningún write/SetFeature al teclado sin verificarlo contra una
-captura USB del software oficial.** Leer sysfs está bien; escribir no.
+**Rule: no write/SetFeature calls to the keyboard until they are verified against
+a USB capture from the official software.** Reading sysfs is fine; writing is
+not.
 
-## Identificación (verificada en vivo en esta máquina)
+## Identification (live-verified)
 
-| Conexión | VID:PID | Nombre USB |
-|---|---|---|
-| Cable | `258a:010c` | BY Tech Gaming Keyboard |
-| Dongle 2.4G | `3554:fa09` | CompX (no probado conectado) |
+| Connection | VID:PID | USB name |
+| --- | --- | --- |
+| Wired | `258a:010c` | BY Tech Gaming Keyboard |
+| 2.4G dongle | `3554:fa09` | CompX (not tested while connected) |
 
-- hidraw0 (interfaz 0): teclado boot estándar — no tocar.
-- **hidraw1 (interfaz 1): canal de configuración.** Report descriptor decodificado:
+- `hidraw0` (interface 0): standard boot keyboard — do not touch.
+- **`hidraw1` (interface 1): configuration channel.** Decoded report descriptor:
   - Report ID `0x04`: NKRO input.
-  - Report ID `0x05`: **FEATURE de 5 bytes + ID — canal de comandos** (página vendor 0xFF00).
-  - Report ID `0x06`: input de 7 bytes + **FEATURE de 1794 bytes — canal de datos**
-    (colores por tecla / macros, paginado).
-  - Reports 0x01/0x02/0x03/0x07: system/consumer/eventos vendor/mouse.
-- En Bazzite los `/dev/hidraw*` son rw para el usuario (ACL): **no se necesita
-  root ni reglas udev** para hablarle cuando tengamos el protocolo.
+  - Report ID `0x05`: **5-byte FEATURE + ID — command channel** (vendor page
+    `0xFF00`).
+  - Report ID `0x06`: 7-byte input + **1794-byte FEATURE — data channel**
+    (per-key colors / macros, paged).
+  - Reports `0x01` / `0x02` / `0x03` / `0x07`: system, consumer, vendor events,
+    and mouse.
+- On Bazzite, `/dev/hidraw*` has user read/write ACLs, so no root or udev rules
+  should be needed once the protocol is known.
 
-## Software oficial: BYCOMBO4 (extraído del instalador oficial `Redragon_K734WCG-RGB-PRO_Software.exe`)
+## Official software: BYCOMBO4
 
-Extraer con: `innoextract -e <exe> -d /tmp/redragon-exe` (innoextract está en brew).
+Source installer: `Redragon_K734WCG-RGB-PRO_Software.exe`.
 
-- App real: `app/OemDrv.exe` (PE32 MFC, 2.6 MB, sin empaquetar — strings legibles).
-- `app/Dev/kb/KB.ini` es el descriptor del dispositivo para la app:
-  - `Fw=24` → selecciona la clase de protocolo **CDevG5KB** dentro de OemDrv.
-  - `CRC=1` → los paquetes llevan checksum.
+Extract with:
+
+```bash
+innoextract -e <exe> -d /tmp/redragon-exe
+```
+
+- Real app: `app/OemDrv.exe` (PE32 MFC, 2.6 MB, unpacked, readable strings).
+- `app/Dev/kb/KB.ini` is the device descriptor for the app:
+  - `Fw=24` selects the **CDevG5KB** protocol class inside `OemDrv`.
+  - `CRC=1` means packets carry checksums.
   - `LayerNum=4`, `ChannelMask=3`, `LedMask=0x22020`.
-  - `LedOpt1..20`: tabla de efectos HW (id, orden-UI, speed, light, direct, random, color).
-  - Sección `[KEY]`: cada tecla trae coordenadas de UI + `0x02,<scancode>,0x00,<led_index>`
-    (índice LED con paso 6 → probablemente 2 bytes/canal RGB en el buffer del report 0x06).
-- Strings de protocolo en OemDrv.exe (familia G5):
-  - `AccessData: SetFeature/GetFeature, nCmdID=%x` — el cmd va en `Buffer[2]` y
-    el GetFeature de respuesta debe **ecoar el mismo cmd id**; si no, reintenta.
-  - `AccessData CRC err for nCmdID=%x, retry now` — respuesta con CRC.
-  - `CDevG5KB::AccessData_Page send this page, Buffer=%x %x %x %x %x` — las
-    transferencias grandes van paginadas; el comando de página son los 5 bytes
-    del feature 0x05; los datos van por el feature 0x06 (`dataUnit=%d`).
-- Nadie ha publicado este protocolo (buscado jun 2026): seremos los primeros.
+  - `LedOpt1..20`: hardware effect table (id, UI order, speed, light, direct,
+    random, color).
+  - `[KEY]` section: each key has UI coordinates plus
+    `0x02,<scancode>,0x00,<led_index>`; LED indices step by 6, likely two bytes
+    per RGB channel in the report `0x06` buffer.
+- Protocol strings in `OemDrv.exe` (G5 family):
+  - `AccessData: SetFeature/GetFeature, nCmdID=%x`: command id is in
+    `Buffer[2]`; GetFeature responses must echo the same command id or the app
+    retries.
+  - `AccessData CRC err for nCmdID=%x, retry now`: response CRC failure.
+  - `CDevG5KB::AccessData_Page send this page, Buffer=%x %x %x %x %x`: large
+    transfers are paged; the page command is the 5-byte feature `0x05`; data
+    goes through feature `0x06` (`dataUnit=%d`).
+- No public implementation was found as of June 2026. This may be first-party
+  research.
 
-## 📋 Captura USB en Windows (10 min, la ruta segura)
+## Safe Windows USB capture
 
-1. En Windows 11: instala Wireshark marcando **USBPcap** en el instalador.
-2. Conecta el teclado **por cable**. Abre la app BYCOMBO4.
-3. Abre Wireshark → interfaz USBPcap1 → empieza a capturar.
-4. En BYCOMBO4, despacio y EN ORDEN (anota qué hiciste y a qué hora):
-   - cambia el efecto 3 veces (p. ej. Static → Wave → Static),
-   - cambia el color a rojo puro `FF0000`, luego azul puro `0000FF`,
-   - cambia el brillo: mínimo → máximo,
-   - cambia la velocidad: mínima → máxima,
-   - si hay modo por-tecla: pinta UNA tecla (Esc) de verde `00FF00`.
-5. Para la captura y guárdala como `redragon-capture.pcapng` en una carpeta
-   que veas desde Bazzite (p. ej. la partición compartida o un USB).
-6. La próxima sesión: filtrar `usb.idVendor == 0x258a`, mirar los
-   SET_REPORT (feature 0x05/0x06), confirmar opcodes y CRC contra lo de
-   arriba, y recién ahí escribir `src/rog_monitor/redragon.py`.
+1. On Windows 11, install Wireshark and enable **USBPcap** in the installer.
+2. Connect the keyboard **by wire** and open BYCOMBO4.
+3. In Wireshark, open `USBPcap1` and start capturing.
+4. In BYCOMBO4, slowly and in this exact order, noting what you did and when:
+   - change the effect three times, for example Static -> Wave -> Static;
+   - set color to pure red `FF0000`, then pure blue `0000FF`;
+   - change brightness: minimum -> maximum;
+   - change speed: minimum -> maximum;
+   - if per-key mode exists, paint one key (Esc) green `00FF00`.
+5. Stop the capture and save it as `redragon-capture.pcapng` somewhere visible
+   from Linux, such as a shared partition or USB drive.
+6. Next session: filter `usb.idVendor == 0x258a`, inspect SET_REPORT calls
+   (features `0x05` / `0x06`), confirm opcodes and CRC against the notes above,
+   and only then write `src/rog_monitor/redragon.py`.
 
-## Plan de implementación (cuando haya capturas)
+## Implementation plan after captures exist
 
-- `src/rog_monitor/redragon.py`: hablar `/dev/hidraw*` directo con
-  `fcntl.ioctl` (HIDIOCSFEATURE/HIDIOCGFEATURE) — stdlib puro, sin deps,
-  como el resto del core.
-- Verificar SIEMPRE el eco del cmd id + CRC antes de mandar el siguiente paquete.
-- Lista blanca de comandos: solo los vistos en capturas. Nada de explorar
-  opcodes "a ver qué hacen".
-- UI: cuando funcione, el bloque Iluminación ya muestra el dispositivo
-  (renderPeripherals); agregar selector de efecto/color para el Redragon y
-  el modo música por zonas.
+- `src/rog_monitor/redragon.py`: talk directly to `/dev/hidraw*` with
+  `fcntl.ioctl` (`HIDIOCSFEATURE` / `HIDIOCGFEATURE`), using only the standard
+  library like the rest of the core.
+- Always verify command-id echo and CRC before sending the next packet.
+- Command allowlist: only commands observed in captures. No exploratory opcodes.
+- UI: the Lighting block already shows the device through `renderPeripherals`;
+  add Redragon effect/color controls and zone-aware Music Mode once writes are
+  verified.

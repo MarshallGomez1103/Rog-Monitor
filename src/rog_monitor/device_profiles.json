@@ -115,7 +115,7 @@
     },
     {
       "id": "auto",
-      "name": "Genérico (auto-detectado)",
+      "name": "Generic (auto-detected)",
       "friendly_name": "Generic ASUS (auto)",
       "dmi_match": null,
       "dmi_field": null,

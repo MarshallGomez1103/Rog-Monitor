@@ -22,10 +22,10 @@ SPEED_LEVELS = ["low", "med", "high"]
 DIRECTIONS = ["up", "down", "left", "right"]
 PRIMARY_EFFECTS = ["static", "breathe", "rainbow-cycle", "rainbow-wave", "stars"]
 
-# Modos de la cuadrícula de 9 tiles estilo Armoury Crate.
-# 'hw_id': id del efecto en asusd/asusctl (None = sin mapeo directo).
-# 'kind': "hardware" (necesita hw_id en SupportedBasicModes), "software" (lógica app), "future".
-# Tiles con kind=="future" se muestran desactivados con reason.
+# Nine-tile Armoury Crate-style mode grid.
+# 'hw_id': effect id in asusd/asusctl (None = no direct mapping).
+# 'kind': "hardware" (needs hw_id in SupportedBasicModes), "software" (app logic), "future".
+# Tiles with kind=="future" are shown disabled with a reason.
 MODE_GRID_DEFINITION = [
     {
         "id": "static",
@@ -81,7 +81,7 @@ MODE_GRID_DEFINITION = [
         "icon": "★",
         "hw_id": "stars",
         "kind": "hardware",
-        "reason": "no soportado por el teclado interno (lo hará un teclado externo con zonas vía OpenRGB)",
+        "reason": "not supported by the internal keyboard; an external zoned keyboard via OpenRGB can support it",
     },
     {
         "id": "smart",
@@ -89,7 +89,7 @@ MODE_GRID_DEFINITION = [
         "icon": "⊛",
         "hw_id": None,
         "kind": "future",
-        "reason": "próximamente (requiere un teclado externo vía OpenRGB)",
+        "reason": "coming later; requires an external keyboard via OpenRGB",
     },
     {
         "id": "adaptive",
@@ -97,7 +97,7 @@ MODE_GRID_DEFINITION = [
         "icon": "◈",
         "hw_id": None,
         "kind": "future",
-        "reason": "próximamente (requiere un teclado externo vía OpenRGB)",
+        "reason": "coming later; requires an external keyboard via OpenRGB",
     },
 ]
 ASUSCTL_CANDIDATES = [
@@ -113,8 +113,8 @@ OPENRGB_CANDIDATES = [
     "/usr/bin/openrgb",
 ]
 
-# Periféricos RGB conocidos que OpenRGB NO soporta (detección por VID:PID en
-# /sys/class/hidraw — solo LECTURA de sysfs, jamás se le escribe al equipo).
+# Known RGB peripherals that OpenRGB does NOT support (VID:PID detection in
+# /sys/class/hidraw; read-only sysfs, never writes to the device).
 KNOWN_PERIPHERALS = {
     ("258A", "010C"): ("Unsupported Sinowealth RGB keyboard", "cable"),
     ("3554", "FA09"): ("Unsupported Sinowealth RGB keyboard", "dongle 2.4G"),
@@ -164,12 +164,12 @@ EFFECT_META = {
 }
 
 
-# Overrides de realidad-hardware para teclados ASUS internos de 4 zonas.
+# Hardware reality overrides for internal ASUS 4-zone keyboards.
 # `asusctl aura effect breathe --help` anuncia
 # --colour2, pero el firmware IGNORA el segundo color (respira un solo color).
-# El firmware de este teclado ignora el segundo color, así que se oculta. Forzar
-# colours=1 aquí elimina el selector de color2 (UI) y el arg --colour2
-# (apply_state) para breathe. NO subir esto a 2 sin reprobar en hardware real.
+# This keyboard firmware ignores the second color, so the UI hides it. Forcing
+# colours=1 here removes color2 in the UI and --colour2 in apply_state for
+# breathe. Do not raise this to 2 without retesting real hardware.
 HARDWARE_CAP_OVERRIDE = {
     "breathe": {"colours": 1},
 }
@@ -252,19 +252,19 @@ def _save_store(data: dict) -> None:
 def _normalize_colour(value: str | None, fallback: str = "ff5500") -> str:
     text = (value or fallback).strip().lstrip("#").lower()
     if not HEX_RE.fullmatch(text):
-        raise ValueError(f"color inválido: {value!r}")
+        raise ValueError(f"invalid color: {value!r}")
     return text
 
 
 def _normalize_state(raw: dict) -> dict:
     effect = (raw.get("effect") or "static").strip()
     if effect not in EFFECT_META:
-        raise ValueError(f"efecto no soportado: {effect}")
+        raise ValueError(f"unsupported effect: {effect}")
 
     meta = EFFECT_META[effect]
     brightness = (raw.get("brightness") or "high").strip().lower()
     if brightness not in BRIGHTNESS_LEVELS:
-        raise ValueError(f"brillo inválido: {brightness}")
+        raise ValueError(f"invalid brightness: {brightness}")
 
     state = {
         "driver": (raw.get("driver") or "asus").strip().lower(),
@@ -278,11 +278,11 @@ def _normalize_state(raw: dict) -> dict:
     }
 
     if state["driver"] not in ("asus", "openrgb"):
-        raise ValueError(f"driver no soportado: {state['driver']}")
+        raise ValueError(f"unsupported driver: {state['driver']}")
     if state["speed"] not in SPEED_LEVELS:
-        raise ValueError(f"velocidad inválida: {state['speed']}")
+        raise ValueError(f"invalid speed: {state['speed']}")
     if state["direction"] not in DIRECTIONS:
-        raise ValueError(f"dirección inválida: {state['direction']}")
+        raise ValueError(f"invalid direction: {state['direction']}")
 
     # Use discovered runtime caps if available; fall back to static EFFECT_META.
     # This ensures colour2/speed/direction are stripped before they reach apply_state.
@@ -437,7 +437,7 @@ class AuraManager:
 
     @staticmethod
     def _detect_peripherals() -> list[dict]:
-        """Periféricos RGB conectados (solo lectura de sysfs, sin abrir nada)."""
+        """Connected RGB peripherals (read-only sysfs, opens nothing)."""
         found: dict[str, dict] = {}
         for uevent in Path("/sys/class/hidraw").glob("hidraw*/device/uevent"):
             try:
@@ -458,7 +458,7 @@ class AuraManager:
                 "vid_pid": f"{key[0].lower()}:{key[1].lower()}",
                 "hidraw": uevent.parent.parent.name,
                 "supported": False,
-                "note": "detectado — protocolo propio en análisis (sin control aún)",
+                "note": "detected — custom protocol under analysis (no control yet)",
             }
         return sorted(found.values(), key=lambda d: d["name"])
 
@@ -499,12 +499,12 @@ class AuraManager:
         basic_effects = [fx for fx in effects if fx["id"] in PRIMARY_EFFECTS]
         extra_effects = [fx for fx in effects if fx["id"] not in PRIMARY_EFFECTS]
 
-        # Cuadrícula de 9 tiles estilo Armoury Crate — honesta sobre el hardware.
-        # Un tile es "supported=True" cuando:
-        #   - kind=="hardware": su hw_id está en SupportedBasicModes y no en
-        #     unsupported_effects (aprendido al fallo en runtime).
-        #   - kind=="software": el tile música siempre disponible si hay fuente.
-        #   - kind=="future": siempre False.
+        # Armoury Crate-style 9-tile grid, honest about hardware support.
+        # A tile is "supported=True" when:
+        #   - kind=="hardware": hw_id is in SupportedBasicModes and not in
+        #     unsupported_effects (learned after runtime failure).
+        #   - kind=="software": Music is available when an audio source exists.
+        #   - kind=="future": always False.
         hw_ids_available = (
             {fx["id"] for fx in effects}  # ya filtramos por supported + unsupported
         )
@@ -513,19 +513,18 @@ class AuraManager:
             tile_id = tile["id"]
             if tile["kind"] == "hardware":
                 hw = tile["hw_id"]
-                # supported si el hw_id aparece en los efectos disponibles del hardware
+                # supported when hw_id appears in the hardware's available effects
                 tile_supported = hw is not None and hw in hw_ids_available
                 reason = tile["reason"] if not tile_supported else None
-                # Si el hw_id NO está en SupportedBasicModes (supported no es None),
-                # refinar el mensaje
+                # If hw_id is not in SupportedBasicModes, refine the message.
                 if not tile_supported and reason is None:
                     if supported is not None:
-                        reason = "no soportado por el teclado interno (lo hará un teclado externo con zonas vía OpenRGB)"
+                        reason = "not supported by the internal keyboard; an external zoned keyboard via OpenRGB can support it"
                     else:
-                        reason = "estado desconocido — asusctl no responde"
+                        reason = "unknown state — asusctl is not responding"
             elif tile["kind"] == "software":
                 tile_supported = bool(self.music_source)
-                reason = None if tile_supported else "PipeWire / pw-record no disponible"
+                reason = None if tile_supported else "PipeWire / pw-record unavailable"
             else:  # future
                 tile_supported = False
                 reason = tile["reason"]
@@ -586,10 +585,10 @@ def apply_state(raw: dict) -> dict:
     if state["driver"] != "asus":
         return {
             "ok": False,
-            "err": "OpenRGB aún no está activo en este equipo. Instálalo y levanta su SDK local para el teclado externo.",
+            "err": "OpenRGB is not active on this machine yet. Install it and start its local SDK for the external keyboard.",
         }
     if not mgr.asusctl:
-        return {"ok": False, "err": "No encontré asusctl en el sistema."}
+        return {"ok": False, "err": "asusctl was not found on this system."}
 
     # Use DISCOVERED capabilities (from --help parsing) instead of the static
     # EFFECT_META table.  This prevents sending --speed to pulse (Strobing),
@@ -682,7 +681,7 @@ def save_profile(name: str, raw_state: dict, apply_on_startup: bool | None = Non
 def delete_profile(name: str) -> dict:
     title = (name or "").strip().lower()
     if not title:
-        return {"ok": False, "err": "Nombre de perfil vacío."}
+        return {"ok": False, "err": "Profile name is empty."}
     store = _load_store()
     profiles = [p for p in store.get("profiles", []) if p.get("name", "").lower() != title]
     removed = len(profiles) != len(store.get("profiles", []))
@@ -692,7 +691,7 @@ def delete_profile(name: str) -> dict:
         store["startup_profile"] = None
         store["apply_on_startup"] = False
     _save_store(store)
-    return {"ok": removed, "profiles": profiles, "err": None if removed else "Perfil no encontrado."}
+    return {"ok": removed, "profiles": profiles, "err": None if removed else "Profile not found."}
 
 
 def set_startup_profile(name: str | None, enabled: bool) -> dict:
@@ -701,7 +700,7 @@ def set_startup_profile(name: str | None, enabled: bool) -> dict:
     if enabled and selected:
         names = {p.get("name") for p in store.get("profiles", [])}
         if selected not in names:
-            return {"ok": False, "err": f'No existe el perfil "{selected}".'}
+            return {"ok": False, "err": f'Profile "{selected}" does not exist.'}
     store["apply_on_startup"] = bool(enabled and selected)
     store["startup_profile"] = selected if enabled else None
     _save_store(store)
@@ -715,7 +714,7 @@ def apply_startup_profile() -> dict:
     for profile in store.get("profiles", []):
         if profile.get("name") == store["startup_profile"]:
             return apply_state(profile.get("state") or {})
-    return {"ok": False, "err": f'No encontré el perfil de inicio "{store["startup_profile"]}".'}
+    return {"ok": False, "err": f'Startup profile "{store["startup_profile"]}" was not found.'}
 
 
 def main(argv=None) -> int:
