@@ -4,6 +4,14 @@ Monitor de hardware en tiempo real para portátiles ASUS ROG en Linux — termin
 y app de escritorio. Sin telemetría, sin red, sin root para las funciones
 principales.
 
+> ⚠️ **Versión temprana — en mejora activa.** Se usa a diario y funciona, pero
+> sigue evolucionando: habrá cambios, fallos y funciones a medio pulir.
+> **Solo Linux por ahora** (una app de Windows está en el [roadmap](docs/roadmap.md)).
+> Probado sobre todo en ASUS ROG; en otro hardware las funciones no soportadas
+> degradan a solo-lectura en vez de adivinar. Las acciones privilegiadas
+> (poder/ventiladores/firmware) son seguras por diseño y reversibles, pero úsalas
+> con criterio. Reportes de errores y PRs muy bienvenidos.
+
 ```
   ╔═ 01 CPU ══════════════════╗  ╔═ 05 Historial ════════════╗
   ║  Avg 58.4 °C  Pkg 69 °C  ║  ║  CPU temp ▁▃▅▇█▇▅▃▁  ▲   ║

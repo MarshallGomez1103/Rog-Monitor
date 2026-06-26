@@ -71,6 +71,9 @@ the items that need a human (captures) or a heavier build (Flatpak) remain.
 * [x] **Packaging — AppImage**: installable without a terminal (`npm run dist`). *(v19)*
 * [x] **Launch polish (docs)**: LICENSE / CONTRIBUTING / SECURITY / TRANSLATING +
   graceful degradation verified by CI smoke on non-ASUS. *(v19)*
+* [x] **Privacy / repo hygiene**: full tree **and git history** audited — no secrets,
+  keys, emails, server IPs or real home paths; internal multi-agent notes
+  (AGENTS / HANDOFF / build-specs) kept untracked. *(launch audit)*
 * [ ] **Launch polish (media)**: README screenshots + a short GIF/video — needs a human
   with the GUI (slots ready in `assets/screenshots/`).
 * [ ] **Packaging — Flatpak**: fast-follow after AppImage (manifest + runtime).
@@ -125,6 +128,10 @@ The standout features that make ROG Monitor unique.
   web to share calibrated profiles.
 * [ ] **Plasma widget**, an accessibility pass, and broader OEM support
   (Lenovo Legion, HP Omen, Acer Predator, MSI) via a generic `platform_profile` backend.
+* [ ] **Windows app**: a companion build for Windows to control the same machine
+  (power / fans / RGB / overlay) where the vendor tools are heavy or intrusive —
+  reusing the Python sensor core and the desktop UI, with a Windows-native privileged
+  helper in place of `pkexec`. Linux stays the focus; this is a long-term direction.
 
 ## Permanent Safety Rules
 

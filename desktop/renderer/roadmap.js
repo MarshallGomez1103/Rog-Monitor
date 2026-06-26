@@ -2148,6 +2148,30 @@ const ROADMAP_TODO = [
           },
         ],
       },
+      {
+        title: {
+          es: 'App de Windows',
+          en: 'Windows app',
+          fr: 'Application Windows',
+          it: 'App per Windows',
+          pt: 'App para Windows',
+          zh: 'Windows 应用',
+          ja: 'Windows アプリ',
+          ko: 'Windows 앱',
+        },
+        points: [
+          {
+            es: 'Versión para Windows que controle el mismo equipo (poder/ventiladores/RGB/overlay) donde las apps del fabricante son pesadas o intrusivas — reutilizando el núcleo Python y la UI de escritorio, con un ayudante privilegiado nativo en vez de pkexec. Linux sigue siendo el foco; es a largo plazo',
+            en: 'A Windows build to control the same machine (power/fans/RGB/overlay) where vendor apps are heavy or intrusive — reusing the Python core and the desktop UI, with a native privileged helper instead of pkexec. Linux stays the focus; long-term',
+            fr: 'Une version Windows pour contrôler la même machine (alimentation/ventilateurs/RGB/overlay) là où les apps du fabricant sont lourdes ou intrusives — en réutilisant le cœur Python et l\'UI de bureau, avec un assistant privilégié natif au lieu de pkexec. Linux reste la priorité ; à long terme',
+            it: 'Una build Windows per controllare la stessa macchina (alimentazione/ventole/RGB/overlay) dove le app del produttore sono pesanti o invadenti — riutilizzando il core Python e la UI desktop, con un helper privilegiato nativo invece di pkexec. Linux resta il focus; a lungo termine',
+            pt: 'Uma versão Windows para controlar a mesma máquina (energia/ventoinhas/RGB/overlay) onde as apps do fabricante são pesadas ou intrusivas — reutilizando o núcleo Python e a UI de desktop, com um ajudante privilegiado nativo em vez de pkexec. Linux continua o foco; a longo prazo',
+            zh: '面向 Windows 的版本，在厂商应用笨重或侵入时控制同一台设备（电源/风扇/RGB/叠加层）——复用 Python 核心与桌面 UI，用原生特权助手替代 pkexec。仍以 Linux 为重点；属长期目标',
+            ja: 'メーカー製アプリが重い・侵襲的な場合に同じ PC を制御する Windows 版（電力/ファン/RGB/オーバーレイ）。Python コアとデスクトップ UI を再利用し、pkexec の代わりにネイティブの特権ヘルパーを使用。Linux が引き続き主軸で、長期的な方向性',
+            ko: '제조사 앱이 무겁거나 침습적인 경우 동일한 PC를 제어하는 Windows 빌드(전원/팬/RGB/오버레이) — Python 코어와 데스크톱 UI를 재사용하고 pkexec 대신 네이티브 권한 도우미 사용. Linux가 계속 핵심이며 장기 방향',
+          },
+        ],
+      },
     ],
   },
 ];

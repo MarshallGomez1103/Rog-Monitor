@@ -14,10 +14,12 @@ AGENTS.md
 CLAUDE.md
 HANDOFF.md
 docs/HANDOFF.md
+docs/HANDOFF-*.md
 docs/INTERNAL.md
 docs/PROGRESS-*.md
 docs/SUDO-PENDIENTE-*.md
 docs/APPLY-FANS-*.md
 docs/build-spec-*.md
 docs/progress/
+brain/
 *.bak

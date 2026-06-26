@@ -31,7 +31,7 @@ captura USB del software oficial.** Leer sysfs está bien; escribir no.
 - En Bazzite los `/dev/hidraw*` son rw para el usuario (ACL): **no se necesita
   root ni reglas udev** para hablarle cuando tengamos el protocolo.
 
-## Software oficial: BYCOMBO4 (extraído de ~/Downloads/Redragon_K734WCG-RGB-PRO_Software.exe)
+## Software oficial: BYCOMBO4 (extraído del instalador oficial `Redragon_K734WCG-RGB-PRO_Software.exe`)
 
 Extraer con: `innoextract -e <exe> -d /tmp/redragon-exe` (innoextract está en brew).
 
@@ -52,7 +52,7 @@ Extraer con: `innoextract -e <exe> -d /tmp/redragon-exe` (innoextract está en b
     del feature 0x05; los datos van por el feature 0x06 (`dataUnit=%d`).
 - Nadie ha publicado este protocolo (buscado jun 2026): seremos los primeros.
 
-## 📋 Para Marshall: captura USB en Windows (10 min, la ruta segura)
+## 📋 Captura USB en Windows (10 min, la ruta segura)
 
 1. En Windows 11: instala Wireshark marcando **USBPcap** en el instalador.
 2. Conecta el teclado **por cable**. Abre la app BYCOMBO4.
@@ -79,4 +79,4 @@ Extraer con: `innoextract -e <exe> -d /tmp/redragon-exe` (innoextract está en b
   opcodes "a ver qué hacen".
 - UI: cuando funcione, el bloque Iluminación ya muestra el dispositivo
   (renderPeripherals); agregar selector de efecto/color para el Redragon y
-  el modo música por zonas (pedido #4 de Marshall).
+  el modo música por zonas.
