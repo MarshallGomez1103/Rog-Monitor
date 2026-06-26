@@ -713,7 +713,7 @@
         <button class="ghost" id="power-advanced-btn" data-i18n="power.advancedBtn">Avanzado</button>
       </div>
       <!-- /v13 POWER-UI -->
-      <p class="sub">Límites de potencia CPU y GPU. Cada cambio requiere tu contraseña (pkexec). Los valores están acotados a los rangos seguros del firmware.</p>
+      <p class="sub" data-i18n="power.modal_sub">Límites de potencia CPU y GPU. Cada cambio requiere tu contraseña (pkexec). Los valores están acotados a los rangos seguros del firmware.</p>
 
       <!-- v13 POWER-UI: rieles de seguridad (doble recorte + topes de firmware) -->
       <p id="power-safety-rails" data-i18n="power.safetyRails">Tu equipo está protegido: cada valor se recorta al rango seguro de tu dispositivo (doble recorte en la app y de nuevo en el firmware). El firmware impone sus propios topes y nada se aplica sin tu confirmación.</p>
@@ -725,9 +725,9 @@
 
       <!-- pestañas Guardián / CPU / GPU -->
       <div class="segment" id="power-tabs">
-        <button data-tab="guardian" class="active">GUARDIÁN</button>
-        <button data-tab="cpu">CPU</button>
-        <button data-tab="gpu">GPU</button>
+        <button data-tab="guardian" class="active" data-i18n="power.tab_guardian">GUARDIÁN</button>
+        <button data-tab="cpu" data-i18n="power.tab_cpu">CPU</button>
+        <button data-tab="gpu" data-i18n="power.tab_gpu">GPU</button>
       </div>
 
       <!-- advertencia PL1 > PL2 -->

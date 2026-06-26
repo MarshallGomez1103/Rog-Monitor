@@ -31,9 +31,15 @@ background network calls, and no root access for the main monitoring path.
   ╚═══════════════════════════╝
 ```
 
+## Demo
+
+<p align="center">
+  <img src="assets/demo.gif" alt="ROG Monitor desktop demo" width="760">
+</p>
+
 ## Screenshots
 
-Current screenshots from the v20 release candidate:
+Current desktop screenshots:
 
 <table>
   <tr>

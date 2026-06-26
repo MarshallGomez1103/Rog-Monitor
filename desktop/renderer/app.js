@@ -239,6 +239,21 @@ if (window.i18n && window.i18n.register) {
     'fan.max_note': { es: 'Curvas {source} (perfil {profile}). Máximos {state}: {max} RPM · {count} ventiladores detectados.', en: '{source} curves ({profile} profile). Maxima {state}: {max} RPM · {count} fans detected.', fr: 'Courbes {source} (profil {profile}). Maxima {state} : {max} RPM · {count} ventilateurs détectés.', it: 'Curve {source} (profilo {profile}). Massimi {state}: {max} RPM · {count} ventole rilevate.', pt: 'Curvas {source} (perfil {profile}). Máximos {state}: {max} RPM · {count} ventoinhas detectadas.', zh: '{source} 曲线（{profile} 配置）。最大值{state}：{max} RPM · 检测到 {count} 个风扇。', ja: '{source} カーブ（{profile} プロファイル）。最大値 {state}: {max} RPM · {count} 個のファンを検出。', ko: '{source} 커브({profile} 프로파일). 최대값 {state}: {max} RPM · 팬 {count}개 감지.' },
     'fan.max_measured': { es: 'medidos ✓', en: 'measured ✓', fr: 'mesurés ✓', it: 'misurati ✓', pt: 'medidos ✓', zh: '已测量 ✓', ja: '測定済み ✓', ko: '측정됨 ✓' },
     'fan.max_estimated': { es: 'ESTIMADOS (sin medir)', en: 'ESTIMATED (not measured)', fr: 'ESTIMÉS (non mesurés)', it: 'STIMATI (non misurati)', pt: 'ESTIMADOS (não medidos)', zh: '估算值（未测量）', ja: '推定値（未測定）', ko: '추정됨(미측정)' },
+    'fan.name.cpu': { es: 'CPU', en: 'CPU', fr: 'CPU', it: 'CPU', pt: 'CPU', zh: 'CPU', ja: 'CPU', ko: 'CPU' },
+    'fan.name.gpu': { es: 'GPU', en: 'GPU', fr: 'GPU', it: 'GPU', pt: 'GPU', zh: 'GPU', ja: 'GPU', ko: 'GPU' },
+    'fan.name.mid': { es: 'MID (central)', en: 'MID (center)', fr: 'MID (central)', it: 'MID (centrale)', pt: 'MID (central)', zh: 'MID（中部）', ja: 'MID（中央）', ko: 'MID (중앙)' },
+    'fan.dba_est': { es: '{v} dBA est.', en: '{v} dBA est.', fr: '{v} dBA estimés', it: '{v} dBA stim.', pt: '{v} dBA est.', zh: '估算 {v} dBA', ja: '推定 {v} dBA', ko: '예상 {v} dBA' },
+    'fan.temp_hint': { es: 'A esta temperatura…', en: 'At this temperature…', fr: 'À cette température…', it: 'A questa temperatura…', pt: 'A esta temperatura…', zh: '在此温度…', ja: 'この温度で…', ko: '이 온도에서…' },
+    'fan.speed_hint': { es: '…el ventilador gira a este porcentaje de su máximo', en: '…the fan spins at this percentage of its maximum', fr: '…le ventilateur tourne à ce pourcentage de son maximum', it: '…la ventola gira a questa percentuale del massimo', pt: '…a ventoinha gira a esta percentagem do máximo', zh: '…风扇以其最大值的这个百分比旋转', ja: '…ファンは最大値に対するこの割合で回転します', ko: '…팬이 최대값의 이 비율로 회전합니다' },
+    'fan.speed_short': { es: '% vel', en: '% speed', fr: '% vitesse', it: '% vel.', pt: '% vel.', zh: '% 转速', ja: '% 速度', ko: '% 속도' },
+    'fan.curve_aria': { es: 'Curva de ventilador {fan}', en: 'Fan curve for {fan}', fr: 'Courbe du ventilateur {fan}', it: 'Curva ventola {fan}', pt: 'Curva da ventoinha {fan}', zh: '{fan} 风扇曲线', ja: '{fan} のファンカーブ', ko: '{fan} 팬 커브' },
+    'fan.acoustic_unavailable': { es: 'Acústica: sin estimación disponible.', en: 'Acoustics: no estimate available.', fr: 'Acoustique : aucune estimation disponible.', it: 'Acustica: nessuna stima disponibile.', pt: 'Acústica: sem estimativa disponível.', zh: '声学：无可用估算。', ja: '音響: 推定値はありません。', ko: '소음: 사용 가능한 추정치 없음.' },
+    'fan.acoustic_estimated': { es: 'Acústica estimada del perfil editado: {dba} dBA. Si el firmware expone un sensor real de ruido, esta lectura puede reemplazar la estimación.', en: 'Estimated acoustics for the edited profile: {dba} dBA. If firmware exposes a real noise sensor, that reading can replace the estimate.', fr: 'Acoustique estimée du profil modifié : {dba} dBA. Si le firmware expose un vrai capteur de bruit, cette mesure peut remplacer l’estimation.', it: 'Acustica stimata del profilo modificato: {dba} dBA. Se il firmware espone un sensore reale di rumore, quella lettura può sostituire la stima.', pt: 'Acústica estimada do perfil editado: {dba} dBA. Se o firmware expuser um sensor real de ruído, essa leitura pode substituir a estimativa.', zh: '已编辑配置的估算噪声：{dba} dBA。如果固件提供真实噪声传感器，该读数可替代估算值。', ja: '編集中プロファイルの推定音響: {dba} dBA。ファームウェアが実ノイズセンサーを公開している場合、その値で推定を置き換えられます。', ko: '편집 중인 프로파일의 예상 소음: {dba} dBA. 펌웨어가 실제 소음 센서를 제공하면 해당 값으로 추정치를 대체할 수 있습니다.' },
+    'chart.now': { es: 'ahora', en: 'now', fr: 'maintenant', it: 'ora', pt: 'agora', zh: '现在', ja: '現在', ko: '지금' },
+    'chart.ago_lt_min': { es: 'hace <1 min', en: '<1 min ago', fr: 'il y a <1 min', it: '<1 min fa', pt: 'há <1 min', zh: '<1 分钟前', ja: '<1分前', ko: '<1분 전' },
+    'chart.ago_seconds': { es: 'hace {s} s', en: '{s} s ago', fr: 'il y a {s} s', it: '{s} s fa', pt: 'há {s} s', zh: '{s} 秒前', ja: '{s}秒前', ko: '{s}초 전' },
+    'chart.ago_minutes': { es: 'hace {m} min', en: '{m} min ago', fr: 'il y a {m} min', it: '{m} min fa', pt: 'há {m} min', zh: '{m} 分钟前', ja: '{m}分前', ko: '{m}분 전' },
+    'chart.ago_minutes_seconds': { es: 'hace {m} min {s} s', en: '{m} min {s} s ago', fr: 'il y a {m} min {s} s', it: '{m} min {s} s fa', pt: 'há {m} min {s} s', zh: '{m} 分 {s} 秒前', ja: '{m}分{s}秒前', ko: '{m}분 {s}초 전' },
 
     /* ---- config export / import (toasts) ---- */
     'config.exported': { es: 'Configuración exportada a {path}\n({items})', en: 'Configuration exported to {path}\n({items})', fr: 'Configuration exportée vers {path}\n({items})', it: 'Configurazione esportata in {path}\n({items})', pt: 'Configuração exportada para {path}\n({items})', zh: '配置已导出到 {path}\n（{items}）', ja: '設定を {path} にエクスポートしました\n（{items}）', ko: '구성을 {path}에 내보냈습니다\n({items})' },
@@ -535,9 +550,9 @@ function drawChart(canvas, values, color, opts = {}) {
   // time axis: one sample per second
   const mins = Math.round(data.length / 60);
   ctx.textAlign = 'left';
-  ctx.fillText(mins >= 1 ? `hace ${mins} min` : 'hace <1 min', 2, h - 2);
+  ctx.fillText(mins >= 1 ? t('chart.ago_minutes', { m: mins }) : t('chart.ago_lt_min'), 2, h - 2);
   ctx.textAlign = 'right';
-  ctx.fillText('ahora', w - 2, h - 2);
+  ctx.fillText(t('chart.now'), w - 2, h - 2);
   const last = data[data.length - 1];
   ctx.fillStyle = color;
   ctx.font = 'bold 13px monospace';
@@ -585,9 +600,12 @@ function drawChartCrosshair(canvas) {
 }
 
 function agoText(secondsAgo) {
-  if (secondsAgo < 1) return 'ahora';
-  if (secondsAgo < 60) return `hace ${secondsAgo} s`;
-  return `hace ${Math.floor(secondsAgo / 60)} min ${secondsAgo % 60} s`;
+  if (secondsAgo < 1) return t('chart.now');
+  if (secondsAgo < 60) return t('chart.ago_seconds', { s: secondsAgo });
+  return t('chart.ago_minutes_seconds', {
+    m: Math.floor(secondsAgo / 60),
+    s: secondsAgo % 60,
+  });
 }
 
 function wireChartHover(canvasId, unit) {
@@ -2033,6 +2051,7 @@ if (window.i18n) {
       }
     } catch (_) {}
     try { if (typeof lastStats !== 'undefined' && lastStats) update(lastStats); } catch (_) {}
+    try { if (typeof refreshFanLanguage === 'function') refreshFanLanguage(); } catch (_) {}
     if (window.rog?.saveSettings) {
       clearTimeout(langSaveTimer); // ponytail: debounce — reinicia el backend una sola vez
       langSaveTimer = setTimeout(() => window.rog.saveSettings({ lang }), 400);
@@ -2444,7 +2463,7 @@ $('procs-body').addEventListener('click', async (e) => {
 
 /* ---------- fan control center — con selector de perfil (Task 1 / C3) ---------- */
 
-const FAN_NAMES = { cpu: 'CPU', gpu: 'GPU', mid: 'MID (central)' };
+const FAN_NAMES = { cpu: 'fan.name.cpu', gpu: 'fan.name.gpu', mid: 'fan.name.mid' };
 const FAN_MAX_DEFAULT = { cpu: 7000, gpu: 6900, mid: 7500 };
 // fanCfgByProfile: caché de los 3 perfiles cargados (carga bajo demanda)
 let fanCfg = null;          // perfil actualmente en el formulario
@@ -2472,7 +2491,10 @@ const FAN_GRAPH = {
 localStorage.removeItem('fanMax'); // legado: vivía aquí y nunca era real
 
 function fanName(fan) {
-  return FAN_NAMES[fan] || fan.toUpperCase();
+  const key = FAN_NAMES[fan];
+  if (!key) return fan.toUpperCase();
+  const label = t(key);
+  return label === key ? fan.toUpperCase() : label;
 }
 
 function normalizeFanProfile(profile) {
@@ -2698,14 +2720,14 @@ function renderCurves() {
           </div>
           <div class="fan-curve-metrics">
             <b class="fan-curve-rpm">${maxRpm} RPM</b>
-            <b class="fan-curve-dba">${dba.toFixed(1)} dBA est.</b>
+            <b class="fan-curve-dba">${escapeHtml(t('fan.dba_est', { v: dba.toFixed(1) }))}</b>
           </div>
         </div>
         <div class="fan-curve-graph">${renderFanCurveSvg(fan, c)}</div>
         <div class="curve-table">
-          <span title="A esta temperatura…">°C</span>
+          <span title="${escapeHtml(t('fan.temp_hint'))}">°C</span>
           ${c.temps.map((v, i) => `<input type="number" min="0" max="105" data-kind="temps" data-i="${i}" value="${Math.min(105, v)}">`).join('')}
-          <span title="…el ventilador gira a este porcentaje de su máximo">% vel</span>
+          <span title="${escapeHtml(t('fan.speed_hint'))}">${escapeHtml(t('fan.speed_short'))}</span>
           ${c.pwms.map((v, i) => `<input type="number" min="0" max="100" data-kind="pwms" data-i="${i}" value="${Math.round(v / 255 * 100)}">`).join('')}
         </div>
       </div>`;
@@ -2742,7 +2764,7 @@ function renderFanCurveSvg(fan, curve) {
     return `<text x="8" y="${y + 4}">${s}</text>`;
   }).join('');
   return `
-    <svg viewBox="0 0 560 245" role="img" aria-label="Curva de ventilador ${fanName(fan)}">
+    <svg viewBox="0 0 560 245" role="img" aria-label="${escapeHtml(t('fan.curve_aria', { fan: fanName(fan) }))}">
       <g class="fan-grid">
         ${[0, 25, 50, 75, 100].map((s) => {
           const y = FAN_GRAPH.yBottom - s / 100 * (FAN_GRAPH.yBottom - FAN_GRAPH.yTop);
@@ -2905,7 +2927,7 @@ function updateFanCurveCard(box) {
   const rpm = box.querySelector('.fan-curve-rpm');
   const noise = box.querySelector('.fan-curve-dba');
   if (rpm) rpm.textContent = `${maxRpm} RPM`;
-  if (noise) noise.textContent = `${dba.toFixed(1)} dBA est.`;
+  if (noise) noise.textContent = t('fan.dba_est', { v: dba.toFixed(1) });
   updateFanAcousticNote();
 }
 
@@ -2922,8 +2944,8 @@ function updateFanAcousticNote() {
   });
   const total = combinedDba(dbas);
   note.textContent = total === null
-    ? 'Acústica: sin estimación disponible.'
-    : `Acústica estimada del perfil editado: ${total.toFixed(1)} dBA. Si el firmware expone un sensor real de ruido, esta lectura puede reemplazar la estimación.`;
+    ? t('fan.acoustic_unavailable')
+    : t('fan.acoustic_estimated', { dba: total.toFixed(1) });
 }
 
 function readCurvesFromForm() {
@@ -2961,6 +2983,21 @@ function refreshFanNotes() {
   $('fan-calib-banner').classList.toggle('hidden', calibrated);
   $('fan-benchmark').classList.toggle('attention', !calibrated);
   updateCapPreview();
+}
+
+function refreshFanLanguage() {
+  const modal = $('fan-modal');
+  if (!modal || modal.classList.contains('hidden') || !fanCfg) return;
+  stageCurrentFan();
+  const activeLabel = fanProfileLabel(fanActiveProfile);
+  const editLabel = fanProfileLabel(fanEditingProfile);
+  if ($('fan-profile')) $('fan-profile').textContent = activeLabel;
+  if ($('fan-editing-label')) $('fan-editing-label').textContent = editLabel;
+  if ($('fan-cap-label')) $('fan-cap-label').textContent = editLabel;
+  syncFanCapInput();
+  updateFanCapPanelText();
+  renderCurves();
+  refreshFanNotes();
 }
 
 /* Carga fanCfg para el perfil dado y actualiza el formulario */

@@ -52,35 +52,18 @@ English-first public docs and an 8-language UI, with a guardian nobody else ship
   in the active language; process "per-core" column neon fixed. *(v18)*
 * [x] **Privileged-command transparency**: Help → System Commands lists every
   `pkexec` command with the literal command + what it does + why it needs root, in all
-  8 languages; the literal command also shows in the Power confirm and SMART panel. *(v20)*
+  8 languages; the literal command also shows in the Power confirm and SMART panel. *(v19)*
 * [x] **AppImage packaging** via electron-builder (`npm run dist`), Python backend
-  bundled as resources. *(v20 — Flatpak still pending below)*
+  bundled as resources. *(v19 — Flatpak is P2 below)*
 * [x] **CI i18n validation** (`scripts/validate-i18n.mjs`) + **`TRANSLATING.md`**
-  contributor guide. *(v20)*
+  contributor guide. *(v19)*
 * [x] Diagnostics hub open bug fixed (global `_t` collision with roadmap.js); dashboard
-  bottom-left dead space rebalanced. *(v20)*
-
-## Launch Complete
-
-The public release checklist is done. The remaining items are post-launch follow-up,
-not blockers for opening the repo.
-
-* [x] **GitHub Actions CI**: `node --check`, `py_compile`, JSON + **i18n validation**,
-  and a read-only sensor smoke test. *(v20)*
-* [x] **Community i18n**: documented in `docs/TRANSLATING.md` + validator that flags gaps. *(v20)*
-* [x] **Packaging — AppImage**: installable without a terminal (`npm run dist`). *(v20)*
-* [x] **Launch polish (docs)**: LICENSE / CONTRIBUTING / SECURITY / TRANSLATING +
-  graceful degradation verified by CI smoke on non-ASUS. *(v20)*
-* [x] **Privacy / repo hygiene**: full tree **and git history** audited — no secrets,
-  keys, emails, server IPs or real home paths; internal multi-agent notes
-  (AGENTS / HANDOFF / build-specs) kept untracked. *(launch audit)*
-* [x] **Launch polish (media)**: README screenshots are now in place; a short GIF/video
-  can come later if useful.
-* [ ] **Packaging — Flatpak**: optional post-launch package format. Needs real
-  hardware testing because Flatpak's sandbox conflicts with direct `/sys`, udev,
-  `pkexec`, and systemd workflows unless permissions/portals are designed carefully.
-* [ ] **Single polkit privileged helper** instead of scattered `pkexec` prompts —
-  deferred to P1 (risky refactor; v20 ships full *transparency* of the current prompts).
+  bottom-left dead space rebalanced. *(v19)*
+* [x] **Public README media**: screenshots plus short GIF demo are in place. *(v20)*
+* [x] **Public roadmap cleanup**: v19 restored in the timeline, the launch checklist
+  retired from the pending list, and Flatpak moved to the longer-horizon packaging track. *(v20)*
+* [x] **i18n long-tail polish**: history-chart hover text, fan-curve generated labels,
+  and Power Center Guardian labels now follow the active UI language. *(v20)*
 
 ## P1 — DIFFERENTIATORS (what nobody else bundles)
 
@@ -101,11 +84,16 @@ The standout features that make ROG Monitor unique.
   stable / throttling / headroom.
 * [ ] **Guardian 2.0**: local telemetry of what it throttled and when, a scheduled
   "silent" mode, and configurable response curves.
+* [ ] **Single polkit privileged helper** instead of scattered `pkexec` prompts. This is a
+  risky security/UX refactor, so it follows the current transparent-command model.
 
 ## P2 — REACH (more hardware, more depth)
 
 * [ ] **AMD**: CPU via ryzenadj / RAPL, CoreCtrl-style amdgpu, more ASUS SKUs, and a
   generic read-only fallback.
+* [ ] **Packaging — Flatpak**: optional package format. Needs real hardware testing
+  because Flatpak's sandbox conflicts with direct `/sys`, udev, `pkexec`, and systemd
+  workflows unless permissions/portals are designed carefully.
 * [ ] **Battery**: charge-limit control in the UI (asusctl exposes it). *(wear / health done in v18)*
 * [ ] **Disk depth**: SMART self-tests, predictive-failure alerts and per-disk temperature
   history (live read-only stats + on-demand SMART shipped in v18).

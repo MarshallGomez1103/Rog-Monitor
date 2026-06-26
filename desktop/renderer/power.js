@@ -113,17 +113,71 @@
       'power.advanced.supportedSummary': { es: '{count} entradas actuales en la base de documentación.', en: '{count} current entries in the documentation database.' },
       'power.advanced.models': { es: 'Modelos / familias', en: 'Models / families' },
       'power.advanced.allVendors': { es: 'Todas las marcas', en: 'All brands' },
-      'power.guardian.title': { es: 'GUARDIÁN CPU/GPU', en: 'CPU/GPU GUARDIAN' },
+      'power.modal_sub': {
+        es: 'Límites de potencia CPU y GPU. Cada cambio requiere tu contraseña (pkexec). Los valores están acotados a los rangos seguros del firmware.',
+        en: 'CPU and GPU power limits. Every change requires your password (pkexec). Values are clamped to the firmware safe ranges.',
+        fr: 'Limites de puissance CPU et GPU. Chaque changement demande votre mot de passe (pkexec). Les valeurs sont limitées aux plages sûres du firmware.',
+        it: 'Limiti di potenza CPU e GPU. Ogni modifica richiede la password (pkexec). I valori sono limitati agli intervalli sicuri del firmware.',
+        pt: 'Limites de potência da CPU e GPU. Cada alteração requer a sua senha (pkexec). Os valores ficam dentro das faixas seguras do firmware.',
+        zh: 'CPU 和 GPU 功耗限制。每次更改都需要密码（pkexec）。数值会限制在固件安全范围内。',
+        ja: 'CPU と GPU の電力制限です。変更ごとにパスワード（pkexec）が必要です。値はファームウェアの安全範囲に制限されます。',
+        ko: 'CPU 및 GPU 전력 제한입니다. 변경할 때마다 비밀번호(pkexec)가 필요합니다. 값은 펌웨어 안전 범위로 제한됩니다.',
+      },
+      'power.tab_guardian': { es: 'GUARDIÁN', en: 'GUARDIAN', fr: 'GARDIEN', it: 'GUARDIANO', pt: 'GUARDIÃO', zh: '守护', ja: 'ガーディアン', ko: '가디언' },
+      'power.tab_cpu': { es: 'CPU', en: 'CPU', fr: 'CPU', it: 'CPU', pt: 'CPU', zh: 'CPU', ja: 'CPU', ko: 'CPU' },
+      'power.tab_gpu': { es: 'GPU', en: 'GPU', fr: 'GPU', it: 'GPU', pt: 'GPU', zh: 'GPU', ja: 'GPU', ko: 'GPU' },
+      'power.guardian.title': { es: 'GUARDIÁN CPU/GPU', en: 'CPU/GPU GUARDIAN', fr: 'GARDIEN CPU/GPU', it: 'GUARDIANO CPU/GPU', pt: 'GUARDIÃO CPU/GPU', zh: 'CPU/GPU 守护', ja: 'CPU/GPU ガーディアン', ko: 'CPU/GPU 가디언' },
       'power.guardian.desc': {
         es: 'Automático conservador: mantiene CPU y GPU bajo los techos elegidos. Primero sube ventiladores/perfil térmico; si no basta, baja Dynamic Boost y PL2. Respeta el cap de ventiladores configurado en Ventiladores.',
         en: 'Conservative automatic mode: keeps CPU and GPU under your chosen ceilings. It raises fans/thermal profile first; if that is not enough, it lowers Dynamic Boost and PL2. It respects the fan cap configured in Fans.',
+        fr: 'Mode automatique conservateur : maintient CPU et GPU sous les plafonds choisis. Il augmente d’abord les ventilateurs/profil thermique ; si cela ne suffit pas, il baisse Dynamic Boost et PL2. Il respecte le plafond de ventilateurs configuré dans Ventilateurs.',
+        it: 'Modalità automatica conservativa: mantiene CPU e GPU sotto le soglie scelte. Prima aumenta ventole/profilo termico; se non basta, abbassa Dynamic Boost e PL2. Rispetta il limite ventole configurato in Ventole.',
+        pt: 'Modo automático conservador: mantém CPU e GPU abaixo dos tetos escolhidos. Primeiro sobe ventoinhas/perfil térmico; se não bastar, reduz Dynamic Boost e PL2. Respeita o limite de ventoinhas configurado em Ventoinhas.',
+        zh: '保守自动模式：让 CPU 和 GPU 保持在所选温度上限以下。先提高风扇/散热配置；如果仍不够，再降低 Dynamic Boost 和 PL2。会遵守“风扇”中配置的风扇上限。',
+        ja: '保守的な自動モード: CPU と GPU を選択した上限以下に保ちます。まずファン/サーマルプロファイルを上げ、それでも足りなければ Dynamic Boost と PL2 を下げます。ファンで設定した上限を尊重します。',
+        ko: '보수적인 자동 모드: CPU와 GPU를 선택한 상한 아래로 유지합니다. 먼저 팬/열 프로파일을 올리고, 부족하면 Dynamic Boost와 PL2를 낮춥니다. 팬에서 설정한 팬 상한을 따릅니다.',
       },
-      'power.guardian.cpuCeiling': { es: 'Techo CPU', en: 'CPU ceiling' },
-      'power.guardian.gpuCeiling': { es: 'Techo GPU', en: 'GPU ceiling' },
-      'power.guardian.fanCap': { es: 'Tope de ventiladores', en: 'Fan cap' },
-      'power.guardian.fanCapBody': { es: 'El guardián usa el cap global que ya configuraste en Ventiladores. Si quieres menos ruido, baja ese cap; si quieres más protección térmica, súbelo.', en: 'The guardian uses the global cap already configured in Fans. Lower that cap for less noise; raise it for more thermal protection.' },
-      'power.guardian.cost': { es: 'Costo estimado', en: 'Estimated cost' },
-      'power.guardian.costBody': { es: 'Con los watts actuales del stream, una hora costaría aprox. {cost}. Edita el precio por kWh si tu tarifa es distinta.', en: 'Using the current watts in the stream, one hour would cost about {cost}. Edit the kWh price if your tariff is different.' },
+      'power.guardian.modeLabel': { es: 'Modo', en: 'Mode', fr: 'Mode', it: 'Modalità', pt: 'Modo', zh: '模式', ja: 'モード', ko: '모드' },
+      'power.guardian.modeProtection': { es: 'Protección', en: 'Protection', fr: 'Protection', it: 'Protezione', pt: 'Proteção', zh: '保护', ja: '保護', ko: '보호' },
+      'power.guardian.modeGaming': { es: 'Gaming', en: 'Gaming', fr: 'Jeu', it: 'Gaming', pt: 'Gaming', zh: '游戏', ja: 'ゲーム', ko: '게이밍' },
+      'power.guardian.modeProtectionTip': {
+        es: 'Sube ventiladores y, si el calor persiste, recorta Dynamic Boost/PL2 para proteger el equipo. Uso general.',
+        en: 'Raises fans and, if heat persists, trims Dynamic Boost/PL2 to protect the machine. General use.',
+        fr: 'Augmente les ventilateurs puis, si la chaleur persiste, réduit Dynamic Boost/PL2 pour protéger la machine. Usage général.',
+        it: 'Aumenta le ventole e, se il calore persiste, riduce Dynamic Boost/PL2 per proteggere il computer. Uso generale.',
+        pt: 'Sobe as ventoinhas e, se o calor persistir, reduz Dynamic Boost/PL2 para proteger o equipamento. Uso geral.',
+        zh: '提高风扇转速；如果温度仍然过高，则降低 Dynamic Boost/PL2 以保护设备。适合日常使用。',
+        ja: 'ファンを上げ、熱が続く場合は Dynamic Boost/PL2 を下げて本体を保護します。通常用途向け。',
+        ko: '팬을 올리고 열이 계속되면 장비 보호를 위해 Dynamic Boost/PL2를 낮춥니다. 일반 사용용.',
+      },
+      'power.guardian.modeGamingTip': {
+        es: 'Solo ventiladores al máximo: nunca recorta potencia, así no hay thermal throttling mientras juegas. Techos altos (95°C/87°C).',
+        en: 'Fans only, up to the cap: never cuts power, so it avoids thermal throttling while you play. High ceilings (95°C/87°C).',
+        fr: 'Ventilateurs seulement, jusqu’au plafond : ne réduit jamais la puissance, pour éviter le throttling thermique en jeu. Plafonds hauts (95 °C/87 °C).',
+        it: 'Solo ventole fino al limite: non taglia mai la potenza, così evita il throttling termico mentre giochi. Soglie alte (95 °C/87 °C).',
+        pt: 'Só ventoinhas até ao limite: nunca corta potência, evitando throttling térmico enquanto joga. Tetos altos (95 °C/87 °C).',
+        zh: '仅提高风扇到上限：绝不削减功耗，以避免游戏时热降频。高温度上限（95°C/87°C）。',
+        ja: 'ファンのみを上限まで使用: 電力は削らないため、プレイ中の熱スロットリングを避けます。高めの上限（95°C/87°C）。',
+        ko: '팬만 상한까지 사용: 전력을 줄이지 않아 게임 중 열 스로틀링을 피합니다. 높은 상한(95°C/87°C).',
+      },
+      'power.guardian.cpuCeiling': { es: 'Techo CPU', en: 'CPU ceiling', fr: 'Plafond CPU', it: 'Soglia CPU', pt: 'Teto CPU', zh: 'CPU 上限', ja: 'CPU 上限', ko: 'CPU 상한' },
+      'power.guardian.gpuCeiling': { es: 'Techo GPU', en: 'GPU ceiling', fr: 'Plafond GPU', it: 'Soglia GPU', pt: 'Teto GPU', zh: 'GPU 上限', ja: 'GPU 上限', ko: 'GPU 상한' },
+      'power.guardian.gamingCap': { es: 'Tope ventiladores Gaming', en: 'Gaming fan cap', fr: 'Plafond ventilateurs Jeu', it: 'Limite ventole Gaming', pt: 'Limite de ventoinhas Gaming', zh: '游戏风扇上限', ja: 'ゲーム時ファン上限', ko: '게이밍 팬 상한' },
+      'power.guardian.gamingCapHint': {
+        es: 'Solo en Gaming: los ventiladores pueden subir hasta este tope (default = máximo medido). Súbelo para enfriar más; bájalo por ruido.',
+        en: 'Gaming only: fans may rise up to this cap (default = measured max). Raise it for more cooling; lower it for less noise.',
+        fr: 'Jeu seulement : les ventilateurs peuvent monter jusqu’à ce plafond (par défaut = maximum mesuré). Montez-le pour refroidir plus ; baissez-le pour moins de bruit.',
+        it: 'Solo Gaming: le ventole possono salire fino a questo limite (default = massimo misurato). Alzalo per raffreddare di più; abbassalo per meno rumore.',
+        pt: 'Só em Gaming: as ventoinhas podem subir até este limite (padrão = máximo medido). Aumente para arrefecer mais; reduza para menos ruído.',
+        zh: '仅游戏模式：风扇可升至此上限（默认=实测最大值）。调高可增强散热；调低可减少噪声。',
+        ja: 'ゲーム時のみ: ファンはこの上限まで上がります（既定=実測最大）。冷却重視なら上げ、静音重視なら下げます。',
+        ko: '게이밍에서만: 팬이 이 상한까지 올라갈 수 있습니다(기본값=실측 최대). 냉각을 더 원하면 올리고, 소음을 줄이려면 낮추세요.',
+      },
+      'power.guardian.gamingCapSaved': { es: 'Tope de Gaming: {v} RPM ✓', en: 'Gaming cap: {v} RPM ✓', fr: 'Plafond Jeu : {v} RPM ✓', it: 'Limite Gaming: {v} RPM ✓', pt: 'Limite Gaming: {v} RPM ✓', zh: '游戏上限：{v} RPM ✓', ja: 'ゲーム上限: {v} RPM ✓', ko: '게이밍 상한: {v} RPM ✓' },
+      'power.guardian.fanCap': { es: 'Tope de ventiladores', en: 'Fan cap', fr: 'Plafond des ventilateurs', it: 'Limite ventole', pt: 'Limite de ventoinhas', zh: '风扇上限', ja: 'ファン上限', ko: '팬 상한' },
+      'power.guardian.fanCapBody': { es: 'El guardián usa el cap global que ya configuraste en Ventiladores. Si quieres menos ruido, baja ese cap; si quieres más protección térmica, súbelo.', en: 'The guardian uses the global cap already configured in Fans. Lower that cap for less noise; raise it for more thermal protection.', fr: 'Le gardien utilise le plafond global déjà configuré dans Ventilateurs. Baissez-le pour moins de bruit ; montez-le pour plus de protection thermique.', it: 'Il guardiano usa il limite globale già configurato in Ventole. Abbassalo per meno rumore; alzalo per più protezione termica.', pt: 'O guardião usa o limite global já configurado em Ventoinhas. Reduza esse limite para menos ruído; aumente para mais proteção térmica.', zh: '守护模式使用已在“风扇”中配置的全局上限。降低可减少噪声；提高可增强热保护。', ja: 'ガーディアンは「ファン」で設定済みのグローバル上限を使います。静音には下げ、熱保護には上げてください。', ko: '가디언은 팬에서 이미 설정한 전역 상한을 사용합니다. 소음을 줄이려면 낮추고, 열 보호를 강화하려면 올리세요.' },
+      'power.guardian.cost': { es: 'Costo estimado', en: 'Estimated cost', fr: 'Coût estimé', it: 'Costo stimato', pt: 'Custo estimado', zh: '估算成本', ja: '推定コスト', ko: '예상 비용' },
+      'power.guardian.costBody': { es: 'Con los watts actuales del stream, una hora costaría aprox. {cost}. Edita el precio por kWh si tu tarifa es distinta.', en: 'Using the current watts in the stream, one hour would cost about {cost}. Edit the kWh price if your tariff is different.', fr: 'Avec les watts actuels du flux, une heure coûterait environ {cost}. Modifiez le prix du kWh si votre tarif diffère.', it: 'Con i watt attuali dello stream, un’ora costerebbe circa {cost}. Modifica il prezzo per kWh se la tua tariffa è diversa.', pt: 'Com os watts atuais do stream, uma hora custaria cerca de {cost}. Edite o preço por kWh se a sua tarifa for diferente.', zh: '按当前数据流中的功耗，一小时约需 {cost}。如果电价不同，请编辑每 kWh 价格。', ja: '現在のストリームのワット数では、1時間あたり約 {cost} です。料金が異なる場合は kWh 単価を編集してください。', ko: '현재 스트림의 와트 기준으로 1시간 비용은 약 {cost}입니다. 요금이 다르면 kWh 가격을 수정하세요.' },
       // --- reset / errores / acciones (fallbacks; pueden ya existir en CORE) ---
       'power.reset.title': { es: 'RESET A FÁBRICA', en: 'FACTORY RESET' },
       'power.reset.body': {
@@ -1656,6 +1710,15 @@
     document.querySelectorAll('#power-tabs button').forEach((btn) => {
       btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
+
+    if (window.i18n && typeof window.i18n.onChange === 'function') {
+      window.i18n.onChange(() => {
+        const modal = $('power-modal');
+        if (!modal || modal.classList.contains('hidden')) return;
+        try { window.i18n.apply(modal); } catch (_) {}
+        try { renderThermalGuardian(); } catch (_) {}
+      });
+    }
 
     // botones de acción
     const applyBtn = $('power-apply');
