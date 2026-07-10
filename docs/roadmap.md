@@ -97,6 +97,13 @@ The standout features that make ROG Monitor unique.
 * [ ] **Battery**: charge-limit control in the UI (asusctl exposes it). *(wear / health done in v18)*
 * [ ] **Disk depth**: SMART self-tests, predictive-failure alerts and per-disk temperature
   history (live read-only stats + on-demand SMART shipped in v18).
+* [ ] **System provenance / anti-scam report**: a new **My System Info** view that
+  collects hardware-reported usage signals in one place: disk/NVMe power-on hours,
+  battery cycles and wear, BIOS/DMI model and date, and any CPU/GPU/fan/runtime
+  counters exposed by firmware, drivers or the kernel. Every field must show its
+  source and confidence (`hardware-reported`, `kernel-estimated`, or `not exposed`)
+  so we help buyers spot suspicious "new" machines without pretending every
+  component exposes lifetime hours.
 * [ ] **Driver manager**: detect installed GPU/Wi-Fi/chipset drivers and their versions,
   flag outdated ones, and offer safe updates (NVIDIA/Mesa/firmware) via the distro's
   package manager — read-only inventory first, guided updates with a recovery path.
