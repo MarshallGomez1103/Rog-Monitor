@@ -15,6 +15,15 @@ DEFAULTS = {
     "history_seconds": 900,
     "notifications": True,
     "close_action": "quit",
+    "ui_prefs_migrated": False,
+    "appearance": {
+        "theme": "magma",
+        "mode": "dark",
+        "zoom_level": 0,
+    },
+    "dashboard_layout": {},
+    "dashboard_edit_mode": False,
+    "aura_draft": {},
     "fan_max_rpm": {},
     "alerts": {
         "cpu_temp_warn": 92,

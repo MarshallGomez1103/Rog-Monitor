@@ -222,13 +222,17 @@
   };
 
   /* ---- estado ---- */
-  let layout = loadLayout();   // { order: [{key, col}], hidden: Set<key> }
+  let layout = { order: DEFAULT_ORDER.map((d) => ({ ...d })), hidden: new Set() };
   let dragSrc = null;          // article siendo arrastrado
   let dropIndicator = null;    // div línea de inserción
-  let editMode = loadEditMode(); // true: se puede arrastrar/ocultar/reordenar
+  let editMode = false;        // true: se puede arrastrar/ocultar/reordenar
+  let dashboardSaveTimer = null;
+  let pendingDashboardPatch = {};
 
   /* ---- modo edición: persistencia ---- */
   function loadEditMode() {
+    const cfg = window.rogPrefs?.get();
+    if (typeof cfg?.dashboard_edit_mode === 'boolean') return cfg.dashboard_edit_mode;
     try { return localStorage.getItem(EDIT_MODE_KEY) === '1'; }
     catch (_) { return false; }
   }
@@ -236,6 +240,7 @@
   function saveEditMode() {
     try { localStorage.setItem(EDIT_MODE_KEY, editMode ? '1' : '0'); }
     catch (_) { /* ignorar */ }
+    scheduleDashboardSave({ dashboard_edit_mode: editMode });
   }
 
   /* ---- persistencia ---- */
@@ -244,27 +249,51 @@
   // en instalaciones que ya la aplicaron. (Sobrescribe columnas movidas a mano: aceptable
   // por ser un parche puntual; el orden dentro de cada columna se conserva.)
   const COLS_RESET_KEY = 'dashboardLayout.colsResetV2';
+  function normalizeSavedLayout(raw, applyColumnReset = false) {
+    if (!raw || !Array.isArray(raw.order) || !Array.isArray(raw.hidden)) return null;
+    let order = raw.order
+      .filter((o) => o && typeof o.key === 'string' && (o.col === 'left' || o.col === 'right'))
+      .map((o) => ({ key: o.key, col: o.col }));
+    if (applyColumnReset && !localStorage.getItem(COLS_RESET_KEY)) {
+      const colByKey = Object.fromEntries(DEFAULT_ORDER.map((d) => [d.key, d.col]));
+      order = order.map((o) => (colByKey[o.key] ? { ...o, col: colByKey[o.key] } : o));
+      try { localStorage.setItem(COLS_RESET_KEY, '1'); } catch (_) {}
+    }
+    return { order, hidden: new Set(raw.hidden.filter((k) => typeof k === 'string')) };
+  }
+
   function loadLayout() {
+    const cfgLayout = normalizeSavedLayout(window.rogPrefs?.get()?.dashboard_layout, false);
+    if (cfgLayout) return cfgLayout;
     try {
       const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-      if (raw && Array.isArray(raw.order) && Array.isArray(raw.hidden)) {
-        let order = raw.order;
-        if (!localStorage.getItem(COLS_RESET_KEY)) {
-          const colByKey = Object.fromEntries(DEFAULT_ORDER.map((d) => [d.key, d.col]));
-          order = order.map((o) => (colByKey[o.key] ? { ...o, col: colByKey[o.key] } : o));
-          try { localStorage.setItem(COLS_RESET_KEY, '1'); } catch (_) {}
-        }
-        return { order, hidden: new Set(raw.hidden) };
-      }
+      const localLayout = normalizeSavedLayout(raw, true);
+      if (localLayout) return localLayout;
     } catch (_) { /* ignorar */ }
     return { order: DEFAULT_ORDER.map((d) => ({ ...d })), hidden: new Set() };
   }
 
-  function saveLayout() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      order:  layout.order,
+  function layoutPayload() {
+    return {
+      order: layout.order,
       hidden: [...layout.hidden],
-    }));
+    };
+  }
+
+  function scheduleDashboardSave(patch) {
+    pendingDashboardPatch = { ...pendingDashboardPatch, ...patch };
+    clearTimeout(dashboardSaveTimer);
+    dashboardSaveTimer = setTimeout(() => {
+      const payload = pendingDashboardPatch;
+      pendingDashboardPatch = {};
+      if (window.rogPrefs?.save) window.rogPrefs.save(payload).catch(() => {});
+    }, 350);
+  }
+
+  function saveLayout() {
+    const payload = layoutPayload();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    scheduleDashboardSave({ dashboard_layout: payload });
   }
 
   /* ---- DOM helpers ---- */
@@ -787,7 +816,10 @@
   }
 
   /* ---- punto de entrada ---- */
-  function init() {
+  async function init() {
+    try { await window.rogPrefs?.ready; } catch (_) { /* fallback to localStorage */ }
+    layout = loadLayout();
+    editMode = loadEditMode();
     sanitizeLayout();
     injectBlockControls();
     addTopbarButton();

@@ -912,11 +912,16 @@ ipcMain.handle('readSmart', async (_e, device) => {
 ipcMain.handle('get-settings', async () =>
   runJsonModule('rog_monitor.settings', ['get'], 6000));
 
+function settingsNeedBackendRestart(payload = {}) {
+  return ['alerts', 'temp_colors', 'notifications', 'lang']
+    .some((key) => Object.prototype.hasOwnProperty.call(payload || {}, key));
+}
+
 ipcMain.handle('save-settings', async (_e, payload) => {
   const res = await runJsonModule('rog_monitor.settings', ['update', '--json', JSON.stringify(payload)], 6000);
   // AlertEngine reads config.json once at startup; restart the backend so the
-  // new thresholds and colors take effect immediately.
-  if (res.ok) startBackend();
+  // new thresholds, colors, language and notification setting take effect.
+  if (res.ok && settingsNeedBackendRestart(payload)) startBackend();
   return res;
 });
 
@@ -1774,13 +1779,26 @@ ipcMain.handle('set-thermal-guardian', async (_e, { enabled, cpuCeiling, gpuCeil
   };
 });
 
+async function applyAuraStartupWithRetry(attempt = 1) {
+  const res = await runJsonModule('rog_monitor.aura', ['apply-startup'], 10000);
+  if (res && (res.ok || res.skipped)) return;
+  if (attempt >= 6) {
+    appendErrorLog('aura-startup-failed', {
+      attempt,
+      err: res && (res.err || res.error || res.out),
+    });
+    return;
+  }
+  setTimeout(() => applyAuraStartupWithRetry(attempt + 1), 5000);
+}
+
 if (gotSingleInstanceLock) {
   app.whenReady().then(() => {
     createWindow();
     createTray();
     startBackend();
     startWatchdog();
-    runJsonModule('rog_monitor.aura', ['apply-startup'], 10000).catch(() => {});
+    applyAuraStartupWithRetry().catch(() => {});
   });
 }
 

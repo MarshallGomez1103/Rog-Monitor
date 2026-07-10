@@ -257,6 +257,7 @@ class SysReader:
             "nvme_temps": nvme_temps,
             "smart_block_devices": _smart_block_devices(),
             "load": os.getloadavg(),
+            "uptime_s": uptime,
             "uptime_h": uptime / 3600,
             "dmi": get_dmi(),
         }

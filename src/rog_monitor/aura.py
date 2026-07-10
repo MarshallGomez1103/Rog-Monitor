@@ -709,12 +709,24 @@ def set_startup_profile(name: str | None, enabled: bool) -> dict:
 
 def apply_startup_profile() -> dict:
     store = _load_store()
-    if not store.get("apply_on_startup") or not store.get("startup_profile"):
-        return {"ok": True, "skipped": True}
-    for profile in store.get("profiles", []):
-        if profile.get("name") == store["startup_profile"]:
-            return apply_state(profile.get("state") or {})
-    return {"ok": False, "err": f'Startup profile "{store["startup_profile"]}" was not found.'}
+    if store.get("apply_on_startup") and store.get("startup_profile"):
+        for profile in store.get("profiles", []):
+            if profile.get("name") == store["startup_profile"]:
+                res = apply_state(profile.get("state") or {})
+                if isinstance(res, dict):
+                    res["source"] = "startup_profile"
+                return res
+        return {"ok": False, "err": f'Startup profile "{store["startup_profile"]}" was not found.'}
+
+    # If the user simply pressed APPLY (for example Rainbow) without saving a
+    # named startup profile, keep that exact keyboard state across app/PC starts.
+    last = store.get("last_applied") or {}
+    if last:
+        res = apply_state(last)
+        if isinstance(res, dict):
+            res["source"] = "last_applied"
+        return res
+    return {"ok": True, "skipped": True}
 
 
 def main(argv=None) -> int:

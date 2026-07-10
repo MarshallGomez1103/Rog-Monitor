@@ -426,6 +426,123 @@ function applyAppearance() {
   if (lastStats) update(lastStats);
 }
 
+let persistedSettings = null;
+let settingsLangHydrating = false;
+
+function lsGet(key) {
+  try { return localStorage.getItem(key); } catch (_) { return null; }
+}
+
+function lsSet(key, value) {
+  try { localStorage.setItem(key, value); } catch (_) {}
+}
+
+function lsJson(key) {
+  try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) { return null; }
+}
+
+function mergeSettingsPatch(base, patch) {
+  const next = { ...(base || {}) };
+  for (const [key, value] of Object.entries(patch || {})) {
+    if (key === 'appearance' && value && typeof value === 'object') {
+      next.appearance = { ...(next.appearance || {}), ...value };
+    } else {
+      next[key] = value;
+    }
+  }
+  return next;
+}
+
+function currentAppearanceForSettings(extra = {}) {
+  const savedZoom = parseFloat(lsGet('zoomLevel') || '0');
+  return {
+    ...appearance(),
+    zoom_level: Number.isFinite(savedZoom) ? savedZoom : 0,
+    ...extra,
+  };
+}
+
+async function saveUiSettings(patch) {
+  persistedSettings = mergeSettingsPatch(persistedSettings, patch);
+  if (!window.rog?.saveSettings) return { ok: false, err: 'settings IPC unavailable' };
+  const res = await window.rog.saveSettings(patch);
+  if (res && res.ok) persistedSettings = mergeSettingsPatch(persistedSettings, res);
+  return res;
+}
+
+function collectLocalPrefsMigration(settings) {
+  const patch = { ui_prefs_migrated: true };
+  const theme = lsGet('theme');
+  const mode = lsGet('mode');
+  const zoomRaw = lsGet('zoomLevel');
+  const appearancePatch = {};
+  if (theme) appearancePatch.theme = theme;
+  if (mode) appearancePatch.mode = mode;
+  if (zoomRaw !== null) {
+    const zoom = parseFloat(zoomRaw);
+    if (Number.isFinite(zoom)) appearancePatch.zoom_level = zoom;
+  }
+  if (Object.keys(appearancePatch).length) {
+    patch.appearance = { ...(settings?.appearance || {}), ...appearancePatch };
+  }
+
+  const layout = lsJson('dashboardLayout');
+  if (layout && Array.isArray(layout.order) && Array.isArray(layout.hidden)) {
+    patch.dashboard_layout = layout;
+  }
+  const editModeRaw = lsGet('dashboardEditMode');
+  if (editModeRaw !== null) patch.dashboard_edit_mode = editModeRaw === '1';
+
+  const auraDraft = lsJson('auraDraft');
+  if (auraDraft && typeof auraDraft === 'object') patch.aura_draft = auraDraft;
+  return patch;
+}
+
+function applyPersistedSettings(settings) {
+  if (!settings || typeof settings !== 'object') return;
+  const app = settings.appearance || {};
+  if (app.theme) lsSet('theme', app.theme);
+  if (app.mode) lsSet('mode', app.mode);
+  if (Number.isFinite(Number(app.zoom_level))) {
+    const level = Number(app.zoom_level);
+    lsSet('zoomLevel', String(level));
+    if (window.rog?.zoomTo) window.rog.zoomTo(level);
+  }
+  if (settings.lang && window.i18n?.LANGS?.includes(settings.lang) && window.i18n.get() !== settings.lang) {
+    settingsLangHydrating = true;
+    window.i18n.set(settings.lang);
+    setTimeout(() => { settingsLangHydrating = false; }, 0);
+  }
+  applyAppearance();
+}
+
+const rogSettingsReady = (async () => {
+  if (!window.rog?.getSettings) return null;
+  try {
+    const res = await window.rog.getSettings();
+    if (!res || !res.ok) return null;
+    persistedSettings = res;
+    if (!res.ui_prefs_migrated) {
+      const patch = collectLocalPrefsMigration(res);
+      const saved = await saveUiSettings(patch);
+      persistedSettings = saved && saved.ok
+        ? mergeSettingsPatch(persistedSettings, saved)
+        : mergeSettingsPatch(persistedSettings, patch);
+    }
+    applyPersistedSettings(persistedSettings);
+    return persistedSettings;
+  } catch (err) {
+    recordLocalError('settings-load-failed', { message: err && err.message ? err.message : String(err) });
+    return null;
+  }
+})();
+
+window.rogPrefs = {
+  ready: rogSettingsReady,
+  get: () => persistedSettings,
+  save: saveUiSettings,
+};
+
 function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
@@ -454,6 +571,17 @@ function fmtMb(value) {
   return value === null || value === undefined || Number.isNaN(value)
     ? '--'
     : `${Math.round(Number(value))} MB`;
+}
+
+function fmtUptime(seconds) {
+  const total = Math.max(0, Math.floor(Number(seconds) || 0));
+  if (!total) return '--';
+  const days = Math.floor(total / 86400);
+  const hours = Math.floor((total % 86400) / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${String(minutes).padStart(2, '0')}m`;
+  return `${minutes}m`;
 }
 
 // Contrato con CSS (Agente A2): #cpu-temp/#gpu-temp SIEMPRE deben llevar
@@ -717,10 +845,22 @@ function auraDraftStorageKey() {
 
 function saveAuraDraft(state) {
   try { localStorage.setItem(auraDraftStorageKey(), JSON.stringify(state)); } catch (_) {}
+  scheduleAuraDraftSave(state);
 }
 
 function loadAuraDraft() {
+  const cfgDraft = window.rogPrefs?.get()?.aura_draft;
+  if (cfgDraft && Object.keys(cfgDraft).length) return cfgDraft;
   try { return JSON.parse(localStorage.getItem(auraDraftStorageKey()) || 'null'); } catch (_) { return null; }
+}
+
+let auraDraftSaveTimer = null;
+function scheduleAuraDraftSave(state) {
+  if (!window.rogPrefs?.save) return;
+  clearTimeout(auraDraftSaveTimer);
+  auraDraftSaveTimer = setTimeout(() => {
+    window.rogPrefs.save({ aura_draft: state }).catch(() => {});
+  }, 500);
 }
 
 function fillSelect(el, items, selectedValue, placeholder = '') {
@@ -1575,6 +1715,7 @@ function renderRamProcs(procs) {
 function update(stats) {
   lastStats = stats;
   const cpu = stats.cpu || {};
+  const sys = stats.sys || {};
   const limits = stats.limits || {};
 
   /* lamp — usa nombres "bare" propios (cold/normal/hot/critical) que ya
@@ -1608,6 +1749,7 @@ function update(stats) {
   cpuWatts.className = (stats.cpu_watts ?? 0) >= 140 ? 'accent' : '';
   $('cpu-throttle').textContent = cpu.throttle_count ?? '--';
   $('cpu-epp').textContent = cpu.epp || '--';
+  $('cpu-uptime').textContent = fmtUptime(sys.uptime_s ?? (sys.uptime_h ? sys.uptime_h * 3600 : 0));
 
   /* gpu */
   const gpu = stats.gpu || {};
@@ -1681,7 +1823,6 @@ function update(stats) {
   $('rapl-note').classList.toggle('hidden', !!stats.rapl_available);
 
   /* system */
-  const sys = stats.sys || {};
   $('ram-label').textContent = `${fmt(sys.ram_used_gb, 1)}/${fmt(sys.ram_total_gb, 0)} G`;
   $('ram-bar').style.width = (sys.ram_percent || 0) + '%';
   const vramTotal = active?.vram_total;
@@ -1969,17 +2110,28 @@ window.rog.appInfo().then((info) => {
 window.addEventListener('resize', () => lastStats && update(lastStats));
 
 /* ---------- zoom (ctrl+wheel, ctrl +/-/0) ---------- */
+let zoomSaveTimer = null;
+function persistCurrentZoom() {
+  clearTimeout(zoomSaveTimer);
+  zoomSaveTimer = setTimeout(() => {
+    const level = parseFloat(lsGet('zoomLevel') || '0');
+    saveUiSettings({
+      appearance: currentAppearanceForSettings({ zoom_level: Number.isFinite(level) ? level : 0 }),
+    }).catch(() => {});
+  }, 300);
+}
 
 window.addEventListener('wheel', (e) => {
   if (!e.ctrlKey) return;
   e.preventDefault();
   window.rog.zoom(e.deltaY < 0 ? 0.5 : -0.5);
+  persistCurrentZoom();
 }, { passive: false });
 window.addEventListener('keydown', (e) => {
   if (!e.ctrlKey) return;
-  if (e.key === '+' || e.key === '=') { e.preventDefault(); window.rog.zoom(0.5); }
-  if (e.key === '-') { e.preventDefault(); window.rog.zoom(-0.5); }
-  if (e.key === '0') { e.preventDefault(); window.rog.zoom(null); }
+  if (e.key === '+' || e.key === '=') { e.preventDefault(); window.rog.zoom(0.5); persistCurrentZoom(); }
+  if (e.key === '-') { e.preventDefault(); window.rog.zoom(-0.5); persistCurrentZoom(); }
+  if (e.key === '0') { e.preventDefault(); window.rog.zoom(null); persistCurrentZoom(); }
 });
 
 /* ---------- i18n / idioma ---------- */
@@ -2052,9 +2204,9 @@ if (window.i18n) {
     } catch (_) {}
     try { if (typeof lastStats !== 'undefined' && lastStats) update(lastStats); } catch (_) {}
     try { if (typeof refreshFanLanguage === 'function') refreshFanLanguage(); } catch (_) {}
-    if (window.rog?.saveSettings) {
+    if (window.rog?.saveSettings && !settingsLangHydrating) {
       clearTimeout(langSaveTimer); // ponytail: debounce — reinicia el backend una sola vez
-      langSaveTimer = setTimeout(() => window.rog.saveSettings({ lang }), 400);
+      langSaveTimer = setTimeout(() => saveUiSettings({ lang }), 400);
     }
   });
 }
@@ -2080,6 +2232,7 @@ function renderThemeGrid() {
     card.addEventListener('click', () => {
       localStorage.setItem('theme', card.dataset.theme);
       applyAppearance();
+      saveUiSettings({ appearance: currentAppearanceForSettings({ theme: card.dataset.theme }) }).catch(() => {});
     });
   });
   applyAppearance();
@@ -2091,6 +2244,7 @@ document.querySelectorAll('#mode-seg button').forEach((btn) => {
   btn.addEventListener('click', () => {
     localStorage.setItem('mode', btn.dataset.mode);
     applyAppearance();
+    saveUiSettings({ appearance: currentAppearanceForSettings({ mode: btn.dataset.mode }) }).catch(() => {});
   });
 });
 prefersDark.addEventListener('change', applyAppearance);
@@ -2276,7 +2430,7 @@ $('alerts-save').addEventListener('click', async () => {
 /* ===== /v16 Agente4 ===== */
 
 applyAppearance();
-refreshAuraState(true);
+rogSettingsReady.finally(() => refreshAuraState(true));
 renderBenchmarkHistory();
 
 $('aura-effect').addEventListener('change', syncAuraFields);
@@ -3463,7 +3617,11 @@ const savedZoom = parseFloat(localStorage.getItem('zoomLevel') || '0');
 if (savedZoom) window.rog.zoomTo(savedZoom);
 document.querySelectorAll('#size-seg button').forEach((btn) => {
   btn.addEventListener('click', () => {
-    window.rog.zoomTo(parseFloat(btn.dataset.zoom));
+    const level = parseFloat(btn.dataset.zoom);
+    window.rog.zoomTo(level);
+    saveUiSettings({
+      appearance: currentAppearanceForSettings({ zoom_level: Number.isFinite(level) ? level : 0 }),
+    }).catch(() => {});
     toast(t('toast.size_applied'));
   });
 });
