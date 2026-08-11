@@ -79,6 +79,7 @@ contextBridge.exposeInMainWorld('rog', {
   // --- guardián térmico CPU/GPU ---
   getThermalGuardian: () => ipcRenderer.invoke('get-thermal-guardian'),
   setThermalGuardian: (payload) => ipcRenderer.invoke('set-thermal-guardian', payload),
+  setBatteryLimit: (limit) => ipcRenderer.invoke('set-battery-limit', limit),
   // --- SMART bajo demanda (pkexec smartctl -j -a <device>) ---
   readSmart: (device) => ipcRenderer.invoke('readSmart', device),
 });

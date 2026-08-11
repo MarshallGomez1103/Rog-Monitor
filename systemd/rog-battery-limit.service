@@ -1,0 +1,11 @@
+[Unit]
+Description=ROG Monitor — persist ASUS battery charge limit
+After=asusd.service
+Wants=asusd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/rog-battery-limit
+
+[Install]
+WantedBy=multi-user.target

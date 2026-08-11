@@ -33,3 +33,7 @@
 .bat-cap-row {
   grid-column: span 2;
 }
+
+.bat-limit-control { display: flex; align-items: center; gap: 7px; }
+.bat-limit-control button, #bat-limit-value { font: inherit; font-size: 12px; }
+#bat-limit-value { width: 100%; margin-top: 6px; }

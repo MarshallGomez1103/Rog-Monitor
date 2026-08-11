@@ -27,6 +27,13 @@ install -m 0644 "$REPO/systemd/rog-profile-sync.service" "$UNITS/rog-profile-syn
 sed "s#__ROG_MONITOR_REPO__#$REPO#g" \
     "$REPO/systemd/rog-thermal-guardian.service" > "$UNITS/rog-thermal-guardian.service"
 
+# 2b) Límite de carga: se guarda en /etc/rog-monitor/battery.conf desde la
+# app y esta unidad lo reaplica al iniciar (el firmware puede resetearlo).
+install -d -m 0755 /etc/rog-monitor
+install -m 0755 "$REPO/scripts/rog-battery-limit.sh" "$SBIN/rog-battery-limit"
+install -m 0755 "$REPO/scripts/rog-battery-limit-resume.sh" /usr/lib/systemd/system-sleep/rog-battery-limit
+install -m 0644 "$REPO/systemd/rog-battery-limit.service" "$UNITS/rog-battery-limit.service"
+
 systemctl daemon-reload
 systemctl enable --now rog-profile-sync.service || true
 

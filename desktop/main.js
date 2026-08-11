@@ -409,9 +409,37 @@ const SCRIPTS_DIR = process.env.ROG_SCRIPTS_DIR || REPO;
 const SYNC_SCRIPT = path.join(SCRIPTS_DIR, 'scripts', 'rog-profile-sync.sh');
 const FAN_CALIBRATE = path.join(SCRIPTS_DIR, 'scripts', 'calibrate-fans.sh');
 const ENABLE_ASUSD = path.join(SCRIPTS_DIR, 'scripts', 'enable-asusd.sh');
+const BATTERY_LIMIT_SCRIPT = path.join(SCRIPTS_DIR, 'scripts', 'rog-battery-limit.sh');
+const BATTERY_LIMIT_RESUME_SCRIPT = path.join(SCRIPTS_DIR, 'scripts', 'rog-battery-limit-resume.sh');
+const BATTERY_LIMIT_UNIT = path.join(SCRIPTS_DIR, 'systemd', 'rog-battery-limit.service');
 // User-writable curve store; the root service reads it on every profile change.
 const FAN_CURVES_JSON = path.join(
   os.homedir(), '.config', 'rog-monitor', 'fan-curves.json');
+
+// The threshold is a firmware setting, so persist it under /etc and apply it
+// again at boot. pkexec keeps the renderer unprivileged.
+ipcMain.handle('set-battery-limit', async (_e, limit) => {
+  const value = Number(limit);
+  if (!Number.isInteger(value) || value < 20 || value > 100) {
+    return { ok: false, err: 'El límite debe ser un entero entre 20 y 100.' };
+  }
+  if (!fs.existsSync(BATTERY_LIMIT_SCRIPT) || !fs.existsSync(BATTERY_LIMIT_RESUME_SCRIPT) || !fs.existsSync(BATTERY_LIMIT_UNIT)) {
+    return { ok: false, err: 'No encontré los archivos de control de batería de ROG Monitor.' };
+  }
+  const cmd = [
+    'install -d -m 0755 /etc/rog-monitor',
+    `printf 'CHARGE_LIMIT=%s\\n' ${value} > /etc/rog-monitor/battery.conf`,
+    `install -m 0755 ${shq(BATTERY_LIMIT_SCRIPT)} /usr/local/sbin/rog-battery-limit`,
+    `install -m 0755 ${shq(BATTERY_LIMIT_RESUME_SCRIPT)} /usr/lib/systemd/system-sleep/rog-battery-limit`,
+    `install -m 0644 ${shq(BATTERY_LIMIT_UNIT)} /etc/systemd/system/rog-battery-limit.service`,
+    'systemctl daemon-reload',
+    `bash /usr/local/sbin/rog-battery-limit --limit ${value}`,
+    // Migrate the previous single-purpose unit, which could run before asusd.
+    '(systemctl disable --now battery-charge-limit.service 2>/dev/null || true)',
+    'systemctl enable rog-battery-limit.service',
+  ].join(' && ');
+  return run('pkexec', ['sh', '-c', cmd], 30000);
+});
 
 // JSON key per hwmon fan index (mirrors fan_key() in the sync script).
 function fanKeyForIndex(i) {

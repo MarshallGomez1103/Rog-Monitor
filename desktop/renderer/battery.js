@@ -150,6 +150,21 @@
   const t = (key) => (window.t ? window.t(key) || key : key);
   const na = () => t('battery.na');
   const fmt = (v, suffix = '') => (v != null ? `${v}${suffix}` : na());
+  let applying = false;
+
+  function setupLimitControl() {
+    const button = $('bat-limit-set');
+    const select = $('bat-limit-value');
+    if (!button || !select || button.dataset.ready) return;
+    button.dataset.ready = '1';
+    button.addEventListener('click', async () => {
+      if (applying || !window.rog || !window.rog.setBatteryLimit) return;
+      applying = true; button.disabled = true;
+      const result = await window.rog.setBatteryLimit(Number(select.value));
+      applying = false; button.disabled = false;
+      if (!result || !result.ok) alert((result && result.err) || 'No se pudo aplicar el límite de carga.');
+    });
+  }
 
   /* health color class */
   function healthClass(pct) {
@@ -223,6 +238,9 @@
     // Charge limit
     const limitEl = $('bat-limit');
     if (limitEl) limitEl.textContent = fmt(bat.charge_limit, '%');
+    const limitSelect = $('bat-limit-value');
+    if (limitSelect && bat.charge_limit != null) limitSelect.value = String(bat.charge_limit);
+    setupLimitControl();
 
     // Current vs design capacity
     const capNowEl = $('bat-cap-now');
