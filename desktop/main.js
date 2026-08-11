@@ -426,19 +426,39 @@ ipcMain.handle('set-battery-limit', async (_e, limit) => {
   if (!fs.existsSync(BATTERY_LIMIT_SCRIPT) || !fs.existsSync(BATTERY_LIMIT_RESUME_SCRIPT) || !fs.existsSync(BATTERY_LIMIT_UNIT)) {
     return { ok: false, err: 'No encontré los archivos de control de batería de ROG Monitor.' };
   }
+  // Root on SELinux systems cannot necessarily traverse the user's home.
+  // Stage copies in /tmp with a readable label before invoking pkexec.
+  let stagingDir;
+  try {
+    stagingDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rog-monitor-battery-'));
+    fs.chmodSync(stagingDir, 0o755);
+    fs.copyFileSync(BATTERY_LIMIT_SCRIPT, path.join(stagingDir, 'rog-battery-limit'));
+    fs.copyFileSync(BATTERY_LIMIT_RESUME_SCRIPT, path.join(stagingDir, 'rog-battery-limit-resume'));
+    fs.copyFileSync(BATTERY_LIMIT_UNIT, path.join(stagingDir, 'rog-battery-limit.service'));
+    fs.chmodSync(path.join(stagingDir, 'rog-battery-limit'), 0o755);
+    fs.chmodSync(path.join(stagingDir, 'rog-battery-limit-resume'), 0o755);
+    fs.chmodSync(path.join(stagingDir, 'rog-battery-limit.service'), 0o644);
+  } catch (err) {
+    return { ok: false, err: `No se pudo preparar el control de batería: ${err.message}` };
+  }
   const cmd = [
     'install -d -m 0755 /etc/rog-monitor',
     `printf 'CHARGE_LIMIT=%s\\n' ${value} > /etc/rog-monitor/battery.conf`,
-    `install -m 0755 ${shq(BATTERY_LIMIT_SCRIPT)} /usr/local/sbin/rog-battery-limit`,
-    `install -m 0755 ${shq(BATTERY_LIMIT_RESUME_SCRIPT)} /usr/lib/systemd/system-sleep/rog-battery-limit`,
-    `install -m 0644 ${shq(BATTERY_LIMIT_UNIT)} /etc/systemd/system/rog-battery-limit.service`,
+    `install -m 0755 ${shq(path.join(stagingDir, 'rog-battery-limit'))} /usr/local/sbin/rog-battery-limit`,
+    'install -d -m 0755 /etc/systemd/system-sleep',
+    `install -m 0755 ${shq(path.join(stagingDir, 'rog-battery-limit-resume'))} /etc/systemd/system-sleep/rog-battery-limit`,
+    `install -m 0644 ${shq(path.join(stagingDir, 'rog-battery-limit.service'))} /etc/systemd/system/rog-battery-limit.service`,
     'systemctl daemon-reload',
     `bash /usr/local/sbin/rog-battery-limit --limit ${value}`,
     // Migrate the previous single-purpose unit, which could run before asusd.
     '(systemctl disable --now battery-charge-limit.service 2>/dev/null || true)',
     'systemctl enable rog-battery-limit.service',
   ].join(' && ');
-  return run('pkexec', ['sh', '-c', cmd], 30000);
+  try {
+    return await run('pkexec', ['sh', '-c', cmd], 30000);
+  } finally {
+    fs.rmSync(stagingDir, { recursive: true, force: true });
+  }
 });
 
 // JSON key per hwmon fan index (mirrors fan_key() in the sync script).

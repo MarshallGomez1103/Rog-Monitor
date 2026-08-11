@@ -31,7 +31,10 @@ sed "s#__ROG_MONITOR_REPO__#$REPO#g" \
 # app y esta unidad lo reaplica al iniciar (el firmware puede resetearlo).
 install -d -m 0755 /etc/rog-monitor
 install -m 0755 "$REPO/scripts/rog-battery-limit.sh" "$SBIN/rog-battery-limit"
-install -m 0755 "$REPO/scripts/rog-battery-limit-resume.sh" /usr/lib/systemd/system-sleep/rog-battery-limit
+# /usr is read-only on Fedora Atomic/Silverblue; /etc is the supported
+# administrator location for local systemd sleep hooks.
+install -d -m 0755 /etc/systemd/system-sleep
+install -m 0755 "$REPO/scripts/rog-battery-limit-resume.sh" /etc/systemd/system-sleep/rog-battery-limit
 install -m 0644 "$REPO/systemd/rog-battery-limit.service" "$UNITS/rog-battery-limit.service"
 
 systemctl daemon-reload

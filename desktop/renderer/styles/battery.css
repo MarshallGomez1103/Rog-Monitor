@@ -34,6 +34,33 @@
   grid-column: span 2;
 }
 
-.bat-limit-control { display: flex; align-items: center; gap: 7px; }
-.bat-limit-control button, #bat-limit-value { font: inherit; font-size: 12px; }
-#bat-limit-value { width: 100%; margin-top: 6px; }
+.bat-limit-control { display: flex; align-items: center; justify-content: space-between; gap: 9px; }
+.bat-limit-apply {
+  min-height: 27px;
+  padding: 4px 10px;
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--hair));
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+  box-shadow: var(--neon-line);
+  font: 700 10px/1 var(--mono);
+  letter-spacing: .08em;
+}
+.bat-limit-apply:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 22%, var(--panel));
+  border-color: var(--accent);
+  box-shadow: var(--neon-box);
+}
+.bat-limit-apply:disabled { opacity: .55; cursor: wait; }
+#bat-limit-value {
+  width: 100%;
+  min-height: 30px;
+  margin-top: 8px;
+  padding: 4px 8px;
+  font: 700 12px var(--mono);
+  color: var(--ink);
+  background: color-mix(in srgb, var(--panel) 88%, var(--accent) 12%);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--hair));
+  border-radius: 3px;
+  outline: none;
+}
+#bat-limit-value:focus { border-color: var(--accent); box-shadow: var(--neon-line); }
