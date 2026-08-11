@@ -236,8 +236,6 @@
     }
 
     // Charge limit
-    const limitEl = $('bat-limit');
-    if (limitEl) limitEl.textContent = fmt(bat.charge_limit, '%');
     const limitSelect = $('bat-limit-value');
     if (limitSelect && bat.charge_limit != null) limitSelect.value = String(bat.charge_limit);
     setupLimitControl();

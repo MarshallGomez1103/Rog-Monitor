@@ -2,9 +2,10 @@
  * Reuses existing .statgrid, .block, .note, neon tokens.
  * No new design tokens introduced. */
 
-/* Battery-specific statgrid: 4 columns for wider blocks */
+/* First row: five live metrics. Second: one concise limit control + capacity. */
 .bat-statgrid {
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 20px 18px;
 }
 
 /* Large charge percentage display */
@@ -34,7 +35,8 @@
   grid-column: span 2;
 }
 
-.bat-limit-control { display: flex; align-items: center; justify-content: space-between; gap: 9px; }
+.bat-limit-field { grid-column: span 2; }
+.bat-limit-control { display: flex; align-items: center; gap: 9px; }
 .bat-limit-apply {
   min-height: 27px;
   padding: 4px 10px;
@@ -52,9 +54,10 @@
 }
 .bat-limit-apply:disabled { opacity: .55; cursor: wait; }
 #bat-limit-value {
-  width: 100%;
+  flex: 1 1 auto;
+  width: auto;
   min-height: 30px;
-  margin-top: 8px;
+  margin: 0;
   padding: 4px 8px;
   font: 700 12px var(--mono);
   color: var(--ink);
@@ -64,3 +67,12 @@
   outline: none;
 }
 #bat-limit-value:focus { border-color: var(--accent); box-shadow: var(--neon-line); }
+
+@media (max-width: 860px) {
+  .bat-statgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .bat-statgrid { grid-template-columns: 1fr 1fr; }
+  .bat-limit-field, .bat-cap-row { grid-column: span 2; }
+}
