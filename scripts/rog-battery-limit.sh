@@ -23,6 +23,12 @@ fi
   echo "Límite inválido: se permite un entero entre 20 y 100." >&2; exit 2;
 }
 
+# Keep asusd's own persisted value in sync. Without this, asusd can restore
+# an older value after a resume even though the sysfs value looked correct.
+if command -v asusctl >/dev/null 2>&1; then
+  asusctl battery limit "$limit" >/dev/null 2>&1 || true
+fi
+
 found=0
 for bat in /sys/class/power_supply/BAT*; do
   [[ -d "$bat" ]] || continue

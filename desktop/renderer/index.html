@@ -304,9 +304,10 @@
           <div class="bat-limit-field">
             <label data-i18n="battery.limit">Límite carga</label>
             <div class="bat-limit-control">
-              <select id="bat-limit-value" aria-label="Límite de carga"><option value="60">60%</option><option value="80" selected>80%</option><option value="100">100%</option></select>
-              <button id="bat-limit-set" class="ghost bat-limit-apply" type="button" title="Aplicar y conservar tras reiniciar">APLICAR</button>
+              <div class="bat-limit-input-wrap"><input id="bat-limit-value" type="number" min="20" max="100" step="1" value="80" inputmode="numeric" data-i18n-attr="aria-label:battery.limit" aria-label="Límite de carga"><span>%</span></div>
+              <button id="bat-limit-set" class="ghost bat-limit-apply" type="button" data-i18n="common.apply" data-i18n-attr="title:battery.limit_apply_tip">APLICAR</button>
             </div>
+            <small class="bat-limit-hint" data-i18n="battery.limit_hint">80% recomendado para cuidar la batería. Puedes elegir entre 20% y 100%.</small>
           </div>
           <div class="bat-cap-row">
             <label data-i18n="battery.capacity_now">Energía actual</label>

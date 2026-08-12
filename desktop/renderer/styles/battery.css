@@ -37,6 +37,7 @@
 
 .bat-limit-field { grid-column: span 2; }
 .bat-limit-control { display: flex; align-items: center; gap: 9px; }
+.bat-limit-input-wrap { position: relative; flex: 1 1 auto; }
 .bat-limit-apply {
   min-height: 27px;
   padding: 4px 10px;
@@ -54,11 +55,11 @@
 }
 .bat-limit-apply:disabled { opacity: .55; cursor: wait; }
 #bat-limit-value {
-  flex: 1 1 auto;
-  width: auto;
+  box-sizing: border-box;
+  width: 100%;
   min-height: 30px;
   margin: 0;
-  padding: 4px 8px;
+  padding: 4px 28px 4px 8px;
   font: 700 12px var(--mono);
   color: var(--ink);
   background: color-mix(in srgb, var(--panel) 88%, var(--accent) 12%);
@@ -67,6 +68,16 @@
   outline: none;
 }
 #bat-limit-value:focus { border-color: var(--accent); box-shadow: var(--neon-line); }
+.bat-limit-input-wrap span {
+  position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
+  color: var(--accent); font: 700 12px var(--mono); pointer-events: none;
+}
+.bat-limit-hint { display: block; margin-top: 7px; color: var(--dim); font-size: 11px; line-height: 1.35; }
+
+@media (min-width: 861px) {
+  .bat-limit-field { grid-column: span 3; }
+  .bat-cap-row { grid-column: span 1; }
+}
 
 @media (max-width: 860px) {
   .bat-statgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }

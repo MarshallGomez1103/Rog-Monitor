@@ -17,6 +17,9 @@
         'battery.health':          'Salud (desgaste)',
         'battery.cycles':          'Ciclos',
         'battery.limit':           'Límite carga',
+        'battery.limit_hint':      '80% recomendado para cuidar la batería. Puedes elegir entre 20% y 100%.',
+        'battery.limit_apply_tip': 'Aplicar y conservar tras reiniciar o reanudar',
+        'battery.limit_apply_error': 'No se pudo aplicar el límite de carga.',
         'battery.capacity_now':    'Energía actual',
         'battery.capacity_design': 'Diseño',
         'battery.na':              'N/D',
@@ -32,6 +35,9 @@
         'battery.health':          'Health (wear)',
         'battery.cycles':          'Cycles',
         'battery.limit':           'Charge limit',
+        'battery.limit_hint':      '80% is recommended for battery care. Choose any value from 20% to 100%.',
+        'battery.limit_apply_tip': 'Apply and keep after restart or resume',
+        'battery.limit_apply_error': 'Could not apply the charge limit.',
         'battery.capacity_now':    'Energy now',
         'battery.capacity_design': 'Design',
         'battery.na':              'N/A',
@@ -47,6 +53,9 @@
         'battery.health':          'Santé (usure)',
         'battery.cycles':          'Cycles',
         'battery.limit':           'Limite de charge',
+        'battery.limit_hint':      '80 % est conseillé pour préserver la batterie. Choisissez entre 20 % et 100 %.',
+        'battery.limit_apply_tip': 'Appliquer et conserver après redémarrage ou reprise',
+        'battery.limit_apply_error': 'Impossible d’appliquer la limite de charge.',
         'battery.capacity_now':    'Énergie actuelle',
         'battery.capacity_design': 'Conception',
         'battery.na':              'N/D',
@@ -62,6 +71,9 @@
         'battery.health':          'Salute (usura)',
         'battery.cycles':          'Cicli',
         'battery.limit':           'Limite di carica',
+        'battery.limit_hint':      'L’80% è consigliato per proteggere la batteria. Scegli un valore dal 20% al 100%.',
+        'battery.limit_apply_tip': 'Applica e conserva dopo riavvio o riattivazione',
+        'battery.limit_apply_error': 'Impossibile applicare il limite di carica.',
         'battery.capacity_now':    'Energia attuale',
         'battery.capacity_design': 'Progetto',
         'battery.na':              'N/D',
@@ -77,6 +89,9 @@
         'battery.health':          'Saúde (desgaste)',
         'battery.cycles':          'Ciclos',
         'battery.limit':           'Limite de carga',
+        'battery.limit_hint':      '80% é recomendado para cuidar da bateria. Escolha entre 20% e 100%.',
+        'battery.limit_apply_tip': 'Aplicar e manter após reiniciar ou retomar',
+        'battery.limit_apply_error': 'Não foi possível aplicar o limite de carga.',
         'battery.capacity_now':    'Energia atual',
         'battery.capacity_design': 'Design',
         'battery.na':              'N/D',
@@ -92,6 +107,9 @@
         'battery.health':          '健康（损耗）',
         'battery.cycles':          '循环次数',
         'battery.limit':           '充电限制',
+        'battery.limit_hint':      '建议设为 80% 以保护电池。可选择 20% 至 100%。',
+        'battery.limit_apply_tip': '应用并在重启或唤醒后保留',
+        'battery.limit_apply_error': '无法应用充电限制。',
         'battery.capacity_now':    '当前电量',
         'battery.capacity_design': '设计容量',
         'battery.na':              '不可用',
@@ -107,6 +125,9 @@
         'battery.health':          '健康度（劣化）',
         'battery.cycles':          'サイクル数',
         'battery.limit':           '充電制限',
+        'battery.limit_hint':      'バッテリー保護には80%を推奨します。20%から100%まで選べます。',
+        'battery.limit_apply_tip': '再起動または復帰後も適用して保持',
+        'battery.limit_apply_error': '充電制限を適用できませんでした。',
         'battery.capacity_now':    '現在の電力量',
         'battery.capacity_design': '設計容量',
         'battery.na':              'N/A',
@@ -122,6 +143,9 @@
         'battery.health':          '건강도 (마모)',
         'battery.cycles':          '사이클 수',
         'battery.limit':           '충전 제한',
+        'battery.limit_hint':      '배터리 보호를 위해 80%를 권장합니다. 20%~100% 중 선택할 수 있습니다.',
+        'battery.limit_apply_tip': '재시작 또는 절전 모드 복귀 후에도 유지',
+        'battery.limit_apply_error': '충전 제한을 적용할 수 없습니다.',
         'battery.capacity_now':    '현재 에너지',
         'battery.capacity_design': '설계 용량',
         'battery.na':              'N/A',
@@ -162,7 +186,7 @@
       applying = true; button.disabled = true;
       const result = await window.rog.setBatteryLimit(Number(select.value));
       applying = false; button.disabled = false;
-      if (!result || !result.ok) alert((result && result.err) || 'No se pudo aplicar el límite de carga.');
+      if (!result || !result.ok) alert((result && result.err) || t('battery.limit_apply_error'));
     });
   }
 
@@ -237,7 +261,7 @@
 
     // Charge limit
     const limitSelect = $('bat-limit-value');
-    if (limitSelect && bat.charge_limit != null) limitSelect.value = String(bat.charge_limit);
+    if (limitSelect && bat.charge_limit != null && document.activeElement !== limitSelect) limitSelect.value = String(bat.charge_limit);
     setupLimitControl();
 
     // Current vs design capacity
