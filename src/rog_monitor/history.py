@@ -10,6 +10,11 @@ class Series:
         self.samples: deque[tuple[float, float]] = deque()
 
     def push(self, value: float | None) -> None:
+        # None is skipped on purpose (NOT stored): the series of one snapshot may
+        # therefore differ in length (e.g. dGPU off -> gpu_* shorter than cpu_*).
+        # Storing None would break consumers that are not null-safe: renderer
+        # drawChart (Math.min/max, y(v)), Series.avg/min/max, graph.render and
+        # actions.export_history. Revisit only after those handle null.
         if value is None:
             return
         now = time.monotonic()
