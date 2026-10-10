@@ -23,140 +23,160 @@
     "usage": 2,
     "ghz": 2.47,
     "temp": 58.0,
-    "core_id": 0
+    "core_id": 0,
+    "usage_ok": true
    },
    {
     "cpu": 1,
     "usage": 0,
     "ghz": 0.8,
     "temp": 58.0,
-    "core_id": 0
+    "core_id": 0,
+    "usage_ok": true
    },
    {
     "cpu": 2,
     "usage": 4,
     "ghz": 0.8,
     "temp": 55.0,
-    "core_id": 4
+    "core_id": 4,
+    "usage_ok": true
    },
    {
     "cpu": 3,
     "usage": 0,
     "ghz": 0.8,
     "temp": 55.0,
-    "core_id": 4
+    "core_id": 4,
+    "usage_ok": true
    },
    {
     "cpu": 4,
     "usage": 6,
     "ghz": 4.83,
     "temp": 64.0,
-    "core_id": 8
+    "core_id": 8,
+    "usage_ok": true
    },
    {
     "cpu": 5,
     "usage": 0,
     "ghz": 0.8,
     "temp": 64.0,
-    "core_id": 8
+    "core_id": 8,
+    "usage_ok": true
    },
    {
     "cpu": 6,
     "usage": 9,
     "ghz": 0.85,
     "temp": 58.0,
-    "core_id": 12
+    "core_id": 12,
+    "usage_ok": true
    },
    {
     "cpu": 7,
     "usage": 4,
     "ghz": 0.8,
     "temp": 58.0,
-    "core_id": 12
+    "core_id": 12,
+    "usage_ok": true
    },
    {
     "cpu": 8,
     "usage": 4,
     "ghz": 0.8,
     "temp": 66.0,
-    "core_id": 16
+    "core_id": 16,
+    "usage_ok": true
    },
    {
     "cpu": 9,
     "usage": 0,
     "ghz": 0.8,
     "temp": 66.0,
-    "core_id": 16
+    "core_id": 16,
+    "usage_ok": true
    },
    {
     "cpu": 10,
     "usage": 4,
     "ghz": 3.83,
     "temp": 59.0,
-    "core_id": 20
+    "core_id": 20,
+    "usage_ok": true
    },
    {
     "cpu": 11,
     "usage": 0,
     "ghz": 0.8,
     "temp": 59.0,
-    "core_id": 20
+    "core_id": 20,
+    "usage_ok": true
    },
    {
     "cpu": 12,
     "usage": 4,
     "ghz": 2.56,
     "temp": 64.0,
-    "core_id": 24
+    "core_id": 24,
+    "usage_ok": true
    },
    {
     "cpu": 13,
     "usage": 2,
     "ghz": 0.8,
     "temp": 64.0,
-    "core_id": 25
+    "core_id": 25,
+    "usage_ok": true
    },
    {
     "cpu": 14,
     "usage": 0,
     "ghz": 1.68,
     "temp": 64.0,
-    "core_id": 26
+    "core_id": 26,
+    "usage_ok": true
    },
    {
     "cpu": 15,
     "usage": 0,
     "ghz": 0.8,
     "temp": 64.0,
-    "core_id": 27
+    "core_id": 27,
+    "usage_ok": true
    },
    {
     "cpu": 16,
     "usage": 0,
     "ghz": 0.8,
     "temp": 63.0,
-    "core_id": 28
+    "core_id": 28,
+    "usage_ok": true
    },
    {
     "cpu": 17,
     "usage": 0,
     "ghz": 0.8,
     "temp": 63.0,
-    "core_id": 29
+    "core_id": 29,
+    "usage_ok": true
    },
    {
     "cpu": 18,
     "usage": 2,
     "ghz": 0.8,
     "temp": 63.0,
-    "core_id": 30
+    "core_id": 30,
+    "usage_ok": true
    },
    {
     "cpu": 19,
     "usage": 2,
     "ghz": 0.8,
     "temp": 63.0,
-    "core_id": 31
+    "core_id": 31,
+    "usage_ok": true
    }
   ],
   "avg": 62.0,
@@ -172,7 +192,10 @@
   "throttle_ms": 1567,
   "throttle_delta": 0,
   "throttle_ms_delta": 0,
-  "throttled_now": false
+  "throttled_now": false,
+  "usage": 3.4,
+  "iowait": 0.2,
+  "steal": 0.0
  },
  "gpu": {
   "mode": null,
@@ -254,7 +277,12 @@
     "model": "Generic NVMe SSD",
     "block_dev": "nvme0n1",
     "read_mbps": 0.0,
-    "write_mbps": 0.0
+    "write_mbps": 0.0,
+    "read_iops": 0.0,
+    "write_iops": 0.0,
+    "busy_pct": 0.0,
+    "removable": false,
+    "temp": 51.85
    },
    {
     "mount": "/mnt/disk1",
@@ -266,7 +294,12 @@
     "model": "Generic NVMe SSD",
     "block_dev": "nvme1n1",
     "read_mbps": 0.0,
-    "write_mbps": 0.0
+    "write_mbps": 0.0,
+    "read_iops": 0.0,
+    "write_iops": 0.0,
+    "busy_pct": 0.0,
+    "removable": false,
+    "temp": 46.85
    }
   ],
   "nvme_temps": [
@@ -289,7 +322,35 @@
    "board_name": "G614JV",
    "bios_version": "G614JV.333",
    "product_name": "ROG Strix G614JV_G614JV"
-  }
+  },
+  "ram_available_gb": 27.798054,
+  "ram_buffers_gb": 0.07,
+  "ram_cached_gb": 24.9,
+  "swap_percent": 0,
+  "disk_io": [
+   {
+    "dev": "nvme0n1",
+    "model": "Generic NVMe SSD",
+    "removable": false,
+    "temp": 51.85,
+    "read_mbps": 0.0,
+    "write_mbps": 0.0,
+    "read_iops": 0.0,
+    "write_iops": 0.0,
+    "busy_pct": 0.0
+   },
+   {
+    "dev": "nvme1n1",
+    "model": "Generic NVMe SSD",
+    "removable": false,
+    "temp": 46.85,
+    "read_mbps": 0.0,
+    "write_mbps": 0.0,
+    "read_iops": 0.0,
+    "write_iops": 0.0,
+    "busy_pct": 0.0
+   }
+  ]
  },
  "procs": [
   {
@@ -573,7 +634,7 @@
     "vid_pid": "258a:010c",
     "hidraw": "hidraw1",
     "supported": false,
-    "note": "detected \u2014 custom protocol under analysis (no control yet)"
+    "note": "detected — custom protocol under analysis (no control yet)"
    }
   ],
   "profiles": [],
@@ -594,7 +655,7 @@
    {
     "id": "static",
     "label": "Static",
-    "icon": "\u25a0",
+    "icon": "■",
     "kind": "hardware",
     "supported": true,
     "reason": null
@@ -602,7 +663,7 @@
    {
     "id": "breathe",
     "label": "Breathing",
-    "icon": "\u25ce",
+    "icon": "◎",
     "kind": "hardware",
     "supported": true,
     "reason": null
@@ -610,7 +671,7 @@
    {
     "id": "pulse",
     "label": "Strobing",
-    "icon": "\u26a1",
+    "icon": "⚡",
     "kind": "hardware",
     "supported": true,
     "reason": null
@@ -618,7 +679,7 @@
    {
     "id": "rainbow-cycle",
     "label": "Color Cycle",
-    "icon": "\u25d1",
+    "icon": "◑",
     "kind": "hardware",
     "supported": true,
     "reason": null
@@ -626,7 +687,7 @@
    {
     "id": "rainbow-wave",
     "label": "Rainbow",
-    "icon": "\u224b",
+    "icon": "≋",
     "kind": "hardware",
     "supported": true,
     "reason": null
@@ -634,7 +695,7 @@
    {
     "id": "music",
     "label": "Music",
-    "icon": "\u266a",
+    "icon": "♪",
     "kind": "software",
     "supported": true,
     "reason": null
@@ -642,7 +703,7 @@
    {
     "id": "stars",
     "label": "Starry Night",
-    "icon": "\u2605",
+    "icon": "★",
     "kind": "hardware",
     "supported": false,
     "reason": "not supported by the internal keyboard; an external zoned keyboard via OpenRGB can support it"
@@ -650,7 +711,7 @@
    {
     "id": "smart",
     "label": "Smart",
-    "icon": "\u229b",
+    "icon": "⊛",
     "kind": "future",
     "supported": false,
     "reason": "coming later; requires an external keyboard via OpenRGB"
@@ -658,7 +719,7 @@
    {
     "id": "adaptive",
     "label": "Adaptive",
-    "icon": "\u25c8",
+    "icon": "◈",
     "kind": "future",
     "supported": false,
     "reason": "coming later; requires an external keyboard via OpenRGB"
@@ -698,7 +759,7 @@
    "pl2": {
     "key": "pl2",
     "attr": "ppt_pl2_sppt",
-    "label_es": "CPU PL2 (r\u00e1faga)",
+    "label_es": "CPU PL2 (ráfaga)",
     "label_en": "CPU PL2 (burst)",
     "unit": "W",
     "value": 175,
@@ -726,9 +787,9 @@
    "thermal_target": {
     "key": "thermal_target",
     "attr": "nv_temp_target",
-    "label_es": "Techo t\u00e9rmico GPU",
+    "label_es": "Techo térmico GPU",
     "label_en": "GPU thermal ceiling",
-    "unit": "\u00b0C",
+    "unit": "°C",
     "value": 87,
     "min": 75,
     "max": 87,

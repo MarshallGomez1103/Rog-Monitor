@@ -33,10 +33,12 @@ def _scan_alarm():
         signal.signal(signal.SIGALRM, old)
 
 
-def _total_jiffies() -> int:
+def _total_jiffies(path: str = "/proc/stat") -> int:
+    # Solo los 8 primeros campos: guest/guest_nice ya están dentro de user/nice
+    # (igual que cpu.read_stat), sumarlos inflaba el divisor del % por proceso.
     try:
-        with open("/proc/stat") as fh:
-            return sum(int(x) for x in fh.readline().split()[1:])
+        with open(path) as fh:
+            return sum(int(x) for x in fh.readline().split()[1:9])
     except (OSError, ValueError):
         return 0
 

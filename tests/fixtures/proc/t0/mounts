@@ -1,0 +1,11 @@
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,size=9000000k 0 0
+/dev/nvme1n1p6 /etc btrfs rw,seclabel,relatime,ssd,subvolid=256,subvol=/root 0 0
+/dev/nvme1n1p6 /sysroot btrfs ro,seclabel,relatime,ssd,subvolid=256,subvol=/root 0 0
+/dev/nvme1n1p6 /var btrfs rw,seclabel,relatime,ssd,subvolid=258,subvol=/var 0 0
+/dev/nvme1n1p6 /var/home btrfs rw,seclabel,relatime,ssd,subvolid=257,subvol=/home 0 0
+/dev/nvme1n1p6 /var/mnt/bind btrfs rw,seclabel,relatime,ssd,subvolid=257,subvol=/home 0 0
+/dev/nvme1n1p5 /boot ext4 rw,seclabel,relatime 0 0
+/dev/nvme1n1p1 /boot/efi vfat rw,relatime,fmask=0077 0 0
+/dev/nvme0n1p1 /run/media/system/2nd ext4 rw,seclabel,nosuid,nodev,noatime 0 0
+/dev/sda1 /run/media/marshall/USB\040STICK exfat rw,nosuid,nodev,relatime 0 0
