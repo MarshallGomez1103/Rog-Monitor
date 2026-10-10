@@ -79,7 +79,7 @@ STRINGS = {
             "t  cambiar tema\n"
             "e  exportar historial (JSON + CSV)\n"
             "v  ver todos los eventos\n"
-            "h  cerrar esta ayuda"
+            "h  cerrar esta ayuda (Esc)"
         ),
         "profile_set": "Perfil cambiado a {p}",
         "gpu_mode_set": "Modo GPU solicitado: {m} (cierra sesión para aplicar)",
@@ -105,6 +105,13 @@ STRINGS = {
         "power_thermal": "Techo térmico",
         "power_wayland_locked": "bloqueado (Wayland)",
         "power_na": "N/D",
+        "term_small": "Terminal muy pequeña (mín {w}x{h})",
+        "na_sensor": "sensor no disponible",
+        "na_unavail": "no disponible en este equipo",
+        "battery_none": "sin batería",
+        "fans_none": "sin ventiladores detectados",
+        "gpu_suspended": "dGPU suspendida (ahorro de energía)",
+        "gpu_mode_na": "supergfxd no disponible",
     },
     "en": {
         "profile": "PROFILE",
@@ -179,7 +186,7 @@ STRINGS = {
             "t  cycle theme\n"
             "e  export history (JSON + CSV)\n"
             "v  view all events\n"
-            "h  close this help"
+            "h  close this help (Esc)"
         ),
         "profile_set": "Profile set to {p}",
         "gpu_mode_set": "GPU mode requested: {m} (log out to apply)",
@@ -205,6 +212,13 @@ STRINGS = {
         "power_thermal": "Thermal ceiling",
         "power_wayland_locked": "locked (Wayland)",
         "power_na": "N/A",
+        "term_small": "Terminal too small (min {w}x{h})",
+        "na_sensor": "sensor unavailable",
+        "na_unavail": "not available on this machine",
+        "battery_none": "no battery",
+        "fans_none": "no fans detected",
+        "gpu_suspended": "dGPU suspended (power saving)",
+        "gpu_mode_na": "supergfxd unavailable",
     },
     "fr": {
         "profile": "PROFIL",
@@ -279,7 +293,7 @@ STRINGS = {
             "t  changer de thème\n"
             "e  exporter l'historique (JSON + CSV)\n"
             "v  voir tous les événements\n"
-            "h  fermer cette aide"
+            "h  fermer cette aide (Esc)"
         ),
         "profile_set": "Profil défini sur {p}",
         "gpu_mode_set": "Mode GPU demandé : {m} (déconnectez-vous pour appliquer)",
@@ -305,6 +319,13 @@ STRINGS = {
         "power_thermal": "Plafond thermique",
         "power_wayland_locked": "verrouillé (Wayland)",
         "power_na": "N/D",
+        "term_small": "Terminal trop petit (min {w}x{h})",
+        "na_sensor": "capteur indisponible",
+        "na_unavail": "indisponible sur cette machine",
+        "battery_none": "pas de batterie",
+        "fans_none": "aucun ventilateur détecté",
+        "gpu_suspended": "dGPU suspendue (économie d'énergie)",
+        "gpu_mode_na": "supergfxd indisponible",
     },
     "it": {
         "profile": "PROFILO",
@@ -379,7 +400,7 @@ STRINGS = {
             "t  cambia tema\n"
             "e  esporta cronologia (JSON + CSV)\n"
             "v  vedi tutti gli eventi\n"
-            "h  chiudi questo aiuto"
+            "h  chiudi questo aiuto (Esc)"
         ),
         "profile_set": "Profilo impostato su {p}",
         "gpu_mode_set": "Modalità GPU richiesta: {m} (esci per applicare)",
@@ -405,6 +426,13 @@ STRINGS = {
         "power_thermal": "Soglia termica",
         "power_wayland_locked": "bloccato (Wayland)",
         "power_na": "N/D",
+        "term_small": "Terminale troppo piccolo (min {w}x{h})",
+        "na_sensor": "sensore non disponibile",
+        "na_unavail": "non disponibile su questo computer",
+        "battery_none": "nessuna batteria",
+        "fans_none": "nessuna ventola rilevata",
+        "gpu_suspended": "dGPU sospesa (risparmio energetico)",
+        "gpu_mode_na": "supergfxd non disponibile",
     },
     "pt": {
         "profile": "PERFIL",
@@ -479,7 +507,7 @@ STRINGS = {
             "t  mudar tema\n"
             "e  exportar histórico (JSON + CSV)\n"
             "v  ver todos os eventos\n"
-            "h  fechar esta ajuda"
+            "h  fechar esta ajuda (Esc)"
         ),
         "profile_set": "Perfil definido para {p}",
         "gpu_mode_set": "Modo GPU solicitado: {m} (termine a sessão para aplicar)",
@@ -505,6 +533,13 @@ STRINGS = {
         "power_thermal": "Teto térmico",
         "power_wayland_locked": "bloqueado (Wayland)",
         "power_na": "N/D",
+        "term_small": "Terminal muito pequeno (mín {w}x{h})",
+        "na_sensor": "sensor indisponível",
+        "na_unavail": "indisponível neste equipamento",
+        "battery_none": "sem bateria",
+        "fans_none": "nenhuma ventoinha detectada",
+        "gpu_suspended": "dGPU suspensa (economia de energia)",
+        "gpu_mode_na": "supergfxd indisponível",
     },
     "zh": {
         "profile": "配置",
@@ -579,7 +614,7 @@ STRINGS = {
             "t  切换主题\n"
             "e  导出历史（JSON + CSV）\n"
             "v  查看所有事件\n"
-            "h  关闭帮助"
+            "h  关闭帮助 (Esc)"
         ),
         "profile_set": "配置已切换为 {p}",
         "gpu_mode_set": "已请求GPU模式：{m}（注销以应用）",
@@ -604,6 +639,13 @@ STRINGS = {
         "power_thermal": "温度上限",
         "power_wayland_locked": "已锁定（Wayland）",
         "power_na": "N/A",
+        "term_small": "终端太小（最小 {w}x{h}）",
+        "na_sensor": "传感器不可用",
+        "na_unavail": "此设备不可用",
+        "battery_none": "无电池",
+        "fans_none": "未检测到风扇",
+        "gpu_suspended": "dGPU 已挂起（节能）",
+        "gpu_mode_na": "supergfxd 不可用",
     },
     "ja": {
         "profile": "プロファイル",
@@ -678,7 +720,7 @@ STRINGS = {
             "t  テーマ切替\n"
             "e  履歴エクスポート（JSON + CSV）\n"
             "v  すべてのイベントを表示\n"
-            "h  このヘルプを閉じる"
+            "h  このヘルプを閉じる (Esc)"
         ),
         "profile_set": "プロファイルを {p} に設定",
         "gpu_mode_set": "GPUモード要求：{m}（ログアウトして適用）",
@@ -704,6 +746,13 @@ STRINGS = {
         "power_thermal": "熱上限",
         "power_wayland_locked": "ロック（Wayland）",
         "power_na": "N/A",
+        "term_small": "ターミナルが小さすぎます（最小 {w}x{h}）",
+        "na_sensor": "センサー利用不可",
+        "na_unavail": "この機器では利用不可",
+        "battery_none": "バッテリーなし",
+        "fans_none": "ファンが検出されません",
+        "gpu_suspended": "dGPU 一時停止中（省電力）",
+        "gpu_mode_na": "supergfxd 利用不可",
     },
     "ko": {
         "profile": "프로파일",
@@ -778,7 +827,7 @@ STRINGS = {
             "t  테마 변경\n"
             "e  기록 내보내기 (JSON + CSV)\n"
             "v  모든 이벤트 보기\n"
-            "h  이 도움말 닫기"
+            "h  이 도움말 닫기 (Esc)"
         ),
         "profile_set": "프로파일이 {p}(으)로 설정됨",
         "gpu_mode_set": "GPU 모드 요청: {m} (로그아웃하여 적용)",
@@ -804,6 +853,13 @@ STRINGS = {
         "power_thermal": "열 상한",
         "power_wayland_locked": "잠김 (Wayland)",
         "power_na": "해당 없음",
+        "term_small": "터미널이 너무 작습니다 (최소 {w}x{h})",
+        "na_sensor": "센서 사용 불가",
+        "na_unavail": "이 장치에서 사용 불가",
+        "battery_none": "배터리 없음",
+        "fans_none": "팬이 감지되지 않음",
+        "gpu_suspended": "dGPU 일시 중지됨 (절전)",
+        "gpu_mode_na": "supergfxd 사용 불가",
     },
 }
 
