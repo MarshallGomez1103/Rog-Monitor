@@ -340,7 +340,7 @@ def events_panel(state, t, th, full: bool = False) -> Panel:
         events = events[-4:]
     if events:
         lines = []
-        for stamp, level, message in events:
+        for stamp, level, message, *_ in events:  # eventos: (hora, nivel, msg, clave)
             style = {"crit": "bold red", "warn": "yellow"}.get(level, "grey74")
             line = Text(f"{stamp}  ", style="grey58")
             line.append(message, style=style)
