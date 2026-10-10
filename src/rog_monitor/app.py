@@ -29,6 +29,7 @@ from .sysinfo import SysReader
 
 THEME_CYCLE = list(ui.THEMES)
 ERROR_LOG = DATA_DIR / "error.log"
+BOUND_KEYS = frozenset("qhvtpge")  # teclas con acción; cualquier otra se ignora
 
 
 class App:
@@ -237,6 +238,15 @@ class App:
         if hasattr(signal, "SIGWINCH"):
             signal.signal(signal.SIGWINCH, _on_resize)
 
+        # SIGTERM/SIGHUP salen como Ctrl-C: la excepción atraviesa el `with`
+        # y restaura pantalla alternativa y termios.
+        def _on_term(signum, frame):
+            raise KeyboardInterrupt
+
+        for name in ("SIGTERM", "SIGHUP"):
+            if hasattr(signal, name):
+                signal.signal(getattr(signal, name), _on_term)
+
         try:
             with KeyReader() as keyboard, Live(
                 ui.build(state, self.t, console.width),
@@ -259,11 +269,18 @@ class App:
                             except Exception:
                                 self._log_error()
                         key = keyboard.get(timeout=0.1)
-                        if not key:
-                            continue
+                        if key not in BOUND_KEYS:
+                            continue  # tecla sin acción: no tocar nada
                         try:
                             running = self.handle_key(key, state)
-                            state = self.sample()
+                            if not running:
+                                break
+                            # Sin sample(): sólo se refresca lo que cambió la tecla.
+                            # Muestrear aquí avanzaba las gráficas y rompía los deltas.
+                            state.update(theme=self.theme,
+                                         help_visible=self.help_visible,
+                                         events_visible=self.events_visible,
+                                         message=self.message)
                             live.update(ui.build(state, self.t, console.width),
                                         refresh=True)
                         except Exception:
