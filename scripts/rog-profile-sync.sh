@@ -1,5 +1,9 @@
 #!/usr/bin/bash
-set -u
+# -u + pipefail, pero NO -e: es un bucle de servicio y varias rutas dependen de
+# códigos de retorno distintos de 0 (p. ej. `sync_once || true`, curvas ausentes);
+# con -e un fallo puntual de sysfs mataría el servicio. Los errores se comprueban
+# de forma explícita.
+set -uo pipefail
 # Root: PATH fijo del sistema (nunca el del usuario).
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
@@ -20,6 +24,12 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 #
 # No asume 3 ventiladores: aplica a todos los pwmN con curva editable
 # (1=cpu, 2=gpu, 3=mid, 4+=fanN; los extra usan la curva de cpu por defecto).
+
+# Calibración en curso (la escribe calibrate-fans.sh, root, en /run = tmpfs):
+# mientras su PID viva este servicio NO toca las curvas; si el PID murió (p. ej.
+# SIGKILL, que ningún trap atrapa) el marcador es huérfano y aquí se restauran
+# las curvas en la siguiente vuelta (<= 30 s) o al arrancar.
+CALIB_MARKER="/run/rog-monitor/calibrating"
 
 PROFILE_FILE="/sys/firmware/acpi/platform_profile"
 PPD_SERVICE="org.freedesktop.UPower.PowerProfiles"
@@ -60,13 +70,33 @@ get_curve_hwmon() {
 
 # Localiza el fan-curves.json del usuario (corremos como root, así que $HOME
 # no sirve). En Bazzite/ostree el home real es /var/home/<user>.
+# Es un archivo que controla un usuario sin privilegios: solo se acepta un
+# archivo REGULAR (no symlink, ni FIFO/dispositivo) de <= 256 KiB, en un
+# directorio que tampoco sea symlink. El Python de abajo vuelve a comprobarlo
+# al abrir (O_NOFOLLOW) para cerrar la carrera comprobar/usar.
+MAX_JSON_BYTES=262144
 find_curves_json() {
-    local f
+    local f size
     for f in /var/home/*/.config/rog-monitor/fan-curves.json \
              /home/*/.config/rog-monitor/fan-curves.json; do
-        [[ -r "$f" ]] && { printf '%s\n' "$f"; return 0; }
+        [[ -f "$f" && ! -L "$f" && ! -L "${f%/*}" && -r "$f" ]] || continue
+        size="$(stat -c %s -- "$f" 2>/dev/null)" || continue
+        if [[ "$size" =~ ^[0-9]+$ ]] && (( size <= MAX_JSON_BYTES )); then
+            printf '%s\n' "$f"
+            return 0
+        fi
+        log "Ignoring $f: larger than $MAX_JSON_BYTES bytes"
     done
     return 1
+}
+
+# ¿Hay una calibración viva? (marcador con PID de un calibrate-fans.sh en marcha)
+calibration_running() {
+    local pid
+    [[ -f "$CALIB_MARKER" && ! -L "$CALIB_MARKER" ]] || return 1
+    IFS= read -r pid < "$CALIB_MARKER" || return 1
+    [[ "$pid" =~ ^[0-9]+$ && -r "/proc/$pid/cmdline" ]] || return 1
+    tr '\0' ' ' < "/proc/$pid/cmdline" | grep -q 'calibrate-fans'
 }
 
 # Límites de potencia por perfil: usa SOLO la copia de sistema del paquete
@@ -132,24 +162,67 @@ json_curve() {
     local def_pwms="$5"
 
     [[ -n "$file" && -r "$file" ]] || return 1
-    /usr/bin/python3 -I - "$file" "$profile" "$fan" "$def_temps" "$def_pwms" <<'PY' 2>/dev/null
-import json, sys
+    /usr/bin/python3 -I - "$file" "$profile" "$fan" "$def_temps" "$def_pwms" <<'PY'
+import json, os, stat, sys
 path, profile, fan = sys.argv[1], sys.argv[2], sys.argv[3]
 temps = [int(x) for x in sys.argv[4].split()]
 pwms = [int(x) for x in sys.argv[5].split()]
+
+MAX_JSON = 256 * 1024
+
+def read_user_json(p):
+    """JSON de un usuario sin privilegios leído como root: nunca sigue un
+    symlink (O_NOFOLLOW), no se cuelga con FIFOs (O_NONBLOCK), solo archivos
+    regulares y como mucho 256 KiB."""
+    fd = os.open(p, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    with os.fdopen(fd, "rb") as fh:
+        st = os.fstat(fh.fileno())
+        if not stat.S_ISREG(st.st_mode) or st.st_size > MAX_JSON:
+            raise ValueError("not a regular file or too large")
+        raw = fh.read(MAX_JSON + 1)
+    if len(raw) > MAX_JSON:
+        raise ValueError("too large")
+    return json.loads(raw)
+
 try:
-    data = json.load(open(path))
-except Exception:
+    data = read_user_json(path)
+    if not isinstance(data, dict):
+        data = {}
+except Exception as exc:
+    print(f"fan-curves.json ignored: {exc}", file=sys.stderr)
     data = {}
+
+# Misma regla que validateFanCurve() en desktop/priv.js (si cambias una, cambia
+# la otra): 8 puntos, temps enteras estrictamente crecientes en 20..105 °C, PWM
+# entero 0..255 y, con calor, nunca ventiladores (casi) parados: el último punto
+# y cualquier punto >= 90 °C suben a >= 150. Una estructura inválida se
+# DESCARTA (defaults); un PWM bajo el suelo se sube al suelo.
+HOT_C, PWM_FLOOR = 90, 150
+
+def num(x):
+    if isinstance(x, bool) or not isinstance(x, (int, float)) or x != x:
+        raise ValueError("not a number")
+    return int(round(x))
+
+def checked_curve(t, p):
+    if not isinstance(t, list) or not isinstance(p, list) or len(t) != 8 or len(p) != 8:
+        raise ValueError("need 8 points")
+    t = [num(x) for x in t]
+    p = [num(x) for x in p]
+    if any(not 20 <= x <= 105 for x in t) or any(b <= a for a, b in zip(t, t[1:])):
+        raise ValueError("temps must be strictly increasing within 20..105")
+    if any(not 0 <= x <= 255 for x in p):
+        raise ValueError("pwm out of 0..255")
+    p = [max(v, PWM_FLOOR) if (i == 7 or t[i] >= HOT_C) else v for i, v in enumerate(p)]
+    return t, p
 
 try:
     c = data["profiles"][profile][fan]
-    t, p = c["temps"], c["pwms"]
-    if len(t) == 8 and len(p) == 8:
-        temps = [max(0, min(110, int(round(float(x))))) for x in t]
-        pwms = [max(0, min(255, int(round(float(x))))) for x in p]
-except Exception:
+    temps, pwms = checked_curve(c["temps"], c["pwms"])
+except KeyError:
     pass  # sin curva guardada para este perfil/fan: defaults + cap
+except Exception as exc:
+    print(f"saved curve {profile}/{fan} rejected, using defaults: {exc}", file=sys.stderr)
 
 def cap_to_pwm(cap, calib, max_rpm):
     """PWM máximo para no pasar de `cap` RPM. Margen 1.5% para quedar EN o
@@ -191,8 +264,10 @@ try:
         for sp in (glob.glob("/var/home/*/.local/share/rog-monitor/thermal-guardian-state.json")
                    + glob.glob("/home/*/.local/share/rog-monitor/thermal-guardian-state.json")):
             try:
-                st = json.load(open(sp))
+                st = read_user_json(sp)
             except Exception:
+                continue
+            if not isinstance(st, dict):
                 continue
             if st.get("guardian_mode") == "gaming" and (time.time() - float(st.get("updated", 0)) < 30):
                 gaming_cap = float(gc)
@@ -238,13 +313,13 @@ set_curve() {
     for index in "${!temps[@]}"; do
         point=$((index + 1))
         printf '%s\n' "${temps[$index]}" \
-            > "$hwmon/pwm${fan}_auto_point${point}_temp"
+            > "$hwmon/pwm${fan}_auto_point${point}_temp" || return 1
         printf '%s\n' "${pwms[$index]}" \
-            > "$hwmon/pwm${fan}_auto_point${point}_pwm"
+            > "$hwmon/pwm${fan}_auto_point${point}_pwm" || return 1
     done
 
     # ASUS custom curves use 1=enabled and 2=disabled.
-    printf '1\n' > "$hwmon/pwm${fan}_enable"
+    printf '1\n' > "$hwmon/pwm${fan}_enable" || return 1
 }
 
 # ¿La curva aplicada en hardware coincide con la esperada? Mira el punto 8
@@ -327,6 +402,16 @@ sync_once() {
     local target
     local current
     local profile_changed=0
+
+    # Calibración en curso: no tocar las curvas (calibrate-fans.sh las fija).
+    calibration_running && return 0
+    if [[ -e "$CALIB_MARKER" || -L "$CALIB_MARKER" ]]; then
+        # Marcador huérfano (calibrate-fans.sh murió sin limpiar, p. ej. SIGKILL):
+        # los ventiladores pueden haber quedado a PWM fijo => forzar re-aplicar.
+        rm -f -- "$CALIB_MARKER"
+        LAST_PROFILE=""
+        log "Stale calibration marker removed: restoring fan curves"
+    fi
 
     ppd_profile="$(get_ppd_profile)"
     case "$ppd_profile" in

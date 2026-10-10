@@ -20,7 +20,7 @@ Root is only used for allowlisted hardware/system actions:
 - Applying GPU clock offsets through `apply-gpu-clocks.sh`.
 - Installing/enabling/stopping ROG Monitor systemd services through explicit
   `pkexec` prompts.
-- Reading SMART data through `smartctl`.
+- Reading SMART data through `smartctl` (`rog-ctl.sh smart-json <device>`).
 
 Privileged services must not call `pkexec`; if a process already runs as root,
 it must write through the allowlisted scripts directly.
@@ -75,9 +75,51 @@ report `needsInstall`, and the system copy must be refreshed with
 
 Known limits: root services still *read* data files from the user's home
 (`~/.config/rog-monitor/fan-curves.json`) and the thermal guardian writes its
-status JSON there; both are data, never executed or imported. `enable-asusd.sh`
-installs the Homebrew `asusd` payload as root, so treat that Homebrew prefix as
-trusted.
+status JSON there; both are data, never executed or imported.
+
+- Reads of user files as root are hardened: `rog-profile-sync.sh` only accepts
+  a regular file (no symlink, FIFO or device; the directory must not be a
+  symlink) of at most 256 KiB, and the Python that parses it opens it with
+  `O_NOFOLLOW | O_NONBLOCK` and re-checks type and size on the open descriptor.
+  The guardian skips a state directory that is a symlink and writes through a
+  temp file created with `O_EXCL`. Residual: a user who can swap a *parent*
+  directory between check and open is not fully excluded; the only data taken
+  from those files is numbers that are range-checked again (below).
+- `enable-asusd.sh` copies the Homebrew `asusd` payload to `/usr/local` as root.
+  Homebrew's prefix belongs to the user, so by default the script **refuses**
+  when the payload or any parent directory is not root-owned or is group/world
+  writable. Passing `--i-understand-user-owned-source` overrides that and is
+  only meant for a manual `sudo` run by someone who trusts that prefix; the app
+  never passes it (it runs the script with `--yes` only), so the in-app Aura
+  enable button fails closed until the payload is root-owned.
+
+## Input validation and fan safety
+
+- **Power values** (PL1, PL2, Dynamic Boost, thermal target, GPU offsets) are
+  checked in three places: the app rejects non-numbers (no more `null`/`true`/`""`
+  turning into `0`); `rog_monitor.power_control` **refuses** (does not clamp) any
+  value outside the device range from `device_profiles.json` / live firmware
+  limits before anything is written; the root helper clamps to the live firmware
+  `min_value`/`max_value` again.
+- **Fan curves** must have 8 points, strictly increasing temperatures in
+  20..105 C, integer PWM 0..255, and never leave fans (almost) off when hot: the
+  last point and every point at or above 90 C need PWM >= 150. This is enforced
+  when saving (`desktop/priv.js`, unit-tested) and again by the root service
+  (`rog-profile-sync.sh`): a structurally invalid stored curve is discarded for
+  the built-in default, a too-low hot PWM is raised to the floor. The one
+  deliberate exception is the user's RPM cap (>= 2000 RPM), applied after the
+  floor.
+- **Fan benchmark** (`calibrate-fans.sh`) fixes the PWM of all curve points
+  while it runs. It restores the curves on exit, Ctrl+C, `TERM` and `HUP`. It no
+  longer stops the sync service; it writes `/run/rog-monitor/calibrating` (its
+  PID) and the sync service pauses while that PID lives. Ceiling: `SIGKILL` or a
+  power cut cannot be trapped; then the leftover marker is detected by the
+  service within ~30 s (or at boot, since `/run` is a tmpfs) and the curves are
+  restored.
+- **systemd units** run with `NoNewPrivileges=yes`, `ProtectSystem=full` and
+  `PrivateTmp=yes`. `ProtectSystem=strict`, `ProtectKernelTunables` and
+  `ProtectHome` are deliberately not used (the units write `/sys` and read/write
+  under `/var/home`; a `ProtectHome=true` once broke the guardian).
 
 ## Hard safety rules
 
@@ -104,8 +146,16 @@ sudo reboot
 To remove installed root integrations while keeping user config:
 
 ```bash
-sudo bash scripts/rog-monitor-safe-mode.sh uninstall
+sudo bash scripts/rog-monitor-safe-mode.sh uninstall            # keeps /etc/rog-monitor and /etc/asusd
+bash scripts/rog-monitor-safe-mode.sh uninstall --dry-run       # preview, no root
 ```
+
+`uninstall` also removes what `enable-asusd.sh` and `enable-cpu-power.sh`
+installed (asusd binary, unit and D-Bus policy, the RAPL tmpfiles rule) and is
+idempotent. Add `--purge` to delete the root-side config as well.
+
+Step-by-step recovery recipes (bad fan curve, power limit, guardian, battery
+limit, login problems) are in [docs/RECOVERY.md](docs/RECOVERY.md).
 
 ## Reporting a vulnerability
 

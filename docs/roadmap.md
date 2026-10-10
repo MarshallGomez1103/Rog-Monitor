@@ -43,7 +43,7 @@ English-first public docs and an 8-language UI, with a guardian nobody else ship
   capacity, live charge / watts. *(v18)*
 * [x] **Disk health panel**: live usage, temperature, model, filesystem and read/write
   I/O rates, plus on-demand **SMART** (power-on hours, cycles, SSD wear, reallocated
-  sectors) via a single `pkexec smartctl` call. *(v18)*
+  sectors) via a single `pkexec .../rog-ctl.sh smart-json` call (validated device, root-owned helper). *(v18)*
 * [x] **Hardware diagnostics hub**: one place with CPU/GPU/iGPU/battery/fans/motherboard
   info cards plus interactive **keyboard, speaker and display** tests. *(v18)*
 * [x] **Clickable, categorized events** with a per-type explanation modal in all 8

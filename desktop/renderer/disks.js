@@ -276,7 +276,7 @@
 
     // Transparencia: muestra el comando exacto que produjo estos datos.
     const devArg = device.startsWith('/dev/') ? device : `/dev/${device}`;
-    panel.innerHTML = `<code class="cmd-argv" style="margin-bottom:8px">pkexec smartctl -j -a ${escapeHtml(devArg)}</code>` +
+    panel.innerHTML = `<code class="cmd-argv" style="margin-bottom:8px">pkexec /usr/local/libexec/rog-monitor/rog-ctl.sh smart-json ${escapeHtml(devArg)}</code>` +
       `<table class="disk-smart-table">${
         rows.map(([k, v]) => `<tr><td class="dsk">${k}</td><td>${escapeHtml(v)}</td></tr>`).join('')
       }</table>`;

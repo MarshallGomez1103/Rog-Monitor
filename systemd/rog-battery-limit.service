@@ -7,5 +7,17 @@ Wants=asusd.service
 Type=oneshot
 ExecStart=/usr/local/libexec/rog-monitor/rog-battery-limit.sh
 
+# Endurecimiento conservador (solo lo que este servicio puede soportar):
+# - NoNewPrivileges: nada de lo que lanza necesita setuid/capacidades nuevas.
+# - ProtectSystem=full: /usr, /boot y /etc de solo lectura. NO "strict": este
+#   servicio escribe en /sys (firmware ASUS, hwmon, backlight), /run y /var.
+# - PrivateTmp: sin /tmp compartido con otros procesos.
+# Omitido a propósito: ProtectKernelTunables/ProtectKernelModules (escribe /sys,
+# nvidia-smi puede cargar módulos) y ProtectHome (un ProtectHome=true rompió el
+# guardián una vez: lee/escribe bajo /var/home).
+NoNewPrivileges=yes
+ProtectSystem=full
+PrivateTmp=yes
+
 [Install]
 WantedBy=multi-user.target

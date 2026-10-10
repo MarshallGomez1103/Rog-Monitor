@@ -287,7 +287,8 @@ write_guardian_state() {
         "${CPU_TEMP:-}" "${GPU_TEMP:-}"
     local f
     for f in /var/home/*/.local/share/rog-monitor /home/*/.local/share/rog-monitor; do
-        [[ -d "$f" ]] || continue
+        # Un symlink aquí haría que root escriba donde el usuario quiera.
+        [[ -d "$f" && ! -L "$f" ]] || continue
         # Root escribe en un directorio que controla el usuario: borrar el .tmp y
         # crearlo con noclobber (O_EXCL) para no seguir un symlink plantado.
         rm -f -- "$f/thermal-guardian-state.json.tmp" 2>/dev/null || true

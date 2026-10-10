@@ -540,13 +540,8 @@ async function applyFanService() {
 }
 
 ipcMain.handle('set-fan-config', async (_e, { profile, curves, cap, capByFan }) => {
-  for (const [fan, c] of Object.entries(curves)) {
-    if (!c || c.temps.length !== 8 || c.pwms.length !== 8) {
-      return { ok: false, err: `curva de ${fan} inválida (deben ser 8 puntos)` };
-    }
-    const bad = [...c.temps, ...c.pwms].some((v) => !Number.isFinite(v) || v < 0 || v > 255);
-    if (bad) return { ok: false, err: `valores fuera de rango en ${fan} (0-255)` };
-  }
+  const curveErr = priv.validateFanCurves(curves);
+  if (curveErr) return { ok: false, err: curveErr };
   // Merge into the user-writable store (no privileges needed to edit it).
   // The curves are stored PRISTINE: the cap is applied by the root service at
   // write-to-hardware time, so raising/clearing it unlocks instantly.
@@ -590,14 +585,8 @@ ipcMain.handle('set-fan-config', async (_e, { profile, curves, cap, capByFan }) 
 // Valida y vuelca un perfil (curvas + cap por ventilador) dentro del store.
 // Devuelve un mensaje de error o null si todo bien.
 function writeFanProfile(store, { profile, curves, capByFan }) {
-  for (const [fan, c] of Object.entries(curves || {})) {
-    if (!c || c.temps.length !== 8 || c.pwms.length !== 8) {
-      return `curva de ${fan} inválida en ${profile} (deben ser 8 puntos)`;
-    }
-    if ([...c.temps, ...c.pwms].some((v) => !Number.isFinite(v) || v < 0 || v > 255)) {
-      return `valores fuera de rango en ${fan} (${profile})`;
-    }
-  }
+  const curveErr = priv.validateFanCurves(curves);
+  if (curveErr) return `${curveErr} (${profile})`;
   const entry = { ...curves };
   const caps = {};
   if (capByFan && typeof capByFan === 'object') {
@@ -1651,11 +1640,16 @@ ipcMain.handle('set-power-control', async (_e, payload) => {
   const ALLOWED_CLOCKS = ['base_clock_offset', 'mem_clock_offset'];
   const ALL_ALLOWED = [...ALLOWED_ATTRS, ...ALLOWED_CLOCKS];
 
+  // Sin coerción: null/true/"" ya no se vuelven 0. Un valor que no sea número
+  // finito se RECHAZA; los rangos los valida power_control.py (y el script root).
   const changes = {};
   for (const key of ALL_ALLOWED) {
-    if (payload && payload[key] !== undefined && Number.isFinite(+payload[key])) {
-      changes[key] = Math.round(+payload[key]);
+    if (!payload || payload[key] === undefined) continue;
+    const v = payload[key];
+    if (typeof v !== 'number' || !Number.isFinite(v)) {
+      return { ok: false, err: `Valor inválido para ${key}: se esperaba un número.` };
     }
+    changes[key] = Math.round(v);
   }
   if (!Object.keys(changes).length) {
     return { ok: false, err: 'No hay valores válidos para aplicar.' };

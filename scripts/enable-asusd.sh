@@ -12,9 +12,16 @@ set -euo pipefail
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin  # root: PATH fijo del sistema
 
 AUTO_YES=0
-if [[ "${1:-}" == "--yes" ]]; then
-    AUTO_YES=1
-fi
+USER_OWNED_OK=0
+for arg in "$@"; do
+    case "$arg" in
+        --yes) AUTO_YES=1 ;;
+        # Sin esta opción se rechaza una fuente que un usuario sin privilegios
+        # pueda modificar (Homebrew es del usuario). La app NUNCA la pasa.
+        --i-understand-user-owned-source) USER_OWNED_OK=1 ;;
+        *) printf 'Opción desconocida: %s\n' "$arg" >&2; exit 2 ;;
+    esac
+done
 
 if [[ "$(id -u)" -ne 0 ]]; then
     printf 'Este script debe ejecutarse como root (sudo).\n' >&2
@@ -38,6 +45,36 @@ fi
 if [[ -z "$ASUSCTL_CASK_DIR" || ! -d "$ASUSCTL_CASK_DIR/usr" ]]; then
     printf 'No encontré el payload instalado de asusctl-linux en Homebrew.\n' >&2
     exit 1
+fi
+
+# Este script COPIA binarios del payload de Homebrew a /usr/local como root.
+# Si algún archivo del payload o algún directorio padre es de un usuario sin
+# privilegios (o escribible por grupo/otros), ese usuario ejecutaría código como
+# root a través de asusd. Se exige que todo sea root:root y no escribible por
+# otros, salvo --i-understand-user-owned-source.
+not_root_owned() { # not_root_owned <ruta>: verdadero si NO es de root o es g/o+w
+    local u m
+    read -r u m < <(stat -L -c '%u %a' -- "$1" 2>/dev/null) || return 0
+    [[ "$u" != 0 ]] || (( (8#$m & 8#022) != 0 ))
+}
+untrusted=""
+d="$ASUSCTL_CASK_DIR"
+while [[ "$d" != "/" && "$d" != "." ]]; do
+    not_root_owned "$d" && { untrusted="$d"; break; }
+    d="$(dirname -- "$d")"
+done
+if [[ -z "$untrusted" ]]; then
+    untrusted="$(find -L "$ASUSCTL_CASK_DIR/usr" "$BREW_PREFIX/Caskroom/asusctl-linux" \
+        \( ! -user root -o -perm /022 \) -print -quit 2>/dev/null || true)"
+fi
+if [[ -n "$untrusted" && "$USER_OWNED_OK" -ne 1 ]]; then
+    printf 'Rechazado: la fuente de asusd no es de root (o es escribible por otros): %s\n' "$untrusted" >&2
+    printf 'Copiarla a /usr/local como root dejaría a ese usuario ejecutar código como root.\n' >&2
+    printf 'Si confías en ese prefijo, ejecuta a mano:\n  sudo bash %s --i-understand-user-owned-source\n' "$0" >&2
+    exit 3
+fi
+if [[ -n "$untrusted" ]]; then
+    printf 'AVISO: instalando asusd desde una fuente no-root (%s), por --i-understand-user-owned-source.\n' "$untrusted" >&2
 fi
 
 if [[ "$AUTO_YES" -ne 1 ]]; then
