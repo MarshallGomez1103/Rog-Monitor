@@ -22,6 +22,8 @@ CONFIG_DIR="${HOME}/.config/rog-monitor"
 DATA_DIR="${HOME}/.local/share/rog-monitor"
 PURGE=0
 [[ "${1:-}" == "--purge" ]] && PURGE=1
+SAFE_ARGS=()
+(( PURGE )) && SAFE_ARGS+=(--purge)
 
 printf '== Desinstalando ROG Monitor ==\n\n'
 
@@ -35,9 +37,10 @@ SAFE_MODE="$REPO/scripts/rog-monitor-safe-mode.sh"
 if [[ -f "$SAFE_MODE" ]]; then
     printf '\nSe pedirá sudo para quitar las integraciones de sistema:\n'
     printf '  - deshabilitar y borrar servicios systemd (ventiladores, guardián, power-source)\n'
-    printf '  - borrar la udev rule, los scripts en /usr/local/sbin y las copias de root\n'
+    printf '  - borrar la udev rule, los scripts en /usr/local/sbin, asusd (si lo instaló ROG Monitor)\n'
+    printf '    y las copias de root\n'
     printf '    en /usr/local/libexec/rog-monitor y /usr/local/lib/rog-monitor\n'
-    if sudo bash "$SAFE_MODE" uninstall; then
+    if sudo bash "$SAFE_MODE" uninstall "${SAFE_ARGS[@]}"; then
         printf 'Integraciones de sistema removidas.\n'
     else
         printf 'No se pudieron remover las integraciones de sistema (sin sudo o cancelado).\n' >&2

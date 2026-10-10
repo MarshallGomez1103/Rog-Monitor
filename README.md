@@ -219,6 +219,9 @@ sudo bash scripts/rog-monitor-safe-mode.sh disable
 sudo bash scripts/rog-monitor-safe-mode.sh no-auto-profile
 ```
 
+Troubleshooting (bad fan curve, power limit, guardian, battery limit, login
+problems): [docs/RECOVERY.md](docs/RECOVERY.md).
+
 ## TUI keys
 
 | Key | Action |
