@@ -87,13 +87,15 @@ class FanCurves(unittest.TestCase):
 
 class GpuClocks(unittest.TestCase):
     def test_out_of_range_rejected(self):
-        for core, mem in ((gpu_clocks.SAFE_CORE_MAX_MHZ + 1, 0), (0, gpu_clocks.SAFE_MEM_MAX_MHZ + 1),
-                          (gpu_clocks.SAFE_CORE_MIN_MHZ - 1, 0), (0, gpu_clocks.SAFE_MEM_MIN_MHZ - 1)):
+        for core, mem in ((gpu_clocks.ABS_CORE_MAX_MHZ + 1, 0), (0, gpu_clocks.ABS_MEM_MAX_MHZ + 1),
+                          (gpu_clocks.ABS_CORE_MIN_MHZ - 1, 0), (0, gpu_clocks.ABS_MEM_MIN_MHZ - 1)):
             with self.assertRaises(ValueError):
                 gpu_clocks.validate_offsets(core, mem)
             with self.assertRaises(ValueError):  # set_offsets rechaza antes de tocar NVML
                 gpu_clocks.set_offsets(core, mem)
         self.assertEqual(gpu_clocks.validate_offsets(100, -300), (100, -300))
+        # más allá del rango seguro (doble consentimiento en la UI) sigue permitido
+        self.assertEqual(gpu_clocks.validate_offsets(500, 3000), (500, 3000))
 
 
 class Persistence(unittest.TestCase):

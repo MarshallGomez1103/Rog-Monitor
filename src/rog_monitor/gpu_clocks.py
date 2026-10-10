@@ -32,6 +32,10 @@ SAFE_CORE_MAX_MHZ = 200    # rango absoluto: -1000..+1000
 SAFE_MEM_MAX_MHZ  = 1000   # rango absoluto: -2000..+6000
 SAFE_CORE_MIN_MHZ = -200   # undervolt moderado
 SAFE_MEM_MIN_MHZ  = -500
+# Tope absoluto: más allá del rango seguro solo con doble consentimiento en la UI,
+# pero nunca fuera de esto.
+ABS_CORE_MIN_MHZ, ABS_CORE_MAX_MHZ = -1000, 1000
+ABS_MEM_MIN_MHZ,  ABS_MEM_MAX_MHZ  = -2000, 6000
 
 # ---------------------------------------------------------------------------
 # NVML types
@@ -172,17 +176,18 @@ def read_offsets(device_index: int = 0) -> dict:
 
 
 def validate_offsets(core_mhz: int, mem_mhz: int) -> tuple[int, int]:
-    """Rechaza (no recorta) offsets fuera de los rangos SAFE_*: es una
-    escritura a hardware, mejor fallar claro que aplicar otro valor."""
+    """Rechaza (no recorta) offsets fuera del tope ABSOLUTO: es una escritura a
+    hardware, mejor fallar claro que aplicar otro valor. El rango SAFE_* lo
+    impone la UI (pasarlo exige doble consentimiento), no esta función."""
     core, mem = int(core_mhz), int(mem_mhz)
-    if not SAFE_CORE_MIN_MHZ <= core <= SAFE_CORE_MAX_MHZ:
+    if not ABS_CORE_MIN_MHZ <= core <= ABS_CORE_MAX_MHZ:
         raise ValueError(
-            f"offset core {core} MHz fuera del rango seguro "
-            f"{SAFE_CORE_MIN_MHZ}..{SAFE_CORE_MAX_MHZ} MHz")
-    if not SAFE_MEM_MIN_MHZ <= mem <= SAFE_MEM_MAX_MHZ:
+            f"offset core {core} MHz fuera del tope "
+            f"{ABS_CORE_MIN_MHZ}..{ABS_CORE_MAX_MHZ} MHz")
+    if not ABS_MEM_MIN_MHZ <= mem <= ABS_MEM_MAX_MHZ:
         raise ValueError(
-            f"offset mem {mem} MHz fuera del rango seguro "
-            f"{SAFE_MEM_MIN_MHZ}..{SAFE_MEM_MAX_MHZ} MHz")
+            f"offset mem {mem} MHz fuera del tope "
+            f"{ABS_MEM_MIN_MHZ}..{ABS_MEM_MAX_MHZ} MHz")
     return core, mem
 
 
