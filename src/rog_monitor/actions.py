@@ -68,6 +68,8 @@ def export_history(series: dict, events) -> str:
         writer.writerow(["sample"] + names)
         columns = [series[n].values() for n in names]
         for i in range(max((len(c) for c in columns), default=0)):
-            writer.writerow([i] + [c[i] if i < len(c) else "" for c in columns])
+            # hueco (None) o columna más corta -> celda vacía, nunca "None"
+            writer.writerow([i] + [c[i] if i < len(c) and c[i] is not None else ""
+                                   for c in columns])
 
     return str(out_dir)

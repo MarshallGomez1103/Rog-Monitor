@@ -1,12 +1,21 @@
 const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
+// Suscripción a un canal de main: devuelve la función de baja (unsubscribe).
+// Los módulos que se suscriben una vez al cargar la pueden ignorar; los que lo
+// hagan al abrir un modal DEBEN llamarla al cerrar (si no, 1 listener por apertura).
+const subscribe = (channel, withPayload = true) => (callback) => {
+  const handler = (_e, payload) => (withPayload ? callback(payload) : callback());
+  ipcRenderer.on(channel, handler);
+  return () => ipcRenderer.removeListener(channel, handler);
+};
+
 contextBridge.exposeInMainWorld('rog', {
-  onStats: (callback) => ipcRenderer.on('stats', (_e, stats) => callback(stats)),
-  onOverlayConfig: (callback) => ipcRenderer.on('overlay-config', (_e, show) => callback(show)),
-  onBackendDown: (callback) => ipcRenderer.on('backend-down', (_e, code) => callback(code)),
-  onBackendReconnecting: (callback) => ipcRenderer.on('backend-reconnecting', () => callback()),
-  onMusicStopped: (callback) => ipcRenderer.on('music-stopped', () => callback()),
-  onCloseRequest: (callback) => ipcRenderer.on('close-request', () => callback()),
+  onStats: subscribe('stats'),
+  onOverlayConfig: subscribe('overlay-config'),
+  onBackendDown: subscribe('backend-down'),
+  onBackendReconnecting: subscribe('backend-reconnecting', false),
+  onMusicStopped: subscribe('music-stopped', false),
+  onCloseRequest: subscribe('close-request', false),
   closeChoice: (payload) => ipcRenderer.invoke('close-choice', payload),
   setProfile: (profile) => ipcRenderer.invoke('set-profile', profile),
   setGpuMode: (mode) => ipcRenderer.invoke('set-gpu-mode', mode),

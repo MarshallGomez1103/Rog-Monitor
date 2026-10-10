@@ -263,11 +263,11 @@ def _graph_block(title: str, serie, width: int, style: str, th) -> Group:
 def history_panel(state, t, th, console_width: int) -> Panel:
     series = state["series"]
     blocks = [("cpu_temp_graph", "cpu_temp", "graph_cpu")]
-    if series["gpu_temp"].values():
+    if series["gpu_temp"].has_data():
         blocks.append(("gpu_temp_graph", "gpu_temp", "graph_gpu"))
-    if series["cpu_power"].values():
+    if series["cpu_power"].has_data():
         blocks.append(("cpu_power_graph", "cpu_power", "graph_power"))
-    if series["gpu_power"].values():
+    if series["gpu_power"].has_data():
         blocks.append(("gpu_power_graph", "gpu_power", "graph_gpu"))
 
     # Cada gráfica necesita >=24 columnas: en terminales estrechas se muestran

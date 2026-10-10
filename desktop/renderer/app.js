@@ -249,6 +249,7 @@ if (window.i18n && window.i18n.register) {
     'fan.curve_aria': { es: 'Curva de ventilador {fan}', en: 'Fan curve for {fan}', fr: 'Courbe du ventilateur {fan}', it: 'Curva ventola {fan}', pt: 'Curva da ventoinha {fan}', zh: '{fan} 风扇曲线', ja: '{fan} のファンカーブ', ko: '{fan} 팬 커브' },
     'fan.acoustic_unavailable': { es: 'Acústica: sin estimación disponible.', en: 'Acoustics: no estimate available.', fr: 'Acoustique : aucune estimation disponible.', it: 'Acustica: nessuna stima disponibile.', pt: 'Acústica: sem estimativa disponível.', zh: '声学：无可用估算。', ja: '音響: 推定値はありません。', ko: '소음: 사용 가능한 추정치 없음.' },
     'fan.acoustic_estimated': { es: 'Acústica estimada del perfil editado: {dba} dBA. Si el firmware expone un sensor real de ruido, esta lectura puede reemplazar la estimación.', en: 'Estimated acoustics for the edited profile: {dba} dBA. If firmware exposes a real noise sensor, that reading can replace the estimate.', fr: 'Acoustique estimée du profil modifié : {dba} dBA. Si le firmware expose un vrai capteur de bruit, cette mesure peut remplacer l’estimation.', it: 'Acustica stimata del profilo modificato: {dba} dBA. Se il firmware espone un sensore reale di rumore, quella lettura può sostituire la stima.', pt: 'Acústica estimada do perfil editado: {dba} dBA. Se o firmware expuser um sensor real de ruído, essa leitura pode substituir a estimativa.', zh: '已编辑配置的估算噪声：{dba} dBA。如果固件提供真实噪声传感器，该读数可替代估算值。', ja: '編集中プロファイルの推定音響: {dba} dBA。ファームウェアが実ノイズセンサーを公開している場合、その値で推定を置き換えられます。', ko: '편집 중인 프로파일의 예상 소음: {dba} dBA. 펌웨어가 실제 소음 센서를 제공하면 해당 값으로 추정치를 대체할 수 있습니다.' },
+    'chart.no_sample': { es: 'sin dato', en: 'no data', fr: 'pas de donnée', it: 'nessun dato', pt: 'sem dado', zh: '无数据', ja: 'データなし', ko: '데이터 없음' },
     'chart.now': { es: 'ahora', en: 'now', fr: 'maintenant', it: 'ora', pt: 'agora', zh: '现在', ja: '現在', ko: '지금' },
     'chart.ago_lt_min': { es: 'hace <1 min', en: '<1 min ago', fr: 'il y a <1 min', it: '<1 min fa', pt: 'há <1 min', zh: '<1 分钟前', ja: '<1分前', ko: '<1분 전' },
     'chart.ago_seconds': { es: 'hace {s} s', en: '{s} s ago', fr: 'il y a {s} s', it: '{s} s fa', pt: 'há {s} s', zh: '{s} 秒前', ja: '{s}秒前', ko: '{s}초 전' },
@@ -558,19 +559,19 @@ function fmt(value, digits = 0, fallback = '--') {
 function fmtGbFromMb(value, digits = 1) {
   return value === null || value === undefined || Number.isNaN(value)
     ? '--'
-    : `${fmt(Number(value) / 1024, digits)} G`;
+    : `${fmt(Number(value) / 1024, digits)} GiB`;
 }
 
 function fmtGbPairFromMb(used, total, digits = 1) {
   return total === null || total === undefined || Number.isNaN(total)
     ? '--'
-    : `${fmt(Number(used || 0) / 1024, digits)}/${fmt(Number(total) / 1024, digits)} G`;
+    : `${fmt(Number(used || 0) / 1024, digits)}/${fmt(Number(total) / 1024, digits)} GiB`;
 }
 
 function fmtMb(value) {
   return value === null || value === undefined || Number.isNaN(value)
     ? '--'
-    : `${Math.round(Number(value))} MB`;
+    : `${Math.round(Number(value))} MiB`;
 }
 
 function fmtUptime(seconds) {
@@ -620,6 +621,50 @@ function toast(message, kind) {
 // poder redibujar con crosshair y saber qué valor hay bajo el cursor.
 const chartState = new Map();
 
+/* Helpers puros de las gráficas (sin DOM; los prueba desktop/test/charts.test.js).
+   La serie puede traer null = hueco (dGPU dormida): no es 0, no entra en
+   min/max y corta la línea. */
+const CHART_MAX_POINTS = 1200; // tope duro del búfer dibujado (el backend manda ≤900)
+
+function chartTail(values, n) {
+  return values.slice(-Math.min(CHART_MAX_POINTS, Math.max(2, n)));
+}
+
+function chartRange(data, fromZero) {
+  let min = Infinity, max = -Infinity;
+  for (const v of data) {
+    if (!Number.isFinite(v)) continue;
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  if (min === Infinity) return null;      // todo huecos: nada que escalar
+  // snap the axis to steps of 5 so min/max don't jitter every second
+  // fromZero: los watts arrancan en 0 — si no, una bajada de 10→3 W llena
+  // toda la altura de la gráfica y parece un desplome dramático
+  const lo = fromZero ? 0 : Math.floor(min / 5) * 5;
+  let hi = Math.ceil(max / 5) * 5;
+  if (hi - lo < 10) hi = lo + 10;
+  return { lo, hi };
+}
+
+/* Tramos contiguos de datos válidos: [[i0, i1], ...] (inclusive). */
+function chartRuns(data) {
+  const runs = [];
+  let start = -1;
+  for (let i = 0; i <= data.length; i++) {
+    const ok = i < data.length && Number.isFinite(data[i]);
+    if (ok && start < 0) start = i;
+    else if (!ok && start >= 0) { runs.push([start, i - 1]); start = -1; }
+  }
+  return runs;
+}
+
+/* Porcentaje siempre en 0-100 (null/NaN → 0) para barras y textos. */
+function clampPct(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 0;
+}
+
 function drawChart(canvas, values, color, opts = {}) {
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth, h = canvas.clientHeight;
@@ -641,13 +686,10 @@ function drawChart(canvas, values, color, opts = {}) {
   }
 
   if (!values || values.length < 2) { chartState.delete(canvas.id); return; }
-  const data = values.slice(-Math.max(60, Math.floor(w / 4)));
-  // snap the axis to steps of 5 so min/max don't jitter every second
-  // fromZero: los watts arrancan en 0 — si no, una bajada de 10→3 W llena
-  // toda la altura de la gráfica y parece un desplome dramático
-  let lo = opts.fromZero ? 0 : Math.floor(Math.min(...data) / 5) * 5;
-  let hi = Math.ceil(Math.max(...data) / 5) * 5;
-  if (hi - lo < 10) { hi = lo + 10; }
+  const data = chartTail(values, Math.max(60, Math.floor(w / 4)));
+  const range = chartRange(data, opts.fromZero);
+  if (!range) { chartState.delete(canvas.id); return; }  // solo huecos (dGPU dormida)
+  const { lo, hi } = range;
   const pad = 8;
   const x = (i) => (i / (data.length - 1)) * w;
   const y = (v) => (h - 12) - pad - ((v - lo) / (hi - lo)) * ((h - 12) - pad * 2);
@@ -656,19 +698,32 @@ function drawChart(canvas, values, color, opts = {}) {
   const grad = ctx.createLinearGradient(0, 0, 0, h);
   grad.addColorStop(0, color + '55');
   grad.addColorStop(1, color + '00');
-  ctx.beginPath();
-  ctx.moveTo(0, h - 12);
-  data.forEach((v, i) => ctx.lineTo(x(i), y(v)));
-  ctx.lineTo(w, h - 12);
-  ctx.closePath();
+  const runs = chartRuns(data);
   ctx.fillStyle = grad;
-  ctx.fill();
+  for (const [a, b] of runs) {
+    if (b === a) continue;
+    ctx.beginPath();
+    ctx.moveTo(x(a), h - 12);
+    for (let i = a; i <= b; i++) ctx.lineTo(x(i), y(data[i]));
+    ctx.lineTo(x(b), h - 12);
+    ctx.closePath();
+    ctx.fill();
+  }
 
-  ctx.beginPath();
-  data.forEach((v, i) => (i ? ctx.lineTo(x(i), y(v)) : ctx.moveTo(x(i), y(v))));
   ctx.strokeStyle = color;
   ctx.lineWidth = 1.6;
-  ctx.stroke();
+  for (const [a, b] of runs) {
+    if (b === a) {                      // muestra aislada entre huecos: punto
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x(a), y(data[a]), 1.6, 0, Math.PI * 2);
+      ctx.fill();
+      continue;
+    }
+    ctx.beginPath();
+    for (let i = a; i <= b; i++) (i === a ? ctx.moveTo(x(i), y(data[i])) : ctx.lineTo(x(i), y(data[i])));
+    ctx.stroke();
+  }
 
   ctx.fillStyle = cssVar('--dim');
   ctx.font = '11px monospace';
@@ -681,10 +736,11 @@ function drawChart(canvas, values, color, opts = {}) {
   ctx.fillText(mins >= 1 ? t('chart.ago_minutes', { m: mins }) : t('chart.ago_lt_min'), 2, h - 2);
   ctx.textAlign = 'right';
   ctx.fillText(t('chart.now'), w - 2, h - 2);
+  // último valor: si la muestra más reciente es un hueco, "--" en gris (no un dato viejo)
   const last = data[data.length - 1];
-  ctx.fillStyle = color;
+  ctx.fillStyle = Number.isFinite(last) ? color : cssVar('--dim');
   ctx.font = 'bold 13px monospace';
-  ctx.fillText(last.toFixed(1), w - 6, 14);
+  ctx.fillText(Number.isFinite(last) ? last.toFixed(1) : '--', w - 6, 14);
   ctx.textAlign = 'left';
 
   if (chartHover.canvasId === canvas.id) drawChartCrosshair(canvas);
@@ -706,7 +762,8 @@ function drawChartCrosshair(canvas) {
   const i = chartIndexAt(state, chartHover.px);
   const pad = 8;
   const cx = (i / (data.length - 1)) * w;
-  const cy = (h - 12) - pad - ((data[i] - lo) / (hi - lo)) * ((h - 12) - pad * 2);
+  const hasVal = Number.isFinite(data[i]);
+  const cy = hasVal ? (h - 12) - pad - ((data[i] - lo) / (hi - lo)) * ((h - 12) - pad * 2) : 0;
   const ctx = canvas.getContext('2d');
   ctx.save();
   ctx.strokeStyle = cssVar('--dim');
@@ -717,6 +774,7 @@ function drawChartCrosshair(canvas) {
   ctx.lineTo(cx, h - 12);
   ctx.stroke();
   ctx.setLineDash([]);
+  if (!hasVal) { ctx.restore(); return; }
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
@@ -747,7 +805,8 @@ function wireChartHover(canvasId, unit) {
     chartHover.px = e.clientX - rect.left;
     const i = chartIndexAt(state, chartHover.px);
     // una muestra por segundo: la distancia al final ES la antigüedad
-    tip.textContent = `${state.data[i].toFixed(1)} ${unit} · ${agoText(state.data.length - 1 - i)}`;
+    const v = state.data[i];
+    tip.textContent = `${Number.isFinite(v) ? `${v.toFixed(1)} ${unit}` : t('chart.no_sample')} · ${agoText(state.data.length - 1 - i)}`;
     tip.classList.remove('hidden');
     const tw = tip.offsetWidth;
     const left = Math.min(Math.max(e.clientX - tw / 2, 6), window.innerWidth - tw - 6);
@@ -780,6 +839,7 @@ const FAN_SVG = `
 
 /* v17-D: grab-to-pause — track which fan widgets are being dragged */
 const _fanGrabbed = new Set();
+let _fanResumeWired = false;
 
 function renderFans(fans) {
   const host = $('fans');
@@ -801,17 +861,19 @@ function renderFans(fans) {
         if (g) g.style.animationPlayState = 'paused';
       });
     });
-    const resumeAll = () => {
-      _fanGrabbed.forEach((i) => {
-        const el = $(`fan-${i}`);
-        if (!el) return;
-        const g = el.querySelector('svg g');
-        // Only resume if fan is actually spinning (rpm > 0)
-        if (g && el.dataset.fanRpm > 0) g.style.animationPlayState = 'running';
-      });
-      _fanGrabbed.clear();
-    };
-    document.addEventListener('mouseup', resumeAll, { passive: true });
+    if (!_fanResumeWired) {   // una sola vez: antes se sumaba un listener cada vez que cambiaba nº de ventiladores
+      _fanResumeWired = true;
+      document.addEventListener('mouseup', () => {
+        _fanGrabbed.forEach((i) => {
+          const el = $(`fan-${i}`);
+          if (!el) return;
+          const g = el.querySelector('svg g');
+          // Only resume if fan is actually spinning (rpm > 0)
+          if (g && el.dataset.fanRpm > 0) g.style.animationPlayState = 'running';
+        });
+        _fanGrabbed.clear();
+      }, { passive: true });
+    }
   }
   fans.forEach((fan, i) => {
     const el = $(`fan-${i}`);
@@ -1707,12 +1769,17 @@ function renderRamProcs(procs) {
   $('ram-procs-body').innerHTML = sorted.map((p) => `
     <tr data-pid="${escapeHtml(p.pid)}" data-name="${escapeHtml(p.name)}" title="${escapeHtml(t('procs.kill', { name: p.name }))}">
       <td class="pid">${escapeHtml(p.pid)}</td><td class="pname">${escapeHtml(p.name)}</td>
-      <td class="mem r">${(p.mem_mb / 1024).toFixed(2)} GB</td></tr>`).join('');
+      <td class="mem r">${(p.mem_mb / 1024).toFixed(2)} GiB</td></tr>`).join('');
   // El neón sigue a la columna seleccionada: mapear la clave de orden a la clase
   // de columna (pid/pname/mem) que usa el CSS — antes se ponía 'mem_mb' y no casaba.
   $('ram-procs').dataset.sortCol = ({ pid: 'pid', name: 'pname', mem_mb: 'mem' })[ramSortKey] || '';
   updateRamSortIndicators();
 }
+
+/* Firmas baratas de lo último pintado en bloques grandes: si la firma no cambia
+   (o la ventana está oculta) no se reconstruye el innerHTML. */
+let lastEventsSig = null;
+let lastProcsSig = null;
 
 function update(stats) {
   lastStats = stats;
@@ -1764,7 +1831,7 @@ function update(stats) {
     const gt = $('gpu-temp');
     gt.textContent = fmt(active.temp, 0);
     gt.className = tempClass(active.temp, limits.gpu);
-    $('gpu-util').textContent = fmt(active.util, 0) + '%';
+    $('gpu-util').textContent = fmt(active.util == null ? null : clampPct(active.util), 0) + '%';
     $('gpu-watts').textContent = fmt(active.power, 1);
     $('gpu-clock').textContent = fmt(active.clock_mhz, 0);
     $('gpu-vram-clock').textContent = fmt(active.vram_clock_mhz, 0);
@@ -1815,21 +1882,24 @@ function update(stats) {
   renderFans(stats.fans || []);
   if (stats.aura && !musicModeActive && !auraDirty && !auraFocused) renderAura(stats.aura);
 
-  /* charts */
-  const series = stats.series || {};
-  drawChart($('chart-cpu'), series.cpu_temp, cssVar('--cold'));
-  drawChart($('chart-gpu'), series.gpu_temp, cssVar('--okstate'));
-  drawChart($('chart-power'), series.cpu_power, cssVar('--accent'), { fromZero: true });
-  drawChart($('chart-gpu-power'), series.gpu_power, cssVar('--hot'), { fromZero: true });
+  /* charts — con la ventana oculta/minimizada no se pinta (visibilitychange repinta al volver) */
+  const visible = !document.hidden;
+  if (visible) {
+    const series = stats.series || {};
+    drawChart($('chart-cpu'), series.cpu_temp, cssVar('--cold'));
+    drawChart($('chart-gpu'), series.gpu_temp, cssVar('--okstate'));
+    drawChart($('chart-power'), series.cpu_power, cssVar('--accent'), { fromZero: true });
+    drawChart($('chart-gpu-power'), series.gpu_power, cssVar('--hot'), { fromZero: true });
+  }
 
   $('rapl-note').classList.toggle('hidden', !!stats.rapl_available);
 
   /* system */
-  $('ram-label').textContent = `${fmt(sys.ram_used_gb, 1)}/${fmt(sys.ram_total_gb, 0)} G`;
-  $('ram-bar').style.width = (sys.ram_percent || 0) + '%';
+  $('ram-label').textContent = `${fmt(sys.ram_used_gb, 1)}/${fmt(sys.ram_total_gb, 0)} GiB`;
+  $('ram-bar').style.width = clampPct(sys.ram_percent) + '%';
   const vramTotal = active?.vram_total;
   const vramUsed = active?.vram_used;
-  const vramPercent = vramTotal ? Math.max(0, Math.min(100, Math.round((vramUsed || 0) * 100 / vramTotal))) : 0;
+  const vramPercent = vramTotal ? Math.round(clampPct((vramUsed || 0) * 100 / vramTotal)) : 0;
   $('vram-label').textContent = vramTotal ? fmtGbPairFromMb(vramUsed, vramTotal) : '--';
   $('vram-bar').style.width = `${vramPercent}%`;
   $('vram-meter').classList.toggle('disabled', !vramTotal);
@@ -1867,8 +1937,11 @@ function update(stats) {
 
   /* events — 4th element is category key (tolerate old 3-tuples) */
   const events = (stats.events || []).slice(-30).reverse();
-  if (window.RogEventDetail) window.RogEventDetail.renderList(events);
+  const eventsSig = (window.i18n ? window.i18n.get() : '') + '\n' + events.map((e) => `${e[0]}|${e[1]}|${e[2]}`).join('\n');
+  if (eventsSig === lastEventsSig) { /* sin cambios: no tocar el DOM */ }
+  else if (window.RogEventDetail) { lastEventsSig = eventsSig; window.RogEventDetail.renderList(events); }
   else {
+    lastEventsSig = eventsSig;
     $('events').innerHTML = events.length
       ? events.map((e) => {
           const [ts, level, msg, key] = e;
@@ -1881,8 +1954,13 @@ function update(stats) {
   /* processes — DOS columnas separadas: % CPU total (todos los núcleos) y
      % NÚCLEO (uso de un solo núcleo, estilo `top`). Antes iban pegados. */
   const procsTable = $('procs');
+  const procRows = stats.procs || [];
+  const procsSig = `${procsSortKey}|${procsSortDir}|${window.i18n ? window.i18n.get() : ''}|`
+    + procRows.map((p) => `${p.pid}:${p.name}:${p.cpu}:${p.cpu_core}:${p.mem_mb}`).join(',');
+  if (visible && procsSig !== lastProcsSig) {
+  lastProcsSig = procsSig;
   if (procsTable) procsTable.dataset.sortCol = PROC_COL_CLASS[procsSortKey] || '';
-  $('procs-body').innerHTML = sortProcRows(stats.procs || [], procsSortKey, procsSortDir).map((p) => {
+  $('procs-body').innerHTML = sortProcRows(procRows, procsSortKey, procsSortDir).map((p) => {
     const core = p.cpu_core != null
       ? `<span class="procs-core" title="${p.cpu_core >= 100
             ? Math.floor(p.cpu_core / 100) + ' núcleo(s) completo(s)'
@@ -1892,9 +1970,10 @@ function update(stats) {
         <td class="pid">${escapeHtml(p.pid)}</td><td class="pname">${escapeHtml(p.name)}</td>
         <td class="cpu r">${p.cpu.toFixed(1)}%</td>
         <td class="cpu-core r">${core}</td>
-        <td class="mem r">${p.mem_mb} MB</td></tr>`;
+        <td class="mem r">${p.mem_mb} MiB</td></tr>`;
   }).join('');
   updateProcsSortIndicators();
+  }
 
   $('backend-state').textContent =
     `sensores OK · core v${stats.version || '?'} · ${new Date().toLocaleTimeString()}`;
@@ -1933,6 +2012,15 @@ document.addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeControlMenus();
+});
+
+/* Elementos [role="button"][tabindex] que no son <button>: Enter/Espacio = clic (teclado). */
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const el = e.target.closest && e.target.closest('[role="button"][tabindex]');
+  if (!el) return;
+  e.preventDefault();
+  el.click();
 });
 
 /* ---------- nav collapse / expand ---------- */
@@ -2089,6 +2177,9 @@ wireChartHover('chart-power', 'W');
 wireChartHover('chart-gpu-power', 'W');
 
 window.rog.onStats(update);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && lastStats) update(lastStats);
+});
 window.rog.onBackendDown(() => {
   $('backend-state').textContent = t('status.backend_down');
   recordLocalError('backend-down', { message: 'backend down — restarting' });
@@ -3740,7 +3831,7 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
         <td class="pid">${escapeHtml(p.pid)}</td><td class="pname">${escapeHtml(p.name)}</td>
         <td class="cpu r">${p.cpu.toFixed(1)}%</td>
         <td class="cpu-core r">${core}</td>
-        <td class="mem r">${p.mem_mb} MB</td></tr>`;
+        <td class="mem r">${p.mem_mb} MiB</td></tr>`;
   }
 
   function render() {

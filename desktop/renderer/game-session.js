@@ -442,19 +442,39 @@
     const gpuActive = (live.gpu && live.gpu.active) || {};
     const cpu = live.cpu || {};
     const gameProcs = (live.procs || []).find((p) => p && p.name);
-    body.innerHTML = `
-      <p class="gs-recording-badge">● ${t('gamesession.recording')} ${mins}:${secs}</p>
-      ${active && active.baseline ? `<p class="gs-baseline-hint">${t('gamesession.baseline_hint')}</p>` : ''}
-      <p>${t('gamesession.detected_game')}: <strong>${escapeHtml((gameProcs && gameProcs.name) || t('gamesession.no_game_detected'))}</strong></p>
+    // Se construye UNA vez y luego solo se actualizan los textos que cambiaron:
+    // reconstruir el innerHTML cada segundo recreaba el botón DETENER (un clic
+    // podía perderse entre el mousedown y el mouseup) y metía trabajo inútil.
+    const txt = {
+      badge: `● ${t('gamesession.recording')} ${mins}:${secs}`,
+      hint: t('gamesession.baseline_hint'),
+      gameLbl: `${t('gamesession.detected_game')}:`,
+      game: (gameProcs && gameProcs.name) || t('gamesession.no_game_detected'),
+      cpu: `${fmt(cpu.avg)} °C`,
+      gpu: `${fmt(gpuActive.temp)} °C`,
+      gpuw: `${fmt(gpuActive.power)} W`,
+      gpuu: `${fmt(gpuActive.util)} %`,
+      stop: t('gamesession.stop_btn'),
+    };
+    if (!body.querySelector('[data-rec]')) {
+      body.innerHTML = `
+      <p class="gs-recording-badge" data-rec="badge"></p>
+      ${active && active.baseline ? '<p class="gs-baseline-hint" data-rec="hint"></p>' : ''}
+      <p><span data-rec="gameLbl"></span> <strong data-rec="game"></strong></p>
       <div class="gs-live-grid">
-        <div class="gs-live-item"><span>CPU</span><b>${fmt(cpu.avg)} °C</b></div>
-        <div class="gs-live-item"><span>GPU</span><b>${fmt(gpuActive.temp)} °C</b></div>
-        <div class="gs-live-item"><span>GPU W</span><b>${fmt(gpuActive.power)} W</b></div>
-        <div class="gs-live-item"><span>GPU %</span><b>${fmt(gpuActive.util)} %</b></div>
+        <div class="gs-live-item"><span>CPU</span><b data-rec="cpu"></b></div>
+        <div class="gs-live-item"><span>GPU</span><b data-rec="gpu"></b></div>
+        <div class="gs-live-item"><span>GPU W</span><b data-rec="gpuw"></b></div>
+        <div class="gs-live-item"><span>GPU %</span><b data-rec="gpuu"></b></div>
       </div>
-      <button class="primary gs-stop-btn" id="gs-stop">${t('gamesession.stop_btn')}</button>
+      <button class="primary gs-stop-btn" id="gs-stop" data-rec="stop"></button>
     `;
-    body.querySelector('#gs-stop').addEventListener('click', stopSession);
+      body.querySelector('#gs-stop').addEventListener('click', stopSession);
+    }
+    body.querySelectorAll('[data-rec]').forEach((el) => {
+      const v = txt[el.dataset.rec];
+      if (el.textContent !== v) el.textContent = v;
+    });
   }
 
   async function stopSession() {

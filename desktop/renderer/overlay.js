@@ -59,6 +59,7 @@ function applyLabels() {
 /* ---- estado ---- */
 let show = { cpu: true, gpu: true, fans: true };
 let lastStats = null;
+let lastFansSig = null;
 let currentLang = getLang();
 // Umbrales [lo, mid, hi] que manda main.js vía overlay-config (mismos que el
 // dashboard). Null hasta el primer config → se usan los defaults estáticos.
@@ -134,7 +135,11 @@ function render(stats) {
   const fansNone = $('fans-none');
   if (fansRow && fansNone) {
     const fans = stats.fans || [];
-    if (fans.length > 0) {
+    // Firma de lo pintado: si no cambió ningún rpm/label no se recrean los chips cada segundo
+    const fansSig = fans.map((f) => `${f.label}:${f.rpm}:${f.cap && f.percent}`).join('|');
+    if (fansSig === lastFansSig) { /* igual que el tick anterior */ }
+    else if (fans.length > 0) {
+      lastFansSig = fansSig;
       fansNone.style.display = 'none';
       /* Eliminar chips viejos (mantener el label) */
       fansRow.querySelectorAll('.fan-chip').forEach((el) => el.remove());
@@ -150,6 +155,7 @@ function render(stats) {
         fansRow.appendChild(chip);
       });
     } else {
+      lastFansSig = fansSig;
       fansNone.style.display = '';
       fansRow.querySelectorAll('.fan-chip').forEach((el) => el.remove());
     }
