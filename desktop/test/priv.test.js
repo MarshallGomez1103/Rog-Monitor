@@ -133,3 +133,81 @@ test('buildPath: sistema primero, directorios del usuario AL FINAL', () => {
   assert.ok(p.includes('/opt/x'));
   assert.equal(p[p.length - 1], '/home/u/.linuxbrew/bin');
 });
+
+// ---- curvas de ventilador (CP-1.06b) ----
+const okCurve = () => ({
+  temps: [30, 50, 60, 70, 80, 85, 90, 95],
+  pwms: [20, 36, 56, 92, 138, 173, 205, 205],
+});
+
+test('validateFanCurve: curva válida y las curvas quiet de fábrica pasan', () => {
+  assert.equal(priv.validateFanCurve(okCurve()), null);
+  assert.equal(priv.validateFanCurve({
+    temps: [30, 50, 60, 70, 80, 85, 90, 95], pwms: [15, 28, 46, 72, 105, 135, 165, 170],
+  }), null);
+  assert.equal(priv.validateFanCurve({
+    temps: [30, 50, 60, 65, 72, 76, 80, 83], pwms: [13, 23, 43, 66, 99, 128, 160, 170],
+  }), null);
+});
+
+test('validateFanCurve: exige 8 puntos enteros', () => {
+  const c = okCurve();
+  assert.match(priv.validateFanCurve({ temps: c.temps.slice(1), pwms: c.pwms }), /8 puntos/);
+  assert.match(priv.validateFanCurve({ temps: c.temps, pwms: [...c.pwms.slice(1), 1.5] }), /enteros/);
+  assert.match(priv.validateFanCurve({ temps: c.temps, pwms: [...c.pwms.slice(1), '205'] }), /enteros/);
+  assert.match(priv.validateFanCurve({ temps: c.temps, pwms: [...c.pwms.slice(1), null] }), /enteros/);
+  assert.match(priv.validateFanCurve(null), /faltan/);
+});
+
+test('validateFanCurve: temperatura 0 o fuera de 20..105 se rechaza', () => {
+  const c = okCurve();
+  c.temps[0] = 0;
+  assert.match(priv.validateFanCurve(c), /20\.\.105/);
+  const d = okCurve();
+  d.temps[7] = 106;
+  assert.match(priv.validateFanCurve(d), /20\.\.105/);
+});
+
+test('validateFanCurve: temperaturas estrictamente crecientes', () => {
+  const c = okCurve();
+  c.temps[3] = c.temps[2];
+  assert.match(priv.validateFanCurve(c), /crecientes/);
+  const d = okCurve();
+  d.temps[3] = 40;
+  assert.match(priv.validateFanCurve(d), /crecientes/);
+});
+
+test('validateFanCurve: PWM fuera de 0..255 se rechaza (PWM 0 en frío sí es válido)', () => {
+  const c = okCurve();
+  c.pwms[0] = 0;
+  assert.equal(priv.validateFanCurve(c), null);
+  c.pwms[1] = 256;
+  assert.match(priv.validateFanCurve(c), /0\.\.255/);
+  c.pwms[1] = -1;
+  assert.match(priv.validateFanCurve(c), /0\.\.255/);
+});
+
+test('validateFanCurve: nunca ventiladores apagados con calor (último punto y >= 90 C)', () => {
+  const last = okCurve();
+  last.pwms[7] = 0;
+  assert.match(priv.validateFanCurve(last), /mínimo es 150/);
+  // el último punto manda aunque su temperatura sea baja
+  const lowLast = { temps: [30, 40, 50, 55, 60, 65, 70, 75], pwms: [0, 0, 0, 0, 0, 0, 0, 149] };
+  assert.match(priv.validateFanCurve(lowLast), /mínimo es 150/);
+  const hot = okCurve();
+  hot.pwms[6] = 149; // 90 C
+  assert.match(priv.validateFanCurve(hot), /mínimo es 150/);
+  hot.pwms[6] = 150;
+  assert.equal(priv.validateFanCurve(hot), null);
+});
+
+test('validateFanCurves: vacío, ventilador desconocido o curva mala', () => {
+  assert.match(priv.validateFanCurves({}), /inválidas/);
+  assert.match(priv.validateFanCurves(null), /inválidas/);
+  assert.match(priv.validateFanCurves([okCurve()]), /inválidas/);
+  assert.match(priv.validateFanCurves({ '../x': okCurve() }), /desconocido/);
+  assert.equal(priv.validateFanCurves({ cpu: okCurve(), gpu: okCurve(), fan4: okCurve() }), null);
+  const bad = okCurve();
+  bad.pwms[7] = 0;
+  assert.match(priv.validateFanCurves({ cpu: okCurve(), gpu: bad }), /gpu/);
+});

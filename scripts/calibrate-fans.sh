@@ -15,7 +15,8 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin  # root
 #   pwm,90,2520,2410,2630
 #   ...
 #   pwm,255,7040,6910,7460
-# Dura ~70 s. Al salir restaura el servicio de curvas (que reaplica el perfil).
+# Dura ~70 s. Al salir (también con INT/TERM/HUP) restaura el servicio de curvas
+# (que reaplica el perfil); ante SIGKILL lo hace el propio servicio (ver abajo).
 
 # Descendente: entre escalones consecutivos el salto es pequeño. OJO: estos
 # ventiladores aceleran Y desaceleran lento (medido: la GPU tardó >10 s en
@@ -43,12 +44,28 @@ get_hwmon() {
     return 1
 }
 
+# Durante la calibración las curvas quedan a PWM FIJO. En vez de PARAR
+# rog-profile-sync (si este script muere sin limpiar, nadie lo volvería a
+# arrancar), se deja corriendo y se le avisa con un marcador en /run (tmpfs,
+# solo root): mientras este PID viva el servicio no toca las curvas; si el PID
+# muere, el servicio detecta el marcador huérfano en <= 30 s y restaura las
+# curvas. Techo documentado: SIGKILL/corte de luz no se pueden atrapar; aun así
+# el servicio las restaura solo (o al reiniciar, /run se vacía y se reaplican).
+CALIB_MARKER=/run/rog-monitor/calibrating
+
 restore_profile_service() {
-    systemctl start rog-profile-sync.service
+    rm -f -- "$CALIB_MARKER"
+    # restart (no start): reaplica el perfil YA; si estaba parado, lo arranca.
+    systemctl restart rog-profile-sync.service || true
 }
 
 trap restore_profile_service EXIT
-systemctl stop rog-profile-sync.service
+# Ctrl+C / kill / cierre de sesión: salir por `exit` para que corra el trap EXIT.
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
+install -d -m 0755 /run/rog-monitor
+printf '%s\n' "$$" > "$CALIB_MARKER"
 
 CURVE_HWMON="$(get_hwmon asus_custom_fan_curve)"
 RPM_HWMON="$(get_hwmon asus)"
@@ -140,4 +157,4 @@ for pwm in "${PWM_STEPS[@]}"; do
 done
 
 restore_profile_service
-trap - EXIT
+trap - EXIT INT TERM HUP

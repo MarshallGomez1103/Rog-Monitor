@@ -1,5 +1,8 @@
 #!/usr/bin/bash
-set -u
+# -u + pipefail, pero NO -e: el script encadena pasos independientes (perfil PPD,
+# brillo, límites de potencia) y cada uno ya maneja su error con `|| log`; con -e
+# un fallo de brillo cancelaría los límites de potencia.
+set -uo pipefail
 # Root: PATH fijo del sistema (nunca el del usuario).
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 

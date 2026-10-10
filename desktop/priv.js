@@ -135,7 +135,61 @@ function powerArgs(changes) {
   return out.length ? out : null;
 }
 
+// ---- curvas de ventilador (validación PURA; la misma regla vive en root, en
+// scripts/rog-profile-sync.sh: si cambias una, cambia la otra) ----
+// 8 puntos, temperaturas estrictamente crecientes en 20..105 °C, PWM entero
+// 0..255, y nunca ventiladores (casi) parados con el equipo caliente: el ÚLTIMO
+// punto (rige todo lo que está por encima de él) y cualquier punto >= 90 °C
+// exigen PWM >= 150 (~59 %). 150 y no 180 porque las curvas "quiet" de fábrica
+// llegan a 165-170 a 90-95 °C y deben seguir siendo válidas.
+const FAN_POINTS = 8;
+const FAN_TEMP_MIN = 20;
+const FAN_TEMP_MAX = 105;
+const FAN_PWM_MAX = 255;
+const FAN_HOT_C = 90;
+const FAN_PWM_FLOOR = 150;
+const FAN_KEY_RE = /^(cpu|gpu|mid|fan[1-6])$/;
+
+// null si la curva es válida; si no, mensaje de error (es/en) para mostrar.
+function validateFanCurve(c, name = 'fan') {
+  const bad = (m) => `curva de ${name} inválida / invalid fan curve: ${m}`;
+  if (!c || !Array.isArray(c.temps) || !Array.isArray(c.pwms)) return bad('faltan temps/pwms');
+  if (c.temps.length !== FAN_POINTS || c.pwms.length !== FAN_POINTS) {
+    return bad(`deben ser ${FAN_POINTS} puntos / need ${FAN_POINTS} points`);
+  }
+  const isInt = (v) => typeof v === 'number' && Number.isInteger(v);
+  if (![...c.temps, ...c.pwms].every(isInt)) return bad('solo enteros / integers only');
+  for (let i = 0; i < FAN_POINTS; i++) {
+    const t = c.temps[i];
+    const p = c.pwms[i];
+    if (t < FAN_TEMP_MIN || t > FAN_TEMP_MAX) {
+      return bad(`temperatura ${t} fuera de ${FAN_TEMP_MIN}..${FAN_TEMP_MAX} °C`);
+    }
+    if (i > 0 && t <= c.temps[i - 1]) return bad('las temperaturas deben ser estrictamente crecientes');
+    if (p < 0 || p > FAN_PWM_MAX) return bad(`PWM ${p} fuera de 0..${FAN_PWM_MAX}`);
+    if ((i === FAN_POINTS - 1 || t >= FAN_HOT_C) && p < FAN_PWM_FLOOR) {
+      return bad(`a ${t} °C el PWM mínimo es ${FAN_PWM_FLOOR} (no dejar los ventiladores apagados con calor) / ` +
+        `min PWM at ${t} C is ${FAN_PWM_FLOOR}`);
+    }
+  }
+  return null;
+}
+
+// null si todas las curvas del objeto { cpu: {temps,pwms}, ... } son válidas.
+function validateFanCurves(curves) {
+  if (!curves || typeof curves !== 'object' || Array.isArray(curves) || !Object.keys(curves).length) {
+    return 'curvas inválidas / invalid curves';
+  }
+  for (const [fan, c] of Object.entries(curves)) {
+    if (!FAN_KEY_RE.test(fan)) return `ventilador desconocido / unknown fan: ${fan}`;
+    const err = validateFanCurve(c, fan);
+    if (err) return err;
+  }
+  return null;
+}
+
 module.exports = {
+  FAN_POINTS, FAN_TEMP_MIN, FAN_TEMP_MAX, FAN_HOT_C, FAN_PWM_FLOOR, validateFanCurve, validateFanCurves,
   LIBEXEC, PKEXEC, SYSTEM_PATH, HELPERS, DEVICE_RE, POWER_KEYS, NEEDS_INSTALL_MSG,
   buildPath, helperPath, readInstalledVersion, resolveHelper, pkexecArgv,
   validateBatteryLimit, validateDevice, guardianArgs, powerArgs,

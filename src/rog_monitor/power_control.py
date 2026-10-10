@@ -4,7 +4,7 @@ Public API
 ----------
 PowerControl().snapshot()   -> dict   (read-only, cached ~5 s, safe at 1 Hz)
 PowerControl().state()      -> dict   (force-fresh, no cache)
-PowerControl().apply(changes: dict) -> dict   (validates, clamps, calls script)
+PowerControl().apply(changes: dict) -> dict   (validates ranges, REFUSES out-of-range, calls script)
 PowerControl().reset()      -> dict   (writes firmware defaults)
 
 CLI
@@ -196,6 +196,64 @@ def _safe_clamp(value: int, lo, hi) -> int:
     if hi is not None and value > hi:
         value = hi
     return value
+
+
+# Rangos de respaldo de los offsets de GPU si el perfil del equipo no los trae
+# (mismos que SAFE_*_MHZ de gpu_clocks.py).
+_CLOCK_FALLBACK_BOUNDS = {"base_clock_offset": (-200, 200), "mem_clock_offset": (-500, 1000)}
+
+
+def _validation_bounds(entry: dict | None) -> dict[str, tuple]:
+    """Min/max seguro por clave, de la MISMA fuente que usa la UI.
+
+    Rango vivo del firmware (min_value/max_value en sysfs) si existe; si no, el
+    min/max declarado en device_profiles.json (o device.json del usuario).
+    Una cota desconocida es None: no se inventa; el script root (que recorta al
+    rango vivo del firmware) sigue siendo la autoridad final.
+    """
+    bounds: dict[str, tuple] = {}
+    for ctrl in (entry or {}).get("controls", []):
+        key = ctrl.get("key")
+        attr = ctrl.get("attr")
+        lo = _read_int_attr(attr, "min_value") if attr else None
+        hi = _read_int_attr(attr, "max_value") if attr else None
+        bounds[key] = (lo if lo is not None else ctrl.get("min"),
+                       hi if hi is not None else ctrl.get("max"))
+    for key, (lo, hi) in _CLOCK_FALLBACK_BOUNDS.items():
+        cur = bounds.get(key, (None, None))
+        bounds[key] = (cur[0] if cur[0] is not None else lo,
+                       cur[1] if cur[1] is not None else hi)
+    return bounds
+
+
+def validate_changes(changes: dict, entry: dict | None = None) -> tuple[dict | None, str | None]:
+    """Valida `changes` ANTES de escribir nada. Devuelve (limpio, None) o (None, error).
+
+    - Solo claves conocidas (_ATTR_KEYS + _CLOCK_KEYS).
+    - Valor numérico finito: se rechazan None, bool, str y NaN/inf (antes la
+      capa JS convertía null/true/"" en 0).
+    - Fuera de [min, max] del dispositivo => se RECHAZA (no se recorta en
+      silencio); el script root vuelve a recortar al rango vivo (2.ª capa).
+    """
+    if not isinstance(changes, dict):
+        return None, "Los cambios deben ser un objeto clave/valor."
+    if entry is None:
+        entry = _active_profile_entry()
+    bounds = _validation_bounds(entry)
+    clean: dict[str, int] = {}
+    for key, val in changes.items():
+        if key not in _ATTR_KEYS and key not in _CLOCK_KEYS:
+            return None, f"Clave no reconocida: '{key}'."
+        if isinstance(val, bool) or not isinstance(val, (int, float)) or val != val \
+                or val in (float("inf"), float("-inf")):
+            return None, f"Valor inválido para '{key}': {val!r} (se esperaba un número)."
+        lo, hi = bounds.get(key, (None, None))
+        if (lo is not None and val < lo) or (hi is not None and val > hi):
+            return None, (f"'{key}'={val} fuera del rango seguro "
+                          f"[{lo if lo is not None else '-'}, {hi if hi is not None else '-'}]; "
+                          "no se escribió nada.")
+        clean[key] = int(round(val))
+    return clean, None
 
 
 def profile_power_for(profile: str | None,
@@ -407,7 +465,7 @@ class PowerControl:
         return dict(fresh)
 
     def apply(self, changes: dict) -> dict:
-        """Validate, clamp, then write via the appropriate script.
+        """Validate ranges (refuse out-of-range), then write via the appropriate script.
 
         Routing:
         - pl1/pl2/dynamic_boost/thermal_target → apply-power-control.sh (pkexec)
@@ -423,17 +481,20 @@ class PowerControl:
         if not changes:
             return {"ok": False, "err": "No se enviaron cambios."}
 
+        # Primera capa: validar TODO (tipos y rangos) antes de cualquier escritura.
+        changes, verr = validate_changes(changes)
+        if verr:
+            return {"ok": False, "err": verr}
+
         # Split changes into two buckets.
-        attr_changes: dict[str, float] = {}
+        attr_changes: dict[str, int] = {}
         clock_changes: dict[str, int] = {}
 
         for key, val in changes.items():
             if key in _ATTR_KEYS:
                 attr_changes[key] = val
-            elif key in _CLOCK_KEYS:
-                clock_changes[key] = int(round(float(val)))
             else:
-                return {"ok": False, "err": f"Clave no reconocida: '{key}'."}
+                clock_changes[key] = val
 
         test_mode = "ROG_FW_ATTRS_DIR" in os.environ
         run_as_root = hasattr(os, "geteuid") and os.geteuid() == 0
@@ -441,7 +502,7 @@ class PowerControl:
 
         # --- apply asus-armoury attrs via apply-power-control.sh ---
         if attr_changes:
-            args = [f"{k}={int(round(float(v)))}" for k, v in attr_changes.items()]
+            args = [f"{k}={v}" for k, v in attr_changes.items()]
             if test_mode and not run_as_root:
                 # Fake sysfs, unprivileged: run the repo script (never as root).
                 cmd = ["bash", str(_REPO_SCRIPT)] + args

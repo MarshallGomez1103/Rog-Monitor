@@ -31,12 +31,18 @@ User=root
 Group=root
 # Endurecimiento conservador: no aislamos /sys porque el script necesita
 # escribir varias rutas sysfs reales del firmware ASUS y NVIDIA.
-NoNewPrivileges=true
-# false: el script publica estado para la UI en
-# ~/.local/share/rog-monitor/thermal-guardian-state.json (home del usuario).
-# Con true/read-only systemd puede ocultar el home o bloquear ese archivo.
-ProtectHome=false
-ProtectSystem=false
+# - NoNewPrivileges: nada de lo que lanza necesita setuid.
+# - ProtectSystem=full: /usr, /boot y /etc de solo lectura (NO "strict": escribe
+#   /sys, /run y el JSON de estado bajo /var/home).
+# - PrivateTmp: sin /tmp compartido.
+# Omitido a propósito: ProtectKernelTunables (escribe /sys) y ProtectKernelModules
+# (nvidia-smi/nvidia-modprobe pueden cargar módulos).
+NoNewPrivileges=yes
+ProtectSystem=full
+PrivateTmp=yes
+# ProtectHome se omite: el script publica estado para la UI en
+# ~/.local/share/rog-monitor/thermal-guardian-state.json (home del usuario) y un
+# ProtectHome=true/read-only ocultó o bloqueó ese archivo y rompió el guardián.
 
 [Install]
 WantedBy=multi-user.target
