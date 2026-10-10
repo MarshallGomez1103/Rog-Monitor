@@ -10,9 +10,9 @@ import re
 import shutil
 import socket
 import subprocess
-import time
 from pathlib import Path
 
+from .cached import Cached
 from .config import CONFIG_DIR, backup_corrupt, write_atomic
 
 AURA_FILE = CONFIG_DIR / "aura.json"
@@ -314,8 +314,9 @@ class AuraManager:
             or shutil.which("parec")
         )
         self._effects = self._discover_effects()
-        self._cache = None
-        self._cache_ts = 0.0
+        # Construir el snapshot lanza busctl/asusctl (hasta ~5 s): se refresca
+        # cada 15 s en un hilo de fondo y el tick lee siempre la copia anterior.
+        self._snap = Cached(self._build_snapshot, ttl=15.0)
 
     def _discover_effects(self) -> list[dict]:
         """Enumerate asusctl effects AND discover real per-effect arg capabilities.
@@ -482,10 +483,9 @@ class AuraManager:
                 sock.close()
 
     def snapshot(self, force: bool = False) -> dict:
-        now = time.monotonic()
-        if not force and self._cache and now - self._cache_ts < 15:
-            return copy.deepcopy(self._cache)
+        return copy.deepcopy(self._snap.refresh_now() if force else self._snap.get())
 
+    def _build_snapshot(self) -> dict:
         store = _load_store()
         current = None
         last_applied = store.get("last_applied") or None
@@ -580,9 +580,7 @@ class AuraManager:
             "config_path": str(AURA_FILE),
             "mode_grid": mode_grid,
         }
-        self._cache = result
-        self._cache_ts = now
-        return copy.deepcopy(result)
+        return result
 
 
 def apply_state(raw: dict) -> dict:

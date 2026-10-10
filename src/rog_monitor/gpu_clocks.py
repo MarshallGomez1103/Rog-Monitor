@@ -115,6 +115,116 @@ def _get_device(lib: ctypes.CDLL, index: int = 0) -> NvmlDeviceT:
 
 
 # ---------------------------------------------------------------------------
+# Telemetría de solo lectura (sin root) para gpu.py — reemplaza a nvidia-smi
+# ---------------------------------------------------------------------------
+
+_LIB: ctypes.CDLL | None = None
+NVML_FI_DEV_POWER_AVERAGE = 185  # mW, media ~1 s (= power.draw.average)
+
+
+class _Util(ctypes.Structure):
+    _fields_ = [("gpu", ctypes.c_uint), ("memory", ctypes.c_uint)]
+
+
+class _Mem(ctypes.Structure):
+    # nvmlMemory_v2: igual que nvidia-smi (used excluye la memoria reservada
+    # por el driver; la v1 la cuenta como usada y daba ~300 MiB de más).
+    _fields_ = [("version", ctypes.c_uint), ("total", ctypes.c_ulonglong),
+                ("reserved", ctypes.c_ulonglong), ("free", ctypes.c_ulonglong),
+                ("used", ctypes.c_ulonglong)]
+
+
+class _FieldValue(ctypes.Structure):
+    _fields_ = [("fieldId", ctypes.c_uint), ("scopeId", ctypes.c_uint),
+                ("timestamp", ctypes.c_longlong), ("latencyUsec", ctypes.c_longlong),
+                ("valueType", ctypes.c_uint), ("nvmlReturn", ctypes.c_uint),
+                ("value", ctypes.c_ulonglong)]
+
+
+class _ProcInfo(ctypes.Structure):
+    _fields_ = [("pid", ctypes.c_uint), ("mem", ctypes.c_ulonglong),
+                ("gi", ctypes.c_uint), ("ci", ctypes.c_uint)]
+
+
+def _session():
+    """(lib, dev) con nvmlInit hecho. El llamador DEBE hacer _nvml_shutdown(lib).
+
+    Init/shutdown por lectura (~15 ms, sin fork): con el handle abierto entre
+    ticks el driver cuenta un usuario y la dGPU híbrida nunca entra en D3.
+    """
+    global _LIB
+    if _LIB is None:
+        _LIB = _load_nvml()
+    _nvml_init(_LIB)
+    try:
+        return _LIB, _get_device(_LIB, 0)
+    except Exception:
+        _nvml_shutdown(_LIB)
+        raise
+
+
+def read_telemetry() -> dict:
+    """Mismos campos que `nvidia-smi --query-gpu` usaba en gpu.py (sin vendor).
+
+    Lanza OSError (sin libnvidia-ml) o NvmlError (init falló). Un campo que el
+    driver no soporta queda en None, igual que "[N/A]" en nvidia-smi.
+    """
+    lib, dev = _session()
+    try:
+        def num(fn, *args):
+            val = ctypes.c_uint()
+            return float(val.value) if fn(dev, *args, ctypes.byref(val)) == NVML_SUCCESS else None
+
+        buf = ctypes.create_string_buffer(96)
+        name = buf.value.decode(errors="replace") if lib.nvmlDeviceGetName(dev, buf, 96) == NVML_SUCCESS else ""
+        util = _Util()
+        util_ok = lib.nvmlDeviceGetUtilizationRates(dev, ctypes.byref(util)) == NVML_SUCCESS
+        mem = _Mem()
+        mem.version = ctypes.sizeof(_Mem) | (2 << 24)
+        mem_ok = lib.nvmlDeviceGetMemoryInfo_v2(dev, ctypes.byref(mem)) == NVML_SUCCESS
+        # power.draw.average (estable) con respaldo a la muestra instantánea
+        fv = _FieldValue()
+        fv.fieldId = NVML_FI_DEV_POWER_AVERAGE
+        mw = None
+        if lib.nvmlDeviceGetFieldValues(dev, 1, ctypes.byref(fv)) == NVML_SUCCESS \
+                and fv.nvmlReturn == NVML_SUCCESS and fv.value:
+            mw = float(fv.value)
+        if mw is None:
+            mw = num(lib.nvmlDeviceGetPowerUsage)
+        return {
+            "name": name,
+            "temp": num(lib.nvmlDeviceGetTemperature, 0),   # NVML_TEMPERATURE_GPU
+            "util": float(util.gpu) if util_ok else None,
+            "power": round(mw / 1000, 2) if mw else None,
+            "vram_used": float(round(mem.used / 1048576)) if mem_ok else None,
+            "vram_total": float(round(mem.total / 1048576)) if mem_ok else None,
+            "clock_mhz": num(lib.nvmlDeviceGetClockInfo, 0),      # NVML_CLOCK_GRAPHICS
+            "vram_clock_mhz": num(lib.nvmlDeviceGetClockInfo, 2),  # NVML_CLOCK_MEM
+        }
+    finally:
+        _nvml_shutdown(lib)
+
+
+def read_vram_processes() -> list[dict]:
+    """[{pid, vram_mb, type}] de procesos con VRAM (C = compute, G = gráficos)."""
+    lib, dev = _session()
+    try:
+        rows = []
+        for kind, fn in (("C", "nvmlDeviceGetComputeRunningProcesses_v3"),
+                         ("G", "nvmlDeviceGetGraphicsRunningProcesses_v3")):
+            count = ctypes.c_uint(64)
+            arr = (_ProcInfo * 64)()
+            if getattr(lib, fn)(dev, ctypes.byref(count), arr) != NVML_SUCCESS:
+                continue
+            for p in arr[:count.value]:
+                if 0 < (p.mem >> 20) < 2 ** 40:  # N/A = 2^64-1
+                    rows.append({"pid": int(p.pid), "vram_mb": int(p.mem >> 20), "type": kind})
+        return rows
+    finally:
+        _nvml_shutdown(lib)
+
+
+# ---------------------------------------------------------------------------
 # Funciones públicas — offsets
 # ---------------------------------------------------------------------------
 

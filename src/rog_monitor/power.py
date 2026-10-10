@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 
 from . import hwmon
+from .cached import Cached
 
 PLATFORM_PROFILE = Path("/sys/firmware/acpi/platform_profile")
 
@@ -58,7 +59,7 @@ PPD_BUS = (
 )
 
 
-def ppd_profile() -> str | None:
+def _read_ppd() -> str | None:
     # powerprofilesctl is not present everywhere (Bazzite uses tuned-ppd),
     # but both implement the same D-Bus interface.
     try:
@@ -70,6 +71,15 @@ def ppd_profile() -> str | None:
         return out.split('"')[1] if '"' in out else None
     except (OSError, subprocess.SubprocessError, IndexError):
         return None
+
+
+# El perfil cambia rara vez: TTL 3 s, refresco en segundo plano y, si busctl
+# falla, se conserva el último valor bueno en vez de parpadear a N/A.
+_PPD = Cached(_read_ppd, ttl=3.0)
+
+
+def ppd_profile() -> str | None:
+    return _PPD.get()
 
 
 def asus_profile() -> str | None:

@@ -1,12 +1,14 @@
-"""GPU sensors: NVIDIA via nvidia-smi, AMD via hwmon, supergfx mode detection."""
+"""GPU sensors: NVIDIA via NVML (nvidia-smi de respaldo), AMD via hwmon, supergfx."""
 
+import glob
 import re
 import shutil
 import subprocess
 import time
 from pathlib import Path
 
-from . import hwmon
+from . import gpu_clocks, hwmon
+from .cached import Cached
 
 NVIDIA_QUERY = (
     "name,temperature.gpu,utilization.gpu,power.draw,memory.used,memory.total,"
@@ -36,28 +38,39 @@ def _num(value) -> float | None:
         return None
 
 
+def _nvidia_pci() -> list[Path]:
+    """Funciones PCI de la dGPU NVIDIA (vendor 0x10de, clase display)."""
+    out = []
+    for dev in sorted(glob.glob("/sys/bus/pci/devices/*")):
+        base = Path(dev)
+        if (hwmon.read_str(base / "vendor") == "0x10de"
+                and (hwmon.read_str(base / "class") or "").startswith("0x03")):
+            out.append(base)
+    return out
+
+
 class GpuReader:
     def __init__(self, chips: dict, enabled: bool = True):
         self.enabled = enabled
         self.has_nvidia_smi = shutil.which("nvidia-smi") is not None
-        self.has_power_avg = self.has_nvidia_smi and "power.draw.average" in (
-            _run(["nvidia-smi", "--help-query-gpu"], timeout=4.0) or ""
-        )
+        self._power_avg: bool | None = None  # solo para el respaldo nvidia-smi
+        self._nvml_ok = True  # False si no hay libnvidia-ml: todo vía nvidia-smi
+        self._nvidia_pci = _nvidia_pci()
         self.has_supergfx = shutil.which("supergfxctl") is not None
         self.amd = hwmon.find(chips, "amdgpu")
-        self._mode: str | None = None
-        self._pending: str | None = None
-        self._pending_action: str | None = None
-        self._mode_ts = 0.0
         self._nvidia_dead_until = 0.0
         self._vram_proc_ts = 0.0
         self._vram_proc_cache: dict = {
             "available": False,
             "reason": "sin datos todavía",
-            "vendor": "nvidia" if self.has_nvidia_smi else None,
+            "vendor": "nvidia" if self.has_nvidia_smi or self._nvidia_pci else None,
             "procs": [],
         }
         self.supported: list[str] = self._supported_modes()
+        # supergfxctl tarda hasta 4 s por llamada: TTL 10 s en segundo plano y
+        # backoff exponencial (hasta 120 s) si falla; el tick lee el último valor.
+        self._sg = Cached(self._read_supergfx, ttl=10.0, backoff_max=120.0) \
+            if self.has_supergfx else None
 
     def _supported_modes(self) -> list[str]:
         if not self.has_supergfx:
@@ -68,41 +81,54 @@ class GpuReader:
         return [m.strip() for m in out.strip("[]").split(",") if m.strip()]
 
     def invalidate(self) -> None:
-        """Force a fresh supergfx read on the next tick (after a mode change)."""
-        self._mode_ts = 0.0
+        """Force a fresh supergfx read soon (after a mode change)."""
+        if self._sg:
+            self._sg.invalidate()
 
-    def _refresh_supergfx(self) -> None:
-        if not self.has_supergfx:
-            return
-        now = time.monotonic()
-        if now - self._mode_ts < 10:
-            return
+    def _read_supergfx(self) -> tuple | None:
         mode = _run(["supergfxctl", "-g"])
         if mode is None:
-            # transient failure: keep the last known mode, retry next tick
-            return
-        self._mode = mode
-        pending = _run(["supergfxctl", "-P"]) or ""
-        pending_norm = pending.strip().lower()
-        self._pending = None if pending_norm in ("", "none", "unknown", mode.lower()) else pending
+            return None  # fallo transitorio: Cached conserva el último modo
+        pending = (_run(["supergfxctl", "-P"]) or "").strip()
+        pending = None if pending.lower() in ("", "none", "unknown", mode.lower()) else pending
         action = (_run(["supergfxctl", "-p"]) or "").strip()
-        action_norm = action.lower()
-        self._pending_action = None if action_norm in ("", "none", "noaction", "unknown") else action
-        self._mode_ts = now
+        action = None if action.lower() in ("", "none", "noaction", "unknown") else action
+        return mode, pending, action
 
     def mode_info(self) -> dict:
-        self._refresh_supergfx()
+        mode, pending, action = (self._sg.get() if self._sg else None) or (None, None, None)
         return {
-            "mode": self._mode,
-            "pending": self._pending,
-            "pending_action": self._pending_action,
+            "mode": mode,
+            "pending": pending,
+            "pending_action": action,
             "supported": self.supported,
         }
 
+    def _dgpu_asleep(self) -> bool:
+        """True si la dGPU está en runtime-suspend (D3). Leer sysfs no la despierta;
+        nvidia-smi / nvmlInit sí, así que en ese caso no se la toca."""
+        return any(
+            hwmon.read_str(p / "power/runtime_status") in ("suspended", "suspending")
+            for p in self._nvidia_pci
+        )
+
     def _read_nvidia(self) -> dict | None:
-        if not self.has_nvidia_smi or time.monotonic() < self._nvidia_dead_until:
+        if time.monotonic() < self._nvidia_dead_until or self._dgpu_asleep():
             return None
-        query = NVIDIA_QUERY_AVG if self.has_power_avg else NVIDIA_QUERY
+        if self._nvml_ok:
+            try:
+                return {"vendor": "nvidia", **gpu_clocks.read_telemetry()}
+            except (OSError, AttributeError):
+                self._nvml_ok = False  # sin libnvidia-ml / símbolo: respaldo nvidia-smi
+            except gpu_clocks.NvmlError:
+                pass  # init falló (dGPU apagada/driver dormido): prueba nvidia-smi
+        if not self.has_nvidia_smi:
+            self._nvidia_dead_until = time.monotonic() + 15
+            return None
+        if self._power_avg is None:
+            self._power_avg = "power.draw.average" in (
+                _run(["nvidia-smi", "--help-query-gpu"], timeout=4.0) or "")
+        query = NVIDIA_QUERY_AVG if self._power_avg else NVIDIA_QUERY
         out = _run(
             ["nvidia-smi", f"--query-gpu={query}", "--format=csv,noheader,nounits"],
             timeout=2.0,
@@ -224,14 +250,14 @@ class GpuReader:
         return rows
 
     def vram_processes(self, active: dict | None = None, top: int = 12) -> dict:
-        if not self.has_nvidia_smi:
+        if not self.has_nvidia_smi and not self._nvidia_pci:
             return {
                 "available": False,
                 "reason": "nvidia-smi no está disponible",
                 "vendor": None,
                 "procs": [],
             }
-        if active is not None and active.get("vendor") != "nvidia":
+        if self._dgpu_asleep() or (active is not None and active.get("vendor") != "nvidia"):
             return {
                 "available": False,
                 "reason": "la dGPU NVIDIA no está activa",
@@ -242,8 +268,20 @@ class GpuReader:
         if now - self._vram_proc_ts < 5:
             return self._vram_proc_cache
 
-        query_rows = self._read_nvidia_vram_query()
-        table_rows = self._read_nvidia_vram_table()
+        query_rows = table_rows = None
+        if self._nvml_ok:
+            try:
+                query_rows = [
+                    {**r, "name": self._proc_name(r["pid"])}
+                    for r in gpu_clocks.read_vram_processes()
+                ]
+            except (OSError, AttributeError):
+                self._nvml_ok = False
+            except gpu_clocks.NvmlError:
+                pass
+        if query_rows is None and self.has_nvidia_smi:
+            query_rows = self._read_nvidia_vram_query()
+            table_rows = self._read_nvidia_vram_table()
         if query_rows is None and table_rows is None:
             self._vram_proc_cache = {
                 "available": False,
