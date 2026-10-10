@@ -816,7 +816,7 @@ function renderFans(fans) {
   fans.forEach((fan, i) => {
     const el = $(`fan-${i}`);
     el.dataset.fanRpm = fan.rpm;  // v17-D: store rpm for resume logic
-    el.querySelector('.rpm').textContent = fan.rpm;
+    el.querySelector('.rpm').textContent = fan.rpm ?? '--';
     el.querySelector('label').textContent = fan.label.replace('_fan', '').toUpperCase();
     el.querySelector('.pct').textContent = fan.percent + '%';
     const g = el.querySelector('svg g');
@@ -1066,7 +1066,7 @@ function renderAura(aura, resetForm = false) {
     : (aura.startup_profile || profiles[0]?.name || '');
   auraProfileSelection = selected;
   profileSel.innerHTML = [`<option value="">${escapeHtml(t('aura.saved_profiles'))}</option>`]
-    .concat(profiles.map((p) => `<option value="${p.name}">${p.name}</option>`))
+    .concat(profiles.map((p) => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`))
     .join('');
   profileSel.value = selected;
   if (document.activeElement !== $('aura-profile-name')) {
@@ -1142,8 +1142,10 @@ function renderAuraProfileList(profiles, selected, startupProfile) {
   }).join('');
 }
 
+/* Global compartido (disks.js también lo usa en runtime): escapa todo valor
+   que viene del sistema antes de interpolarlo en innerHTML / atributos. */
 function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) =>
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
@@ -1533,13 +1535,13 @@ function pushBenchmarkHistory(result) {
     samples: result.samples || null,
   };
   benchmarkHistory = [record, ...benchmarkHistory].slice(0, 20);
-  localStorage.setItem('benchmarkHistoryV2', JSON.stringify(benchmarkHistory));
+  try { localStorage.setItem('benchmarkHistoryV2', JSON.stringify(benchmarkHistory)); } catch (_) { /* lleno o bloqueado */ }
   renderBenchmarkHistory();
 }
 
 /* ---- borrar historial de benchmarks (persistencia legible en localStorage) ---- */
 function _saveBenchmarkHistory() {
-  localStorage.setItem('benchmarkHistoryV2', JSON.stringify(benchmarkHistory));
+  try { localStorage.setItem('benchmarkHistoryV2', JSON.stringify(benchmarkHistory)); } catch (_) { /* lleno o bloqueado */ }
 }
 
 function deleteBenchmarkItem(id) {
@@ -1703,8 +1705,8 @@ function updateRamSortIndicators() {
 function renderRamProcs(procs) {
   const sorted = sortProcRows(procs, ramSortKey, ramSortDir);
   $('ram-procs-body').innerHTML = sorted.map((p) => `
-    <tr data-pid="${p.pid}" data-name="${p.name}" title="${t('procs.kill', { name: p.name })}">
-      <td class="pid">${p.pid}</td><td class="pname">${p.name}</td>
+    <tr data-pid="${escapeHtml(p.pid)}" data-name="${escapeHtml(p.name)}" title="${escapeHtml(t('procs.kill', { name: p.name }))}">
+      <td class="pid">${escapeHtml(p.pid)}</td><td class="pname">${escapeHtml(p.name)}</td>
       <td class="mem r">${(p.mem_mb / 1024).toFixed(2)} GB</td></tr>`).join('');
   // El neón sigue a la columna seleccionada: mapear la clave de orden a la clase
   // de columna (pid/pname/mem) que usa el CSS — antes se ponía 'mem_mb' y no casaba.
@@ -1886,8 +1888,8 @@ function update(stats) {
             ? Math.floor(p.cpu_core / 100) + ' núcleo(s) completo(s)'
             : 'fracción de un núcleo'}">${p.cpu_core.toFixed(0)}%</span>`
       : '<span class="dim">—</span>';
-    return `<tr data-pid="${p.pid}" data-name="${p.name}" title="${t('procs.kill', { name: p.name })}">
-        <td class="pid">${p.pid}</td><td class="pname">${p.name}</td>
+    return `<tr data-pid="${escapeHtml(p.pid)}" data-name="${escapeHtml(p.name)}" title="${escapeHtml(t('procs.kill', { name: p.name }))}">
+        <td class="pid">${escapeHtml(p.pid)}</td><td class="pname">${escapeHtml(p.name)}</td>
         <td class="cpu r">${p.cpu.toFixed(1)}%</td>
         <td class="cpu-core r">${core}</td>
         <td class="mem r">${p.mem_mb} MB</td></tr>`;
@@ -3487,11 +3489,11 @@ function openVramModal() {
     : t('modal.vram_sub');
   $('vram-procs-body').innerHTML = procs.length
     ? procs.map((p) => `
-      <tr data-pid="${p.pid}" data-name="${p.name}" title="${t('procs.kill', { name: p.name })}">
-        <td class="pid">${p.pid}</td><td>${p.name}</td>
+      <tr data-pid="${escapeHtml(p.pid)}" data-name="${escapeHtml(p.name)}" title="${escapeHtml(t('procs.kill', { name: p.name }))}">
+        <td class="pid">${escapeHtml(p.pid)}</td><td>${escapeHtml(p.name)}</td>
         <td class="mem r">${fmtMb(p.vram_mb)}</td>
-        <td class="r">${p.type || '—'}</td></tr>`).join('')
-    : `<tr><td colspan="4" class="dim">${info.reason || t('modal.vram_none')}</td></tr>`;
+        <td class="r">${escapeHtml(p.type || '—')}</td></tr>`).join('')
+    : `<tr><td colspan="4" class="dim">${escapeHtml(info.reason || t('modal.vram_none'))}</td></tr>`;
   $('vram-modal').classList.remove('hidden');
 }
 
@@ -3734,8 +3736,8 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
     const core = p.cpu_core != null
       ? `<span class="procs-core">${p.cpu_core.toFixed(0)}%</span>`
       : '<span class="dim">—</span>';
-    return `<tr data-pid="${p.pid}" data-name="${escapeHtml(p.name)}" title="${t('procs.kill', { name: p.name })}">
-        <td class="pid">${p.pid}</td><td class="pname">${escapeHtml(p.name)}</td>
+    return `<tr data-pid="${p.pid}" data-name="${escapeHtml(p.name)}" title="${escapeHtml(t('procs.kill', { name: p.name }))}">
+        <td class="pid">${escapeHtml(p.pid)}</td><td class="pname">${escapeHtml(p.name)}</td>
         <td class="cpu r">${p.cpu.toFixed(1)}%</td>
         <td class="cpu-core r">${core}</td>
         <td class="mem r">${p.mem_mb} MB</td></tr>`;

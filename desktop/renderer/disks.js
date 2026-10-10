@@ -256,7 +256,7 @@
       const msg = cached.err && cached.err.toLowerCase().includes('cancel')
         ? t('disks.smart_nosmartctl')
         : `${t('disks.smart_err')}: ${cached.err || '?'}`;
-      panel.innerHTML = `<span class="disk-smart-err">${msg}</span>`;
+      panel.innerHTML = `<span class="disk-smart-err">${escapeHtml(msg)}</span>`;
       return;
     }
 
@@ -276,9 +276,9 @@
 
     // Transparencia: muestra el comando exacto que produjo estos datos.
     const devArg = device.startsWith('/dev/') ? device : `/dev/${device}`;
-    panel.innerHTML = `<code class="cmd-argv" style="margin-bottom:8px">pkexec smartctl -j -a ${devArg}</code>` +
+    panel.innerHTML = `<code class="cmd-argv" style="margin-bottom:8px">pkexec smartctl -j -a ${escapeHtml(devArg)}</code>` +
       `<table class="disk-smart-table">${
-        rows.map(([k, v]) => `<tr><td class="dsk">${k}</td><td>${v}</td></tr>`).join('')
+        rows.map(([k, v]) => `<tr><td class="dsk">${k}</td><td>${escapeHtml(v)}</td></tr>`).join('')
       }</table>`;
   }
 
@@ -388,25 +388,25 @@
     const tempVal = getTempForDisk(d, rootTemp);
     const tempHtml = tempVal != null
       ? `<span class="disk-temp">${t('disks.temp')}: ${tempVal}°C</span>` : '';
-    const modelHtml = d.model ? `<span class="disk-model">${d.model}</span>` : '';
-    const fstypeHtml = d.fstype ? `<span class="disk-fstype">${d.fstype}</span>` : '';
+    const modelHtml = d.model ? `<span class="disk-model">${escapeHtml(d.model)}</span>` : '';
+    const fstypeHtml = d.fstype ? `<span class="disk-fstype">${escapeHtml(d.fstype)}</span>` : '';
     const ioHtml = `<span class="disk-io">${buildIoText(d)}</span>`;
     return `
-<div class="disk-row" data-device="${device}">
+<div class="disk-row" data-device="${escapeHtml(device)}">
   <div class="disk-header">
-    <span class="disk-label">${d.label}</span>
+    <span class="disk-label">${escapeHtml(d.label)}</span>
     ${modelHtml}
     ${fstypeHtml}
   </div>
-  <div class="disk-bar-track"><div class="disk-bar-fill" style="width:${d.percent}%"></div></div>
+  <div class="disk-bar-track"><div class="disk-bar-fill" style="width:${Number(d.percent) || 0}%"></div></div>
   <div class="disk-meta">
-    <span class="disk-pct">${d.percent}%</span>
+    <span class="disk-pct">${escapeHtml(d.percent)}%</span>
     <span class="disk-usage">${t('disks.used')}: ${d.used_gb.toFixed(0)} ${t('disks.of')} ${d.total_gb.toFixed(0)} G</span>
     ${tempHtml}
     ${ioHtml}
-    <button class="ghost disk-smart-btn" data-device="${device}">${t('disks.smart_btn')}</button>
+    <button class="ghost disk-smart-btn" data-device="${escapeHtml(device)}">${t('disks.smart_btn')}</button>
   </div>
-  <div class="disk-smart-panel hidden" id="${panelId}"></div>
+  <div class="disk-smart-panel hidden" id="${escapeHtml(panelId)}"></div>
 </div>`;
   }
 

@@ -52,6 +52,8 @@
   function evaluateFans(stats) {
     const fans = stats.fans;
     if (!fans || !fans.length) return 'empty';
+    // Todos sin lectura (rpm null) → mismo estado "sin datos" del bloque
+    if (fans.every((f) => f.rpm == null)) return 'empty';
     return 'ok';
   }
 
@@ -75,7 +77,8 @@
     fans.forEach((fan, i) => {
       const el = document.getElementById(`fan-${i}`);
       if (!el) return;
-      const stopped = fan.rpm === 0 || fan.rpm === null || fan.rpm === undefined;
+      // null/undefined = sin dato (no es "parado"): solo rpm 0 real cuenta como PARADO
+      const stopped = fan.rpm === 0;
       el.classList.toggle('fan-is-stopped', stopped);
 
       // Asegurarse de que existe la etiqueta PARADO (la añadimos si falta)
