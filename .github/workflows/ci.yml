@@ -20,6 +20,11 @@ jobs:
       - name: Compile Python package
         run: python -m py_compile src/rog_monitor/*.py
 
+      - name: Python unit, contract and TUI (pty) tests
+        env:
+          PYTHONPATH: src
+        run: python -m unittest discover -s tests -v
+
       - name: Validate device_profiles.json
         run: python -c "import json; json.load(open('src/rog_monitor/device_profiles.json')); print('device_profiles.json OK')"
 
@@ -52,6 +57,9 @@ jobs:
             echo "checking $f"; node --check "$f"
           done
 
+      - name: node:test (priv, contract, escape)
+        run: node --test desktop/test/*.test.js
+
       - name: Validate i18n (base langs, no undefined data-i18n, command texts)
         run: node scripts/validate-i18n.mjs
 
@@ -59,5 +67,8 @@ jobs:
         working-directory: desktop
         run: npx electron-builder --linux dir --publish never
 
-      - name: apply-power-control.sh syntax
-        run: bash -n scripts/apply-power-control.sh
+      - name: Shell syntax (all scripts)
+        run: for f in install.sh uninstall.sh scripts/*.sh desktop/start.sh; do bash -n "$f" || exit 1; done
+
+      - name: Installer dry-run (no root)
+        run: bash scripts/install-system.sh --dry-run > /dev/null
