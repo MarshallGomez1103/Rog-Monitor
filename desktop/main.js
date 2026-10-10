@@ -215,8 +215,14 @@ function overlayNeedsBackend() {
   return !!(overlay && !overlay.isDestroyed()); // si existe, está mostrándose en juego
 }
 
+// OJO: ChildProcess.killed pasa a true con CUALQUIER señal entregada (también
+// SIGSTOP), así que no sirve para saber si sigue vivo; exitCode/signalCode sí.
+function backendAlive() {
+  return !!backend && backend.exitCode === null && backend.signalCode === null;
+}
+
 function setBackendPaused(paused) {
-  if (!backend || backend.killed || paused === backendPaused) return;
+  if (!backendAlive() || paused === backendPaused) return;
   try {
     backend.kill(paused ? 'SIGSTOP' : 'SIGCONT');
     backendPaused = paused;
@@ -241,7 +247,7 @@ function updateBackendPower() {
 function startWatchdog() {
   setInterval(() => {
     if (!mainVisible && !overlayNeedsBackend()) return; // ok, está pausado a propósito
-    if (!backend || backend.killed) return; // el exit handler ya maneja esto
+    if (!backendAlive()) return; // el exit handler ya maneja esto
     if (backendPaused) {
       // El flag dice pausado pero la ventana es visible → estado inconsistente.
       // Forzar SIGCONT para corregir cualquier misfire del window manager.
