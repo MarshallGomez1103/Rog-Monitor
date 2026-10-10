@@ -79,7 +79,7 @@ function render(stats) {
   lastStats = stats;
   // Prioridad: umbrales del config (main.js, idénticos al dashboard) > los que
   // pudiera traer el stream > defaults estáticos. Degrada con gracia.
-  const colors = tempLimits || stats.temp_colors || { cpu: [70, 85, 92], gpu: [60, 75, 83] };
+  const colors = tempLimits || stats.limits || stats.temp_colors || { cpu: [70, 85, 92], gpu: [60, 75, 83] };
 
   /* perfil activo */
   const prof = $('prof');
