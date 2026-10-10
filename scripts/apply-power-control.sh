@@ -11,11 +11,12 @@
 # writable fake sysfs tree (see Makefile / test suite).
 #
 # Example (production):
-#   pkexec bash scripts/apply-power-control.sh pl1=100 pl2=140
+#   pkexec /usr/local/libexec/rog-monitor/apply-power-control.sh pl1=100 pl2=140
 # Example (test with fake sysfs):
 #   ROG_FW_ATTRS_DIR=/tmp/fake-sysfs bash scripts/apply-power-control.sh pl1=50
 
 set -euo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # ------------------------------------------------------------------
 # Paths

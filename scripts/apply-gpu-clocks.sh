@@ -6,8 +6,8 @@
 #   - set --mem  <MHz>  (rango: -2000..+6000)
 #   - read               (lectura sin root, por completitud)
 #
-# Llamado por la app Electron vía pkexec:
-#   pkexec bash scripts/apply-gpu-clocks.sh set --core 100 --mem 500
+# Llamado por power_control.py vía pkexec (copia de sistema, root:root):
+#   pkexec /usr/local/libexec/rog-monitor/apply-gpu-clocks.sh set --core 100 --mem 500
 #
 # Doble recorte:
 #   1. Este script valida rangos absolutos (allowlist).
@@ -18,23 +18,16 @@
 set -euo pipefail
 
 # ------------------------------------------------------------------
-# Rutas (resueltas relativas a este script para portabilidad)
+# Python: SIEMPRE el lanzador aislado de sistema (python3 -I, paquete en
+# /usr/local/lib/rog-monitor, root:root). Este script corre como root, así que
+# jamás importa código del repo ni del home del usuario.
 # ------------------------------------------------------------------
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "$SCRIPT_DIR")"
-
-# Python del venv de la app (preferido) o el del sistema.
-if [[ -x "$REPO_ROOT/.venv/bin/python" ]]; then
-    PYTHON="$REPO_ROOT/.venv/bin/python"
-elif command -v python3 &>/dev/null; then
-    PYTHON="python3"
-else
-    echo '{"ok":false,"err":"Python3 no encontrado"}' >&2
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ROG_PY=/usr/local/libexec/rog-monitor/rog-py.sh
+if [[ ! -x "$ROG_PY" ]]; then
+    echo '{"ok":false,"err":"Falta la integración de sistema (scripts/install-system.sh)"}' >&2
     exit 1
 fi
-
-# gpu_clocks.py vive en src/rog_monitor/
-export PYTHONPATH="$REPO_ROOT/src"
 
 # ------------------------------------------------------------------
 # Allowlist de rangos absolutos (doble recorte: aquí + Python)
@@ -60,7 +53,7 @@ clamp_int() {
 # Subcomando: read
 # ------------------------------------------------------------------
 if [[ "${1:-}" == "read" ]]; then
-    exec "$PYTHON" -m rog_monitor.gpu_clocks read "${@:2}"
+    exec "$ROG_PY" rog_monitor.gpu_clocks read "${@:2}"
 fi
 
 # ------------------------------------------------------------------
@@ -106,5 +99,5 @@ if [[ "$(id -u)" -ne 0 ]]; then
 fi
 
 # Delegar al helper Python (que hace el segundo recorte + NVML real).
-exec "$PYTHON" -m rog_monitor.gpu_clocks --device "$DEVICE" set \
+exec "$ROG_PY" rog_monitor.gpu_clocks --device "$DEVICE" set \
     --core "$CORE_VAL" --mem "$MEM_VAL"

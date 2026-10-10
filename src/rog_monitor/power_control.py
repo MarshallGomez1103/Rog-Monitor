@@ -13,12 +13,14 @@ python -m rog_monitor.power_control state
 python -m rog_monitor.power_control apply --json '{"pl1": 80, "pl2": 120}'
 python -m rog_monitor.power_control reset
 
-The Electron layer runs WRITES via:
+The Electron layer runs WRITES via the root-owned copies installed by
+scripts/install-system.sh (root never runs files from the user's repo):
 - For pl1/pl2/dynamic_boost/thermal_target:
-    pkexec bash scripts/apply-power-control.sh key=value [key=value ...]
+    pkexec /usr/local/libexec/rog-monitor/apply-power-control.sh key=value [...]
 - For base_clock_offset/mem_clock_offset (GPU, NVML, requires root):
-    pkexec bash scripts/apply-gpu-clocks.sh set --core <MHz> --mem <MHz>
-and then calls `state` to read back.
+    pkexec /usr/local/libexec/rog-monitor/apply-gpu-clocks.sh set --core <MHz> --mem <MHz>
+and then calls `state` to read back. Already root (systemd service): the
+installed script is run directly, without pkexec.
 
 Design notes
 ------------
@@ -49,8 +51,17 @@ from pathlib import Path
 _REAL_ATTRS_DIR = "/sys/class/firmware-attributes/asus-armoury/attributes"
 _DMI_PRODUCT = "/sys/class/dmi/id/product_name"
 _PROFILES_JSON = Path(__file__).parent / "device_profiles.json"
-_SCRIPT = Path(__file__).parent.parent.parent / "scripts" / "apply-power-control.sh"
-_GPU_CLOCKS_SCRIPT = Path(__file__).parent.parent.parent / "scripts" / "apply-gpu-clocks.sh"
+# Privileged helpers: ONLY the root-owned copies (scripts/install-system.sh).
+_LIBEXEC = Path("/usr/local/libexec/rog-monitor")
+_PKEXEC = "/usr/bin/pkexec"
+_SCRIPT = _LIBEXEC / "apply-power-control.sh"
+_GPU_CLOCKS_SCRIPT = _LIBEXEC / "apply-gpu-clocks.sh"
+# Repo copy: used ONLY by unprivileged tests against a fake sysfs (ROG_FW_ATTRS_DIR).
+_REPO_SCRIPT = Path(__file__).parent.parent.parent / "scripts" / "apply-power-control.sh"
+_NEEDS_INSTALL = (
+    "Falta instalar la integración de sistema de ROG Monitor "
+    "(sudo bash scripts/install-system.sh). / System integration missing."
+)
 
 # Controls backed by asus-armoury sysfs (writable via apply-power-control.sh).
 _ATTR_KEYS = ("pl1", "pl2", "dynamic_boost", "thermal_target")
@@ -426,18 +437,19 @@ class PowerControl:
 
         test_mode = "ROG_FW_ATTRS_DIR" in os.environ
         run_as_root = hasattr(os, "geteuid") and os.geteuid() == 0
-        direct_write = test_mode or run_as_root
         applied: dict = {}
 
         # --- apply asus-armoury attrs via apply-power-control.sh ---
         if attr_changes:
             args = [f"{k}={int(round(float(v)))}" for k, v in attr_changes.items()]
-            script_path = str(_SCRIPT)
-            if direct_write:
-                cmd = ["bash", script_path] + args
-                env: dict | None = dict(os.environ) if test_mode else None
+            if test_mode and not run_as_root:
+                # Fake sysfs, unprivileged: run the repo script (never as root).
+                cmd = ["bash", str(_REPO_SCRIPT)] + args
+                env: dict | None = dict(os.environ)
             else:
-                cmd = ["pkexec", "bash", script_path] + args
+                if not _SCRIPT.is_file():
+                    return {"ok": False, "needsInstall": True, "err": _NEEDS_INSTALL}
+                cmd = ([str(_SCRIPT)] if run_as_root else [_PKEXEC, str(_SCRIPT)]) + args
                 env = None
             try:
                 proc = subprocess.run(
@@ -474,10 +486,11 @@ class PowerControl:
             if not Path(gpu_script_path).exists():
                 return {
                     "ok": False,
-                    "err": f"Script not found: {gpu_script_path}",
+                    "needsInstall": True,
+                    "err": f"{_NEEDS_INSTALL} ({gpu_script_path})",
                 }
 
-            gpu_cmd = ["bash", gpu_script_path] if run_as_root else ["pkexec", "bash", gpu_script_path]
+            gpu_cmd = [gpu_script_path] if run_as_root else [_PKEXEC, gpu_script_path]
             gpu_cmd += [
                 "set",
                 "--core", str(core_mhz),

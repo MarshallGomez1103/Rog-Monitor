@@ -2,6 +2,7 @@
 # Apply the ASUS battery end-charge threshold, including at boot.
 # The kernel exposes this per battery as charge_control_end_threshold.
 set -euo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin  # root: PATH fijo del sistema
 
 CONFIG=/etc/rog-monitor/battery.conf
 limit=""

@@ -9,6 +9,7 @@
 #
 # Ejecutar con: sudo bash enable-asusd.sh
 set -euo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin  # root: PATH fijo del sistema
 
 AUTO_YES=0
 if [[ "${1:-}" == "--yes" ]]; then

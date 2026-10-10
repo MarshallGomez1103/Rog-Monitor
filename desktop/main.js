@@ -6,6 +6,7 @@ const { spawn, spawnSync, execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const priv = require('./priv');
 
 // En dev: la raíz del repo es el padre de desktop/. Empaquetado (AppImage): el
 // backend Python, scripts y VERSION viajan como extraResources en resourcesPath.
@@ -13,27 +14,18 @@ const REPO = app.isPackaged ? process.resourcesPath : path.resolve(__dirname, '.
 const VENV_PY = path.join(REPO, '.venv', 'bin', 'python');
 const PYTHON = fs.existsSync(VENV_PY) ? VENV_PY : 'python3';
 const VERSION_FILE = path.join(REPO, 'VERSION');
-const PATH_HINTS = [
+// Directorios del usuario: se AÑADEN al final del PATH, nunca al principio (un
+// ~/.local/bin/git o /python3 plantado no debe ganar a /usr/bin).
+const USER_PATH_DIRS = [
   path.join(os.homedir(), '.local', 'bin'),
   path.join(os.homedir(), '.linuxbrew', 'bin'),
   path.join(os.homedir(), '.linuxbrew', 'sbin'),
   '/home/linuxbrew/.linuxbrew/bin',
   '/home/linuxbrew/.linuxbrew/sbin',
-  '/usr/local/bin',
-  '/usr/local/sbin',
-  '/usr/bin',
-  '/usr/sbin',
-  '/bin',
-  '/sbin',
 ];
 
 function augmentEnv(base = process.env) {
-  const current = String(base.PATH || '').split(path.delimiter).filter(Boolean);
-  const merged = [];
-  for (const entry of [...PATH_HINTS, ...current]) {
-    if (entry && !merged.includes(entry)) merged.push(entry);
-  }
-  return { ...base, PATH: merged.join(path.delimiter) };
+  return { ...base, PATH: priv.buildPath(base.PATH, USER_PATH_DIRS) };
 }
 
 const APP_ENV = augmentEnv(process.env);
@@ -276,16 +268,51 @@ function startWatchdog() {
   }, WATCHDOG_INTERVAL);
 }
 
-function run(cmd, args, timeoutMs = 10000) {
+function run(cmd, args, timeoutMs = 10000, env = APP_ENV) {
   return new Promise((resolve) => {
-    execFile(cmd, args, { timeout: timeoutMs, cwd: REPO, env: APP_ENV }, (err, stdout, stderr) => {
+    execFile(cmd, args, { timeout: timeoutMs, cwd: REPO, env }, (err, stdout, stderr) => {
       resolve({ ok: !err, out: (stdout || '').trim(), err: (stderr || String(err || '')).trim() });
     });
   });
 }
 
-function shQuote(value) {
-  return `'${String(value).replace(/'/g, `'\\''`)}'`;
+/* ---------- frontera de privilegios (ver desktop/priv.js y SECURITY.md) ----------
+   Todo pkexec pasa por runPriv: /usr/bin/pkexec (ruta absoluta) + un ayudante
+   root:root de /usr/local/libexec/rog-monitor/ con argv validado. Si falta o su
+   VERSION no coincide con la de la app => {ok:false, needsInstall:true, err}
+   y NO se ejecuta código del repo. Única excepción: installSystemIntegration(),
+   el instalador, que el usuario confirma de forma explícita. */
+const PRIV_ENV = { ...process.env, PATH: priv.SYSTEM_PATH.join(path.delimiter) };
+
+function privHelper(name) { return priv.resolveHelper(name, APP_VERSION); }
+
+async function runPriv(name, args = [], timeoutMs = 30000) {
+  const h = privHelper(name);
+  if (!h.ok) return { ok: false, out: '', err: h.err, needsInstall: !!h.needsInstall };
+  const { cmd, args: argv } = priv.pkexecArgv(h.path, args);
+  return run(cmd, argv, timeoutMs, PRIV_ENV);
+}
+
+async function installSystemIntegration() {
+  const installer = path.join(REPO, 'scripts', 'install-system.sh');
+  if (!fs.existsSync(installer)) return { ok: false, err: `No encontré ${installer}` };
+  const { response } = await dialog.showMessageBox(win || undefined, {
+    type: 'question',
+    buttons: ['Instalar / Install', 'Cancelar / Cancel'],
+    defaultId: 1,
+    cancelId: 1,
+    title: 'ROG Monitor',
+    message: 'Instalar la integración de sistema (root) / Install system integration (root)',
+    detail:
+      `Se ejecutará con permisos de administrador:\n  /usr/bin/pkexec /usr/bin/bash ${installer}\n\n` +
+      'Copia los ayudantes a /usr/local/libexec/rog-monitor y el paquete Python a ' +
+      '/usr/local/lib/rog-monitor (dueño root), e instala/reinicia el servicio de ventiladores.\n' +
+      'Revisa el script antes si quieres: es el único código del repo que corre como root.\n\n' +
+      'It runs ' + installer + ' as root: it copies the helpers to /usr/local/libexec/rog-monitor and the ' +
+      'Python package to /usr/local/lib/rog-monitor (root-owned). Review it first if you wish.',
+  });
+  if (response !== 0) return { ok: false, cancelled: true, err: 'cancelado / cancelled' };
+  return run(priv.PKEXEC, ['/usr/bin/bash', installer], 180000, PRIV_ENV);
 }
 
 // maxBuffer ampliado a 16 MB para soportar sesiones de juego de 100+ min
@@ -409,62 +436,23 @@ ipcMain.handle('do-update', async () => {
    service rog-profile-sync.service applies them. Editing the file needs no
    privileges; restarting the service prompts for the password via pkexec. */
 
-// Scripts ahora viven en el propio repo (carpeta única). Se respeta
-// ROG_SCRIPTS_DIR por compatibilidad, pero el default es REPO/scripts.
-const SCRIPTS_DIR = process.env.ROG_SCRIPTS_DIR || REPO;
-const SYNC_SCRIPT = path.join(SCRIPTS_DIR, 'scripts', 'rog-profile-sync.sh');
-const FAN_CALIBRATE = path.join(SCRIPTS_DIR, 'scripts', 'calibrate-fans.sh');
-const ENABLE_ASUSD = path.join(SCRIPTS_DIR, 'scripts', 'enable-asusd.sh');
-const BATTERY_LIMIT_SCRIPT = path.join(SCRIPTS_DIR, 'scripts', 'rog-battery-limit.sh');
-const BATTERY_LIMIT_RESUME_SCRIPT = path.join(SCRIPTS_DIR, 'scripts', 'rog-battery-limit-resume.sh');
-const BATTERY_LIMIT_UNIT = path.join(SCRIPTS_DIR, 'systemd', 'rog-battery-limit.service');
+// Solo para usos SIN privilegios (curvas por defecto con --defaults). El código
+// que corre como root sale siempre de /usr/local/libexec/rog-monitor (priv.js).
+const SYNC_SCRIPT = path.join(process.env.ROG_SCRIPTS_DIR || REPO, 'scripts', 'rog-profile-sync.sh');
+// Solo informativo (¿trae el repo el script?); no se ejecuta con privilegios.
+const ENABLE_ASUSD = path.join(REPO, 'scripts', 'enable-asusd.sh');
 // User-writable curve store; the root service reads it on every profile change.
 const FAN_CURVES_JSON = path.join(
   os.homedir(), '.config', 'rog-monitor', 'fan-curves.json');
 
 // The threshold is a firmware setting, so persist it under /etc and apply it
-// again at boot. pkexec keeps the renderer unprivileged.
+// again at boot. rog-ctl.sh (root-owned helper) validates 20..100 again.
 ipcMain.handle('set-battery-limit', async (_e, limit) => {
-  const value = Number(limit);
-  if (!Number.isInteger(value) || value < 20 || value > 100) {
+  const value = priv.validateBatteryLimit(limit);
+  if (value === null) {
     return { ok: false, err: 'El límite debe ser un entero entre 20 y 100.' };
   }
-  if (!fs.existsSync(BATTERY_LIMIT_SCRIPT) || !fs.existsSync(BATTERY_LIMIT_RESUME_SCRIPT) || !fs.existsSync(BATTERY_LIMIT_UNIT)) {
-    return { ok: false, err: 'No encontré los archivos de control de batería de ROG Monitor.' };
-  }
-  // Root on SELinux systems cannot necessarily traverse the user's home.
-  // Stage copies in /tmp with a readable label before invoking pkexec.
-  let stagingDir;
-  try {
-    stagingDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rog-monitor-battery-'));
-    fs.chmodSync(stagingDir, 0o755);
-    fs.copyFileSync(BATTERY_LIMIT_SCRIPT, path.join(stagingDir, 'rog-battery-limit'));
-    fs.copyFileSync(BATTERY_LIMIT_RESUME_SCRIPT, path.join(stagingDir, 'rog-battery-limit-resume'));
-    fs.copyFileSync(BATTERY_LIMIT_UNIT, path.join(stagingDir, 'rog-battery-limit.service'));
-    fs.chmodSync(path.join(stagingDir, 'rog-battery-limit'), 0o755);
-    fs.chmodSync(path.join(stagingDir, 'rog-battery-limit-resume'), 0o755);
-    fs.chmodSync(path.join(stagingDir, 'rog-battery-limit.service'), 0o644);
-  } catch (err) {
-    return { ok: false, err: `No se pudo preparar el control de batería: ${err.message}` };
-  }
-  const cmd = [
-    'install -d -m 0755 /etc/rog-monitor',
-    `printf 'CHARGE_LIMIT=%s\\n' ${value} > /etc/rog-monitor/battery.conf`,
-    `install -m 0755 ${shq(path.join(stagingDir, 'rog-battery-limit'))} /usr/local/sbin/rog-battery-limit`,
-    'install -d -m 0755 /etc/systemd/system-sleep',
-    `install -m 0755 ${shq(path.join(stagingDir, 'rog-battery-limit-resume'))} /etc/systemd/system-sleep/rog-battery-limit`,
-    `install -m 0644 ${shq(path.join(stagingDir, 'rog-battery-limit.service'))} /etc/systemd/system/rog-battery-limit.service`,
-    'systemctl daemon-reload',
-    `bash /usr/local/sbin/rog-battery-limit --limit ${value}`,
-    // Migrate the previous single-purpose unit, which could run before asusd.
-    '(systemctl disable --now battery-charge-limit.service 2>/dev/null || true)',
-    'systemctl enable rog-battery-limit.service',
-  ].join(' && ');
-  try {
-    return await run('pkexec', ['sh', '-c', cmd], 30000);
-  } finally {
-    fs.rmSync(stagingDir, { recursive: true, force: true });
-  }
+  return runPriv('rog-ctl.sh', ['battery-limit', value], 30000);
 });
 
 // JSON key per hwmon fan index (mirrors fan_key() in the sync script).
@@ -545,14 +533,10 @@ ipcMain.handle('get-fan-config', (_e, profile) => {
   };
 });
 
-// One pkexec: (re)install the JSON-reading service script and reapply now.
-// Installing on every save keeps /usr/local/sbin in sync with the repo and
-// makes the cap actually persist across reboots.
+// One pkexec: restart the (root-owned, already installed) fan service so it
+// re-reads fan-curves.json and reapplies the profile now.
 async function applyFanService() {
-  const cmd =
-    `install -m 0755 ${shq(SYNC_SCRIPT)} /usr/local/sbin/rog-profile-sync && ` +
-    `systemctl restart rog-profile-sync.service`;
-  return run('pkexec', ['sh', '-c', cmd], 60000);
+  return runPriv('rog-ctl.sh', ['fans-restart'], 60000);
 }
 
 ipcMain.handle('set-fan-config', async (_e, { profile, curves, cap, capByFan }) => {
@@ -596,9 +580,6 @@ ipcMain.handle('set-fan-config', async (_e, { profile, curves, cap, capByFan }) 
     fs.writeFileSync(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
   } catch (err) {
     return { ok: false, err: `No pude guardar ${FAN_CURVES_JSON}: ${err.message}` };
-  }
-  if (!fs.existsSync(SYNC_SCRIPT)) {
-    return { ok: true, warn: 'Curvas guardadas, pero falta el repo de scripts para aplicarlas en vivo.' };
   }
   const res = await applyFanService();
   return res.ok
@@ -652,9 +633,6 @@ ipcMain.handle('set-fan-config-multi', async (_e, { profiles }) => {
   } catch (err) {
     return { ok: false, err: `No pude guardar ${FAN_CURVES_JSON}: ${err.message}` };
   }
-  if (!fs.existsSync(SYNC_SCRIPT)) {
-    return { ok: true, warn: 'Curvas guardadas, pero falta el repo de scripts para aplicarlas en vivo.' };
-  }
   const res = await applyFanService();
   return res.ok ? { ok: true } : { ok: false, err: 'Curvas guardadas, pero no se aplicaron (servicio): ' + res.err };
 });
@@ -683,18 +661,12 @@ ipcMain.handle('set-gaming-cap', (_e, rpm) => {
   return { ok: true, rpm: store.gaming_cap_rpm || null };
 });
 
-// Minimal single-quote shell escaping for the pkexec command above.
-function shq(s) {
-  return `'${String(s).replace(/'/g, `'\\''`)}'`;
-}
-
 // Steps the fans through 7 PWM levels and measures real RPM at each one
 // (~70 s, loud). The PWM→RPM table is what makes an RPM cap land AT the cap
 // instead of 200-400 RPM above (the relation is not linear). Persisted in
 // fan-curves.json so the root service, the backend and the UI all share it.
 ipcMain.handle('fan-benchmark', async () => {
-  if (!fs.existsSync(FAN_CALIBRATE)) return { ok: false, err: 'calibrate-fans.sh no encontrado' };
-  const res = await run('pkexec', ['bash', FAN_CALIBRATE], 360000);
+  const res = await runPriv('calibrate-fans.sh', [], 360000);
   if (!res.ok) return res;
   const lines = res.out.split('\n').map((l) => l.trim()).filter(Boolean);
   const labelLine = lines.find((l) => l.startsWith('labels,'));
@@ -916,15 +888,8 @@ ipcMain.handle('get-error-log', () => ({
 }));
 
 ipcMain.handle('disk-health', async () => {
-  // smartctl needs root: one pkexec prompt for all disks
-  const devices = fs.readdirSync('/sys/block')
-    .filter((d) => /^(nvme\d+n\d+|sd[a-z])$/.test(d))
-    .map((d) => `/dev/${d}`);
-  if (!devices.length) return { ok: false, err: 'no encontré discos' };
-  const script = devices.map((d) =>
-    `echo "===${d}"; smartctl -H -A ${d} 2>&1 | grep -iE "result|percentage used|temperature|power_on|available spare:|reallocated|wear" || true`
-  ).join('; ');
-  const res = await run('pkexec', ['sh', '-c', script], 30000);
+  // smartctl needs root: one pkexec prompt for all disks (rog-ctl.sh lists them).
+  const res = await runPriv('rog-ctl.sh', ['smart-summary'], 30000);
   if (!res.ok) return res;
   const disks = [];
   for (const part of res.out.split(/^===/m).filter(Boolean)) {
@@ -939,11 +904,12 @@ ipcMain.handle('disk-health', async () => {
 // Devuelve el JSON de smartctl directamente, o {ok:false, err} si falla/cancela.
 ipcMain.handle('readSmart', async (_e, device) => {
   // Validar que el dispositivo sea un bloque real y no algo malicioso.
-  if (typeof device !== 'string' || !/^\/dev\/(nvme\d+n\d+|sd[a-z])$/.test(device)) {
+  if (!priv.validateDevice(device)) {
     return { ok: false, err: `Dispositivo no permitido: ${device}` };
   }
-  // smartctl -j -a: salida JSON completa; pkexec eleva privilegios.
-  const res = await run('pkexec', ['smartctl', '-j', '-a', device], 30000);
+  // smartctl -j -a vía rog-ctl.sh (que valida el dispositivo de nuevo).
+  const res = await runPriv('rog-ctl.sh', ['smart-json', device], 30000);
+  if (res.needsInstall) return { ok: false, needsInstall: true, err: res.err };
   // smartctl devuelve código ≠ 0 si hay atributos de fallo (bits 2..7).
   // Pero si pkexec fue cancelado (código 126/127) o smartctl no existe (127),
   // no hay JSON útil → reportar error.
@@ -1008,10 +974,7 @@ ipcMain.handle('get-aura-state', async () => {
 });
 
 ipcMain.handle('enable-aura-service', async () => {
-  if (!fs.existsSync(ENABLE_ASUSD)) {
-    return { ok: false, err: `No encontré ${ENABLE_ASUSD}` };
-  }
-  const res = await run('pkexec', ['bash', ENABLE_ASUSD, '--yes'], 120000);
+  const res = await runPriv('enable-asusd.sh', ['--yes'], 120000);
   if (!res.ok) return res;
   return { ok: true, setup: await auraSetupStatus(), out: res.out };
 });
@@ -1325,7 +1288,12 @@ ipcMain.handle('reinstall-app', async () => {
   // Reinstala dependencias de usuario (venv) y reinicia el backend. Sin sudo.
   const res = await run('bash', [path.join(REPO, 'scripts', 'install.sh')], 180000);
   if (res.ok) startBackend();
-  return res;
+  if (!res.ok || privHelper('rog-ctl.sh').ok) return res;
+  // Integración de sistema ausente o de otra versión: se ofrece instalarla
+  // (diálogo nativo explícito; es la única acción que ejecuta el repo como root).
+  const sys = await installSystemIntegration();
+  if (sys.cancelled) return { ...res, systemSkipped: true };
+  return sys.ok ? res : { ok: false, err: `Integración de sistema: ${sys.err || sys.out}`, out: res.out };
 });
 
 ipcMain.handle('uninstall-app', async (_e, { purge } = {}) => {
@@ -1338,8 +1306,7 @@ ipcMain.handle('uninstall-app', async (_e, { purge } = {}) => {
   for (const f of userTargets) { try { fs.rmSync(f, { force: true }); } catch (_) {} }
 
   // Nivel sistema (pkexec, una sola contraseña): servicios/units/udev/scripts.
-  const safeMode = path.join(REPO, 'scripts', 'rog-monitor-safe-mode.sh');
-  const sys = await run('pkexec', ['bash', safeMode, 'uninstall'], 60000);
+  const sys = await runPriv('rog-monitor-safe-mode.sh', ['uninstall'], 60000);
 
   if (purge) {
     for (const d of [CONFIG_DIR_PATH, DATA_DIR_PATH]) {
@@ -1642,13 +1609,11 @@ ipcMain.handle('close-choice', (_e, { choice, remember } = {}) => {
 
 /* ---------- power control (A6) ----------
    Lectura vía rog_monitor.power_control CLI; escritura:
-   - pl1/pl2/dynamic_boost/thermal_target → pkexec apply-power-control.sh
-   - base_clock_offset/mem_clock_offset   → pkexec apply-gpu-clocks.sh (NVML, Wayland OK)
+   - pl1/pl2/dynamic_boost/thermal_target → pkexec libexec/apply-power-control.sh
+   - base_clock_offset/mem_clock_offset   → pkexec libexec/apply-gpu-clocks.sh (NVML, Wayland OK)
    power_control.py ya hace el dispatch correcto al recibir changes con cualquier mezcla.
    Canales IPC: get-power-control / set-power-control / reset-power-control. */
 
-const APPLY_POWER_SCRIPT = path.join(REPO, 'scripts', 'apply-power-control.sh');
-const APPLY_GPU_CLOCKS_SCRIPT = path.join(REPO, 'scripts', 'apply-gpu-clocks.sh');
 
 ipcMain.handle('get-power-control', async () =>
   runJsonModule('rog_monitor.power_control', ['state'], 8000));
@@ -1700,11 +1665,13 @@ ipcMain.handle('set-power-control', async (_e, payload) => {
   const hasAttrs = ALLOWED_ATTRS.some((k) => k in changes);
   const hasClocks = ALLOWED_CLOCKS.some((k) => k in changes);
 
-  if (hasAttrs && !fs.existsSync(APPLY_POWER_SCRIPT)) {
-    return { ok: false, err: `Script no encontrado: ${APPLY_POWER_SCRIPT}` };
+  if (hasAttrs) {
+    const h = privHelper('apply-power-control.sh');
+    if (!h.ok) return h;
   }
-  if (hasClocks && !fs.existsSync(APPLY_GPU_CLOCKS_SCRIPT)) {
-    return { ok: false, err: `Script no encontrado: ${APPLY_GPU_CLOCKS_SCRIPT}` };
+  if (hasClocks) {
+    const h = privHelper('apply-gpu-clocks.sh');
+    if (!h.ok) return h;
   }
 
   // Delegar todo a power_control.py (que internamente hace pkexec a cada script).
@@ -1724,18 +1691,16 @@ ipcMain.handle('reset-power-control', async () => {
   if (!state || state.ok === false) return state;
   const controls = state.controls || {};
   const ALLOWED = ['pl1', 'pl2', 'dynamic_boost', 'thermal_target'];
-  const args = [];
+  const defaults = {};
   for (const key of ALLOWED) {
     const ctrl = controls[key];
     if (ctrl && ctrl.writable && ctrl.default !== null && ctrl.default !== undefined) {
-      args.push(`${key}=${Math.round(ctrl.default)}`);
+      defaults[key] = Math.round(ctrl.default);
     }
   }
-  if (!args.length) return { ok: false, err: 'No hay defaults que restaurar.' };
-  if (!fs.existsSync(APPLY_POWER_SCRIPT)) {
-    return { ok: false, err: `Script no encontrado: ${APPLY_POWER_SCRIPT}` };
-  }
-  const res = await run('pkexec', ['bash', APPLY_POWER_SCRIPT, ...args], 20000);
+  const args = priv.powerArgs(defaults);
+  if (!args) return { ok: false, err: 'No hay defaults que restaurar.' };
+  const res = await runPriv('apply-power-control.sh', args, 20000);
   if (!res.ok) return res;
   return runJsonModule('rog_monitor.power_control', ['state'], 8000);
 });
@@ -1743,11 +1708,11 @@ ipcMain.handle('reset-power-control', async () => {
 /* ---------- guardián térmico CPU/GPU ----------
    rog-thermal-guardian.sh: loop que sube ventiladores primero y, si el techo
    se supera, recorta dynamic_boost / PL2 suavemente. Se instala como servicio
-   systemd. En runtime: start/stop vía systemctl + pkexec; estado vía is-active. */
+   systemd. En runtime: start/stop vía pkexec + rog-ctl.sh; estado vía is-active. */
 
 const THERMAL_GUARDIAN_SERVICE = 'rog-thermal-guardian.service';
+// Solo informativo (¿trae el repo el script?); el que corre como root es el de libexec.
 const THERMAL_GUARDIAN_SCRIPT = path.join(REPO, 'scripts', 'rog-thermal-guardian.sh');
-const THERMAL_GUARDIAN_UNIT = path.join(REPO, 'systemd', 'rog-thermal-guardian.service');
 
 function readGuardianOverride() {
   const overridePath = `/etc/systemd/system/${THERMAL_GUARDIAN_SERVICE}.d/override.conf`;
@@ -1794,31 +1759,11 @@ ipcMain.handle('set-thermal-guardian', async (_e, { enabled, cpuCeiling, gpuCeil
   const defGpu = guardianMode === 'gaming' ? 87 : 83;
   const cpu = Math.max(70, Math.min(100, Math.round(Number(cpuCeiling) || defCpu)));
   const gpu = Math.max(70, Math.min(87, Math.round(Number(gpuCeiling || ceiling) || defGpu)));
-  const overrideDir = `/etc/systemd/system/${THERMAL_GUARDIAN_SERVICE}.d`;
-  const overridePath = `${overrideDir}/override.conf`;
-  const unitPath = `/etc/systemd/system/${THERMAL_GUARDIAN_SERVICE}`;
-  let unit = fs.readFileSync(THERMAL_GUARDIAN_UNIT, 'utf-8')
-    .replace(/__ROG_MONITOR_REPO__/g, REPO)
-    .replace(/ROG_THERMAL_CEILING=83/g, 'ROG_THERMAL_GPU_CEILING=83');
-  const overrideContent =
-    `[Service]\n` +
-    `Environment="ROG_THERMAL_MODE=${guardianMode}"\n` +
-    `Environment="ROG_THERMAL_CPU_CEILING=${cpu}"\n` +
-    `Environment="ROG_THERMAL_GPU_CEILING=${gpu}"\n` +
-    `Environment="ROG_THERMAL_CEILING=${gpu}"\n`;
-  const serviceAction = enabled
-    ? `systemctl enable --now ${shQuote(THERMAL_GUARDIAN_SERVICE)}`
-    : `systemctl disable --now ${shQuote(THERMAL_GUARDIAN_SERVICE)}`;
-  const cmd = [
-    `install -d -m 0755 ${shQuote(overrideDir)}`,
-    `printf %s ${shQuote(unit)} > ${shQuote(unitPath)}`,
-    `printf %s ${shQuote(overrideContent)} > ${shQuote(overridePath)}`,
-    'systemctl daemon-reload',
-    serviceAction,
-  ].join(' && ');
-
-  const res = await run('pkexec', ['sh', '-c', cmd], 30000);
-  if (!res.ok) return { ok: false, err: res.err };
+  const argv = priv.guardianArgs({ enabled: !!enabled, mode: guardianMode, cpu, gpu });
+  if (!argv) return { ok: false, err: 'Parámetros del guardián inválidos.' };
+  // rog-ctl.sh escribe el override.conf, recarga systemd y habilita/deshabilita.
+  const res = await runPriv('rog-ctl.sh', argv, 30000);
+  if (!res.ok) return { ok: false, err: res.err, needsInstall: res.needsInstall };
 
   // Releer estado después de la acción.
   const active = await run('systemctl', ['is-active', THERMAL_GUARDIAN_SERVICE], 4000);

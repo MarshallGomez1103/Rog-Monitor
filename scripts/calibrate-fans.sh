@@ -1,5 +1,6 @@
 #!/usr/bin/bash
 set -euo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin  # root: PATH fijo del sistema
 
 # Calibración PWM→RPM de los ventiladores (corre como root vía pkexec).
 #

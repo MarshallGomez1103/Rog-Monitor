@@ -5,7 +5,7 @@ Wants=asusd.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/rog-battery-limit
+ExecStart=/usr/local/libexec/rog-monitor/rog-battery-limit.sh
 
 [Install]
 WantedBy=multi-user.target

@@ -5,7 +5,8 @@
 #
 # Hace primero todo lo de usuario SIN sudo (entorno Python, comando `monitor`,
 # icono en el menú y acceso en el escritorio). Solo al final, y avisando
-# exactamente para qué, pide sudo una vez para la integración de sistema.
+# exactamente para qué, pide sudo una vez para la integración de sistema
+# (scripts/install-system.sh; prueba sin root: --dry-run).
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -36,6 +37,8 @@ fi
 printf '\n────────────────────────────────────────────\n'
 printf 'Falta la integración de sistema (opcional pero recomendada).\n'
 printf 'Se pedirá sudo UNA vez para:\n'
+printf '  0) Copiar los ayudantes de root a /usr/local/libexec/rog-monitor y el paquete\n'
+printf '     Python a /usr/local/lib/rog-monitor (dueño root: root nunca ejecuta tu repo).\n'
 printf '  1) Instalar el servicio de control de ventiladores (rog-profile-sync).\n'
 printf '  2) Dejar lista la unidad del guardián térmico (se activa luego desde la app).\n'
 printf '  3) Permitir leer la potencia de la CPU sin root (RAPL).\n'
@@ -45,10 +48,10 @@ printf '────────────────────────
 read -r -p '¿Instalar la integración de sistema ahora? [S/n] ' ans
 case "${ans:-S}" in
     [nN]*)
-        printf '\nSaltada. Puedes instalarla luego con:\n  sudo bash %s/scripts/install-system.sh %s\n' "$REPO" "$REPO"
+        printf '\nSaltada. Puedes instalarla luego con:\n  sudo bash %s/scripts/install-system.sh\n' "$REPO"
         ;;
     *)
-        sudo bash "$REPO/scripts/install-system.sh" "$REPO"
+        sudo bash "$REPO/scripts/install-system.sh"
         ;;
 esac
 
