@@ -3,10 +3,17 @@
 
   measure.py --cmd "python3 -m rog_monitor --json-stream --interval 1" --duration 60
   measure.py --pid 1234 --duration 60
+  measure.py --bench-overhead --duration 20 --reps 3
 
 The tree (root + all descendants) is re-scanned every --scan s (default 0.02) so short-lived
 children are counted; full metrics are sampled every 1 s. Prints a markdown row, then JSON.
 Limits: a child that lives < --scan may be missed; reads are same-user only.
+
+--bench-overhead (CP-7.08): costo del monitor sobre una carga real. Corre el benchmark de CPU
+(rog_monitor.benchmarks cpu, score = iter/s) con el backend `--json-stream` APAGADO y ENCENDIDO,
+alternando el orden en cada repetición (off,on / on,off / ...) para repartir la deriva térmica.
+--duration = segundos medidos por corrida (+3 s de warm-up); --reps = pares. Delta < CV entre
+corridas = ruido, no overhead. Detalle del método en docs/BENCHMARKS.md.
 """
 import argparse, json, os, resource, shlex, statistics, subprocess, sys, threading, time
 
@@ -103,15 +110,58 @@ def pct(v, q):
     return v[min(len(v) - 1, int(q * len(v)))] if v else 0.0
 
 
+def bench_overhead(a):  # score del benchmark de CPU con el backend apagado / encendido (orden alternado)
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    env = dict(os.environ, PYTHONPATH=os.path.join(root, "src"))
+    bench = [sys.executable, "-m", "rog_monitor.benchmarks", "cpu", "--seconds", str(int(a.duration)), "--warmup", "3"]
+    scores = {False: [], True: []}
+    temps = {False: [], True: []}
+
+    def run(on):
+        be = subprocess.Popen([sys.executable, "-m", "rog_monitor", "--json-stream", "--interval", "1"],
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env) if on else None
+        try:
+            time.sleep(3 if on else 0)  # que el backend ya esté en régimen
+            r = json.loads(subprocess.run(bench, capture_output=True, text=True, env=env).stdout)
+        finally:
+            if be:
+                be.terminate()
+                be.wait(5)
+        scores[on].append(r["throughput"]["score_ips"])
+        temps[on].append(r["runs"][0]["start"]["cpu_temp"])
+        print(f"backend={'on ' if on else 'off'} score={r['throughput']['score_ips']:.0f} iter/s "
+              f"start={temps[on][-1]} C max={r['summary']['cpu_temp_max']} C", file=sys.stderr)
+        time.sleep(10)  # enfriar un poco entre corridas
+
+    for i in range(a.reps):
+        for on in ((False, True) if i % 2 == 0 else (True, False)):
+            run(on)
+    off, on = statistics.mean(scores[False]), statistics.mean(scores[True])
+    cv = lambda v: round(statistics.stdev(v) / statistics.mean(v) * 100, 2) if len(v) > 1 else None
+    r = {"duration_s": a.duration, "reps": a.reps, "score_off": scores[False], "score_on": scores[True],
+         "mean_off": round(off), "mean_on": round(on), "delta_pct": round((on - off) / off * 100, 2),
+         "cv_off_pct": cv(scores[False]), "cv_on_pct": cv(scores[True]),
+         "start_temp_off": temps[False], "start_temp_on": temps[True]}
+    print("| duration s | reps | mean off iter/s | mean on iter/s | delta % | CV off % | CV on % |")
+    print("|---|---|---|---|---|---|---|")
+    print(f"| {r['duration_s']} | {r['reps']} | {r['mean_off']} | {r['mean_on']} | {r['delta_pct']} | "
+          f"{r['cv_off_pct']} | {r['cv_on_pct']} |")
+    print(json.dumps(r))
+
+
 def main():
     ap = argparse.ArgumentParser()
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--cmd")
     g.add_argument("--pid", type=int)
+    g.add_argument("--bench-overhead", action="store_true")
     ap.add_argument("--duration", type=float, default=60)
     ap.add_argument("--scan", type=float, default=0.02)
     ap.add_argument("--label", default="")
+    ap.add_argument("--reps", type=int, default=3)
     a = ap.parse_args()
+    if a.bench_overhead:
+        return bench_overhead(a)
 
     proc, stamps = None, []
     if a.cmd:

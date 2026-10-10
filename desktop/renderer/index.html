@@ -741,6 +741,10 @@
         <button class="ghost" id="bench-gpu" data-i18n="bench.gpu">GPU LOCAL 45 s</button>
         <button class="ghost" id="bench-export" data-i18n="common.export">EXPORTAR</button>
       </div>
+      <div class="mode-row bench-opts">
+        <label><span data-i18n="bench.detail.opt_warmup">Calentamiento (s)</span><input type="number" id="bench-warmup" min="0" max="60" step="1" value="5"></label>
+        <label><span data-i18n="bench.detail.opt_reps">Repeticiones</span><select id="bench-reps"><option>1</option><option>2</option><option>3</option></select></label>
+      </div>
       <p id="bench-status" class="note" data-i18n="bench.no_results">Aún no hay resultados.</p>
       <pre id="bench-output" class="bench-output" data-i18n="bench.no_output">sin resultados</pre>
       <button class="ghost modal-close" id="benchmark-close" data-i18n="common.close">Cerrar</button>

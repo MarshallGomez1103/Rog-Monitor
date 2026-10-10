@@ -1255,6 +1255,11 @@ function benchmarkSummaryText(result) {
     t('bench.summary_throttle', { events: s.throttle_events ?? 0, ms: s.throttle_ms ?? 0 }),
     t('bench.summary_fans', { fans: fanText }),
   ];
+  const agg = result.stats?.aggregate || {};
+  const pk = result.kind === 'gpu' ? 'gpu_temp' : 'cpu_temp';
+  if (agg[pk]) lines.push(`${pk === 'gpu_temp' ? 'GPU' : 'CPU'} °C · p50 ${fmt(agg[pk].p50, 1)} · p95 ${fmt(agg[pk].p95, 1)} · p99 ${fmt(agg[pk].p99, 1)}`);
+  if (result.throughput) lines.push(`${Math.round(result.throughput.score_ips).toLocaleString()} iter/s`);
+  (result.warnings || []).forEach((w) => lines.push(t('bench.detail.warn_start_hot', { rep: w.rep, temp: fmt(w.cpu_temp, 1), limit: fmt(w.limit, 0) })));
   if (s.fan_cap) {
     const capText = Object.entries(s.fan_cap).map(([k, c]) =>
       `${k.replace('_fan', '').toUpperCase()} ${c.max ?? '--'}/${c.cap}`).join(' · ');
@@ -1595,6 +1600,15 @@ function pushBenchmarkHistory(result) {
     tool: result.tool || null,
     summary: s,
     samples: result.samples || null,
+    // v2 (CP-7.05..7.07): condiciones, warm-up/repeticiones, stats y rendimiento
+    schema: result.schema || null,
+    warmup_seconds: result.warmup_seconds ?? null,
+    repetitions: result.repetitions ?? null,
+    conditions: result.conditions || null,
+    stats: result.stats || null,
+    runs: result.runs || null,
+    throughput: result.throughput || null,
+    warnings: result.warnings || null,
   };
   benchmarkHistory = [record, ...benchmarkHistory].slice(0, 20);
   try { localStorage.setItem('benchmarkHistoryV2', JSON.stringify(benchmarkHistory)); } catch (_) { /* lleno o bloqueado */ }
@@ -3665,9 +3679,14 @@ async function runBenchmark(kind) {
   benchBusy = true;
   $('bench-status').textContent = t('bench.running', { kind: kind.toUpperCase() });
   $('bench-output').textContent = t('bench.sampling');
+  // calentamiento y repeticiones (opcionales; por defecto 5 s y 1: igual de rápido que antes)
+  const opts = {
+    warmup: Math.max(0, Math.min(60, parseInt($('bench-warmup')?.value, 10) || 0)),
+    reps: Math.max(1, Math.min(5, parseInt($('bench-reps')?.value, 10) || 1)),
+  };
   const res = kind === 'cpu'
-    ? await window.rog.cpuBenchmark(45)
-    : await window.rog.gpuBenchmark(45);
+    ? await window.rog.cpuBenchmark(45, opts)
+    : await window.rog.gpuBenchmark(45, opts);
   benchBusy = false;
   benchmarkResult = res;
   $('bench-status').textContent = res.ok
@@ -3699,6 +3718,8 @@ $('bench-cpu').addEventListener('click', () => runBenchmark('cpu'));
 $('bench-gpu').addEventListener('click', () => runBenchmark('gpu'));
 $('bench-export').addEventListener('click', async () => {
   if (!benchmarkResult) { toast(t('toast.no_bench_export')); return; }
+  // JSON + CSV con esquema, versión de la app y condiciones (bench-detail.js)
+  if (window.RogBenchDetail?.exportItem) { await window.RogBenchDetail.exportItem(benchmarkResult); return; }
   const text = JSON.stringify(benchmarkResult, null, 2);
   const res = await window.rog.exportBenchmark({ kind: benchmarkResult.kind, text });
   toast(res.ok ? t('bench.exported', { path: res.path }) : t('bench.export_failed', { err: res.err }));

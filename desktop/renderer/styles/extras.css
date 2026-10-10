@@ -682,6 +682,43 @@
   text-transform: uppercase;
 }
 
+/* Tabla de percentiles (p50/p95/p99) y condiciones del run */
+.benchd-table-wrap { overflow-x: auto; border: 1px solid var(--hair); }
+.benchd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+}
+.benchd-table th,
+.benchd-table td {
+  padding: 0.28rem 0.55rem;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--hair);
+  color: var(--ink);
+}
+.benchd-table thead th {
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-weight: 600;
+}
+.benchd-table tbody th { text-align: left; font-weight: 600; color: var(--dim); }
+.benchd-table tbody tr:last-child th,
+.benchd-table tbody tr:last-child td { border-bottom: 0; }
+.benchd-table th:nth-child(5),
+.benchd-table td:nth-child(5) { color: var(--accent); text-shadow: var(--neon-glow-soft, 0 0 5px currentColor); }
+.benchd-table thead th:first-child { text-align: left; }
+.benchd-note { margin: 0; font-size: 0.66rem; color: var(--dim); line-height: 1.45; }
+.bench-detail-cell.wide { grid-column: span 2; }
+.bench-detail-cell b { overflow-wrap: anywhere; }
+.benchd-foot { display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap; }
+.bench-opts { gap: 0.8rem; align-items: end; }
+.bench-opts label { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.62rem; color: var(--dim); letter-spacing: 0.06em; text-transform: uppercase; }
+.bench-opts input[type="number"] { width: 5.5rem; }
+
 /* =========================================================
    FAN MODAL — selector de perfil por tabs (Task 1 / C3)
    ========================================================= */

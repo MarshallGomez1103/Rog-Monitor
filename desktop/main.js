@@ -1167,11 +1167,21 @@ ipcMain.handle('set-music-mode', async (_e, { enabled, state }) => {
 
 /* ---------- thermal benchmarks ---------- */
 
-ipcMain.handle('cpu-benchmark', async (_e, seconds = 45) =>
-  runJsonModule('rog_monitor.benchmarks', ['cpu', '--seconds', String(seconds)], (seconds + 20) * 1000));
+// opts opcional {warmup, reps}: enteros acotados (el CLI Python aplica los mismos defaults).
+// Plazo = reps × (warm-up + medido + enfriamiento 10 s) + margen de arranque.
+function runBenchmarkModule(kind, seconds, opts) {
+  const clamp = (v, lo, hi, d) => (Number.isInteger(v) && v >= lo && v <= hi ? v : d);
+  const sec = clamp(seconds, 5, 600, 45);
+  const warmup = clamp(opts && opts.warmup, 0, 60, 5);
+  const reps = clamp(opts && opts.reps, 1, 10, 1);
+  return runJsonModule('rog_monitor.benchmarks',
+    [kind, '--seconds', String(sec), '--warmup', String(warmup), '--reps', String(reps)],
+    (reps * (sec + warmup + 12) + 25) * 1000);
+}
 
-ipcMain.handle('gpu-benchmark', async (_e, seconds = 45) =>
-  runJsonModule('rog_monitor.benchmarks', ['gpu', '--seconds', String(seconds)], (seconds + 25) * 1000));
+ipcMain.handle('cpu-benchmark', async (_e, seconds = 45, opts) => runBenchmarkModule('cpu', seconds, opts));
+
+ipcMain.handle('gpu-benchmark', async (_e, seconds = 45, opts) => runBenchmarkModule('gpu', seconds, opts));
 
 /* ---------- game session (v11) ----------
    Timeouts generosos en stop/get/compare: sesiones de 100 min tienen
@@ -1210,7 +1220,8 @@ ipcMain.handle('game-session-delete', async (_e, id) =>
 ipcMain.handle('game-session-note', async (_e, { id, text }) =>
   runJsonModule('rog_monitor.game_session', ['note', '--id', id, '--text', String(text == null ? '' : text)], 8000));
 
-ipcMain.handle('export-benchmark', async (_e, { kind, text }) => {
+// `csv` opcional (serie por muestra): se guarda junto al JSON con el mismo nombre base y .csv.
+ipcMain.handle('export-benchmark', async (_e, { kind, text, csv }) => {
   const stamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 16);
   const { canceled, filePath } = await dialog.showSaveDialog(win, {
     title: 'Exportar benchmark',
@@ -1221,7 +1232,12 @@ ipcMain.handle('export-benchmark', async (_e, { kind, text }) => {
   if (canceled || !filePath) return { ok: false, err: 'cancelado' };
   try {
     fs.writeFileSync(filePath, text, 'utf-8');
-    return { ok: true, path: filePath };
+    let csvPath = null;
+    if (typeof csv === 'string' && csv) {
+      csvPath = filePath.replace(/\.json$/i, '') + '.csv';
+      fs.writeFileSync(csvPath, csv, 'utf-8');
+    }
+    return { ok: true, path: filePath, csvPath };
   } catch (err) {
     return { ok: false, err: String(err.message) };
   }
