@@ -82,7 +82,7 @@ REQUIRED = {
     "procs_by_core": "dict", "procs_mem": "list", "procs_vram": "dict",
     # aura
     "aura": "dict|null",
-    # history + events (series may differ in length: Series.push skips None)
+    # history + events (series alineadas; huecos = null desde que Series.push guarda None)
     "series": "dict", "series.cpu_temp": "list", "series.gpu_temp": "list",
     "series.cpu_power": "list", "series.gpu_power": "list",
     "events": "list",
