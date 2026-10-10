@@ -565,7 +565,7 @@ function fmtGbFromMb(value, digits = 1) {
 function fmtGbPairFromMb(used, total, digits = 1) {
   return total === null || total === undefined || Number.isNaN(total)
     ? '--'
-    : `${fmt(Number(used || 0) / 1024, digits)}/${fmt(Number(total) / 1024, digits)} GiB`;
+    : `${fmt(Number(used || 0) / 1024, digits)}/${fmt(Number(total) / 1024, 0)} GiB`;
 }
 
 function fmtMb(value) {
