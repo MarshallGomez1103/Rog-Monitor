@@ -20,7 +20,7 @@ import sys
 import time
 
 from . import hwmon
-from .config import CONFIG_DIR, DATA_DIR
+from .config import CONFIG_DIR, DATA_DIR, backup_corrupt, write_atomic
 
 # Sensible startup maximums for ASUS gaming laptops; auto-raised when exceeded.
 DEFAULT_MAX = {"cpu_fan": 7100, "gpu_fan": 7000, "mid_fan": 7600}
@@ -124,22 +124,29 @@ DEFAULT_FAN_CURVES: dict = {
 # ------------------------------------------------------------------
 
 def _load_raw() -> dict:
-    """Carga fan-curves.json tal cual (sin defaults). Retorna {} si no existe."""
+    """Carga fan-curves.json tal cual (sin defaults). Retorna {} si no existe.
+
+    Si el JSON está corrupto se respalda a `.corrupt-<fecha>.bak` (una vez)
+    antes de devolver {}, para que un guardado posterior no pierda
+    cap_rpm/calibration/max_rpm sin dejar rastro.
+    """
     try:
         with open(FAN_CURVES_FILE) as fh:
-            return json.load(fh) or {}
-    except (OSError, ValueError):
+            data = json.load(fh)
+    except OSError:
         return {}
+    except ValueError:
+        backup_corrupt(FAN_CURVES_FILE)
+        return {}
+    if not isinstance(data, dict):
+        backup_corrupt(FAN_CURVES_FILE)
+        return {}
+    return data
 
 
 def _save_raw(data: dict) -> None:
-    """Guarda data en fan-curves.json (crea CONFIG_DIR si hace falta)."""
-    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    tmp = FAN_CURVES_FILE.with_suffix(".json.tmp")
-    with open(tmp, "w") as fh:
-        json.dump(data, fh, indent=2, sort_keys=True)
-        fh.write("\n")
-    tmp.replace(FAN_CURVES_FILE)
+    """Guarda data en fan-curves.json (atómico, crea CONFIG_DIR si hace falta)."""
+    write_atomic(FAN_CURVES_FILE, json.dumps(data, indent=2, sort_keys=True) + "\n")
 
 
 def load_all_config() -> dict:
@@ -180,14 +187,14 @@ def save_all_config(data: dict) -> None:
 
     Solo escribe; no aplica nada al hardware (eso lo hace rog-profile-sync
     con pkexec, disparado desde main.js después de llamar a esta función).
-    Preserva "calibration" y "max_rpm" si ya existen y no vienen en `data`.
+    Mezcla sobre el JSON existente: preserva toda clave que no venga en `data`
+    (calibration, max_rpm, gaming_cap_rpm...).
     """
-    existing = _load_raw()
-    for key in ("calibration", "max_rpm"):
-        if key in existing and key not in data:
-            data[key] = existing[key]
-    data.setdefault("version", FAN_CURVES_SCHEMA_VERSION)
-    _save_raw(data)
+    # Mezcla sobre lo existente: las claves que no gestionamos (gaming_cap_rpm,
+    # calibration, max_rpm, ...) sobreviven; lo que venga en `data` gana.
+    merged = {**_load_raw(), **data}
+    merged.setdefault("version", FAN_CURVES_SCHEMA_VERSION)
+    _save_raw(merged)
 
 
 def load_profiles() -> dict:
@@ -239,6 +246,23 @@ def save_profiles(profiles: dict) -> None:
     _save_raw(existing)
 
 
+def _gaming_cap() -> int | None:
+    """Tope de Gaming (`gaming_cap_rpm`) si el guardián está en modo gaming y
+    fresco; mismo criterio que rog-profile-sync.sh. Solo lectura."""
+    try:
+        with open(FAN_CURVES_FILE) as fh:
+            cap = (json.load(fh) or {}).get("gaming_cap_rpm")
+        with open(GUARDIAN_STATE_FILE) as fh:
+            st = json.load(fh) or {}
+        if (isinstance(cap, (int, float)) and cap > 0
+                and st.get("guardian_mode") == "gaming"
+                and time.time() - float(st.get("updated", 0)) < GUARDIAN_STATE_MAX_AGE):
+            return int(cap)
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass
+    return None
+
+
 def _store_section(name: str, profile: str | None = None) -> dict:
     """A cpu/gpu/mid section of fan-curves.json mapped to hwmon fan labels.
 
@@ -257,9 +281,10 @@ def _store_section(name: str, profile: str | None = None) -> dict:
         override = per_profile.get("cap_rpm")
         if isinstance(override, dict):
             section = {**section, **override}
+    gaming = _gaming_cap() if name == "cap_rpm" else None
     out = {}
     for label, key in CAP_KEY.items():
-        value = section.get(key)
+        value = gaming or section.get(key)
         if isinstance(value, (int, float)) and value > 0:
             out[label] = int(value)
     return out
@@ -337,6 +362,7 @@ class FanReader:
         self._active_profile: str | None = None
         self.caps = load_caps(self._active_profile)
         self._caps_mtime = self._curves_mtime()
+        self._gaming = _gaming_cap()
         self._dirty = False
 
     @staticmethod
@@ -348,7 +374,9 @@ class FanReader:
 
     def _maybe_reload_caps(self, profile: str | None = None) -> None:
         mtime = self._curves_mtime()
-        if mtime != self._caps_mtime or profile != self._active_profile:
+        gaming = _gaming_cap()  # el guardián puede entrar/salir de gaming sin tocar el JSON
+        if mtime != self._caps_mtime or profile != self._active_profile or gaming != self._gaming:
+            self._gaming = gaming
             self._active_profile = profile
             self.caps = load_caps(profile)
             self.max_rpm.update(load_measured_max())

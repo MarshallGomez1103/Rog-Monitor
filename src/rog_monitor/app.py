@@ -219,9 +219,21 @@ class App:
             time.sleep(0.5)
             print(self.snapshot_json())
             return
+        # Cebar lectores por delta (CPU% de procesos, vatios RAPL) como en el
+        # camino no-stream, para que la primera línea no salga vacía.
+        self.procs.read()
+        self.rapl.read_watts()
+        time.sleep(0.5)
         try:
             while True:
-                print(self.snapshot_json(), flush=True)
+                try:
+                    line = self.snapshot_json()
+                except Exception:
+                    # Un fallo puntual no debe matar al productor NDJSON: se
+                    # registra y se sigue (con sleep, sin bucle caliente).
+                    self._log_error()
+                else:
+                    print(line, flush=True)
                 time.sleep(self.interval)
         except (KeyboardInterrupt, BrokenPipeError):
             pass

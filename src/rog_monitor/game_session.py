@@ -32,7 +32,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .config import Config, DATA_DIR
+from .config import Config, DATA_DIR, write_atomic
 from .cpu import CpuReader
 from .fans import FanReader
 from .gpu import GpuReader
@@ -156,21 +156,36 @@ def _session_path(session_id: str) -> Path:
     return SESSIONS_DIR / f"{safe}.json"
 
 
-def _load_session(session_id: str) -> dict | None:
+def _samples_path(session_id: str) -> Path:
+    """Sidecar NDJSON con las muestras de una sesión en curso (no matchea *.json)."""
+    return _session_path(session_id).with_suffix(".samples.ndjson")
+
+
+def _load_session(session_id: str, with_samples: bool = True) -> dict | None:
     path = _session_path(session_id)
     try:
         with open(path) as fh:
-            return json.load(fh)
+            session = json.load(fh)
     except (OSError, ValueError):
         return None
+    # Sesión en curso: las muestras viven en el sidecar hasta `stop` (cada
+    # `sample` es un proceso nuevo; reescribir todo el JSON era O(n²)).
+    if with_samples and not session.get("ended_at"):
+        try:
+            with open(_samples_path(session_id)) as fh:
+                for line in fh:
+                    try:
+                        session["samples"].append(json.loads(line))
+                    except ValueError:
+                        continue  # línea a medias por un corte: se ignora
+        except OSError:
+            pass
+    return session
 
 
 def _save_session(session: dict) -> None:
-    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
-    path = _session_path(session["id"])
-    with open(path, "w") as fh:
-        json.dump(session, fh, indent=2, sort_keys=False)
-        fh.write("\n")
+    write_atomic(_session_path(session["id"]),
+                 json.dumps(session, indent=2, sort_keys=False) + "\n")
 
 
 def _has_baseline() -> bool:
@@ -257,7 +272,7 @@ def cmd_start(_args) -> dict:
 # robusto y simple: la app llama `sample` ~1/s mientras el modal está
 # abierto, igual de barato que el resto de los IPC de esta app.
 def cmd_sample(args) -> dict:
-    session = _load_session(args.id)
+    session = _load_session(args.id, with_samples=False)
     if session is None:
         return {"ok": False, "err": f"sesión {args.id} no encontrada"}
     if session.get("ended_at"):
@@ -268,11 +283,20 @@ def cmd_sample(args) -> dict:
 
     readers = _Readers()
     sample = readers.sample(t_offset)
-    session["samples"].append(sample)
+    # Append O(1) al sidecar; el JSON completo solo se reescribe al detectar
+    # el juego (una vez) y en `stop`.
+    try:
+        SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+        with open(_samples_path(args.id), "a") as fh:
+            fh.write(json.dumps(sample) + "\n")
+        with open(_samples_path(args.id)) as fh:
+            count = sum(1 for _ in fh)
+    except OSError as exc:
+        return {"ok": False, "err": f"no se pudo guardar la muestra: {exc}"}
     if sample.get("game") and not session.get("game"):
         session["game"] = sample["game"]
-    _save_session(session)
-    return {"ok": True, "sample": sample, "count": len(session["samples"])}
+        _save_session(session)
+    return {"ok": True, "sample": sample, "count": count}
 
 
 def cmd_stop(args) -> dict:
@@ -283,6 +307,10 @@ def cmd_stop(args) -> dict:
         session["ended_at"] = _now_iso()
         session["summary"] = summarize(session["samples"])
         _save_session(session)
+        try:  # ya están dentro del JSON final; el sidecar es solo intermedio
+            _samples_path(args.id).unlink()
+        except OSError:
+            pass
     return {"ok": True, "session": session}
 
 
@@ -329,6 +357,7 @@ def cmd_delete(args) -> dict:
     path = _session_path(args.id)
     try:
         path.unlink()
+        _samples_path(args.id).unlink(missing_ok=True)  # sidecar huérfano, si había
         return {"ok": True}
     except OSError as exc:
         return {"ok": False, "err": str(exc)}
@@ -336,7 +365,7 @@ def cmd_delete(args) -> dict:
 
 def cmd_note(args) -> dict:
     """Guarda una nota corta en la sesión (persiste en su JSON)."""
-    session = _load_session(args.id)
+    session = _load_session(args.id, with_samples=False)
     if session is None:
         return {"ok": False, "err": f"sesión {args.id} no encontrada"}
     session["note"] = (args.text or "")[:500]

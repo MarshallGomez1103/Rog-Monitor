@@ -171,8 +171,24 @@ def read_offsets(device_index: int = 0) -> dict:
         _nvml_shutdown(lib)
 
 
+def validate_offsets(core_mhz: int, mem_mhz: int) -> tuple[int, int]:
+    """Rechaza (no recorta) offsets fuera de los rangos SAFE_*: es una
+    escritura a hardware, mejor fallar claro que aplicar otro valor."""
+    core, mem = int(core_mhz), int(mem_mhz)
+    if not SAFE_CORE_MIN_MHZ <= core <= SAFE_CORE_MAX_MHZ:
+        raise ValueError(
+            f"offset core {core} MHz fuera del rango seguro "
+            f"{SAFE_CORE_MIN_MHZ}..{SAFE_CORE_MAX_MHZ} MHz")
+    if not SAFE_MEM_MIN_MHZ <= mem <= SAFE_MEM_MAX_MHZ:
+        raise ValueError(
+            f"offset mem {mem} MHz fuera del rango seguro "
+            f"{SAFE_MEM_MIN_MHZ}..{SAFE_MEM_MAX_MHZ} MHz")
+    return core, mem
+
+
 def set_offsets(core_mhz: int, mem_mhz: int, device_index: int = 0) -> dict:
     """Escribe offsets. REQUIERE ROOT (llámalo desde apply-gpu-clocks.sh via pkexec)."""
+    core_mhz, mem_mhz = validate_offsets(core_mhz, mem_mhz)
     # Doble recorte en Python (el script también recorta).
     data = read_offsets(device_index)
 
@@ -232,6 +248,9 @@ def _cmd_set(args) -> int:
         result = set_offsets(args.core, args.mem, args.device)
         print(json.dumps(result, indent=2))
         return 0
+    except ValueError as e:
+        print(json.dumps({"ok": False, "err": str(e)}), file=sys.stderr)
+        return 1
     except NvmlError as e:
         print(json.dumps({"ok": False, "err": str(e), "nvml_code": e.code}), file=sys.stderr)
         return 1
