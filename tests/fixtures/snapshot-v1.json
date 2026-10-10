@@ -1,0 +1,819 @@
+{
+ "cpu": {
+  "model": "13th Gen Intel(R) Core(TM) i7-13650HX",
+  "cores": [
+   64.0,
+   58.0,
+   66.0,
+   59.0,
+   64.0,
+   64.0,
+   64.0,
+   64.0,
+   58.0,
+   63.0,
+   63.0,
+   63.0,
+   63.0,
+   55.0
+  ],
+  "core_grid": [
+   {
+    "cpu": 0,
+    "usage": 2,
+    "ghz": 2.47,
+    "temp": 58.0,
+    "core_id": 0
+   },
+   {
+    "cpu": 1,
+    "usage": 0,
+    "ghz": 0.8,
+    "temp": 58.0,
+    "core_id": 0
+   },
+   {
+    "cpu": 2,
+    "usage": 4,
+    "ghz": 0.8,
+    "temp": 55.0,
+    "core_id": 4
+   },
+   {
+    "cpu": 3,
+    "usage": 0,
+    "ghz": 0.8,
+    "temp": 55.0,
+    "core_id": 4
+   },
+   {
+    "cpu": 4,
+    "usage": 6,
+    "ghz": 4.83,
+    "temp": 64.0,
+    "core_id": 8
+   },
+   {
+    "cpu": 5,
+    "usage": 0,
+    "ghz": 0.8,
+    "temp": 64.0,
+    "core_id": 8
+   },
+   {
+    "cpu": 6,
+    "usage": 9,
+    "ghz": 0.85,
+    "temp": 58.0,
+    "core_id": 12
+   },
+   {
+    "cpu": 7,
+    "usage": 4,
+    "ghz": 0.8,
+    "temp": 58.0,
+    "core_id": 12
+   },
+   {
+    "cpu": 8,
+    "usage": 4,
+    "ghz": 0.8,
+    "temp": 66.0,
+    "core_id": 16
+   },
+   {
+    "cpu": 9,
+    "usage": 0,
+    "ghz": 0.8,
+    "temp": 66.0,
+    "core_id": 16
+   },
+   {
+    "cpu": 10,
+    "usage": 4,
+    "ghz": 3.83,
+    "temp": 59.0,
+    "core_id": 20
+   },
+   {
+    "cpu": 11,
+    "usage": 0,
+    "ghz": 0.8,
+    "temp": 59.0,
+    "core_id": 20
+   },
+   {
+    "cpu": 12,
+    "usage": 4,
+    "ghz": 2.56,
+    "temp": 64.0,
+    "core_id": 24
+   },
+   {
+    "cpu": 13,
+    "usage": 2,
+    "ghz": 0.8,
+    "temp": 64.0,
+    "core_id": 25
+   },
+   {
+    "cpu": 14,
+    "usage": 0,
+    "ghz": 1.68,
+    "temp": 64.0,
+    "core_id": 26
+   },
+   {
+    "cpu": 15,
+    "usage": 0,
+    "ghz": 0.8,
+    "temp": 64.0,
+    "core_id": 27
+   },
+   {
+    "cpu": 16,
+    "usage": 0,
+    "ghz": 0.8,
+    "temp": 63.0,
+    "core_id": 28
+   },
+   {
+    "cpu": 17,
+    "usage": 0,
+    "ghz": 0.8,
+    "temp": 63.0,
+    "core_id": 29
+   },
+   {
+    "cpu": 18,
+    "usage": 2,
+    "ghz": 0.8,
+    "temp": 63.0,
+    "core_id": 30
+   },
+   {
+    "cpu": 19,
+    "usage": 2,
+    "ghz": 0.8,
+    "temp": 63.0,
+    "core_id": 31
+   }
+  ],
+  "avg": 62.0,
+  "max": 66.0,
+  "min": 55.0,
+  "package": 69.0,
+  "hot90": 0,
+  "freq_ghz": 1.34,
+  "governor": "performance",
+  "driver": "intel_pstate",
+  "epp": "performance",
+  "throttle_count": 327,
+  "throttle_ms": 1567,
+  "throttle_delta": 0,
+  "throttle_ms_delta": 0,
+  "throttled_now": false
+ },
+ "gpu": {
+  "mode": null,
+  "pending": null,
+  "pending_action": null,
+  "supported": [],
+  "active": {
+   "vendor": "nvidia",
+   "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+   "temp": 51.0,
+   "util": 2.0,
+   "power": 3.19,
+   "vram_used": 81.0,
+   "vram_total": 8188.0,
+   "clock_mhz": 210.0,
+   "vram_clock_mhz": 405.0
+  }
+ },
+ "fans": [
+  {
+   "label": "cpu_fan",
+   "rpm": 4200,
+   "percent": 63,
+   "cap": 6700
+  },
+  {
+   "label": "gpu_fan",
+   "rpm": 2600,
+   "percent": 39,
+   "cap": 6700
+  },
+  {
+   "label": "mid_fan",
+   "rpm": 4200,
+   "percent": 63,
+   "cap": 6700
+  }
+ ],
+ "fan_meta": {
+  "schema_version": 1,
+  "active_profile": "performance",
+  "guardian": {
+   "mode": null,
+   "running": false
+  }
+ },
+ "cpu_watts": 6.8,
+ "rapl_available": true,
+ "asus_profile": "performance",
+ "ppd_profile": "performance",
+ "battery": {
+  "capacity": 80,
+  "status": "Not charging",
+  "watts": 0.0,
+  "charge_limit": 80,
+  "on_ac": true,
+  "energy_full_wh": 77.71,
+  "energy_full_design_wh": 90.0,
+  "energy_now_wh": 62.17,
+  "health_percent": 86.3,
+  "cycle_count": 0
+ },
+ "sys": {
+  "ram_total_gb": 46.65643310546875,
+  "ram_used_gb": 18.858379364013672,
+  "ram_percent": 40,
+  "swap_used_gb": 0.0,
+  "swap_total_gb": 15.999996185302734,
+  "rx_mbps": 0.02854156448449333,
+  "tx_mbps": 0.01790504600035789,
+  "disks": [
+   {
+    "mount": "/mnt/disk0",
+    "label": "disk0",
+    "used_gb": 541.352189952,
+    "total_gb": 983.349346304,
+    "percent": 55,
+    "fstype": "ext4",
+    "model": "Generic NVMe SSD",
+    "block_dev": "nvme0n1",
+    "read_mbps": 0.0,
+    "write_mbps": 0.0
+   },
+   {
+    "mount": "/mnt/disk1",
+    "label": "disk1",
+    "used_gb": 284.610875392,
+    "total_gb": 698.7972608,
+    "percent": 41,
+    "fstype": "btrfs",
+    "model": "Generic NVMe SSD",
+    "block_dev": "nvme1n1",
+    "read_mbps": 0.0,
+    "write_mbps": 0.0
+   }
+  ],
+  "nvme_temps": [
+   51.85,
+   46.85
+  ],
+  "smart_block_devices": [
+   "/dev/nvme0n1",
+   "/dev/nvme1n1"
+  ],
+  "load": [
+   0.958984375,
+   1.1396484375,
+   1.1572265625
+  ],
+  "uptime_s": 3617.37,
+  "uptime_h": 1.004825,
+  "dmi": {
+   "board_vendor": "ASUSTeK COMPUTER INC.",
+   "board_name": "G614JV",
+   "bios_version": "G614JV.333",
+   "product_name": "ROG Strix G614JV_G614JV"
+  }
+ },
+ "procs": [
+  {
+   "pid": 4578,
+   "name": "process-1",
+   "cpu": 0.3,
+   "cpu_core": 5.0,
+   "mem_mb": 588,
+   "last_cpu": 5
+  },
+  {
+   "pid": 2827,
+   "name": "process-2",
+   "cpu": 0.3,
+   "cpu_core": 5.0,
+   "mem_mb": 371,
+   "last_cpu": 6
+  },
+  {
+   "pid": 3856,
+   "name": "process-3",
+   "cpu": 0.2,
+   "cpu_core": 3.4,
+   "mem_mb": 712,
+   "last_cpu": 6
+  },
+  {
+   "pid": 22883,
+   "name": "process-4",
+   "cpu": 0.2,
+   "cpu_core": 3.4,
+   "mem_mb": 541,
+   "last_cpu": 2
+  },
+  {
+   "pid": 63441,
+   "name": "process-5",
+   "cpu": 0.2,
+   "cpu_core": 3.4,
+   "mem_mb": 24,
+   "last_cpu": 6
+  }
+ ],
+ "procs_by_core": {
+  "5": [
+   {
+    "pid": 4578,
+    "name": "process-1",
+    "cpu": 0.3,
+    "cpu_core": 5.0,
+    "mem_mb": 588,
+    "last_cpu": 5
+   }
+  ],
+  "6": [
+   {
+    "pid": 2827,
+    "name": "process-2",
+    "cpu": 0.3,
+    "cpu_core": 5.0,
+    "mem_mb": 371,
+    "last_cpu": 6
+   },
+   {
+    "pid": 3856,
+    "name": "process-3",
+    "cpu": 0.2,
+    "cpu_core": 3.4,
+    "mem_mb": 712,
+    "last_cpu": 6
+   },
+   {
+    "pid": 63441,
+    "name": "process-5",
+    "cpu": 0.2,
+    "cpu_core": 3.4,
+    "mem_mb": 24,
+    "last_cpu": 6
+   },
+   {
+    "pid": 62456,
+    "name": "process-9",
+    "cpu": 0.1,
+    "cpu_core": 1.7,
+    "mem_mb": 117,
+    "last_cpu": 6
+   }
+  ],
+  "2": [
+   {
+    "pid": 22883,
+    "name": "process-4",
+    "cpu": 0.2,
+    "cpu_core": 3.4,
+    "mem_mb": 541,
+    "last_cpu": 2
+   }
+  ],
+  "0": [
+   {
+    "pid": 3647,
+    "name": "process-10",
+    "cpu": 0.1,
+    "cpu_core": 1.7,
+    "mem_mb": 263,
+    "last_cpu": 0
+   }
+  ],
+  "3": [
+   {
+    "pid": 4134,
+    "name": "process-1",
+    "cpu": 0.1,
+    "cpu_core": 1.7,
+    "mem_mb": 193,
+    "last_cpu": 3
+   }
+  ]
+ },
+ "procs_mem": [
+  {
+   "pid": 4897,
+   "name": "process-6",
+   "mem_mb": 1220
+  },
+  {
+   "pid": 3856,
+   "name": "process-3",
+   "mem_mb": 712
+  },
+  {
+   "pid": 7219,
+   "name": "process-3",
+   "mem_mb": 685
+  },
+  {
+   "pid": 7460,
+   "name": "process-3",
+   "mem_mb": 650
+  },
+  {
+   "pid": 4909,
+   "name": "process-7",
+   "mem_mb": 641
+  },
+  {
+   "pid": 3025,
+   "name": "process-8",
+   "mem_mb": 616
+  },
+  {
+   "pid": 6170,
+   "name": "process-3",
+   "mem_mb": 589
+  },
+  {
+   "pid": 8531,
+   "name": "process-3",
+   "mem_mb": 589
+  }
+ ],
+ "procs_vram": {
+  "available": true,
+  "reason": "",
+  "vendor": "nvidia",
+  "procs": [
+   {
+    "pid": 2827,
+    "name": "process-2",
+    "vram_mb": 7,
+    "type": "C+C+G"
+   }
+  ]
+ },
+ "aura": {
+  "available": true,
+  "asus": {
+   "available": true,
+   "binary": "/usr/bin/asusctl",
+   "effects": [
+    {
+     "label": "Static",
+     "colours": 1,
+     "id": "static",
+     "speed": false,
+     "direction": false
+    },
+    {
+     "label": "Respiracion",
+     "colours": 1,
+     "speed": true,
+     "id": "breathe",
+     "direction": false
+    },
+    {
+     "label": "Color Cycle",
+     "speed": true,
+     "id": "rainbow-cycle",
+     "colours": 0,
+     "direction": false
+    },
+    {
+     "label": "Rainbow",
+     "speed": true,
+     "direction": true,
+     "id": "rainbow-wave",
+     "colours": 0
+    },
+    {
+     "label": "Pulse",
+     "colours": 1,
+     "id": "pulse",
+     "speed": false,
+     "direction": false
+    }
+   ],
+   "basic_effects": [
+    {
+     "label": "Static",
+     "colours": 1,
+     "id": "static",
+     "speed": false,
+     "direction": false
+    },
+    {
+     "label": "Respiracion",
+     "colours": 1,
+     "speed": true,
+     "id": "breathe",
+     "direction": false
+    },
+    {
+     "label": "Color Cycle",
+     "speed": true,
+     "id": "rainbow-cycle",
+     "colours": 0,
+     "direction": false
+    },
+    {
+     "label": "Rainbow",
+     "speed": true,
+     "direction": true,
+     "id": "rainbow-wave",
+     "colours": 0
+    }
+   ],
+   "extra_effects": [
+    {
+     "label": "Pulse",
+     "colours": 1,
+     "id": "pulse",
+     "speed": false,
+     "direction": false
+    }
+   ],
+   "unsupported_effects": [],
+   "brightness_levels": [
+    "off",
+    "low",
+    "med",
+    "high"
+   ],
+   "current_brightness": "high",
+   "hint": null
+  },
+  "openrgb": {
+   "available": true,
+   "binary": "/usr/bin/openrgb",
+   "sdk_port": 6742,
+   "sdk_reachable": false,
+   "hint": null
+  },
+  "music": {
+   "available": true,
+   "source": "pw-record"
+  },
+  "peripherals": [
+   {
+    "name": "Generic RGB keyboard",
+    "link": "cable",
+    "vid_pid": "258a:010c",
+    "hidraw": "hidraw1",
+    "supported": false,
+    "note": "detected \u2014 custom protocol under analysis (no control yet)"
+   }
+  ],
+  "profiles": [],
+  "apply_on_startup": false,
+  "startup_profile": null,
+  "current": {
+   "driver": "asus",
+   "effect": "rainbow-wave",
+   "brightness": "high",
+   "colour": "000f4d",
+   "colour2": null,
+   "speed": "low",
+   "direction": "right",
+   "zone": null
+  },
+  "config_path": "/home/user/.config/rog-monitor/aura.json",
+  "mode_grid": [
+   {
+    "id": "static",
+    "label": "Static",
+    "icon": "\u25a0",
+    "kind": "hardware",
+    "supported": true,
+    "reason": null
+   },
+   {
+    "id": "breathe",
+    "label": "Breathing",
+    "icon": "\u25ce",
+    "kind": "hardware",
+    "supported": true,
+    "reason": null
+   },
+   {
+    "id": "pulse",
+    "label": "Strobing",
+    "icon": "\u26a1",
+    "kind": "hardware",
+    "supported": true,
+    "reason": null
+   },
+   {
+    "id": "rainbow-cycle",
+    "label": "Color Cycle",
+    "icon": "\u25d1",
+    "kind": "hardware",
+    "supported": true,
+    "reason": null
+   },
+   {
+    "id": "rainbow-wave",
+    "label": "Rainbow",
+    "icon": "\u224b",
+    "kind": "hardware",
+    "supported": true,
+    "reason": null
+   },
+   {
+    "id": "music",
+    "label": "Music",
+    "icon": "\u266a",
+    "kind": "software",
+    "supported": true,
+    "reason": null
+   },
+   {
+    "id": "stars",
+    "label": "Starry Night",
+    "icon": "\u2605",
+    "kind": "hardware",
+    "supported": false,
+    "reason": "not supported by the internal keyboard; an external zoned keyboard via OpenRGB can support it"
+   },
+   {
+    "id": "smart",
+    "label": "Smart",
+    "icon": "\u229b",
+    "kind": "future",
+    "supported": false,
+    "reason": "coming later; requires an external keyboard via OpenRGB"
+   },
+   {
+    "id": "adaptive",
+    "label": "Adaptive",
+    "icon": "\u25c8",
+    "kind": "future",
+    "supported": false,
+    "reason": "coming later; requires an external keyboard via OpenRGB"
+   }
+  ]
+ },
+ "power_control": {
+  "ok": true,
+  "available": true,
+  "device": {
+   "id": "custom",
+   "name": "ASUS local calibrated profile",
+   "friendly_name": "ASUS local calibrated profile",
+   "calibrated": true,
+   "source": "custom"
+  },
+  "session": {
+   "wayland": true,
+   "display": "wayland-0",
+   "nvml_ok": true
+  },
+  "controls": {
+   "pl1": {
+    "key": "pl1",
+    "attr": "ppt_pl1_spl",
+    "label_es": "CPU PL1 (sostenida)",
+    "label_en": "CPU PL1 (sustained)",
+    "unit": "W",
+    "value": 140,
+    "min": 28,
+    "max": 140,
+    "default": 140,
+    "writable": true,
+    "reason": null,
+    "label": "CPU PL1 (sustained)"
+   },
+   "pl2": {
+    "key": "pl2",
+    "attr": "ppt_pl2_sppt",
+    "label_es": "CPU PL2 (r\u00e1faga)",
+    "label_en": "CPU PL2 (burst)",
+    "unit": "W",
+    "value": 175,
+    "min": 28,
+    "max": 175,
+    "default": 175,
+    "writable": true,
+    "reason": null,
+    "label": "CPU PL2 (burst)"
+   },
+   "dynamic_boost": {
+    "key": "dynamic_boost",
+    "attr": "nv_dynamic_boost",
+    "label_es": "GPU Dynamic Boost",
+    "label_en": "GPU Dynamic Boost",
+    "unit": "W",
+    "value": 25,
+    "min": 5,
+    "max": 25,
+    "default": 25,
+    "writable": true,
+    "reason": null,
+    "label": "GPU Dynamic Boost"
+   },
+   "thermal_target": {
+    "key": "thermal_target",
+    "attr": "nv_temp_target",
+    "label_es": "Techo t\u00e9rmico GPU",
+    "label_en": "GPU thermal ceiling",
+    "unit": "\u00b0C",
+    "value": 87,
+    "min": 75,
+    "max": 87,
+    "default": 87,
+    "writable": true,
+    "reason": null,
+    "label": "GPU thermal ceiling"
+   },
+   "base_clock_offset": {
+    "key": "base_clock_offset",
+    "attr": null,
+    "label_es": "Offset clock base GPU",
+    "label_en": "GPU base clock offset",
+    "unit": "MHz",
+    "value": 0,
+    "min": -200,
+    "max": 200,
+    "default": 0,
+    "writable": true,
+    "reason": null,
+    "abs_min": -1000,
+    "abs_max": 1000,
+    "nvml_ok": true,
+    "label": "GPU base clock offset"
+   },
+   "mem_clock_offset": {
+    "key": "mem_clock_offset",
+    "attr": null,
+    "label_es": "Offset clock memoria GPU",
+    "label_en": "GPU memory clock offset",
+    "unit": "MHz",
+    "value": 0,
+    "min": -500,
+    "max": 1000,
+    "default": 0,
+    "writable": true,
+    "reason": null,
+    "abs_min": -2000,
+    "abs_max": 6000,
+    "nvml_ok": true,
+    "label": "GPU memory clock offset"
+   }
+  },
+  "baseline": {
+   "pl1": 140,
+   "pl2": 175,
+   "dynamic_boost": 25,
+   "thermal_target": 87
+  }
+ },
+ "fps": null,
+ "limits": {
+  "cpu": [
+   70,
+   85,
+   92
+  ],
+  "gpu": [
+   60,
+   75,
+   83
+  ]
+ },
+ "series": {
+  "cpu_temp": [
+   62.0
+  ],
+  "gpu_temp": [
+   51.0
+  ],
+  "cpu_power": [
+   6.8
+  ],
+  "gpu_power": [
+   3.19
+  ]
+ },
+ "events": [
+  [
+   "12:00:00",
+   "info",
+   "Example event",
+   "info"
+  ]
+ ],
+ "version": "20.0.0",
+ "schema": 1
+}

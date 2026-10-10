@@ -141,6 +141,11 @@ class App:
         payload["series"] = {name: serie.values() for name, serie in self.series.items()}
         payload["events"] = [list(e) for e in self.alerts.events]
         payload["version"] = __import__("rog_monitor").__version__
+        # Envelope schema (integer, distinct from the app `version`). Bump ONLY on
+        # breaking changes: a key removed/renamed or a unit changed. Adding keys
+        # is not breaking. When bumping, update tests/test_contract.py (REQUIRED)
+        # and desktop/test/contract.test.js, and re-record tests/fixtures/.
+        payload["schema"] = 1
         return json.dumps(payload)
 
     def handle_key(self, key: str, state: dict) -> bool:
