@@ -20,7 +20,7 @@ resultado y cómo comparar dos corridas sin engañarse. Solo biblioteca estánda
   **fuera** de toda estadística y del `summary`) → fase **medida** (`--seconds`).
   Entre repeticiones hay una pausa de enfriamiento (`--cooldown`, 10 s).
 - **Arranque en caliente**: si la CPU arranca por encima de
-  `--idle-baseline + --start-margin` (45 + 10 = 55 °C por defecto) el resultado
+  `--idle-baseline + --start-margin` (55 + 10 = 65 °C por defecto) el resultado
   trae `warnings: [{code: "start_hot", ...}]`. **Solo avisa**, nunca bloquea.
 
 ```

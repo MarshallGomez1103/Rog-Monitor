@@ -42,7 +42,8 @@ STAT_KEYS = (
 
 # Condición térmica de partida: solo AVISA (nunca bloquea). Se avisa si la CPU
 # arranca por encima de IDLE_BASELINE_C + START_MARGIN_C.
-IDLE_BASELINE_C = 45.0
+# ponytail: 55 °C ≈ reposo real de este portátil en performance (50-58 °C); con 45 avisaba casi siempre.
+IDLE_BASELINE_C = 55.0
 START_MARGIN_C = 10.0
 WARMUP_S = 5
 COOLDOWN_S = 10
