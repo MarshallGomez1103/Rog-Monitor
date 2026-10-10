@@ -24,3 +24,7 @@ docs/build-spec-*.md
 docs/progress/
 brain/
 *.bak
+
+# Plan maestro multiagente (memoria interna, ver docs/agent-work/DECISIONS.md D5)
+docs/agent-work/
+ROG_MONITOR_PLAN_MAESTRO_IA.md
