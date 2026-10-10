@@ -2345,7 +2345,7 @@ function _buildRoadmapContent() {
   }).join('');
 
   return `
-    <h3 data-i18n="roadmap.title">${_t('roadmap.title', 'Roadmap')}</h3>
+    <h3 id="roadmap-modal-title" data-i18n="roadmap.title">${_t('roadmap.title', 'Roadmap')}</h3>
     ${_buildCurrentStatus()}
 
     <div class="roadmap-sep" data-i18n="roadmap.done">${_t('roadmap.done', 'HECHO ▲')}</div>
@@ -2420,7 +2420,7 @@ function openRoadmapModal() {
   } catch (e) {
     const card = modal.querySelector('.modal-card');
     if (card) {
-      card.innerHTML = '<div class="roadmap-scroll"><h3>Roadmap</h3>'
+      card.innerHTML = '<div class="roadmap-scroll"><h3 id="roadmap-modal-title">Roadmap</h3>'
         + '<p class="sub">No se pudo cargar el contenido del roadmap.</p>'
         + '<button class="ghost modal-close" id="roadmap-close">Cerrar</button></div>';
       const c = card.querySelector('#roadmap-close');
