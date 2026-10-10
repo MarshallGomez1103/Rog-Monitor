@@ -32,6 +32,10 @@ SAFE_CORE_MAX_MHZ = 200    # rango absoluto: -1000..+1000
 SAFE_MEM_MAX_MHZ  = 1000   # rango absoluto: -2000..+6000
 SAFE_CORE_MIN_MHZ = -200   # undervolt moderado
 SAFE_MEM_MIN_MHZ  = -500
+# Tope absoluto: más allá del rango seguro solo con doble consentimiento en la UI,
+# pero nunca fuera de esto.
+ABS_CORE_MIN_MHZ, ABS_CORE_MAX_MHZ = -1000, 1000
+ABS_MEM_MIN_MHZ,  ABS_MEM_MAX_MHZ  = -2000, 6000
 
 # ---------------------------------------------------------------------------
 # NVML types
@@ -171,8 +175,25 @@ def read_offsets(device_index: int = 0) -> dict:
         _nvml_shutdown(lib)
 
 
+def validate_offsets(core_mhz: int, mem_mhz: int) -> tuple[int, int]:
+    """Rechaza (no recorta) offsets fuera del tope ABSOLUTO: es una escritura a
+    hardware, mejor fallar claro que aplicar otro valor. El rango SAFE_* lo
+    impone la UI (pasarlo exige doble consentimiento), no esta función."""
+    core, mem = int(core_mhz), int(mem_mhz)
+    if not ABS_CORE_MIN_MHZ <= core <= ABS_CORE_MAX_MHZ:
+        raise ValueError(
+            f"offset core {core} MHz fuera del tope "
+            f"{ABS_CORE_MIN_MHZ}..{ABS_CORE_MAX_MHZ} MHz")
+    if not ABS_MEM_MIN_MHZ <= mem <= ABS_MEM_MAX_MHZ:
+        raise ValueError(
+            f"offset mem {mem} MHz fuera del tope "
+            f"{ABS_MEM_MIN_MHZ}..{ABS_MEM_MAX_MHZ} MHz")
+    return core, mem
+
+
 def set_offsets(core_mhz: int, mem_mhz: int, device_index: int = 0) -> dict:
     """Escribe offsets. REQUIERE ROOT (llámalo desde apply-gpu-clocks.sh via pkexec)."""
+    core_mhz, mem_mhz = validate_offsets(core_mhz, mem_mhz)
     # Doble recorte en Python (el script también recorta).
     data = read_offsets(device_index)
 
@@ -232,6 +253,9 @@ def _cmd_set(args) -> int:
         result = set_offsets(args.core, args.mem, args.device)
         print(json.dumps(result, indent=2))
         return 0
+    except ValueError as e:
+        print(json.dumps({"ok": False, "err": str(e)}), file=sys.stderr)
+        return 1
     except NvmlError as e:
         print(json.dumps({"ok": False, "err": str(e), "nvml_code": e.code}), file=sys.stderr)
         return 1

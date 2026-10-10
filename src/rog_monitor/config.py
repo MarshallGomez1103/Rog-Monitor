@@ -2,6 +2,9 @@
 
 import json
 import os
+import shutil
+import tempfile
+import time
 from pathlib import Path
 
 CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "rog-monitor"
@@ -54,14 +57,53 @@ def _merge(base: dict, extra: dict) -> dict:
     return out
 
 
+def write_atomic(path: Path, text: str) -> None:
+    """Escribe `text` en `path` de forma atómica (tmp en el mismo dir + replace).
+
+    Nunca deja un archivo a medias; si falla, borra el tmp y re-lanza el OSError.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as fh:
+            fh.write(text)
+        os.chmod(tmp, 0o644)  # mkstemp crea 0600; los scripts root también lo leen
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def backup_corrupt(path: Path) -> Path | None:
+    """Copia un JSON ilegible a `<nombre>.corrupt-<fecha>.bak` (una sola vez
+    por contenido) para que ninguna escritura posterior lo pierda."""
+    path = Path(path)
+    try:
+        raw = path.read_bytes()
+        for old in path.parent.glob(path.name + ".corrupt-*.bak"):
+            if old.read_bytes() == raw:
+                return old
+        dest = path.with_name(f"{path.name}.corrupt-{time.strftime('%Y%m%d-%H%M%S')}.bak")
+        shutil.copy2(path, dest)
+        return dest
+    except OSError:
+        return None
+
+
 class Config:
     def __init__(self):
         self.data = dict(DEFAULTS)
         try:
             with open(CONFIG_FILE) as fh:
                 self.data = _merge(DEFAULTS, json.load(fh))
-        except (OSError, ValueError):
+        except OSError:
             pass
+        except ValueError:
+            backup_corrupt(CONFIG_FILE)
 
     def __getitem__(self, key):
         return self.data[key]
@@ -69,11 +111,10 @@ class Config:
     def get(self, key, default=None):
         return self.data.get(key, default)
 
-    def save(self) -> None:
+    def save(self) -> bool:
+        """Guarda atómicamente. Devuelve False si falló (el llamador decide)."""
         try:
-            CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-            with open(CONFIG_FILE, "w") as fh:
-                json.dump(self.data, fh, indent=2, sort_keys=True)
-                fh.write("\n")
+            write_atomic(CONFIG_FILE, json.dumps(self.data, indent=2, sort_keys=True) + "\n")
+            return True
         except OSError:
-            pass
+            return False

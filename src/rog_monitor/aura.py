@@ -13,7 +13,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from .config import CONFIG_DIR
+from .config import CONFIG_DIR, backup_corrupt, write_atomic
 
 AURA_FILE = CONFIG_DIR / "aura.json"
 HEX_RE = re.compile(r"^[0-9a-fA-F]{6}$")
@@ -238,15 +238,21 @@ def _load_store() -> dict:
     try:
         with open(AURA_FILE) as fh:
             return _merge(DEFAULTS, json.load(fh))
-    except (OSError, ValueError):
+    except OSError:
+        return copy.deepcopy(DEFAULTS)
+    except ValueError:
+        # JSON ilegible: respaldar antes de que un guardado lo pise con defaults
+        backup_corrupt(AURA_FILE)
         return copy.deepcopy(DEFAULTS)
 
 
-def _save_store(data: dict) -> None:
-    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    with open(AURA_FILE, "w") as fh:
-        json.dump(data, fh, indent=2, sort_keys=True)
-        fh.write("\n")
+def _save_store(data: dict) -> bool:
+    """Guardado atómico; False si falló (los perfiles lo reportan al usuario)."""
+    try:
+        write_atomic(AURA_FILE, json.dumps(data, indent=2, sort_keys=True) + "\n")
+        return True
+    except OSError:
+        return False
 
 
 def _normalize_colour(value: str | None, fallback: str = "ff5500") -> str:
@@ -674,7 +680,8 @@ def save_profile(name: str, raw_state: dict, apply_on_startup: bool | None = Non
         store["apply_on_startup"] = bool(apply_on_startup)
     if startup_profile is not None:
         store["startup_profile"] = startup_profile or None
-    _save_store(store)
+    if not _save_store(store):
+        return {"ok": False, "err": f"No se pudo guardar el perfil en {AURA_FILE}."}
     return {"ok": True, "profiles": profiles}
 
 
@@ -690,7 +697,8 @@ def delete_profile(name: str) -> dict:
     if startup_name == title:
         store["startup_profile"] = None
         store["apply_on_startup"] = False
-    _save_store(store)
+    if not _save_store(store):
+        return {"ok": False, "err": f"No se pudo escribir {AURA_FILE}."}
     return {"ok": removed, "profiles": profiles, "err": None if removed else "Profile not found."}
 
 
@@ -703,7 +711,8 @@ def set_startup_profile(name: str | None, enabled: bool) -> dict:
             return {"ok": False, "err": f'Profile "{selected}" does not exist.'}
     store["apply_on_startup"] = bool(enabled and selected)
     store["startup_profile"] = selected if enabled else None
-    _save_store(store)
+    if not _save_store(store):
+        return {"ok": False, "err": f"No se pudo escribir {AURA_FILE}."}
     return {"ok": True, "apply_on_startup": store["apply_on_startup"], "startup_profile": store["startup_profile"]}
 
 

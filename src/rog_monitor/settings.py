@@ -187,7 +187,8 @@ def update_settings(raw: dict) -> dict:
         cfg.data["aura_draft"] = draft
     if "ui_prefs_migrated" in raw:
         cfg.data["ui_prefs_migrated"] = bool(raw.get("ui_prefs_migrated"))
-    cfg.save()
+    if not cfg.save():
+        return {"ok": False, "err": f"No se pudo escribir {CONFIG_FILE}."}
     return {"ok": True, "alerts": alerts, "temp_colors": colors,
             "notifications": bool(cfg.get("notifications", True)),
             "close_action": cfg.get("close_action", "quit"),
