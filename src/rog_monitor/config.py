@@ -33,7 +33,11 @@ DEFAULTS = {
         "gpu_temp_warn": 85,
         "cpu_power_warn": 140,
         "fan_stopped_cpu_temp": 60,
-        "cooldown_seconds": 120,
+        "cooldown_seconds": 60,
+        # histéresis: una alerta sólo se despeja al bajar de umbral - margen
+        # (°C para temperaturas, % del umbral para potencia)
+        "hysteresis_temp": 3,
+        "hysteresis_pct": 5,
         # ms of real throttle time per sample before alerting (micro-blips
         # of a few ms are normal on modern Intel HX chips)
         "throttle_min_ms": 100,

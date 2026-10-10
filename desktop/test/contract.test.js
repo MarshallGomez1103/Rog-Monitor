@@ -85,3 +85,17 @@ test('el comprobador detecta una clave eliminada', () => {
   delete broken.cpu.avg;
   assert.deepStrictEqual(missing(broken, ['cpu.avg']), ["cpu.avg: falta 'avg'"]);
 });
+
+// Evento = [hora, nivel, mensaje, categoria, ctx]; ctx es aditivo (puede faltar).
+const EVENT_CTX = ['source', 'type', 'category', 'value', 'threshold', 'ts_epoch', 'count', 'key'];
+
+test('los eventos del fixture traen 4 campos + ctx aditivo', () => {
+  assert.ok(fixture.events.length > 0);
+  for (const ev of fixture.events) {
+    assert.ok(ev.length >= 4);
+    assert.ok(ev.slice(0, 4).every((x) => typeof x === 'string'));
+    if (ev.length > 4) {
+      for (const k of EVENT_CTX) assert.ok(k in ev[4], `ctx.${k}`);
+    }
+  }
+});

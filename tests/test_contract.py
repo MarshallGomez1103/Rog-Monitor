@@ -89,6 +89,12 @@ REQUIRED = {
 }
 
 
+# Evento = [hora, nivel, mensaje, categoría, ctx]; ctx es aditivo (los 4 primeros
+# campos son el contrato original, ctx puede faltar en productores viejos).
+EVENT_CTX = {"source": "str", "type": "str", "category": "str", "value": "num|null",
+             "threshold": "num|null", "ts_epoch": "num", "count": "num", "key": "str|null"}
+
+
 def _is(val, tname):
     if tname == "null":
         return val is None
@@ -133,6 +139,17 @@ class SnapshotContract(unittest.TestCase):
             fixture = json.load(fh)
         self.assertEqual(check(fixture, REQUIRED), [])
         self.assertEqual(fixture["schema"], EXPECTED_SCHEMA)
+
+    def test_fixture_events_carry_ctx(self):
+        with open(FIXTURE) as fh:
+            events = json.load(fh)["events"]
+        self.assertTrue(events)
+        for ev in events:
+            self.assertGreaterEqual(len(ev), 4)
+            self.assertEqual(check(dict(zip(("t", "lvl", "msg", "cat"), ev[:4])),
+                                   {"t": "str", "lvl": "str", "msg": "str", "cat": "str"}), [])
+            if len(ev) > 4:
+                self.assertEqual(check(ev[4], EVENT_CTX), [])
 
     def test_live_producer_matches_spec(self):
         env = dict(os.environ, PYTHONPATH=os.path.join(ROOT, "src"))

@@ -355,11 +355,16 @@ def processes_panel(state, t, th) -> Panel:
 
 def events_panel(state, t, th, full: bool = False) -> Panel:
     events = list(state["events"])
+    # filtro de severidad (tecla f): all -> warn+ (warn y crit) -> crit
+    flt = state.get("events_filter", "all")
+    if flt != "all":
+        keep = ("crit",) if flt == "crit" else ("warn", "crit")
+        events = [e for e in events if e[1] in keep]
     if not full:
         events = events[-4:]
     if events:
         lines = []
-        for stamp, level, message, *_ in events:  # eventos: (hora, nivel, msg, clave)
+        for stamp, level, message, *_ in events:  # eventos: (hora, nivel, msg, categoría, ctx)
             style = {"crit": "bold red", "warn": "yellow"}.get(level, "grey74")
             line = Text(f"{stamp}  ", style="grey58")
             line.append(message, style=style)
@@ -368,6 +373,8 @@ def events_panel(state, t, th, full: bool = False) -> Panel:
     else:
         body = Text(t("no_events"), style="grey58")
     title = t("events_all_title") if full else t("events")
+    if flt != "all":
+        title = f"{title} · {t('events_filter_' + flt)}"
     subtitle = None if full else Text(t("events_hint"), style=th["dim"])
     return Panel(body, title=Text(f" {title} ", style=th["title"]),
                  subtitle=subtitle, border_style=th["border"])

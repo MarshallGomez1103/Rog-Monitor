@@ -1196,3 +1196,6 @@
 html:not([data-edit-mode="on"]) .block {
   transform: none !important;
 }
+
+/* ---------- filtros de eventos: separador entre ejes (fuente | severidad) ---------- */
+.event-chip-sep { width: 1px; align-self: stretch; margin: 0 4px; background: var(--hair); }

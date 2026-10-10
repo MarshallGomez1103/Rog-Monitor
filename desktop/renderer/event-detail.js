@@ -16,6 +16,18 @@
     'event.filter.battery':  { es: 'Batería',   en: 'Battery',  fr: 'Batterie',  it: 'Batteria', pt: 'Bateria',  zh: '电池',    ja: 'バッテリー',ko: '배터리' },
     'event.filter.disk':     { es: 'Disco',     en: 'Disk',     fr: 'Disque',    it: 'Disco',    pt: 'Disco',    zh: '磁盘',    ja: 'ディスク', ko: '디스크' },
 
+    /* ---- filtros combinables: fuente y severidad (CP-6.04) ---- */
+    'event.filter.src.cpu':    { es: 'CPU',          en: 'CPU',      fr: 'CPU',          it: 'CPU',       pt: 'CPU',          zh: 'CPU',  ja: 'CPU',      ko: 'CPU' },
+    'event.filter.src.gpu':    { es: 'GPU',          en: 'GPU',      fr: 'GPU',          it: 'GPU',       pt: 'GPU',          zh: 'GPU',  ja: 'GPU',      ko: 'GPU' },
+    'event.filter.src.fan':    { es: 'Ventiladores', en: 'Fans',     fr: 'Ventilateurs', it: 'Ventole',   pt: 'Ventoinhas',   zh: '风扇', ja: 'ファン',   ko: '팬' },
+    'event.filter.src.disk':   { es: 'Disco',        en: 'Disk',     fr: 'Disque',       it: 'Disco',     pt: 'Disco',        zh: '磁盘', ja: 'ディスク', ko: '디스크' },
+    'event.filter.src.ram':    { es: 'RAM',          en: 'RAM',      fr: 'RAM',          it: 'RAM',       pt: 'RAM',          zh: '内存', ja: 'RAM',      ko: 'RAM' },
+    'event.filter.src.power':  { es: 'Potencia',     en: 'Power',    fr: 'Puissance',    it: 'Potenza',   pt: 'Potência',     zh: '功耗', ja: '電力',     ko: '전력' },
+    'event.filter.src.system': { es: 'Sistema',      en: 'System',   fr: 'Système',      it: 'Sistema',   pt: 'Sistema',      zh: '系统', ja: 'システム', ko: '시스템' },
+    'event.filter.sev.info':   { es: 'Info',         en: 'Info',     fr: 'Info',         it: 'Info',      pt: 'Info',         zh: '信息', ja: '情報',     ko: '정보' },
+    'event.filter.sev.warn':   { es: 'Aviso',        en: 'Warn',     fr: 'Alerte',       it: 'Avviso',    pt: 'Aviso',        zh: '警告', ja: '警告',     ko: '경고' },
+    'event.filter.sev.crit':   { es: 'Crítico',      en: 'Critical', fr: 'Critique',     it: 'Critico',   pt: 'Crítico',      zh: '严重', ja: '重大',     ko: '치명' },
+
     /* ---- modal explain titles ---- */
     'event.explain.thermal.title':  {
       es: 'Temperatura crítica de CPU/GPU',
@@ -175,8 +187,31 @@
 
   /* ------------------------------------------------------------------ state */
   const KNOWN_KEYS = ['thermal', 'throttle', 'power', 'fan', 'battery', 'disk'];
-  let _activeFilter = 'all';
+  const SOURCES = ['cpu', 'gpu', 'fan', 'disk', 'ram', 'power', 'system'];
+  const SEVERITIES = ['info', 'warn', 'crit'];
+  const STORE_KEY = 'rog.eventFilters';
+  /* Fuente de eventos sin ctx (productor viejo): se deduce de la categoría */
+  const CAT_SOURCE = { thermal: 'cpu', throttle: 'cpu', fan: 'fan', power: 'power', battery: 'power', disk: 'disk' };
+  /* Filtros combinables: un Set vacío = sin filtrar por ese eje */
+  const _filters = { src: new Set(), sev: new Set() };
   let _lastEvents = [];
+
+  let _loaded = false;
+  function _loadFilters() {
+    if (_loaded) return;
+    _loaded = true;
+    try {
+      const raw = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+      (raw.src || []).filter((k) => SOURCES.includes(k)).forEach((k) => _filters.src.add(k));
+      (raw.sev || []).filter((k) => SEVERITIES.includes(k)).forEach((k) => _filters.sev.add(k));
+    } catch (_) { /* sin almacenamiento o JSON roto: arranca sin filtros */ }
+  }
+
+  function _saveFilters() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({ src: [..._filters.src], sev: [..._filters.sev] }));
+    } catch (_) { /* almacenamiento bloqueado: el filtro sólo dura la sesión */ }
+  }
 
   /* ------------------------------------------------------------------ helpers */
   function _t(key) {
@@ -193,7 +228,29 @@
     return (raw && KNOWN_KEYS.includes(raw)) ? raw : 'info';
   }
 
+  /* Evento = [hora, nivel, msg, categoría, ctx?]; ctx es opcional (aditivo) */
+  function _sourceOf(e) {
+    const s = e[4] && e[4].source;
+    return SOURCES.includes(s) ? s : (CAT_SOURCE[e[3]] || 'system');
+  }
+
+  function _matches(e) {
+    return (!_filters.src.size || _filters.src.has(_sourceOf(e)))
+      && (!_filters.sev.size || _filters.sev.has(e[1]));
+  }
+
   /* ------------------------------------------------------------------ filter chips */
+  function _syncChips() {
+    document.querySelectorAll('.event-chip[data-axis]').forEach((b) => {
+      const on = _filters[b.dataset.axis].has(b.dataset.filterKey);
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    const none = !_filters.src.size && !_filters.sev.size;
+    const all = document.querySelector('.event-chip[data-filter-key="all"]');
+    if (all) { all.classList.toggle('active', none); all.setAttribute('aria-pressed', none ? 'true' : 'false'); }
+  }
+
   function _buildFilterBar() {
     const existing = document.getElementById('event-filter-bar');
     if (existing) return;
@@ -206,30 +263,40 @@
     bar.id = 'event-filter-bar';
     bar.className = 'event-filter-bar';
 
-    const chips = ['all', ...KNOWN_KEYS];
-    chips.forEach((key) => {
+    const mk = (axis, key, label) => {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'event-chip ghost' + (key === 'all' ? ' active' : '');
+      btn.className = 'event-chip ghost';
       btn.dataset.filterKey = key;
-      btn.textContent = _t(`event.filter.${key}`);
+      if (axis) btn.dataset.axis = axis;
+      btn.dataset.i18nKey = label;
+      btn.textContent = _t(label);
       btn.addEventListener('click', () => {
-        _activeFilter = key;
-        document.querySelectorAll('.event-chip').forEach((b) => {
-          b.classList.toggle('active', b.dataset.filterKey === key);
-        });
+        if (!axis) { _filters.src.clear(); _filters.sev.clear(); }   /* "Todos" = limpiar */
+        else if (_filters[axis].has(key)) _filters[axis].delete(key);
+        else _filters[axis].add(key);
+        _saveFilters();
+        _syncChips();
         _renderList(_lastEvents);
       });
       bar.appendChild(btn);
-    });
+    };
+    mk(null, 'all', 'event.filter.all');
+    SOURCES.forEach((k) => mk('src', k, `event.filter.src.${k}`));
+    const sep = document.createElement('span');
+    sep.className = 'event-chip-sep';
+    sep.setAttribute('aria-hidden', 'true');
+    bar.appendChild(sep);
+    SEVERITIES.forEach((k) => mk('sev', k, `event.filter.sev.${k}`));
 
     eventsBlock.insertBefore(bar, ul);
+    _syncChips();
   }
 
   /* Re-translate chip labels on language change */
   function _retranslateChips() {
-    document.querySelectorAll('.event-chip[data-filter-key]').forEach((btn) => {
-      btn.textContent = _t(`event.filter.${btn.dataset.filterKey}`);
+    document.querySelectorAll('.event-chip[data-i18n-key]').forEach((btn) => {
+      btn.textContent = _t(btn.dataset.i18nKey);
     });
   }
 
@@ -239,9 +306,7 @@
     const ul = document.getElementById('events');
     if (!ul) return;
 
-    const filtered = _activeFilter === 'all'
-      ? _lastEvents
-      : _lastEvents.filter((e) => _resolveKey(e[3]) === _activeFilter);
+    const filtered = _lastEvents.filter(_matches);
 
     if (!filtered.length) {
       ul.innerHTML = `<li class="dim">${_esc(_t('events.none'))}</li>`;
@@ -249,9 +314,10 @@
     }
 
     ul.innerHTML = filtered.map((e) => {
-      const [ts, level, msg, rawKey] = e;
+      const [ts, level, msg, rawKey, ctx] = e;
       const key = _resolveKey(rawKey);
-      return `<li class="${_esc(level)} event-item" data-key="${_esc(key)}" style="cursor:pointer" title="${_esc(_t(`event.explain.${key}.title`))}">` +
+      const type = ctx && ctx.type ? ctx.type : 'telemetry';
+      return `<li class="${_esc(level)} event-item" data-key="${_esc(key)}" data-source="${_esc(_sourceOf(e))}" data-type="${_esc(type)}" style="cursor:pointer" title="${_esc(_t(`event.explain.${key}.title`))}">` +
         `<time>${_esc(ts)}</time>${_esc(msg)}` +
         `<span class="event-key-badge">${_esc(_t(`event.filter.${key}`))}</span>` +
         `</li>`;
@@ -299,6 +365,7 @@
 
   /* ------------------------------------------------------------------ public API */
   function init() {
+    _loadFilters();
     _buildFilterBar();
     /* Re-translate chips when language changes */
     if (window.i18n && typeof window.i18n.onChange === 'function') {
@@ -315,6 +382,7 @@
   }
 
   function renderList(events) {
+    _loadFilters();
     _buildFilterBar();
     _renderList(events);
   }

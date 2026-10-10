@@ -29,7 +29,8 @@ from .sysinfo import SysReader
 
 THEME_CYCLE = list(ui.THEMES)
 ERROR_LOG = DATA_DIR / "error.log"
-BOUND_KEYS = frozenset("qhvtpge")  # teclas con acción; cualquier otra se ignora
+BOUND_KEYS = frozenset("qhvtpgef")  # teclas con acción; cualquier otra se ignora
+EVENT_FILTERS = ("all", "warn", "crit")  # filtro de severidad del panel de eventos (f)
 
 
 class App:
@@ -65,6 +66,7 @@ class App:
         self.theme = self.config["theme"]
         self.help_visible = False
         self.events_visible = False
+        self.events_filter = "all"
         self.message = ""
         self._message_until = 0.0
         self._gpu_thread: threading.Thread | None = None
@@ -129,6 +131,7 @@ class App:
             "theme": self.theme,
             "help_visible": self.help_visible,
             "events_visible": self.events_visible,
+            "events_filter": self.events_filter,
             "message": self.message,
         }
 
@@ -137,7 +140,7 @@ class App:
         state = state or self.sample()
         payload = {k: v for k, v in state.items()
                    if k not in ("series", "events", "help_visible",
-                                "events_visible", "message", "theme")}
+                                "events_visible", "events_filter", "message", "theme")}
         payload["series"] = {name: serie.values() for name, serie in self.series.items()}
         payload["events"] = [list(e) for e in self.alerts.events]
         payload["version"] = __import__("rog_monitor").__version__
@@ -161,6 +164,9 @@ class App:
         elif key == "v":
             self.events_visible = not self.events_visible
             self.help_visible = False
+        elif key == "f":  # filtro de severidad: todos -> warn+ -> crit
+            self.events_filter = EVENT_FILTERS[(EVENT_FILTERS.index(self.events_filter) + 1)
+                                               % len(EVENT_FILTERS)]
         elif key == "t":
             self.theme = THEME_CYCLE[(THEME_CYCLE.index(self.theme) + 1) % len(THEME_CYCLE)] \
                 if self.theme in THEME_CYCLE else THEME_CYCLE[0]
@@ -170,7 +176,7 @@ class App:
             ok, target = actions.cycle_profile(state["ppd_profile"])
             self.flash(t("profile_set", p=target) if ok else t("gpu_mode_err", e=target))
             if ok:
-                self.alerts.log(t("profile_set", p=target))
+                self.alerts.log(t("profile_set", p=target), source="power", etype="action")
         elif key == "g":
             self._request_gpu_toggle(state)
         elif key == "e":
@@ -205,7 +211,7 @@ class App:
             if ok:
                 message = t("gpu_mode_cancel", m=target) if cancelling \
                     else t("gpu_mode_set", m=target)
-                self.alerts.log(message)
+                self.alerts.log(message, source="gpu", etype="action")
             else:
                 message = t("gpu_mode_err", e=(err or "?")[:60])
             self.flash(message)
@@ -299,6 +305,7 @@ class App:
                             state.update(theme=self.theme,
                                          help_visible=self.help_visible,
                                          events_visible=self.events_visible,
+                                         events_filter=self.events_filter,
                                          message=self.message)
                             live.update(ui.build(state, self.t, console.width, console.height),
                                         refresh=True)

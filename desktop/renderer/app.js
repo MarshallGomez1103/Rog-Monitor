@@ -1935,7 +1935,7 @@ function update(stats) {
     src.className = 'power-source';
   }
 
-  /* events — 4th element is category key (tolerate old 3-tuples) */
+  /* events — [hora, nivel, msg, categoría, ctx]; 4º y 5º opcionales (aditivos) */
   const events = (stats.events || []).slice(-30).reverse();
   const eventsSig = (window.i18n ? window.i18n.get() : '') + '\n' + events.map((e) => `${e[0]}|${e[1]}|${e[2]}`).join('\n');
   if (eventsSig === lastEventsSig) { /* sin cambios: no tocar el DOM */ }
@@ -3925,7 +3925,7 @@ $('export-events').addEventListener('click', async (e) => {
   if (!events.length) { toast(t('toast.no_events_export')); return; }
   const today = new Date().toLocaleDateString();
   const text = t('bench.detail.header', { date: today }) + '\n\n'
-    + events.map((e) => { const [ts, level, msg, key] = e; return `${ts}  [${level.toUpperCase()}]  [${key || 'info'}]  ${msg}`; }).join('\n') + '\n';
+    + events.map((e) => { const [ts, level, msg, key, ctx] = e; return `${ts}  [${level.toUpperCase()}]  [${key || 'info'}]${ctx && ctx.source ? `  [${ctx.source}/${ctx.type}]` : ''}  ${msg}`; }).join('\n') + '\n';
   const res = await window.rog.exportEvents(text);
   toast(res.ok ? t('events.exported', { path: res.path }) : t('events.export_failed', { err: res.err }));
 });
