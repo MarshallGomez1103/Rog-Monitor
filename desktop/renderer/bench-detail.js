@@ -130,6 +130,52 @@
     });
   }
 
+  /* ---- CP-7.05..7.09: condiciones, estadística y exportación (bloque contiguo) ---- */
+  if (window.i18n && typeof window.i18n.register === 'function') {
+    window.i18n.register({
+      'bench.detail.stats_h4': { es: 'Estadísticas (sin calentamiento)', en: 'Statistics (warm-up excluded)', fr: 'Statistiques (hors préchauffage)', it: 'Statistiche (riscaldamento escluso)', pt: 'Estatísticas (sem aquecimento)', zh: '统计（不含预热）', ja: '統計（ウォームアップ除外）', ko: '통계 (워밍업 제외)' },
+      'bench.detail.col_metric': { es: 'Métrica', en: 'Metric', fr: 'Métrique', it: 'Metrica', pt: 'Métrica', zh: '指标', ja: '指標', ko: '지표' },
+      'bench.detail.col_mean': { es: 'Media', en: 'Mean', fr: 'Moyenne', it: 'Media', pt: 'Média', zh: '平均', ja: '平均', ko: '평균' },
+      'bench.detail.col_min': { es: 'Mín', en: 'Min', fr: 'Min', it: 'Min', pt: 'Mín', zh: '最小', ja: '最小', ko: '최소' },
+      'bench.detail.col_max': { es: 'Máx', en: 'Max', fr: 'Max', it: 'Max', pt: 'Máx', zh: '最大', ja: '最大', ko: '최대' },
+      'bench.detail.col_sd': { es: 'Desv.', en: 'SD', fr: 'Éc.-type', it: 'Dev. st.', pt: 'Desv.', zh: '标准差', ja: '標準偏差', ko: '표준편차' },
+      'bench.detail.stats_note': { es: 'Percentiles por interpolación lineal inclusiva (tipo 7). {n} muestras medidas, {warm} s de calentamiento excluidos.', en: 'Percentiles use inclusive linear interpolation (type 7). {n} measured samples, {warm} s of warm-up excluded.', fr: 'Percentiles par interpolation linéaire inclusive (type 7). {n} échantillons mesurés, {warm} s de préchauffage exclues.', it: 'Percentili con interpolazione lineare inclusiva (tipo 7). {n} campioni misurati, {warm} s di riscaldamento esclusi.', pt: 'Percentis por interpolação linear inclusiva (tipo 7). {n} amostras medidas, {warm} s de aquecimento excluídos.', zh: '百分位数采用包含式线性插值（类型 7）。{n} 个有效样本，已排除 {warm} 秒预热。', ja: 'パーセンタイルは包含的線形補間（タイプ7）。測定サンプル {n} 件、ウォームアップ {warm} 秒を除外。', ko: '백분위수는 포함형 선형 보간(유형 7). 측정 샘플 {n}개, 워밍업 {warm}초 제외.' },
+      'bench.detail.m_cpu_temp': { es: 'Temp. CPU (°C)', en: 'CPU temp (°C)', fr: 'Temp. CPU (°C)', it: 'Temp. CPU (°C)', pt: 'Temp. CPU (°C)', zh: 'CPU 温度 (°C)', ja: 'CPU 温度 (°C)', ko: 'CPU 온도 (°C)' },
+      'bench.detail.m_cpu_package': { es: 'Paquete CPU (°C)', en: 'CPU package (°C)', fr: 'Package CPU (°C)', it: 'Package CPU (°C)', pt: 'Package CPU (°C)', zh: 'CPU 封装 (°C)', ja: 'CPU パッケージ (°C)', ko: 'CPU 패키지 (°C)' },
+      'bench.detail.m_cpu_watts': { es: 'Consumo CPU (W)', en: 'CPU power (W)', fr: 'Conso CPU (W)', it: 'Consumo CPU (W)', pt: 'Consumo CPU (W)', zh: 'CPU 功耗 (W)', ja: 'CPU 電力 (W)', ko: 'CPU 전력 (W)' },
+      'bench.detail.m_cpu_freq': { es: 'Frecuencia CPU (GHz)', en: 'CPU clock (GHz)', fr: 'Fréquence CPU (GHz)', it: 'Frequenza CPU (GHz)', pt: 'Frequência CPU (GHz)', zh: 'CPU 频率 (GHz)', ja: 'CPU クロック (GHz)', ko: 'CPU 클럭 (GHz)' },
+      'bench.detail.m_cpu_util': { es: 'Uso CPU (%)', en: 'CPU load (%)', fr: 'Charge CPU (%)', it: 'Carico CPU (%)', pt: 'Uso da CPU (%)', zh: 'CPU 占用 (%)', ja: 'CPU 使用率 (%)', ko: 'CPU 사용률 (%)' },
+      'bench.detail.m_gpu_temp': { es: 'Temp. GPU (°C)', en: 'GPU temp (°C)', fr: 'Temp. GPU (°C)', it: 'Temp. GPU (°C)', pt: 'Temp. GPU (°C)', zh: 'GPU 温度 (°C)', ja: 'GPU 温度 (°C)', ko: 'GPU 온도 (°C)' },
+      'bench.detail.m_gpu_watts': { es: 'Consumo GPU (W)', en: 'GPU power (W)', fr: 'Conso GPU (W)', it: 'Consumo GPU (W)', pt: 'Consumo GPU (W)', zh: 'GPU 功耗 (W)', ja: 'GPU 電力 (W)', ko: 'GPU 전력 (W)' },
+      'bench.detail.m_gpu_util': { es: 'Uso GPU (%)', en: 'GPU load (%)', fr: 'Charge GPU (%)', it: 'Carico GPU (%)', pt: 'Uso da GPU (%)', zh: 'GPU 占用 (%)', ja: 'GPU 使用率 (%)', ko: 'GPU 사용률 (%)' },
+      'bench.detail.m_gpu_clock': { es: 'Reloj GPU (MHz)', en: 'GPU clock (MHz)', fr: 'Fréquence GPU (MHz)', it: 'Frequenza GPU (MHz)', pt: 'Clock GPU (MHz)', zh: 'GPU 频率 (MHz)', ja: 'GPU クロック (MHz)', ko: 'GPU 클럭 (MHz)' },
+      'bench.detail.cond_h4': { es: 'Condiciones del run', en: 'Run conditions', fr: 'Conditions du test', it: 'Condizioni del test', pt: 'Condições do teste', zh: '运行条件', ja: '実行条件', ko: '실행 조건' },
+      'bench.detail.cond_none': { es: 'Este resultado es anterior al esquema 2: no guardó las condiciones del run.', en: 'This result predates schema 2: run conditions were not saved.', fr: 'Ce résultat précède le schéma 2 : les conditions du test n\'ont pas été enregistrées.', it: 'Questo risultato è precedente allo schema 2: le condizioni del test non sono state salvate.', pt: 'Este resultado é anterior ao esquema 2: as condições do teste não foram guardadas.', zh: '此结果早于架构 2：未保存运行条件。', ja: 'この結果はスキーマ2より前のため、実行条件は保存されていません。', ko: '이 결과는 스키마 2 이전 것이라 실행 조건이 저장되지 않았습니다.' },
+      'bench.detail.c_app': { es: 'App / esquema', en: 'App / schema', fr: 'App / schéma', it: 'App / schema', pt: 'App / esquema', zh: '应用 / 架构', ja: 'アプリ / スキーマ', ko: '앱 / 스키마' },
+      'bench.detail.c_cpu': { es: 'CPU', en: 'CPU', fr: 'CPU', it: 'CPU', pt: 'CPU', zh: 'CPU', ja: 'CPU', ko: 'CPU' },
+      'bench.detail.c_gpu': { es: 'GPU / driver', en: 'GPU / driver', fr: 'GPU / driver', it: 'GPU / driver', pt: 'GPU / driver', zh: 'GPU / driver', ja: 'GPU / driver', ko: 'GPU / driver' },
+      'bench.detail.c_kernel': { es: 'Kernel', en: 'Kernel', fr: 'Kernel', it: 'Kernel', pt: 'Kernel', zh: 'Kernel', ja: 'Kernel', ko: 'Kernel' },
+      'bench.detail.c_power': { es: 'Alimentación', en: 'Power source', fr: 'Alimentation', it: 'Alimentazione', pt: 'Alimentação', zh: '供电', ja: '電源', ko: '전원' },
+      'bench.detail.c_power_ac': { es: 'Corriente (AC)', en: 'AC power', fr: 'Secteur (AC)', it: 'Rete (AC)', pt: 'Tomada (AC)', zh: '交流电 (AC)', ja: 'AC電源', ko: 'AC 전원' },
+      'bench.detail.c_power_bat': { es: 'Batería', en: 'Battery', fr: 'Batterie', it: 'Batteria', pt: 'Bateria', zh: '电池', ja: 'バッテリー', ko: '배터리' },
+      'bench.detail.c_profile': { es: 'Perfil ASUS / PPD', en: 'ASUS / PPD profile', fr: 'Profil ASUS / PPD', it: 'Profilo ASUS / PPD', pt: 'Perfil ASUS / PPD', zh: 'ASUS / PPD 配置', ja: 'ASUS / PPD プロファイル', ko: 'ASUS / PPD 프로필' },
+      'bench.detail.c_epp': { es: 'EPP / governor', en: 'EPP / governor', fr: 'EPP / governor', it: 'EPP / governor', pt: 'EPP / governor', zh: 'EPP / governor', ja: 'EPP / governor', ko: 'EPP / governor' },
+      'bench.detail.c_fan': { es: 'Tope de ventiladores', en: 'Fan cap', fr: 'Limite ventilateurs', it: 'Limite ventole', pt: 'Limite das ventoinhas', zh: '风扇转速上限', ja: 'ファン上限', ko: '팬 상한' },
+      'bench.detail.c_guardian': { es: 'Guardián', en: 'Guardian', fr: 'Gardien', it: 'Guardiano', pt: 'Guardião', zh: '守护', ja: 'ガーディアン', ko: '가디언' },
+      'bench.detail.c_ambient': { es: 'Temp. al iniciar', en: 'Start temp', fr: 'Temp. au départ', it: 'Temp. iniziale', pt: 'Temp. inicial', zh: '起始温度', ja: '開始温度', ko: '시작 온도' },
+      'bench.detail.c_threads': { es: 'Hilos de carga', en: 'Load threads', fr: 'Threads de charge', it: 'Thread di carico', pt: 'Threads de carga', zh: '负载线程', ja: '負荷スレッド', ko: '부하 스레드' },
+      'bench.detail.c_timing': { es: 'Duración', en: 'Duration', fr: 'Durée', it: 'Durata', pt: 'Duração', zh: '时长', ja: '時間', ko: '지속 시간' },
+      'bench.detail.timing_value': { es: '{seconds} s medidos + {warmup} s calentamiento × {reps}', en: '{seconds} s measured + {warmup} s warm-up × {reps}', fr: '{seconds} s mesurées + {warmup} s préchauffage × {reps}', it: '{seconds} s misurati + {warmup} s riscaldamento × {reps}', pt: '{seconds} s medidos + {warmup} s aquecimento × {reps}', zh: '测量 {seconds} 秒 + 预热 {warmup} 秒 × {reps}', ja: '測定 {seconds} 秒 + ウォームアップ {warmup} 秒 × {reps}', ko: '측정 {seconds}초 + 워밍업 {warmup}초 × {reps}' },
+      'bench.detail.stat_score': { es: 'Rendimiento', en: 'Throughput', fr: 'Débit', it: 'Throughput', pt: 'Desempenho', zh: '吞吐量', ja: 'スループット', ko: '처리량' },
+      'bench.detail.score_value': { es: '{score} iter/s ({per} por hilo)', en: '{score} iter/s ({per} per thread)', fr: '{score} iter/s ({per} par thread)', it: '{score} iter/s ({per} per thread)', pt: '{score} iter/s ({per} por thread)', zh: '{score} iter/s（每线程 {per}）', ja: '{score} iter/s（スレッドあたり {per}）', ko: '{score} iter/s (스레드당 {per})' },
+      'bench.detail.stat_cv': { es: 'CV entre repeticiones', en: 'CV across repetitions', fr: 'CV entre répétitions', it: 'CV tra ripetizioni', pt: 'CV entre repetições', zh: '重复间变异系数', ja: '反復間CV', ko: '반복 간 CV' },
+      'bench.detail.warn_start_hot': { es: 'Arranque en caliente en la repetición {rep}: CPU a {temp}°C (límite {limit}°C). El resultado puede salir peor de lo normal.', en: 'Hot start in repetition {rep}: CPU at {temp}°C (limit {limit}°C). The result may be worse than normal.', fr: 'Démarrage à chaud à la répétition {rep} : CPU à {temp}°C (limite {limit}°C). Le résultat peut être moins bon que d\'habitude.', it: 'Avvio a caldo nella ripetizione {rep}: CPU a {temp}°C (limite {limit}°C). Il risultato potrebbe essere peggiore del normale.', pt: 'Arranque a quente na repetição {rep}: CPU a {temp}°C (limite {limit}°C). O resultado pode ficar pior do que o normal.', zh: '第 {rep} 次重复起始温度偏高：CPU {temp}°C（上限 {limit}°C）。结果可能低于正常水平。', ja: '反復 {rep} は高温で開始：CPU {temp}°C（上限 {limit}°C）。結果が通常より低くなる可能性があります。', ko: '반복 {rep} 시작 시 온도가 높음: CPU {temp}°C (한계 {limit}°C). 결과가 평소보다 나쁠 수 있습니다.' },
+      'bench.detail.opt_warmup': { es: 'Calentamiento (s)', en: 'Warm-up (s)', fr: 'Préchauffage (s)', it: 'Riscaldamento (s)', pt: 'Aquecimento (s)', zh: '预热 (秒)', ja: 'ウォームアップ (秒)', ko: '워밍업 (초)' },
+      'bench.detail.opt_reps': { es: 'Repeticiones', en: 'Repetitions', fr: 'Répétitions', it: 'Ripetizioni', pt: 'Repetições', zh: '重复次数', ja: '反復回数', ko: '반복 횟수' },
+      'bench.detail.exported_csv': { es: 'Benchmark guardado en {path} y {csv}', en: 'Benchmark saved to {path} and {csv}', fr: 'Benchmark enregistré dans {path} et {csv}', it: 'Benchmark salvato in {path} e {csv}', pt: 'Benchmark guardado em {path} e {csv}', zh: '基准测试已保存到 {path} 和 {csv}', ja: 'ベンチマークを {path} と {csv} に保存しました', ko: '벤치마크를 {path} 및 {csv}에 저장했습니다' },
+    });
+  }
+
   /* ---- local t() shim ---- */
   function _t(key, vars) {
     try { return (typeof window.t === 'function') ? window.t(key, vars) : key; }
@@ -173,7 +219,10 @@
         <h3 id="benchd-title">Benchmark</h3>
         <p class="sub" id="benchd-sub"></p>
         <div class="benchd-body" id="benchd-body"></div>
-        <button class="ghost modal-close" id="benchd-close" data-i18n="bench.detail.close">Cerrar</button>
+        <div class="benchd-foot">
+          <button class="ghost" id="benchd-export" data-i18n="common.export">EXPORTAR</button>
+          <button class="ghost modal-close" id="benchd-close" data-i18n="bench.detail.close">Cerrar</button>
+        </div>
       </div>
       <div class="benchd-tip hidden" id="benchd-tip"></div>`;
     document.body.appendChild(modal);
@@ -182,6 +231,7 @@
     bodyEl = modal.querySelector('#benchd-body');
     tipEl = modal.querySelector('#benchd-tip');
     modal.querySelector('#benchd-close').addEventListener('click', close);
+    modal.querySelector('#benchd-export').addEventListener('click', () => exportItem(current));
     modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) close();
@@ -428,6 +478,11 @@
         ev.push({ type: 'info', text: _t('bench.detail.ev_watts_trend', { from: _fmt(first[wKey], 1), to: _fmt(last[wKey], 1), max: _fmt(wmax, 1) }) });
       }
     }
+    (item.warnings || []).forEach((w) => {
+      if (w.code === 'start_hot') {
+        ev.push({ type: 'warn', text: _t('bench.detail.warn_start_hot', { rep: w.rep, temp: _fmt(w.cpu_temp, 1), limit: _fmt(w.limit, 0) }) });
+      }
+    });
     return ev;
   }
 
@@ -455,6 +510,123 @@
       grid += `<div class="bench-detail-fans">${_t('bench.detail.fans_max', { fans })}</div>`;
     }
     return grid;
+  }
+
+  /* ============================================================
+     CP-7.05..7.09 — estadística, condiciones y exportación
+     ============================================================ */
+  const STAT_I18N = {
+    cpu_temp: 'm_cpu_temp', cpu_package: 'm_cpu_package', cpu_watts: 'm_cpu_watts',
+    cpu_freq_ghz: 'm_cpu_freq', cpu_util: 'm_cpu_util', gpu_temp: 'm_gpu_temp',
+    gpu_watts: 'm_gpu_watts', gpu_util: 'm_gpu_util', gpu_clock_mhz: 'm_gpu_clock',
+  };
+
+  /* Tabla de percentiles del agregado (muestras medidas; el warm-up ya viene fuera). */
+  function statsTable(item, isGpu) {
+    const agg = item.stats && item.stats.aggregate;
+    if (!agg) return '';
+    const keys = Object.keys(STAT_I18N).filter((k) => agg[k] &&
+      (isGpu ? (k.startsWith('gpu_') || k === 'cpu_temp' || k === 'cpu_watts') : k.startsWith('cpu_')));
+    if (!keys.length) return '';
+    keys.sort((a, b) => (isGpu ? (b.startsWith('gpu_') - a.startsWith('gpu_')) : 0));
+    const th = ['col_metric', 'col_mean', 'col_min', 'p50', 'p95', 'p99', 'col_max', 'col_sd']
+      .map((k) => `<th>${_esc(k.startsWith('col_') ? _t('bench.detail.' + k) : k)}</th>`).join('');
+    const rows = keys.map((k) => {
+      const st = agg[k]; const d = k === 'cpu_freq_ghz' ? 2 : 1;
+      const cells = [st.mean, st.min, st.p50, st.p95, st.p99, st.max, st.stdev]
+        .map((v) => `<td>${_esc(v == null ? '--' : _fmt(v, d))}</td>`).join('');
+      return `<tr><th scope="row">${_esc(_t('bench.detail.' + STAT_I18N[k]))}</th>${cells}</tr>`;
+    }).join('');
+    const n = agg[keys[0]].n;
+    return `<h4 class="benchd-h4">${_esc(_t('bench.detail.stats_h4'))}</h4>
+      <div class="benchd-table-wrap"><table class="benchd-table"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="benchd-note">${_esc(_t('bench.detail.stats_note', { n, warm: item.warmup_seconds || 0 }))}</p>`;
+  }
+
+  /* Rendimiento (iter/s) y CV entre repeticiones, si el run los trae. */
+  function scoreGrid(item) {
+    const cells = [];
+    const th = item.throughput;
+    if (th && th.score_ips != null) {
+      cells.push([_t('bench.detail.stat_score'), _t('bench.detail.score_value', {
+        score: Math.round(th.score_ips).toLocaleString(), per: Math.round(th.per_thread_ips).toLocaleString() })]);
+      if (th.cv_pct != null) cells.push([_t('bench.detail.stat_cv') + ' · iter/s', `${_fmt(th.cv_pct, 2)} %`]);
+    }
+    const cv = (item.stats && item.stats.cv_across_reps_pct) || {};
+    Object.keys(cv).filter((k) => STAT_I18N[k] && (item.kind === 'gpu' ? k.startsWith('gpu_') : k.startsWith('cpu_')))
+      .forEach((k) => cells.push([_t('bench.detail.stat_cv') + ' · ' + _t('bench.detail.' + STAT_I18N[k]), `${_fmt(cv[k], 2)} %`]));
+    if (!cells.length) return '';
+    return `<div class="bench-detail-grid">${cells.map(([l, v]) =>
+      `<div class="bench-detail-cell wide"><label>${_esc(l)}</label><b>${_esc(v)}</b></div>`).join('')}</div>`;
+  }
+
+  /* Condiciones del run (hardware, energía, perfiles, térmica de arranque). */
+  function conditionsBlock(item) {
+    const c = item.conditions;
+    const h = `<h4 class="benchd-h4">${_esc(_t('bench.detail.cond_h4'))}</h4>`;
+    if (!c) return `${h}<p class="benchd-nochart">${_esc(_t('bench.detail.cond_none'))}</p>`;
+    const dash = (v) => (v == null || v === '' ? '--' : v);
+    const caps = Object.entries(c.fan_caps || {}).map(([k, v]) => `${k.replace('_fan', '')} ${v}`).join(' · ');
+    const g = c.guardian || {}; const amb = c.ambient_start || {};
+    const cells = [
+      ['c_app', `${dash(c.app_version)} · schema ${dash(c.schema || item.schema)}`],
+      ['c_cpu', dash(c.cpu_model), 1],
+      ['c_gpu', `${dash(c.gpu_name)} · ${dash(c.gpu_driver)}`, 1],
+      ['c_kernel', dash(c.kernel)],
+      ['c_power', c.power_source === 'ac' ? _t('bench.detail.c_power_ac')
+        : c.power_source === 'battery' ? _t('bench.detail.c_power_bat') : '--'],
+      ['c_profile', `${dash(c.asus_profile)} / ${dash(c.ppd_profile)}`],
+      ['c_epp', `${dash(c.epp)} / ${dash(c.governor)}`],
+      ['c_fan', dash(caps)],
+      ['c_guardian', `${dash(g.mode)}${g.thermal_state ? ' · ' + g.thermal_state : ''}`],
+      ['c_ambient', `CPU ${amb.cpu_temp != null ? _fmt(amb.cpu_temp, 1) : '--'} °C · GPU ${amb.gpu_temp != null ? _fmt(amb.gpu_temp, 1) : '--'} °C`],
+      ['c_threads', dash(c.threads)],
+      ['c_timing', _t('bench.detail.timing_value', { seconds: dash(c.seconds), warmup: dash(c.warmup_seconds), reps: dash(c.repetitions) }), 1],
+    ];
+    return `${h}<div class="bench-detail-grid">${cells.map(([k, v, wide]) =>
+      `<div class="bench-detail-cell${wide ? ' wide' : ''}"><label>${_esc(_t('bench.detail.' + k))}</label><b>${_esc(v)}</b></div>`).join('')}</div>`;
+  }
+
+  /* ---- exportación: JSON completo + CSV de la serie, ambos con esquema, versión y condiciones ---- */
+  const CSV_COLS = ['t', 'rep', 'warmup', 'cpu_temp', 'cpu_package', 'cpu_watts', 'cpu_freq_ghz', 'cpu_util',
+    'cpu_throttle_count', 'cpu_throttle_ms', 'gpu_temp', 'gpu_watts', 'gpu_util', 'gpu_clock_mhz', 'work'];
+  const EXPORT_SCHEMA = 'rog-monitor-benchmark-export/1';
+
+  function csvCell(v) {
+    if (v == null) return '';
+    const s = String(v);
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  /* Devuelve { kind, text, csv } para el IPC export-benchmark. Puro: sin DOM ni IPC. */
+  function buildExport(item) {
+    const c = item.conditions || {};
+    const meta = { export_schema: EXPORT_SCHEMA, exported_at: new Date().toISOString(),
+      schema: item.schema || 1, app_version: c.app_version || null };
+    const obj = Object.assign(meta, item);
+    const head = ['# ' + EXPORT_SCHEMA, '# schema: ' + meta.schema, '# app_version: ' + (meta.app_version || ''),
+      '# kind: ' + (item.kind || ''), '# started_at: ' + (item.started_at || '')];
+    Object.keys(c).forEach((k) => {
+      const v = c[k];
+      head.push(`# ${k}: ${v != null && typeof v === 'object' ? JSON.stringify(v) : (v == null ? '' : v)}`.replace(/[\r\n]+/g, ' '));
+    });
+    const samples = Array.isArray(item.samples) ? item.samples : [];
+    const fanLabels = [];
+    samples.forEach((sm) => Object.keys(sm.fans || {}).forEach((l) => { if (!fanLabels.includes(l)) fanLabels.push(l); }));
+    const cols = CSV_COLS.concat(fanLabels.map((l) => 'fan_' + l));
+    const lines = samples.map((sm) => cols.map((col) =>
+      csvCell(col.startsWith('fan_') ? (sm.fans || {})[col.slice(4)] : sm[col])).join(','));
+    return { kind: item.kind, text: JSON.stringify(obj, null, 2),
+      csv: head.join('\n') + '\n' + cols.join(',') + '\n' + lines.join('\n') + '\n' };
+  }
+
+  async function exportItem(item) {
+    if (!item || !window.rog || !window.rog.exportBenchmark) return;
+    const res = await window.rog.exportBenchmark(buildExport(item));
+    if (typeof toast !== 'function') return;
+    toast(!res.ok ? _t('bench.export_failed', { err: res.err })
+      : res.csvPath ? _t('bench.detail.exported_csv', { path: res.path, csv: res.csvPath })
+      : _t('bench.exported', { path: res.path }));
   }
 
   /* ============================================================
@@ -504,6 +676,9 @@
       ${chartsHtml}
       <h4 class="benchd-h4">${_esc(_t('bench.detail.summary_h4'))}</h4>
       ${statsGrid(item, isGpu)}
+      ${scoreGrid(item)}
+      ${statsTable(item, isGpu)}
+      ${conditionsBlock(item)}
     `;
 
     modal.classList.remove('hidden');
@@ -518,5 +693,5 @@
     });
   }
 
-  window.RogBenchDetail = { open, close };
+  window.RogBenchDetail = { open, close, buildExport, exportItem };
 })();
