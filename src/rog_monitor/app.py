@@ -21,7 +21,7 @@ from .fps import read_fps
 from .gpu import GpuReader
 from .history import Series
 from .i18n import Translator
-from .keys import KeyReader
+from .keys import ESC, KeyReader
 from .power import BatteryReader, RaplReader, asus_profile, ppd_profile
 from .power_control import PowerControl
 from .procs import ProcReader
@@ -153,7 +153,9 @@ class App:
         t = self.t
         if key == "q":
             return False
-        if key == "h":
+        if key == ESC:  # Esc cierra ayuda/eventos (no hace nada si no hay overlay)
+            self.help_visible = self.events_visible = False
+        elif key == "h":
             self.help_visible = not self.help_visible
             self.events_visible = False
         elif key == "v":
@@ -266,7 +268,7 @@ class App:
 
         try:
             with KeyReader() as keyboard, Live(
-                ui.build(state, self.t, console.width),
+                ui.build(state, self.t, console.width, console.height),
                 console=console,
                 screen=True,
                 auto_refresh=False,
@@ -280,13 +282,13 @@ class App:
                             self._resized = False
                             try:
                                 live.update(
-                                    ui.build(state, self.t, console.width),
+                                    ui.build(state, self.t, console.width, console.height),
                                     refresh=True,
                                 )
                             except Exception:
                                 self._log_error()
                         key = keyboard.get(timeout=0.1)
-                        if key not in BOUND_KEYS:
+                        if key not in BOUND_KEYS and key != ESC:
                             continue  # tecla sin acción: no tocar nada
                         try:
                             running = self.handle_key(key, state)
@@ -298,7 +300,7 @@ class App:
                                          help_visible=self.help_visible,
                                          events_visible=self.events_visible,
                                          message=self.message)
-                            live.update(ui.build(state, self.t, console.width),
+                            live.update(ui.build(state, self.t, console.width, console.height),
                                         refresh=True)
                         except Exception:
                             self._log_error()
@@ -308,7 +310,7 @@ class App:
                         self._resized = False
                     try:
                         state = self.sample()
-                        live.update(ui.build(state, self.t, console.width), refresh=True)
+                        live.update(ui.build(state, self.t, console.width, console.height), refresh=True)
                     except Exception:
                         self._log_error()
             # El bloque `with` ya salió: pantalla alternativa restaurada,

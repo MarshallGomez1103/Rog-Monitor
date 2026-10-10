@@ -1,5 +1,6 @@
 """Dashboard rendering with Rich: panels, bars, graphs, themes."""
 
+from rich.align import Align
 from rich.console import Group
 from rich.panel import Panel
 from rich.table import Table
@@ -67,17 +68,18 @@ def bar(percent: float | None, width: int = 18, style: str = "red") -> Text:
     return text
 
 
-def _fmt(value, suffix="", nd=1):
+def _fmt(value, suffix="", nd=1, na=""):
     if value is None:
-        return Text("N/A", style="grey58")
+        # "N/A" + motivo corto (na) para no dejar un hueco mudo
+        return Text(f"N/A ({na})" if na else "N/A", style="grey58")
     if isinstance(value, float):
         value = round(value, nd)
     return Text(f"{value}{suffix}")
 
 
-def _temp_text(temp, limits) -> Text:
+def _temp_text(temp, limits, na="") -> Text:
     if temp is None:
-        return _fmt(None)
+        return _fmt(None, na=na)
     return Text(f"{temp:.0f}°C", style=temp_style(temp, limits))
 
 
@@ -109,23 +111,26 @@ def cpu_panel(state, t, th) -> Panel:
     cpu = state["cpu"]
     limits = state["limits"]["cpu"]
     table = _grid()
+    na = t("na_sensor")
     avg = cpu["avg"]
-    _kv(table, t("avg"), Text(f"{avg}°C", style=temp_style(avg, limits)) if avg is not None else _fmt(None))
-    _kv(table, t("max"), _fmt(cpu["max"], "°C"))
-    _kv(table, t("min"), _fmt(cpu["min"], "°C"))
-    _kv(table, t("package"), _temp_text(cpu["package"], limits))
-    _kv(table, t("hot_cores"), f"{cpu['hot90']} {t('cores_suffix')}")
-    _kv(table, t("freq"), _fmt(cpu["freq_ghz"], " GHz", 2))
+    _kv(table, t("avg"), Text(f"{avg}°C", style=temp_style(avg, limits)) if avg is not None else _fmt(None, na=na))
+    _kv(table, t("max"), _fmt(cpu["max"], "°C", na=na))
+    _kv(table, t("min"), _fmt(cpu["min"], "°C", na=na))
+    _kv(table, t("package"), _temp_text(cpu["package"], limits, na))
+    hot = cpu["hot90"]
+    _kv(table, t("hot_cores"), _fmt(None, na=na) if hot is None else f"{hot} {t('cores_suffix')}")
+    _kv(table, t("freq"), _fmt(cpu["freq_ghz"], " GHz", 2, na))
 
     watts = state["cpu_watts"]
-    if state["rapl_available"]:
-        _kv(table, t("power"), _fmt(watts, " W"))
+    if not state["rapl_available"]:
+        _kv(table, t("power"), Text(f"N/A ({t('power_na_hint')})", style="grey58"))
     else:
-        _kv(table, t("power"), Text(t("power_na_hint"), style="grey58"))
-    _kv(table, t("throttle"), f"{cpu['throttle_count']} {t('events_suffix')}")
+        _kv(table, t("power"), _fmt(watts, " W", na=na))
+    thr = cpu["throttle_count"]
+    _kv(table, t("throttle"), _fmt(None, na=na) if thr is None else f"{thr} {t('events_suffix')}")
 
     title = Text(f" {t('cpu')} ", style=th["title"])
-    subtitle = Text(cpu["model"][:40], style=th["dim"])
+    subtitle = Text((cpu["model"] or "N/A")[:40], style=th["dim"])
     return Panel(table, title=title, subtitle=subtitle, border_style=th["border"])
 
 
@@ -135,7 +140,8 @@ def gpu_panel(state, t, th) -> Panel:
     limits = state["limits"]["gpu"]
     table = _grid()
 
-    mode = Text(info.get("mode") or "N/A", style=th["accent"])
+    na = t("na_sensor")
+    mode = Text(info.get("mode") or f"N/A ({t('gpu_mode_na')})", style=th["accent"])
     if info.get("pending"):
         mode.append(f" → {info['pending']}", style="bold yellow")
         mode.append(f" ({t('gpu_pending')})", style="grey58")
@@ -144,15 +150,15 @@ def gpu_panel(state, t, th) -> Panel:
         _kv(table, t("gpu_modes_avail"), Text(" · ".join(info["supported"]), style="grey58"))
 
     if active:
-        _kv(table, t("model"), active.get("name") or "N/A")
-        _kv(table, t("temp"), _temp_text(active.get("temp"), limits))
+        _kv(table, t("model"), active.get("name") or _fmt(None, na=na))
+        _kv(table, t("temp"), _temp_text(active.get("temp"), limits, na))
         util = active.get("util")
         if util is not None:
             row = Text()
             row.append_text(bar(util, 14, th["bar"]))
             row.append(f" {util:.0f}%")
             _kv(table, t("usage"), row)
-        _kv(table, t("power"), _fmt(active.get("power"), " W"))
+        _kv(table, t("power"), _fmt(active.get("power"), " W", na=na))
         clock, vclock = active.get("clock_mhz"), active.get("vram_clock_mhz")
         if clock is not None:
             freq = Text(f"{clock:.0f} MHz")
@@ -163,7 +169,9 @@ def gpu_panel(state, t, th) -> Panel:
         if used is not None and total:
             _kv(table, t("vram"), f"{used:.0f} / {total:.0f} MiB")
     else:
-        table.add_row(Text(t("gpu_off"), style="grey58"), Text(""))
+        # dGPU sin lectura: apagada (Integrated) o suspendida (Hybrid, ahorro de energía)
+        reason = t("gpu_off") if info.get("mode") == "Integrated" else t("gpu_suspended")
+        _kv(table, "N/A", Text(reason, style="grey58"))
     return Panel(table, title=Text(f" {t('gpu')} ", style=th["title"]), border_style=th["border"])
 
 
@@ -172,10 +180,15 @@ def fans_panel(state, t, th) -> Panel:
     table.add_column(min_width=9)
     table.add_column()
     table.add_column(justify="right", min_width=10)
+    if not state["fans"]:
+        body = Text(f"N/A · {t('fans_none')}", style="grey58")
+        return Panel(body, title=Text(f" {t('fans')} ", style=th["title"]), border_style=th["border"])
     for fan in state["fans"]:
         label = fan["label"].replace("_fan", "").upper()
         rpm_text = Text(f"{fan['rpm']} RPM")
-        if fan["rpm"] == 0:
+        if fan["rpm"] is None:
+            rpm_text = _fmt(None, na=t("na_sensor"))
+        elif fan["rpm"] == 0:
             rpm_text = Text(f"0 RPM ({t('fan_stopped')})", style="grey58")
         table.add_row(
             Text(label, style="grey74"),
@@ -188,10 +201,11 @@ def fans_panel(state, t, th) -> Panel:
 def profile_panel(state, t, th) -> Panel:
     cpu = state["cpu"]
     table = _grid()
-    _kv(table, t("asus_profile"), Text(state["asus_profile"] or "N/A", style=th["accent"]))
-    _kv(table, t("ppd_profile"), Text(state["ppd_profile"] or "N/A", style=th["accent"]))
-    _kv(table, t("epp"), cpu["epp"] or "N/A")
-    gov = Text(cpu["governor"] or "N/A")
+    na = f"N/A ({t('na_unavail')})"
+    _kv(table, t("asus_profile"), Text(state["asus_profile"] or na, style=th["accent"]))
+    _kv(table, t("ppd_profile"), Text(state["ppd_profile"] or na, style=th["accent"]))
+    _kv(table, t("epp"), cpu["epp"] or na)
+    gov = Text(cpu["governor"] or na)
     if cpu["governor"] == "powersave" and (cpu["driver"] or "").endswith("pstate"):
         gov.append(f" {t('governor_note', driver=cpu['driver'])}", style="grey58")
     _kv(table, t("governor"), gov)
@@ -218,6 +232,8 @@ def profile_panel(state, t, th) -> Panel:
         if battery.get("cycle_count") is not None:
             text.append(f"  {battery['cycle_count']} ciclos", style="grey58")
         _kv(table, t("battery"), text)
+    else:
+        _kv(table, t("battery"), Text(f"N/A ({t('battery_none')})", style="grey58"))
     return Panel(table, title=Text(f" {t('profile')} ", style=th["title"]), border_style=th["border"])
 
 
@@ -254,6 +270,9 @@ def history_panel(state, t, th, console_width: int) -> Panel:
     if series["gpu_power"].values():
         blocks.append(("gpu_power_graph", "gpu_power", "graph_gpu"))
 
+    # Cada gráfica necesita >=24 columnas: en terminales estrechas se muestran
+    # sólo las primeras que caben (si no, las filas se parten y se ven rotas).
+    blocks = blocks[:max(1, (console_width - 8) // 24)]
     width = max(24, (console_width - 8) // len(blocks))
     table = Table.grid(padding=(0, 2))
     for _ in blocks:
@@ -316,7 +335,7 @@ def system_panel(state, t, th) -> Panel:
 def processes_panel(state, t, th) -> Panel:
     table = Table.grid(padding=(0, 2))
     table.add_column(min_width=7, justify="right")
-    table.add_column(min_width=26)
+    table.add_column(min_width=26, no_wrap=True, overflow="ellipsis")
     table.add_column(min_width=9, justify="right")
     table.add_column(justify="right")
     table.add_row(
@@ -414,8 +433,15 @@ def thermal_state(avg: float | None, t, limits) -> Text:
     return Text(t("state_critical"), style="bold red")
 
 
-def build(state, t, console_width: int):
+MIN_COLS, MIN_ROWS = 60, 20  # por debajo, el layout se rompe: mostrar un aviso
+
+
+def build(state, t, console_width: int, console_height: int | None = None):
     from . import __version__
+
+    if console_height is not None and (console_width < MIN_COLS or console_height < MIN_ROWS):
+        msg = Text(t("term_small", w=MIN_COLS, h=MIN_ROWS), style="bold yellow", justify="center")
+        return Align.center(msg, vertical="middle", height=console_height)
 
     th = THEMES.get(state["theme"], THEMES["rog"])
 

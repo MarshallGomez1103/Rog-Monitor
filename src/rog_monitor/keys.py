@@ -10,7 +10,8 @@ try:
 except ImportError:  # non-POSIX fallback
     termios = None
 
-ESC = 0x1B
+ESC = "\x1b"  # tecla Esc (ESC solitario) tal como la entrega KeyReader.get()
+_ESC_BYTE = 0x1B
 
 
 def _parse(buf: bytes) -> tuple[list[str], bytes]:
@@ -21,7 +22,7 @@ def _parse(buf: bytes) -> tuple[list[str], bytes]:
     i, n = 0, len(buf)
     while i < n:
         b = buf[i]
-        if b != ESC:
+        if b != _ESC_BYTE:
             if 0x20 <= b < 0x7F:  # sólo ASCII imprimible; el resto se ignora
                 keys.append(chr(b))
             i += 1
@@ -47,7 +48,7 @@ def _parse(buf: bytes) -> tuple[list[str], bytes]:
             if i + 3 > n:
                 return keys, buf[i:]
             i += 3
-        elif nxt == ESC:
+        elif nxt == _ESC_BYTE:
             i += 1  # ESC suelto seguido de otra secuencia
         else:
             i += 2  # Alt+tecla
@@ -101,7 +102,9 @@ class KeyReader:
                     break
                 more = self._read(0.05)
                 if not more:
-                    break  # ESC solitario o secuencia truncada: descartar
+                    if rest == b"\x1b":
+                        keys.append(ESC)  # ESC solitario = tecla Esc; secuencia truncada: se descarta
+                    break
                 more_keys, rest = _parse(rest + more)
                 keys += more_keys
             self._queue = keys

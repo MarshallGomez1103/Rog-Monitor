@@ -66,13 +66,14 @@ class KeyReaderParser(unittest.TestCase):
                 n = 30
                 os.write(master, (CLICK + b"x" + WHEEL + RIGHT + X10 + ARROW) * n + b"\x1b")
                 keys = []
-                self.assertEqual(kr.get(timeout=0.2), "x")  # ESC solitario al final: se descarta
+                self.assertEqual(kr.get(timeout=0.2), "x")  # ESC solitario al final: tecla Esc
                 keys.append("x")
                 while (k := kr.get(timeout=0.2)) is not None:
                     keys.append(k)
                 os.write(master, b"q")
                 keys.append(kr.get(timeout=0.2))
-            self.assertEqual(keys, ["x"] * n + ["q"])
+            # las secuencias (ratón, flechas, SS3) se descartan; sólo el ESC final llega
+            self.assertEqual(keys, ["x"] * n + ["\x1b", "q"])
         finally:
             os.close(master)
             os.close(slave)
@@ -168,6 +169,74 @@ class TuiPty(unittest.TestCase):
                     proc.kill()
                 proc.wait()
             self.assertIn(b"\x1b[?1049l", b"".join(out))
+
+    def _run_tui(self, tmp, rows, cols):
+        env = dict(os.environ, TERM="xterm-256color", PYTHONPATH=str(SRC),
+                   XDG_CONFIG_HOME=tmp, XDG_DATA_HOME=tmp)
+        master, slave = os.openpty()
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
+        proc = subprocess.Popen(
+            [sys.executable, "-m", "rog_monitor", "--no-gpu", "--lang", "en"],
+            stdin=slave, stdout=slave, stderr=slave, env=env, cwd=tmp,
+            start_new_session=True)
+        os.close(slave)
+        return master, proc
+
+    def _stop(self, master, proc, out):
+        os.write(master, b"q")
+        end = time.monotonic() + 8
+        while proc.poll() is None and time.monotonic() < end:
+            _pump(master, out, 0.1)
+        code = proc.poll()
+        if code is None:
+            proc.kill()
+        proc.wait()
+        os.close(master)
+        self.assertEqual(code, 0, b"".join(out)[-400:].decode(errors="replace"))
+
+    def test_sigwinch_resize_redraws_and_survives(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            master, proc = self._run_tui(tmp, 40, 120)
+            out = []
+            try:
+                _pump(master, out, 2.5)
+                self.assertIn(b"PROCESSES", b"".join(out))
+                for rows, cols, expected in ((30, 80, b"ROG MONITOR"),
+                                             (15, 50, b"Terminal too small"),
+                                             (40, 120, b"PROCESSES")):
+                    out.clear()
+                    fcntl.ioctl(master, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
+                    proc.send_signal(signal.SIGWINCH)
+                    _pump(master, out, 1.0)
+                    self.assertIsNone(proc.poll(), "la TUI murió con SIGWINCH")
+                    self.assertIn(expected, b"".join(out), f"sin redibujo a {cols}x{rows}")
+                self._stop(master, proc, out)
+            finally:
+                if proc.poll() is None:
+                    proc.kill()
+                    proc.wait()
+
+    def test_escape_closes_help(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            master, proc = self._run_tui(tmp, 40, 120)
+            out = []
+            try:
+                _pump(master, out, 2.5)
+                out.clear()
+                os.write(master, b"h")
+                _pump(master, out, 0.6)
+                self.assertIn(b"HELP", b"".join(out))
+                out.clear()
+                os.write(master, b"\x1b")
+                _pump(master, out, 0.6)
+                data = b"".join(out)
+                self.assertIn(b"PROCESSES", data, "Esc no cerró la ayuda")
+                self.assertNotIn(b"close this help", data)
+                self._stop(master, proc, out)
+            finally:
+                if proc.poll() is None:
+                    proc.kill()
+                    proc.wait()
 
 
 if __name__ == "__main__":
