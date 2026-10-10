@@ -1,0 +1,39 @@
+/* ROG Monitor — a11y.css  (Fase 5 / CP-5.08)
+   Se carga el ÚLTIMO en index.html a propósito: sus reglas anulan los
+   `outline: none` sueltos de las demás hojas sin tocar la identidad visual.
+   Contiene sólo (1) anillo de foco de teclado y (2) reduced-motion. */
+
+/* ---- 1. foco visible por teclado ----
+   :focus-visible NO se activa con clic de ratón, sólo con teclado/programático
+   tras teclado, así que no ensucia la UI al usarla con el puntero.
+   !important porque varias hojas hacen `outline:none` con selectores más
+   específicos (#id:focus, .x:focus-visible). Offset NEGATIVO: casi todos los
+   controles llevan clip-path (esquina cortada) y un anillo exterior quedaría
+   recortado; el anillo interior siempre se ve. */
+html :focus-visible:not([tabindex="-1"]) {
+  outline: var(--focus-ring-width, 2px) solid var(--focus-ring, var(--accent2)) !important;
+  outline-offset: -2px !important;
+}
+/* casillas / radios / rangos / color: el anillo va por fuera, no tienen clip-path */
+html input[type="checkbox"]:focus-visible,
+html input[type="radio"]:focus-visible,
+html input[type="range"]:focus-visible,
+html input[type="color"]:focus-visible {
+  outline-offset: 2px !important;
+}
+
+/* ---- 2. reduced motion ----
+   Apaga las animaciones/transiciones que queden (shimmer del skeleton, pulso
+   crítico, barridos de segmento, fan-save-pulse, brillos de tema, etc.). La
+   duración casi nula (no `none`) mantiene los eventos transitionend/animationend
+   por si algún JS los espera. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -99,14 +99,14 @@ html[data-mode="dark"][data-theme="cyberpunk"] {
 /* Aurora — teal boreal virando a violeta puro premium */
 html[data-mode="dark"][data-theme="aurora"] {
   --bg: #060d10; --panel: #0b1618; --hair: #153028;
-  --accent: #00d4aa; --accent2: #9b59e8; --chip: #0c2020;
+  --accent: #00d4aa; --accent2: #a468ea; --chip: #0c2020;
   --ink: #dff5ef; --dim: #66a894; --glow: #00d4aa55;
 }
 /* Alba — marfil cálido (modo oscuro base para el tema, con ámbar/oro) */
 html[data-mode="dark"][data-theme="alba"] {
   --bg: #13100d; --panel: #1c1712; --hair: #3a2e1e;
   --accent: #d4a017; --accent2: #e87d5a; --chip: #261f13;
-  --ink: #f5ede0; --dim: #8a7a60; --glow: #d4a01755;
+  --ink: #f5ede0; --dim: #968770; --glow: #d4a01755;
 }
 
 /* ---------- palettes (light) ----------
@@ -350,7 +350,7 @@ b, .num { font-variant-numeric: tabular-nums; }
   gap: 4px;
   padding: 10px 8px;
   border: 1px solid var(--hair);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--chip);
   color: var(--dim);
   cursor: pointer;
@@ -376,7 +376,7 @@ b, .num { font-variant-numeric: tabular-nums; }
   line-height: 1;
   padding: 3px 6px;
   border: 1px solid var(--hair);
-  border-radius: 2px;
+  border-radius: var(--radius);
   color: var(--accent);
 }
 .lang-option.active .lang-flag { color: inherit; border-color: currentColor; }
@@ -396,7 +396,7 @@ b, .num { font-variant-numeric: tabular-nums; }
   gap: 5px;
   padding: 12px 8px;
   border: 1px solid var(--hair);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--chip);
   color: var(--dim);
   cursor: pointer;
@@ -528,7 +528,7 @@ b, .num { font-variant-numeric: tabular-nums; }
 .segment {
   display: flex;
   border: 1px solid var(--hair);
-  border-radius: 2px;
+  border-radius: var(--radius);
   overflow: hidden;
   background: var(--chip);
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%);
@@ -591,11 +591,33 @@ b, .num { font-variant-numeric: tabular-nums; }
   display: none;
 }
 
+/* --- topbar en anchos estrechos (CP-5.05). >= 1024px queda EXACTAMENTE igual.
+   Sin restyle: sólo prioridad y desborde. Los toggles dejan de reservar 112px
+   (quedan al ancho de su texto), los controles pasan a una fila propia bajo la
+   marca alineados al inicio, y los menús se anclan al contenedor de controles
+   (no a su botón) para que un panel de 190px nunca se salga por la izquierda. */
+@media (max-width: 1023px) {
+  #topbar { padding: 12px 16px; gap: 10px 14px; }
+  #topbar .controls {
+    position: relative;
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .control-menu { position: static; }
+  .control-menu-toggle { min-width: 0; }
+  .control-menu-panel { max-width: calc(100vw - 32px); }
+}
+@media (max-width: 560px) {
+  .brand-mark { font-size: 16px; letter-spacing: 1px; }
+  .lamp-label { letter-spacing: 1px; }
+}
+
 .ghost {
   /* v13: botones secundarios más visibles — borde con tinte de acento y texto
      más claro (antes color:dim + borde:hair se perdían sobre el panel). */
   border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--hair));
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--chip);
   color: color-mix(in srgb, var(--ink) 80%, var(--dim));
   font-family: var(--sans);
@@ -652,7 +674,7 @@ main {
   position: relative;
   background: var(--panel);
   border: 1px solid var(--hair);
-  border-radius: 2px;
+  border-radius: var(--radius);
   padding: 16px 18px;
   /* esquina superior derecha cortada en diagonal: la firma visual de la app */
   clip-path: polygon(0 0, calc(100% - 17px) 0, 100% 17px, 100% 100%, 0 100%);
@@ -907,7 +929,7 @@ input[type="color"] {
   gap: 8px;
   padding: 8px 10px;
   border: 1px solid var(--hair);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--chip);
   cursor: pointer;
 }
@@ -1052,7 +1074,7 @@ input[type="color"] {
 .periph {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   margin-top: 10px; padding: 8px 10px;
-  border: 1px solid var(--hair); border-radius: 2px;
+  border: 1px solid var(--hair); border-radius: var(--radius);
   border-left: 3px solid var(--accent2);
   background: var(--chip); font-size: 12.5px;
 }
@@ -1087,7 +1109,7 @@ input[type="color"] {
 }
 .bench-history li {
   border: 1px solid var(--hair);
-  border-radius: 2px;
+  border-radius: var(--radius);
   border-left: 3px solid var(--accent);
   padding: 9px 10px;
   background: var(--chip);
@@ -1217,7 +1239,7 @@ input[type="color"] {
   position: fixed; bottom: 48px; left: 50%; transform: translateX(-50%);
   background: var(--panel); color: var(--ink);
   border: 1px solid var(--accent);
-  padding: 10px 18px 10px 14px; border-radius: 2px;
+  padding: 10px 18px 10px 14px; border-radius: var(--radius);
   clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
   font-size: 13.5px; white-space: pre-line;
   box-shadow: 0 6px 24px rgba(0,0,0,.35);
@@ -1230,8 +1252,8 @@ input[type="color"] {
 /* toast kind variants — reuse the fixed semantic color vars */
 #toast.toast-ok   { border-color: var(--okstate); }
 #toast.toast-ok   .toast-icon::before { content: "✓"; color: var(--okstate); }
-#toast.toast-warn { border-color: #ffcc33; }
-#toast.toast-warn .toast-icon::before { content: "⚠"; color: #ffcc33; }
+#toast.toast-warn { border-color: var(--state-warn); }
+#toast.toast-warn .toast-icon::before { content: "⚠"; color: var(--state-warn); }
 #toast.toast-err  { border-color: var(--crit); }
 #toast.toast-err  .toast-icon::before { content: "✕"; color: var(--crit); }
 
@@ -1264,7 +1286,7 @@ input[type="color"] {
    an already-open modal — keeps the card + its own backdrop above the parent. */
 .modal-top { z-index: 60; } /* 60 > 30 so confirm always renders above power-modal */
 .modal-card {
-  background: var(--bg); border: 1px solid var(--hair); border-radius: 2px;
+  background: var(--bg); border: 1px solid var(--hair); border-radius: var(--radius);
   clip-path: polygon(0 0, calc(100% - 17px) 0, 100% 17px, 100% 100%, 0 100%);
   padding: 22px; width: min(560px, 92vw); max-height: 86vh; overflow-y: auto;
 }
@@ -1306,7 +1328,7 @@ input[type="color"] {
   user-select: text;
   background: var(--chip);
   border: 1px solid var(--hair);
-  border-radius: 2px;
+  border-radius: var(--radius);
   padding: 12px;
   font-family: var(--mono);
   font-size: 12.5px;
@@ -1316,7 +1338,7 @@ input[type="color"] {
 .theme-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 560px) { .theme-grid { grid-template-columns: 1fr; } }
 .theme-card {
-  border: 1px solid var(--hair); border-radius: 2px;
+  border: 1px solid var(--hair); border-radius: var(--radius);
   clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
   background: var(--panel);
   padding: 0 0 10px; cursor: pointer; text-align: left; overflow: hidden;
@@ -1343,7 +1365,7 @@ input[type="color"] {
 .cmd-argv { display: block; white-space: pre-wrap; word-break: break-all;
   font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.45;
   color: var(--accent); background: rgba(255,255,255,.04);
-  border: 1px solid var(--hair); border-radius: 2px; padding: 8px 10px; }
+  border: 1px solid var(--hair); border-radius: var(--radius); padding: 8px 10px; }
 .cmd-what { margin: 8px 0 3px; font-size: 13px; }
 .cmd-why { font-size: 12px; }
 
@@ -1410,7 +1432,7 @@ body::-webkit-scrollbar { width: 0; }
 }
 .dot.cold { background: var(--cold); }
 .dot.ok { background: var(--okstate); }
-.dot.warn { background: #ffcc33; }
+.dot.warn { background: var(--state-warn); }
 .dot.hot { background: var(--hot); }
 .dot.crit { background: var(--crit); }
 .settings-grid label { border-left: 3px solid var(--hair); padding-left: 8px; }
@@ -1425,7 +1447,7 @@ body::-webkit-scrollbar { width: 0; }
   display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px;
 }
 .event-chip {
-  font-size: 11px; padding: 2px 8px; border-radius: 2px;
+  font-size: 11px; padding: 2px 8px; border-radius: var(--radius);
   border: 1px solid var(--hair); background: transparent; color: var(--dim);
   cursor: pointer; transition: border-color 0.15s, color 0.15s;
 }
@@ -1512,5 +1534,5 @@ html[data-mode="dark"][data-theme="neon-nights"] .block::before {
 .maint-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin: .5rem 0; }
 /* Botón peligroso UNIFORME con los demás (mismo borde/forma que "Cerrar"); solo
    el texto lleva un matiz rojo de aviso, y al pasar el mouse se llena de rojo. */
-.ghost.danger { color: var(--hot, #ff6b3d); }
-.ghost.danger:hover { background: var(--hot, #ff6b3d); color: var(--bg); border-color: var(--hot, #ff6b3d); }
+.ghost.danger { color: var(--state-hot); }
+.ghost.danger:hover { background: var(--state-hot); color: var(--bg); border-color: var(--state-hot); }

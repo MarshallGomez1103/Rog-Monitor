@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
   <title>ROG Monitor</title>
+  <link rel="stylesheet" href="styles/tokens.css" />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="styles/neon.css" />
   <link rel="stylesheet" href="styles/power.css" />
@@ -16,6 +17,7 @@
   <link rel="stylesheet" href="styles/battery.css" />
   <link rel="stylesheet" href="styles/disks.css" />
   <link rel="stylesheet" href="styles/diagnostics.css" />
+  <link rel="stylesheet" href="styles/a11y.css" />
 </head>
 <body>
   <header id="topbar">
@@ -161,7 +163,7 @@
         <div class="statgrid">
           <div><label data-i18n="common.usage">Uso</label><b id="gpu-util">--</b></div>
           <div><label data-i18n="common.watts">Watts</label><b id="gpu-watts" data-i18n-attr="title:tip.gpu_watts" title="Consumo actual de la GPU — depende de la carga">--</b></div>
-          <div class="vram-stat clickable" id="gpu-vram-stat" data-i18n-attr="title:tip.vram_meter" title="Clic para ver qué está usando la VRAM"><label data-i18n="common.vram">VRAM</label><b id="gpu-vram">--</b></div>
+          <div class="vram-stat clickable" id="gpu-vram-stat" role="button" tabindex="0" data-i18n-attr="title:tip.vram_meter" title="Clic para ver qué está usando la VRAM"><label data-i18n="common.vram">VRAM</label><b id="gpu-vram">--</b></div>
           <div><label data-i18n="common.mhz">MHz</label><b id="gpu-clock" data-i18n-attr="title:tip.gpu_clock" title="Frecuencia actual del núcleo gráfico">--</b></div>
           <div><label>VRAM MHz</label><b id="gpu-vram-clock" class="small" data-i18n-attr="title:tip.gpu_vram_clock" title="Frecuencia actual de la memoria de video">--</b></div>
           <div><label data-i18n="common.mode">Modo</label><b id="gpu-mode" class="small">--</b></div>
@@ -170,6 +172,18 @@
       </article>
 
       <article class="block clickable" id="fans-block" data-block="fans" data-i18n-attr="title:tip.fans_block" title="Clic para configurar caps y curvas de ventilación">
+        <!-- widget-states: skeleton / error overlays (empty = contenido atenuado, ver onboarding.css) -->
+        <div class="skeleton-overlay" aria-hidden="true">
+          <div class="skel-line short"></div>
+          <div class="skel-grid">
+            <div class="skel-line"></div><div class="skel-line"></div>
+            <div class="skel-line"></div><div class="skel-line"></div>
+          </div>
+        </div>
+        <div class="widget-error-chip" aria-hidden="true">
+          <div class="error-badge">&#x26A0; <span data-i18n="widget.backend_down">BACKEND CAÍDO</span></div>
+          <div class="error-detail" data-i18n="widget.reconnecting">Reconectando con los sensores…</div>
+        </div>
         <h2><i class="dash-num"></i> <span data-i18n="block.fans">Ventiladores</span> <small data-i18n="block.fans_sub">clic para configurar</small></h2>
         <div class="fans" id="fans"></div>
       </article>
@@ -263,11 +277,23 @@
       </article>
 
       <article class="block" id="system-block" data-block="system">
+        <!-- widget-states: skeleton / error overlays (empty = contenido atenuado, ver onboarding.css) -->
+        <div class="skeleton-overlay" aria-hidden="true">
+          <div class="skel-line short"></div>
+          <div class="skel-grid">
+            <div class="skel-line"></div><div class="skel-line"></div>
+            <div class="skel-line"></div><div class="skel-line"></div>
+          </div>
+        </div>
+        <div class="widget-error-chip" aria-hidden="true">
+          <div class="error-badge">&#x26A0; <span data-i18n="widget.backend_down">BACKEND CAÍDO</span></div>
+          <div class="error-detail" data-i18n="widget.reconnecting">Reconectando con los sensores…</div>
+        </div>
         <h2><i class="dash-num"></i> <span data-i18n="block.system">Sistema</span></h2>
         <div class="sysrow">
           <div class="sys-meters">
-            <div class="meter clickable" id="ram-meter" data-i18n-attr="title:tip.ram_meter" title="Clic para ver qué está consumiendo la RAM"><label>RAM <span id="ram-label"></span></label><div class="track"><div id="ram-bar"></div></div></div>
-            <div class="meter clickable" id="vram-meter" data-i18n-attr="title:tip.vram_meter" title="Clic para ver qué está usando la VRAM"><label>VRAM <span id="vram-label"></span></label><div class="track vram-track"><div id="vram-bar"></div></div></div>
+            <div class="meter clickable" id="ram-meter" role="button" tabindex="0" data-i18n-attr="title:tip.ram_meter" title="Clic para ver qué está consumiendo la RAM"><label>RAM <span id="ram-label"></span></label><div class="track"><div id="ram-bar"></div></div></div>
+            <div class="meter clickable" id="vram-meter" role="button" tabindex="0" data-i18n-attr="title:tip.vram_meter" title="Clic para ver qué está usando la VRAM"><label>VRAM <span id="vram-label"></span></label><div class="track vram-track"><div id="vram-bar"></div></div></div>
           </div>
           <div class="syskv">
             <div><label data-i18n="common.network">Red</label><b id="net">--</b></div>
@@ -340,6 +366,18 @@
         </article>
 
         <article class="block" id="procs-block" data-block="procs">
+          <!-- widget-states: skeleton / error overlays (empty = contenido atenuado, ver onboarding.css) -->
+          <div class="skeleton-overlay" aria-hidden="true">
+            <div class="skel-line short"></div>
+            <div class="skel-grid">
+              <div class="skel-line"></div><div class="skel-line"></div>
+              <div class="skel-line"></div><div class="skel-line"></div>
+            </div>
+          </div>
+          <div class="widget-error-chip" aria-hidden="true">
+            <div class="error-badge">&#x26A0; <span data-i18n="widget.backend_down">BACKEND CAÍDO</span></div>
+            <div class="error-detail" data-i18n="widget.reconnecting">Reconectando con los sensores…</div>
+          </div>
           <h2><i class="dash-num"></i> <span data-i18n="block.procs">Procesos</span>
             <small data-i18n="block.procs_sub2">top 5 · clic en una fila para cerrarla</small></h2>
           <div class="procs-toolbar">
@@ -369,7 +407,7 @@
   <div id="toast" class="hidden"></div>
   <div id="chart-tip" class="hidden"></div>
 
-  <div id="confirm-modal" class="modal hidden">
+  <div id="confirm-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
     <div class="modal-card confirm-card">
       <h3 id="confirm-title">Confirmar</h3>
       <p class="sub confirm-message" id="confirm-message"></p>
@@ -386,28 +424,28 @@
   </div>
 
   <!-- v10 shells (los llenan los agentes: A1 idioma, A5 roadmap) -->
-  <div id="lang-modal" class="modal hidden">
+  <div id="lang-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="lang-modal-title">
     <div class="modal-card lang-card">
-      <h3 data-i18n="lang.modal_title">Elige tu idioma</h3>
+      <h3 data-i18n="lang.modal_title" id="lang-modal-title">Elige tu idioma</h3>
       <div class="lang-grid" id="lang-grid">
         <!-- Llenado por i18n.js al arrancar -->
       </div>
       <button class="ghost modal-close" id="lang-close" data-i18n="common.close">Cerrar</button>
     </div>
   </div>
-  <div id="roadmap-modal" class="modal hidden">
+  <div id="roadmap-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="roadmap-modal-title">
     <div class="modal-card roadmap-card">
       <!-- Contenido inyectado por roadmap.js en tiempo de carga -->
       <div class="roadmap-scroll">
-        <h3>Roadmap</h3>
+        <h3 id="roadmap-modal-title">Roadmap</h3>
         <p class="sub">Cargando…</p>
       </div>
     </div>
   </div>
 
-  <div id="ram-modal" class="modal hidden">
+  <div id="ram-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="ram-modal-title">
     <div class="modal-card">
-      <h3 data-i18n="modal.ram">¿Qué está usando la RAM?</h3>
+      <h3 data-i18n="modal.ram" id="ram-modal-title">¿Qué está usando la RAM?</h3>
       <p class="sub" data-i18n="modal.ram_sub">Memoria residente real por proceso (clic para cerrar uno).</p>
       <!-- v17-D: sortable headers (reuses CPU proc sort pattern) -->
       <table id="ram-procs" data-sort-col="mem">
@@ -422,9 +460,9 @@
     </div>
   </div>
 
-  <div id="vram-modal" class="modal hidden">
+  <div id="vram-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="vram-modal-title">
     <div class="modal-card">
-      <h3 data-i18n="modal.vram">¿Qué está usando la VRAM?</h3>
+      <h3 data-i18n="modal.vram" id="vram-modal-title">¿Qué está usando la VRAM?</h3>
       <p class="sub" id="vram-procs-note" data-i18n="modal.vram_sub">Memoria de video por proceso cuando el driver la expone (clic para cerrar uno).</p>
       <table id="vram-procs">
         <!-- v17-D: (i) icon explains C/G/CG mode values -->
@@ -435,9 +473,9 @@
     </div>
   </div>
 
-  <div id="allprocs-modal" class="modal hidden">
+  <div id="allprocs-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="allprocs-modal-title">
     <div class="modal-card wide allprocs-card">
-      <h3 data-i18n="procs.all_title">Todos los procesos</h3>
+      <h3 data-i18n="procs.all_title" id="allprocs-modal-title">Todos los procesos</h3>
       <p class="sub"><span data-i18n="procs.all_sub">Lista completa ordenada por uso de CPU. Clic en una fila para cerrar el proceso.</span></p>
       <div class="allprocs-toolbar">
         <input type="text" id="allprocs-filter" data-i18n-attr="placeholder:procs.all_filter" placeholder="Filtrar por nombre o PID…" autocomplete="off" spellcheck="false">
@@ -460,7 +498,7 @@
   </div>
 
   <!-- event-detail.js injects this modal dynamically; the static shell is here for CSP compliance -->
-  <div id="event-detail-modal" class="modal hidden">
+  <div id="event-detail-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="event-detail-title">
     <div class="modal-card event-detail-card">
       <h3 id="event-detail-title"></h3>
       <div class="event-detail-body" id="event-detail-body"></div>
@@ -468,9 +506,9 @@
     </div>
   </div>
 
-  <div id="fan-modal" class="modal hidden">
+  <div id="fan-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="fan-modal-title">
     <div class="modal-card wide">
-      <h3><span data-i18n="fan.modal_title">Ventiladores — perfil activo:</span> <span id="fan-profile" class="accent2"></span></h3>
+      <h3 id="fan-modal-title"><span data-i18n="fan.modal_title">Ventiladores — perfil activo:</span> <span id="fan-profile" class="accent2"></span></h3>
       <p class="sub">
         <span data-i18n="fan.sub">Edita curvas y tope de RPM para cada perfil de energía por separado. Los cambios se guardan en</span>
         <code id="fan-script-path"></code>
@@ -539,9 +577,9 @@
     </div>
   </div>
 
-  <div id="config-modal" class="modal hidden">
+  <div id="config-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="config-modal-title">
     <div class="modal-card">
-      <h3 data-i18n="config.title">Configuración</h3>
+      <h3 data-i18n="config.title" id="config-modal-title">Configuración</h3>
       <p class="sub" data-i18n="config.sub">Apariencia, autoarranque y notificaciones. Todo se guarda automáticamente. Cambia el idioma con el botón 🌐 de la barra.</p>
 
       <h3 class="size-title" data-i18n="modal.theme">Apariencia</h3>
@@ -582,9 +620,9 @@
     </div>
   </div>
 
-  <div id="overlay-modal" class="modal hidden">
+  <div id="overlay-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="overlay-modal-title">
     <div class="modal-card">
-      <h3 data-i18n="modal.overlay">Overlay para juegos</h3>
+      <h3 data-i18n="modal.overlay" id="overlay-modal-title">Overlay para juegos</h3>
       <p class="sub" data-i18n="modal.overlay_sub">Una ventanita siempre encima con temperaturas, vatios y RPM.
         No roba el foco del juego (es click-through) y aparece sobre pantalla completa.</p>
       <label class="check-row" for="overlay-enabled">
@@ -639,9 +677,9 @@
     </div>
   </div>
 
-  <div id="alerts-modal" class="modal hidden">
+  <div id="alerts-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="alerts-modal-title">
     <div class="modal-card">
-      <h3 data-i18n="alerts.title">Alertas / Umbrales</h3>
+      <h3 data-i18n="alerts.title" id="alerts-modal-title">Alertas / Umbrales</h3>
       <p class="sub" data-i18n="alerts.sub">Ajusta cuándo avisa el monitor y a qué temperaturas cambian los colores. Se guarda y se aplica al instante.</p>
       <div class="settings-grid">
         <label class="f-temp"><span data-i18n="alerts.cpu_temp">🌡 Alerta temp CPU (°C)</span><input type="number" id="set-cpu-temp-warn" min="50" max="110" step="1"></label>
@@ -669,9 +707,9 @@
     </div>
   </div>
 
-  <div id="maintenance-modal" class="modal hidden">
+  <div id="maintenance-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="maintenance-modal-title">
     <div class="modal-card">
-      <h3 data-i18n="maint.title">Mantenimiento</h3>
+      <h3 data-i18n="maint.title" id="maintenance-modal-title">Mantenimiento</h3>
       <p class="sub" data-i18n="maint.sub">Actualiza, reinstala o desinstala ROG Monitor. Todo vive en una sola
         carpeta del repo; tus configuraciones están en <code>~/.config/rog-monitor</code>.</p>
       <div class="maint-actions">
@@ -694,9 +732,9 @@
     </div>
   </div>
 
-  <div id="benchmark-modal" class="modal hidden">
+  <div id="benchmark-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="benchmark-modal-title">
     <div class="modal-card">
-      <h3 data-i18n="modal.bench">Benchmark térmico</h3>
+      <h3 data-i18n="modal.bench" id="benchmark-modal-title">Benchmark térmico</h3>
       <p class="sub" data-i18n="bench.modal_sub">Lanza una carga sintética local al máximo y mide temperatura, watts y RPM. Úsalo con el cargador conectado y con ventilación libre.</p>
       <div class="mode-row">
         <button class="ghost" id="bench-cpu" data-i18n="bench.cpu">CPU 45 s</button>
@@ -710,11 +748,11 @@
   </div>
 
   <!-- CENTRO DE PODER modal (Agent 2) -->
-  <div id="power-modal" class="modal hidden">
+  <div id="power-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="power-modal-title">
     <div class="modal-card">
       <!-- v13 POWER-UI: cabecera con título + botón Avanzado a la derecha -->
       <div id="power-title-row">
-        <h3 data-i18n="modal.power">CENTRO DE PODER</h3>
+        <h3 data-i18n="modal.power" id="power-modal-title">CENTRO DE PODER</h3>
         <button class="ghost" id="power-advanced-btn" data-i18n="power.advancedBtn">Avanzado</button>
       </div>
       <!-- /v13 POWER-UI -->
@@ -767,10 +805,10 @@
 
   <!-- Asistente de primera vez (lo llena wizard.js; shell estable para sus refs) -->
   <!-- v10: 6 pasos (paso 0 = idioma + pasos 1-5 originales). wizard.js gestiona todo. -->
-  <div id="wizard-modal" class="hidden">
+  <div id="wizard-modal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="wizard-title">
     <div class="wizard-card">
       <div class="wizard-header">
-        <h2 data-i18n="wizard.title">Asistente de ROG Monitor</h2>
+        <h2 id="wizard-title" data-i18n="wizard.title">Asistente de ROG Monitor</h2>
         <span class="wizard-subtitle" data-i18n="wizard.subtitle">Conoce tu equipo en 6 pasos rápidos</span>
         <div class="wizard-steps-bar">
           <span class="wizard-step-pip"></span>

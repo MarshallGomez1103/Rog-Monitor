@@ -1,0 +1,129 @@
+/* ROG Monitor — tokens.css  (Fase 5 / CP-5.01 + CP-5.03)
+   Tokens SEMÁNTICOS, cargados PRIMERO en index.html. No redefinen paletas:
+   cada token apunta a una variable de tema que YA existe (style.css define
+   --bg/--panel/--chip/--ink/--dim/--hair/--accent/--accent2 por tema y modo,
+   y --cold/--okstate/--hot/--crit + --lvl-* para los niveles de temperatura).
+   Se resuelven sobre <html>, igual que las variables de las que dependen, así
+   que cambiar de tema/modo en vivo los actualiza solos.
+
+   =====================================================================
+   INVENTARIO (CP-5.01) — estado del código a 2026-10, 11 hojas CSS
+   =====================================================================
+   COLOR
+   - 12 temas x claro/oscuro en style.css: 8 variables por paleta
+     (--bg --panel --chip --hair --ink --dim --accent --accent2) + --glow.
+     Es la única fuente de color de superficie/texto. Contraste verificado
+     con scripts/contrast-check.mjs (384 pares, todos pasan).
+   - Estados semánticos duplicados en DOS juegos: sólidos universales
+     (--cold #3b9dd9 / --okstate #34a853 / --hot #e8833a / --crit #e23b3b,
+     para lámpara, chips, bordes) y de "glow" por modo (--lvl-cold/ok/hot/crit,
+     para los números grandes y el texto de nivel). Aquí: --state-* y
+     --state-*-glow.
+   - Literales de color FUERA de las paletas de tema (conteo aprox.):
+       neon.css 268  -> glows por tema (--neon-glow/-soft/-box/-line) que
+                        repiten a mano el hex de --accent/--accent2 con alfa.
+                        Intencional (identidad), pero duplicado: TODO derivar
+                        con color-mix() sólo si se acepta un diff visual mínimo.
+       cores.css 23  -> casi todos son fallbacks muertos de var(--lvl-*, #hex)
+                        (--lvl-* siempre existe) -> sustituidos por tokens.
+       style.css 18, extras.css 14, diagnostics.css 12, power.css 5,
+       dashboard.css 3, game-session.css 3, onboarding.css 1.
+   - Literales que SE SALTAN el tema (no tokenizados, cambiaría el render):
+       #e2533a x2  (style.css, botón peligro; != --crit #e23b3b)
+       #ff5a3c     (extras.css bench, != --hot)
+       #4cc38a #e0a93b #e0533b (+alfa 88/aa) en .benchd-ev-* (extras.css 601-605)
+       #ff5a5f / #ff8a8e en power.css (--danger / --danger-ink)
+       #19c37d, #ff5e4d, #ff2d55 fallbacks en cores.css (:root del bloque)
+       #ff4466 fallback de --accent2 en dashboard.css
+       diagnostics.css 228-244: rgba(255,255,255,.55), rgba(128,128,128,.15),
+         degradado #ff000033/#00ff0033/#0000ff33/#ffffff33 (test de pantalla:
+         colores de prueba a propósito, NO deben seguir el tema).
+       #fff / #000 dentro de color-mix() (32 usos) y rgba(0,0,0,.3/.35/.45/.65)
+         como sombras/scrims: neutros de sombra; TODO unificar en --shadow-*/--scrim.
+       #ffcc33 x3 (aviso/toast warn) -> tokenizado como --state-warn.
+   - style="" inline en index.html: 3 (padding:1rem, font-size:11px+color:var(--dim),
+     display:none). Inline en JS: ver lista TODO en el informe de la fase 5.
+
+   TIPOGRAFÍA
+   - Familias: --mono (JetBrains Mono...) y --sans (Inter...). OK.
+   - font-size en uso (frecuencia): 12px 33, 11px 29, 13px 28, 12.5px 20,
+     .72rem 18, 11.5px 15, .66rem 12, .7rem 11, .68rem 11, 13.5px 8, .74rem 7,
+     15px 6, 16px 5, .8rem 5, .78rem 5... ~45 tamaños distintos, mezcla px/rem.
+     Escala semántica propuesta abajo (xs 11 / sm 12 / md 13 / base 15 / lg 18).
+     TODO: converger 12.5->12/13, 11.5->11/12, 13.5->13, rem->px (cambia render
+     <=0.5px; requiere ojo del dueño, por eso NO se hizo mecánicamente).
+
+   ESPACIADO
+   - gap: 8px 23x, 6px 10x, 10px 10x, 4px 8x, .6rem 7x, 12px 6x, 14px 4x...
+     padding/margin igual de disperso (4/5/6/7/8/9/10/12/14/16/18/22 px).
+     Escala --space-1..6 = 4 8 12 16 24 32. TODO migrar gradualmente.
+
+   RADIO / FORMA
+   - border-radius: 2px 48x (el estándar "Carbon" cuadrado), 3px 29x, 4px 13x,
+     50% 8x (lámparas/puntos), 6px 5x, 999px 1x, 8px 1x.
+     La identidad real es el CORTE de esquina con clip-path (7/9/17/20px):
+     --radius = 2px (sustituido mecánicamente donde era 2px exacto).
+   SOMBRA
+   - 136 box-shadow; casi todas vienen de --neon-* (por tema) o de
+     color-mix(var(--accent) N%, transparent). Sombras negras sueltas:
+     0 2px 8px .35, 0 4px 14px .3, 0 6px 24px .35, 0 12px 28px 45%, 0 18px 48px 55%.
+   Z-INDEX: 1,2,5,10,40,50,60,80,90,9999 (modal 40-60, menús 80, toasts 9999).
+
+   FOCO / ANIMACIÓN
+   - Antes: sólo .ghost, .core-tile, .mode-tile tenían :focus-visible; varios
+     controles hacían outline:none sin sustituto. Ahora: a11y.css (cargado al
+     final) aplica --focus-ring a todo :focus-visible y @media reduced-motion.
+   ===================================================================== */
+
+:root {
+  /* ---- superficies (siempre sobre <html data-theme data-mode>) ---- */
+  --surface-0: var(--bg);        /* lienzo */
+  --surface-1: var(--panel);     /* tarjetas / bloques / modales */
+  --surface-2: var(--chip);      /* chips, controles, inputs */
+
+  /* ---- texto ---- */
+  --text-primary: var(--ink);
+  --text-muted: var(--dim);
+  --text-accent: var(--accent);
+  --text-accent-2: var(--accent2);
+
+  /* ---- bordes ---- */
+  --border-subtle: var(--hair);
+  --border-accent: var(--accent);
+
+  /* ---- estados de temperatura: sólidos (lámpara, chip, borde) ---- */
+  --state-cold: var(--cold);
+  --state-normal: var(--okstate);
+  --state-hot: var(--hot);
+  --state-critical: var(--crit);
+  --state-warn: #ffcc33;         /* aviso/toast: valor ya usado, ahora con nombre */
+
+  /* ---- estados de temperatura: color de "glow" (cambia con claro/oscuro) ---- */
+  --state-cold-glow: var(--lvl-cold);
+  --state-normal-glow: var(--lvl-ok);
+  --state-hot-glow: var(--lvl-hot);
+  --state-critical-glow: var(--lvl-crit);
+
+  /* ---- espaciado ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* ---- tipografía (tamaños dominantes del código actual) ---- */
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 13px;
+  --font-size-base: 15px;
+  --font-size-lg: 18px;
+
+  /* ---- forma ---- */
+  --radius: 2px;
+
+  /* ---- foco: accent2 pasa >= 3:1 (UI) sobre --bg y --panel en los 24
+          paletas (scripts/contrast-check.mjs) ---- */
+  --focus-ring: var(--accent2);
+  --focus-ring-width: 2px;
+}

@@ -44,7 +44,7 @@
 .disk-bar-track {
   height: 6px;
   background: var(--hair);
-  border-radius: 2px;
+  border-radius: var(--radius);
   overflow: hidden;
   margin-bottom: 0.22rem;
 }
@@ -52,7 +52,7 @@
 .disk-bar-fill {
   height: 100%;
   background: var(--accent);
-  border-radius: 2px;
+  border-radius: var(--radius);
   box-shadow: 0 0 4px var(--glow);
   transition: width 0.4s ease;
 }

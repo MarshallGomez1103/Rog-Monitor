@@ -21,7 +21,7 @@ h2 > i.dash-num {
   /* Placa skew heredada del estilo visual del proyecto */
   background: color-mix(in srgb, var(--accent) 15%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
-  border-radius: 2px;
+  border-radius: var(--radius);
   padding: 0 4px;
   transform: skewX(-10deg);
   transition: color 0.15s, background 0.15s;
@@ -184,7 +184,7 @@ html[data-edit-mode="on"] .block:active {
 .dash-drop-indicator {
   position: fixed;
   height: 3px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--accent);
   box-shadow: var(--neon-line,
     0 0 6px  color-mix(in srgb, var(--accent) 80%, transparent),

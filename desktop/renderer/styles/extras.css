@@ -144,10 +144,10 @@
   margin-left: 0.18em;
 }
 .bench-card-statline .bench-stat-dot { color: var(--dim); opacity: 0.55; font-style: normal; margin: 0 0.12em; }
-.bench-card-statline .lvl-ok   { color: var(--lvl-ok,   #3ce087); }
-.bench-card-statline .lvl-warn { color: var(--lvl-hot,  #ffb13c); }
-.bench-card-statline .lvl-hot  { color: var(--lvl-hot,  #ffb13c); }
-.bench-card-statline .lvl-crit { color: var(--lvl-crit, #ff4d4d); }
+.bench-card-statline .lvl-ok   { color: var(--state-normal-glow); }
+.bench-card-statline .lvl-warn { color: var(--state-hot-glow); }
+.bench-card-statline .lvl-hot  { color: var(--state-hot-glow); }
+.bench-card-statline .lvl-crit { color: var(--state-critical-glow); }
 
 /* Cuerpo siempre visible: mini-curva térmica neón a todo el ancho */
 .bench-card-body {
@@ -268,7 +268,7 @@
 #events li {
   cursor: pointer;
   padding: 0.2rem 0.35rem;
-  border-radius: 2px;
+  border-radius: var(--radius);
   transition: background 0.12s;
   position: relative;
 }
@@ -451,7 +451,7 @@
   gap: 0.5rem;
   cursor: pointer;
   padding: 0.15rem 0;
-  border-radius: 2px;
+  border-radius: var(--radius);
   transition: background 0.1s;
 }
 
@@ -646,7 +646,7 @@
   color: var(--dim);
 }
 
-.benchd-legend i { width: 12px; height: 3px; border-radius: 2px; display: inline-block; }
+.benchd-legend i { width: 12px; height: 3px; border-radius: var(--radius); display: inline-block; }
 
 .benchd-canvas { width: 100%; height: 160px; display: block; cursor: crosshair; }
 
@@ -661,7 +661,7 @@
   font-size: 12px;
   padding: 4px 9px;
   white-space: nowrap;
-  border-radius: 2px;
+  border-radius: var(--radius);
   box-shadow: 0 4px 14px rgba(0,0,0,.3);
 }
 .benchd-tip.hidden { display: none; }
@@ -1023,7 +1023,7 @@
   padding: 0.1em 0.4em !important;
   letter-spacing: 0.08em;
   vertical-align: middle;
-  border-radius: 2px;
+  border-radius: var(--radius);
 }
 
 /* =========================================================
