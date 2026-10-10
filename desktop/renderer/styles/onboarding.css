@@ -141,7 +141,7 @@
   padding: 10px 18px;
   border: 1px solid var(--crit);
   border-left: 4px solid var(--crit);
-  border-radius: 2px;
+  border-radius: var(--radius);
   clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
   background: color-mix(in srgb, var(--crit) 10%, var(--panel));
   color: var(--crit);
@@ -160,6 +160,39 @@
 [data-state="error"] > *:not(.widget-error-chip) {
   opacity: 0;
   pointer-events: none;
+}
+
+/* ---- Estado EMPTY sin mensaje propio (fans / system / procs) ----
+   Estos bloques no llevan .widget-empty-msg: en vez de dejar el bloque en
+   blanco, se muestra su contenido atenuado ("--") y sigue siendo interactivo.
+   Mismo especificidad que la regla de arriba; va después para ganarle. */
+[data-state="empty"]:not(:has(> .widget-empty-msg)) > *:not(.skeleton-overlay):not(.widget-error-chip) {
+  opacity: .4;
+  pointer-events: auto;
+}
+
+/* ---- Estado STALE: datos viejos (el último stats llegó hace demasiado) ----
+   Contrato: widget-states.js pone data-state="stale". Sin texto (i18n):
+   contenido atenuado y desaturado + insignia ámbar "◷" al final del título
+   (reemplaza el hairline del h2; .block::after lo usan los temas). */
+[data-state="stale"] > *:not(h2):not(.skeleton-overlay):not(.widget-empty-msg):not(.widget-error-chip) {
+  opacity: .55;
+  filter: saturate(.5);
+}
+[data-state="stale"] > h2::after {
+  content: "\25F7";
+  flex: 0 0 auto;
+  height: auto;
+  min-width: 0;
+  padding: 1px 7px;
+  border: 1px solid var(--state-hot);
+  border-left-width: 3px;
+  background: color-mix(in srgb, var(--state-hot) 12%, transparent);
+  color: var(--state-hot);
+  font-family: var(--mono);
+  font-size: var(--font-size-xs);
+  line-height: 1.2;
+  letter-spacing: 0;
 }
 
 /* Ventilador parado: etiqueta PARADO visible dentro del fan card */
@@ -195,7 +228,7 @@
 .wizard-card {
   background: var(--bg);
   border: 1px solid var(--hair);
-  border-radius: 2px;
+  border-radius: var(--radius);
   /* identidad: esquina cortada, igual que .block y .modal-card */
   clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%);
   width: min(580px, 94vw);
@@ -243,7 +276,7 @@
 .wizard-step-pip {
   height: 3px;
   flex: 1;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--hair);
   transition: background .25s;
 }
@@ -299,7 +332,7 @@
   flex: 0 0 auto;
   width: 20px;
   height: 20px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 0 100%);
   background: color-mix(in srgb, var(--accent) 20%, var(--chip));
   border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
@@ -317,7 +350,7 @@
 .wizard-info-block {
   border: 1px solid var(--hair);
   border-left: 3px solid var(--accent);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--chip);
   padding: 12px 14px;
   margin-bottom: 12px;
@@ -343,7 +376,7 @@
 .wizard-perm-note {
   border: 1px solid var(--hair);
   border-left: 3px solid var(--hot);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: color-mix(in srgb, var(--hot) 8%, var(--chip));
   padding: 10px 14px;
   font-size: 12.5px;
@@ -388,7 +421,7 @@
 }
 .wiz-btn {
   border: 1px solid var(--hair);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--chip);
   color: var(--dim);
   font-family: var(--sans);
@@ -422,7 +455,7 @@
   font-size: 11px;
   padding: 5px 10px;
   border: 1px dashed var(--hair);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: transparent;
   color: var(--dim);
   cursor: pointer;
