@@ -12,9 +12,11 @@
 #
 # "disable" is the safe recovery action from a TTY: it stops automatic root
 # services without deleting user config. "uninstall" removes installed root
-# units/scripts/rules, leaving the user-owned repo and ~/.config intact.
+# units/scripts/rules and the root-owned copies in /usr/local/libexec/rog-monitor
+# and /usr/local/lib/rog-monitor, leaving the user-owned repo and ~/.config intact.
 
 set -euo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin  # root: PATH fijo del sistema
 
 ACTION="${1:-status}"
 
@@ -54,16 +56,24 @@ disable_system() {
 
 uninstall_system() {
     disable_system
+    systemctl disable --now rog-battery-limit.service 2>/dev/null || true
     rm -f \
         /etc/systemd/system/rog-power-source.service \
         /etc/systemd/system/rog-profile-sync.service \
         /etc/systemd/system/rog-thermal-guardian.service \
+        /etc/systemd/system/rog-battery-limit.service \
+        /etc/systemd/system-sleep/rog-battery-limit \
         /etc/udev/rules.d/99-rog-power-source.rules \
         /usr/local/sbin/rog-power-source \
-        /usr/local/sbin/rog-profile-sync
+        /usr/local/sbin/rog-profile-sync \
+        /usr/local/sbin/rog-battery-limit
     rm -rf /etc/systemd/system/rog-thermal-guardian.service.d
     udevadm control --reload-rules 2>/dev/null || true
     systemctl daemon-reload
+    # Copias root:root de ayudantes y paquete Python (rutas literales). Va al
+    # final: este script puede estar corriendo desde ahí (bash ya lo tiene abierto).
+    rm -rf /usr/local/libexec/rog-monitor
+    rm -rf /usr/local/lib/rog-monitor
 }
 
 # Neutraliza SOLO el cambio automático de perfil por fuente de poder

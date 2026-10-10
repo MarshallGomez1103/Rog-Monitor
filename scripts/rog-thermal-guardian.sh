@@ -71,6 +71,7 @@
 #   Para recuperación desde TTY: scripts/rog-monitor-safe-mode.sh.
 
 set -euo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin  # root: PATH fijo del sistema
 
 # ------------------------------------------------------------------
 # Parseo de argumentos
@@ -287,7 +288,10 @@ write_guardian_state() {
     local f
     for f in /var/home/*/.local/share/rog-monitor /home/*/.local/share/rog-monitor; do
         [[ -d "$f" ]] || continue
-        if printf '%s\n' "$payload" > "$f/thermal-guardian-state.json.tmp" 2>/dev/null; then
+        # Root escribe en un directorio que controla el usuario: borrar el .tmp y
+        # crearlo con noclobber (O_EXCL) para no seguir un symlink plantado.
+        rm -f -- "$f/thermal-guardian-state.json.tmp" 2>/dev/null || true
+        if ( set -C; printf '%s\n' "$payload" > "$f/thermal-guardian-state.json.tmp" ) 2>/dev/null; then
             mv -f "$f/thermal-guardian-state.json.tmp" "$f/thermal-guardian-state.json" 2>/dev/null || true
         fi
     done

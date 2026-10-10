@@ -9,7 +9,8 @@
 #     entrada de autostart.
 #   - Nivel sistema (pide sudo UNA vez, con aviso previo): deshabilita y borra
 #     los servicios systemd (ventiladores, guardián, power-source), su udev rule
-#     y los scripts en /usr/local/sbin. Reusa rog-monitor-safe-mode.sh.
+#     y los scripts en /usr/local/sbin, /usr/local/libexec/rog-monitor y
+#     /usr/local/lib/rog-monitor. Reusa rog-monitor-safe-mode.sh.
 #   - Con --purge: además borra ~/.config/rog-monitor y ~/.local/share/rog-monitor.
 set -euo pipefail
 
@@ -34,7 +35,8 @@ SAFE_MODE="$REPO/scripts/rog-monitor-safe-mode.sh"
 if [[ -f "$SAFE_MODE" ]]; then
     printf '\nSe pedirá sudo para quitar las integraciones de sistema:\n'
     printf '  - deshabilitar y borrar servicios systemd (ventiladores, guardián, power-source)\n'
-    printf '  - borrar la udev rule y los scripts en /usr/local/sbin\n'
+    printf '  - borrar la udev rule, los scripts en /usr/local/sbin y las copias de root\n'
+    printf '    en /usr/local/libexec/rog-monitor y /usr/local/lib/rog-monitor\n'
     if sudo bash "$SAFE_MODE" uninstall; then
         printf 'Integraciones de sistema removidas.\n'
     else

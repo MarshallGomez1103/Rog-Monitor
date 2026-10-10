@@ -6,6 +6,7 @@
 # PLATYPUS (CVE-2020-8694). En un portátil personal de un solo usuario el
 # riesgo es despreciable. Ejecutar con: sudo bash enable-cpu-power.sh
 set -euo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin  # root: PATH fijo del sistema
 
 if [[ "$(id -u)" -ne 0 ]]; then
     printf 'Este script debe ejecutarse como root (sudo).\n' >&2

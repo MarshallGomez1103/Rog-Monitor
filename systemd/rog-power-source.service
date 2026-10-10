@@ -5,7 +5,7 @@ Wants=tuned-ppd.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/rog-power-source
+ExecStart=/usr/local/libexec/rog-monitor/rog-power-source.sh
 
 [Install]
 WantedBy=multi-user.target

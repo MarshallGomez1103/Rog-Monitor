@@ -5,7 +5,7 @@ Wants=tuned-ppd.service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/sbin/rog-profile-sync
+ExecStart=/usr/local/libexec/rog-monitor/rog-profile-sync.sh
 Restart=always
 RestartSec=2
 

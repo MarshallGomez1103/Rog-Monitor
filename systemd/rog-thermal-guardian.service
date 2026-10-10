@@ -6,15 +6,14 @@ Wants=nvidia-persistenced.service
 
 [Service]
 Type=simple
-# Ruta absoluta al script: ajustar si el repo vive en otra ubicacion.
-# La app sustituye __ROG_MONITOR_REPO__ por la ruta real antes de copiar esta
-# unidad a /etc/systemd/system/.
-ExecStart=/usr/bin/env bash __ROG_MONITOR_REPO__/scripts/rog-thermal-guardian.sh
+# El script es una copia root:root instalada por scripts/install-system.sh.
+# NUNCA apuntar esto a un archivo del repo/home del usuario: corre como root.
+ExecStart=/usr/bin/bash /usr/local/libexec/rog-monitor/rog-thermal-guardian.sh
 # Techo configurable sin editar esta unidad: usar un override.conf
 # en /etc/systemd/system/rog-thermal-guardian.service.d/override.conf
 # con Environment="ROG_THERMAL_CPU_CEILING=92" y
-# Environment="ROG_THERMAL_GPU_CEILING=83". La app (main.js) escribe ese
-# override.conf via pkexec cuando el usuario cambia los techos
+# Environment="ROG_THERMAL_GPU_CEILING=83". La app escribe ese
+# override.conf (via pkexec + rog-ctl.sh guardian) cuando el usuario cambia los techos
 # desde el modal de Centro de Poder.
 Environment="ROG_THERMAL_CPU_CEILING=92"
 Environment="ROG_THERMAL_GPU_CEILING=83"
@@ -33,9 +32,9 @@ Group=root
 # Endurecimiento conservador: no aislamos /sys porque el script necesita
 # escribir varias rutas sysfs reales del firmware ASUS y NVIDIA.
 NoNewPrivileges=true
-# false: el script vive en el home del usuario (dentro del repo) y publica
-# estado para la UI en ~/.local/share/rog-monitor/thermal-guardian-state.json.
-# Con true/read-only systemd puede ocultar el repo o bloquear ese archivo.
+# false: el script publica estado para la UI en
+# ~/.local/share/rog-monitor/thermal-guardian-state.json (home del usuario).
+# Con true/read-only systemd puede ocultar el home o bloquear ese archivo.
 ProtectHome=false
 ProtectSystem=false
 

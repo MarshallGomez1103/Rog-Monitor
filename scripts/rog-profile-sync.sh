@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 set -u
+# Root: PATH fijo del sistema (nunca el del usuario).
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # ROG platform-profile + fan-curve sync.
 #
@@ -67,46 +69,21 @@ find_curves_json() {
     return 1
 }
 
-find_rog_monitor_repo() {
-    local repo
-
-    for repo in "${ROG_MONITOR_REPO:-}" \
-        /var/home/*/MyFiles/Dev/Rog-Monitor \
-        /home/*/MyFiles/Dev/Rog-Monitor \
-        /var/home/*/Rog-Monitor \
-        /home/*/Rog-Monitor; do
-        [[ -n "$repo" && -r "$repo/src/rog_monitor/power_control.py" ]] ||
-            continue
-        printf '%s\n' "$repo"
-        return 0
-    done
-
-    return 1
-}
+# Límites de potencia por perfil: usa SOLO la copia de sistema del paquete
+# (instalada por scripts/install-system.sh, root:root) vía el lanzador aislado.
+# Nunca busca ni ejecuta código del repo/home del usuario.
+ROG_PY=/usr/local/libexec/rog-monitor/rog-py.sh
 
 apply_profile_power() {
     local profile="$1"
-    local repo
-    local py
     local out
 
-    repo="$(find_rog_monitor_repo || true)"
-    if [[ -z "$repo" ]]; then
-        log "Power limits skipped: ROG Monitor repo not found"
+    if [[ ! -x "$ROG_PY" ]]; then
+        log "Power limits skipped: $ROG_PY not installed (run scripts/install-system.sh)"
         return 0
     fi
 
-    if [[ -x "$repo/.venv/bin/python" ]]; then
-        py="$repo/.venv/bin/python"
-    else
-        py="$(command -v python3 || true)"
-    fi
-    if [[ -z "$py" ]]; then
-        log "Power limits skipped: python3 not found"
-        return 0
-    fi
-
-    if out="$(PYTHONPATH="$repo/src" "$py" -m rog_monitor.power_control apply-profile "$profile" 2>&1)"; then
+    if out="$("$ROG_PY" rog_monitor.power_control apply-profile "$profile" 2>&1)"; then
         log "Applied $profile power limits"
     else
         log "Could not apply $profile power limits: $out"
@@ -155,7 +132,7 @@ json_curve() {
     local def_pwms="$5"
 
     [[ -n "$file" && -r "$file" ]] || return 1
-    python3 - "$file" "$profile" "$fan" "$def_temps" "$def_pwms" <<'PY' 2>/dev/null
+    /usr/bin/python3 -I - "$file" "$profile" "$fan" "$def_temps" "$def_pwms" <<'PY' 2>/dev/null
 import json, sys
 path, profile, fan = sys.argv[1], sys.argv[2], sys.argv[3]
 temps = [int(x) for x in sys.argv[4].split()]
