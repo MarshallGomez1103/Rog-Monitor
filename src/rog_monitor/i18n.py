@@ -62,13 +62,16 @@ STRINGS = {
         "no_events": "sin eventos",
         "events_hint": "v ver todos",
         "events_all_title": "TODOS LOS EVENTOS",
+        "events_filter_all": "todos",
+        "events_filter_warn": "aviso+",
+        "events_filter_crit": "crítico",
         "processes": "PROCESOS",
         "proc_name": "proceso",
         "proc_cpu": "% del CPU total",
         "proc_ram": "RAM",
         "keys_pairs": [
             ["q", "salir"], ["p", "perfil"], ["g", "GPU"], ["t", "tema"],
-            ["e", "exportar"], ["v", "eventos"], ["h", "ayuda"],
+            ["e", "exportar"], ["v", "eventos"], ["h", "ayuda"], ["f", "filtro"],
         ],
         "help_title": "AYUDA",
         "help_body": (
@@ -79,6 +82,7 @@ STRINGS = {
             "t  cambiar tema\n"
             "e  exportar historial (JSON + CSV)\n"
             "v  ver todos los eventos\n"
+            "f  filtrar eventos por severidad (todos → aviso+ → crítico)\n"
             "h  cerrar esta ayuda (Esc)"
         ),
         "profile_set": "Perfil cambiado a {p}",
@@ -169,13 +173,16 @@ STRINGS = {
         "no_events": "no events",
         "events_hint": "v view all",
         "events_all_title": "ALL EVENTS",
+        "events_filter_all": "all",
+        "events_filter_warn": "warn+",
+        "events_filter_crit": "crit",
         "processes": "PROCESSES",
         "proc_name": "process",
         "proc_cpu": "% of total CPU",
         "proc_ram": "RAM",
         "keys_pairs": [
             ["q", "quit"], ["p", "profile"], ["g", "GPU"], ["t", "theme"],
-            ["e", "export"], ["v", "events"], ["h", "help"],
+            ["e", "export"], ["v", "events"], ["h", "help"], ["f", "filter"],
         ],
         "help_title": "HELP",
         "help_body": (
@@ -186,6 +193,7 @@ STRINGS = {
             "t  cycle theme\n"
             "e  export history (JSON + CSV)\n"
             "v  view all events\n"
+            "f  filter events by severity (all → warn+ → crit)\n"
             "h  close this help (Esc)"
         ),
         "profile_set": "Profile set to {p}",
@@ -276,13 +284,16 @@ STRINGS = {
         "no_events": "aucun événement",
         "events_hint": "v voir tous",
         "events_all_title": "TOUS LES ÉVÉNEMENTS",
+        "events_filter_all": "tous",
+        "events_filter_warn": "avert.+",
+        "events_filter_crit": "crit.",
         "processes": "PROCESSUS",
         "proc_name": "processus",
         "proc_cpu": "% du CPU total",
         "proc_ram": "RAM",
         "keys_pairs": [
             ["q", "quitter"], ["p", "profil"], ["g", "GPU"], ["t", "thème"],
-            ["e", "exporter"], ["v", "événements"], ["h", "aide"],
+            ["e", "exporter"], ["v", "événements"], ["h", "aide"], ["f", "filtre"],
         ],
         "help_title": "AIDE",
         "help_body": (
@@ -293,6 +304,7 @@ STRINGS = {
             "t  changer de thème\n"
             "e  exporter l'historique (JSON + CSV)\n"
             "v  voir tous les événements\n"
+            "f  filtrer les événements par gravité (tous → avert.+ → crit.)\n"
             "h  fermer cette aide (Esc)"
         ),
         "profile_set": "Profil défini sur {p}",
@@ -383,13 +395,16 @@ STRINGS = {
         "no_events": "nessun evento",
         "events_hint": "v vedi tutti",
         "events_all_title": "TUTTI GLI EVENTI",
+        "events_filter_all": "tutti",
+        "events_filter_warn": "avviso+",
+        "events_filter_crit": "crit.",
         "processes": "PROCESSI",
         "proc_name": "processo",
         "proc_cpu": "% del CPU totale",
         "proc_ram": "RAM",
         "keys_pairs": [
             ["q", "uscire"], ["p", "profilo"], ["g", "GPU"], ["t", "tema"],
-            ["e", "esportare"], ["v", "eventi"], ["h", "aiuto"],
+            ["e", "esportare"], ["v", "eventi"], ["h", "aiuto"], ["f", "filtro"],
         ],
         "help_title": "AIUTO",
         "help_body": (
@@ -400,6 +415,7 @@ STRINGS = {
             "t  cambia tema\n"
             "e  esporta cronologia (JSON + CSV)\n"
             "v  vedi tutti gli eventi\n"
+            "f  filtra eventi per gravità (tutti → avviso+ → crit.)\n"
             "h  chiudi questo aiuto (Esc)"
         ),
         "profile_set": "Profilo impostato su {p}",
@@ -490,13 +506,16 @@ STRINGS = {
         "no_events": "sem eventos",
         "events_hint": "v ver todos",
         "events_all_title": "TODOS OS EVENTOS",
+        "events_filter_all": "todos",
+        "events_filter_warn": "aviso+",
+        "events_filter_crit": "crítico",
         "processes": "PROCESSOS",
         "proc_name": "processo",
         "proc_cpu": "% do CPU total",
         "proc_ram": "RAM",
         "keys_pairs": [
             ["q", "sair"], ["p", "perfil"], ["g", "GPU"], ["t", "tema"],
-            ["e", "exportar"], ["v", "eventos"], ["h", "ajuda"],
+            ["e", "exportar"], ["v", "eventos"], ["h", "ajuda"], ["f", "filtro"],
         ],
         "help_title": "AJUDA",
         "help_body": (
@@ -507,6 +526,7 @@ STRINGS = {
             "t  mudar tema\n"
             "e  exportar histórico (JSON + CSV)\n"
             "v  ver todos os eventos\n"
+            "f  filtrar eventos por gravidade (todos → aviso+ → crítico)\n"
             "h  fechar esta ajuda (Esc)"
         ),
         "profile_set": "Perfil definido para {p}",
@@ -597,13 +617,16 @@ STRINGS = {
         "no_events": "无事件",
         "events_hint": "v 查看全部",
         "events_all_title": "所有事件",
+        "events_filter_all": "全部",
+        "events_filter_warn": "警告+",
+        "events_filter_crit": "严重",
         "processes": "进程",
         "proc_name": "进程",
         "proc_cpu": "CPU占用%",
         "proc_ram": "内存",
         "keys_pairs": [
             ["q", "退出"], ["p", "配置"], ["g", "GPU"], ["t", "主题"],
-            ["e", "导出"], ["v", "事件"], ["h", "帮助"],
+            ["e", "导出"], ["v", "事件"], ["h", "帮助"], ["f", "筛选"],
         ],
         "help_title": "帮助",
         "help_body": (
@@ -614,6 +637,7 @@ STRINGS = {
             "t  切换主题\n"
             "e  导出历史（JSON + CSV）\n"
             "v  查看所有事件\n"
+            "f  按严重程度筛选事件（全部 → 警告+ → 严重）\n"
             "h  关闭帮助 (Esc)"
         ),
         "profile_set": "配置已切换为 {p}",
@@ -703,13 +727,16 @@ STRINGS = {
         "no_events": "イベントなし",
         "events_hint": "v すべて表示",
         "events_all_title": "すべてのイベント",
+        "events_filter_all": "すべて",
+        "events_filter_warn": "警告以上",
+        "events_filter_crit": "重大",
         "processes": "プロセス",
         "proc_name": "プロセス",
         "proc_cpu": "CPU使用率%",
         "proc_ram": "RAM",
         "keys_pairs": [
             ["q", "終了"], ["p", "プロファイル"], ["g", "GPU"], ["t", "テーマ"],
-            ["e", "エクスポート"], ["v", "イベント"], ["h", "ヘルプ"],
+            ["e", "エクスポート"], ["v", "イベント"], ["h", "ヘルプ"], ["f", "フィルタ"],
         ],
         "help_title": "ヘルプ",
         "help_body": (
@@ -720,6 +747,7 @@ STRINGS = {
             "t  テーマ切替\n"
             "e  履歴エクスポート（JSON + CSV）\n"
             "v  すべてのイベントを表示\n"
+            "f  重大度でイベントを絞り込み（すべて → 警告以上 → 重大）\n"
             "h  このヘルプを閉じる (Esc)"
         ),
         "profile_set": "プロファイルを {p} に設定",
@@ -810,13 +838,16 @@ STRINGS = {
         "no_events": "이벤트 없음",
         "events_hint": "v 모두 보기",
         "events_all_title": "모든 이벤트",
+        "events_filter_all": "전체",
+        "events_filter_warn": "경고+",
+        "events_filter_crit": "치명",
         "processes": "프로세스",
         "proc_name": "프로세스",
         "proc_cpu": "전체 CPU %",
         "proc_ram": "RAM",
         "keys_pairs": [
             ["q", "종료"], ["p", "프로파일"], ["g", "GPU"], ["t", "테마"],
-            ["e", "내보내기"], ["v", "이벤트"], ["h", "도움말"],
+            ["e", "내보내기"], ["v", "이벤트"], ["h", "도움말"], ["f", "필터"],
         ],
         "help_title": "도움말",
         "help_body": (
@@ -827,6 +858,7 @@ STRINGS = {
             "t  테마 변경\n"
             "e  기록 내보내기 (JSON + CSV)\n"
             "v  모든 이벤트 보기\n"
+            "f  심각도별 이벤트 필터 (전체 → 경고+ → 치명)\n"
             "h  이 도움말 닫기 (Esc)"
         ),
         "profile_set": "프로파일이 {p}(으)로 설정됨",

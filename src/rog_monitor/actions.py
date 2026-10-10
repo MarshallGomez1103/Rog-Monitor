@@ -72,4 +72,19 @@ def export_history(series: dict, events) -> str:
             writer.writerow([i] + [c[i] if i < len(c) and c[i] is not None else ""
                                    for c in columns])
 
+    # eventos aparte (las series tienen otra forma): una fila por evento con el
+    # contexto aplanado; eventos viejos de 4 campos dejan esas columnas vacías.
+    # Sin eventos no se crea el archivo.
+    if events:
+        with open(out_dir / f"rog-monitor-{stamp}-events.csv", "w", newline="") as fh:
+            writer = csv.writer(fh)
+            writer.writerow(["time", "level", "category", "source", "type", "value",
+                             "threshold", "count", "message"])
+            for ev in events:
+                ctx = ev[4] if len(ev) > 4 and isinstance(ev[4], dict) else {}
+                writer.writerow([ev[0], ev[1], ev[3] if len(ev) > 3 else "",
+                                 ctx.get("source", ""), ctx.get("type", ""),
+                                 *("" if ctx.get(k) is None else ctx[k]
+                                   for k in ("value", "threshold", "count")), ev[2]])
+
     return str(out_dir)

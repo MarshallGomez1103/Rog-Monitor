@@ -872,7 +872,17 @@
    "12:00:00",
    "info",
    "Example event",
-   "info"
+   "info",
+   {
+    "source": "system",
+    "type": "telemetry",
+    "category": "info",
+    "value": null,
+    "threshold": null,
+    "ts_epoch": 1760000000.0,
+    "count": 1,
+    "key": null
+   }
   ]
  ],
  "version": "20.0.0",
