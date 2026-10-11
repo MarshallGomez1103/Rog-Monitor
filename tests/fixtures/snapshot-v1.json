@@ -865,6 +865,15 @@
   ],
   "gpu_power": [
    3.19
+  ],
+  "cpu_usage": [
+   3.4
+  ],
+  "ram_used": [
+   40.0
+  ],
+  "swap_used": [
+   0.0
   ]
  },
  "events": [

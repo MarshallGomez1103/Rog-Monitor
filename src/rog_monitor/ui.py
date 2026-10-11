@@ -269,6 +269,11 @@ def history_panel(state, t, th, console_width: int) -> Panel:
         blocks.append(("cpu_power_graph", "cpu_power", "graph_power"))
     if series["gpu_power"].has_data():
         blocks.append(("gpu_power_graph", "gpu_power", "graph_gpu"))
+    # Uso % al final: el recorte por ancho de abajo conserva primero temp/potencia.
+    if series.get("cpu_usage") and series["cpu_usage"].has_data():
+        blocks.append(("cpu_usage_graph", "cpu_usage", "graph_cpu"))
+    if series.get("ram_used") and series["ram_used"].has_data():
+        blocks.append(("ram_usage_graph", "ram_used", "graph_power"))
 
     # Cada gráfica necesita >=24 columnas: en terminales estrechas se muestran
     # sólo las primeras que caben (si no, las filas se parten y se ven rotas).

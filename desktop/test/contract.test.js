@@ -48,7 +48,7 @@ const REQUIRED = [
   'procs[].mem_mb', 'procs_by_core', 'procs_mem', 'procs_vram',
   'aura',
   'series', 'series.cpu_temp', 'series.gpu_temp', 'series.cpu_power',
-  'series.gpu_power', 'events',
+  'series.gpu_power', 'series.cpu_usage', 'series.ram_used', 'series.swap_used', 'events',
 ];
 
 function missing(doc, spec) {
