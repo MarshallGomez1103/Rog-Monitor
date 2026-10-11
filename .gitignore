@@ -26,5 +26,9 @@ brain/
 *.bak
 
 # Plan maestro multiagente (memoria interna, ver docs/agent-work/DECISIONS.md D5)
-docs/agent-work/
+# v22: solo docs/agent-work/v22/ se versiona (plan post-90, fichas sanitizadas); lo demás sigue interno
+docs/agent-work/*
+!docs/agent-work/v22/
 ROG_MONITOR_PLAN_MAESTRO_IA.md
+# Logs pesados/privados de agentes (plan v22 §3)
+.ai/
