@@ -72,3 +72,24 @@ jobs:
 
       - name: Installer dry-run (no root)
         run: bash scripts/install-system.sh --dry-run > /dev/null
+
+      # E2E smoke (CP-8.04): Electron real bajo xvfb, manejado por CDP. Usa el WebSocket global
+      # de Node >= 22 (el job usa Node 20), por eso este setup-node extra. Sin hardware ASUS los
+      # bloques salen "empty" (se acepta ok|empty). El script añade --no-sandbox solo si CI esta
+      # definida (los runners no permiten el sandbox SUID de chrome-sandbox).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: E2E smoke (Electron + CDP, xvfb)
+        run: |
+          command -v xvfb-run >/dev/null || sudo apt-get install -y --no-install-recommends xvfb
+          xvfb-run -a node scripts/e2e-smoke.mjs --out "$RUNNER_TEMP/e2e"
+
+      - name: Upload E2E screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-smoke-screenshot
+          path: ${{ runner.temp }}/e2e/e2e-smoke.png
+          if-no-files-found: ignore

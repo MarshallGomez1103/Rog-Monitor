@@ -1515,7 +1515,7 @@ function _drawMiniSparkline(canvas, samples, key, color) {
 function renderBenchmarkHistory() {
   const host = $('bench-history');
   if (!benchmarkHistory.length) {
-    host.innerHTML = '<li class="bench-empty">sin historial</li>';
+    host.innerHTML = `<li class="bench-empty">${escapeHtml(t('bench.history_none'))}</li>`;
     $('bench-inline-status').textContent = t('bench.inline_empty');
     updateBenchClearAllVisibility();
     return;
