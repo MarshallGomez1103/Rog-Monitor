@@ -51,6 +51,12 @@ app reports "system components missing" for privileged actions.
 - Design tokens, stale/loading/error states, visible keyboard focus, dialog roles,
   contrast fixes, reduced-motion; memory shown in GiB/MiB.
 - Electron 42.11.12.
+- SMART: no-root capability per disk, cached last reading (`~/.cache/rog-monitor/smart.json`,
+  stale after 24 h) with age/origin in the app and a SMART line in the TUI; fresh
+  readings stay a user-initiated pkexec action.
+- History: CPU %, RAM % and swap % series; desktop history toggle "Temp/W ↔ CPU/RAM usage";
+  extra TUI sparklines when the terminal is wide enough.
+- Translations completed for fr/it/pt/zh/ja/ko (power, game session, cores: 720 strings).
 
 ### Tests & CI
 - New stdlib suites: unit, contract (Python↔JS), PTY TUI, guardian simulation,
