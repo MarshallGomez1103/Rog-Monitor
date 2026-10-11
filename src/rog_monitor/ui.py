@@ -286,6 +286,45 @@ def history_panel(state, t, th, console_width: int) -> Panel:
     return Panel(table, title=Text(f" {t('history')} ", style=th["title"]), border_style=th["border"])
 
 
+def _ago(age_s: float, t) -> str:
+    """Edad legible y localizada: minutos, horas o días."""
+    if age_s < 3600:
+        return t("smart_ago_min", n=max(1, int(age_s // 60)))
+    if age_s < 86400:
+        return t("smart_ago_h", n=int(age_s // 3600))
+    return t("smart_ago_d", n=int(age_s // 86400))
+
+
+def smart_line(disk: dict, t) -> Text | None:
+    """Una línea SMART por disco, sin root: lee la caché que deja la app de escritorio.
+    None si el backend no trae la clave `smart` (snapshot viejo)."""
+    smart, cached = disk.get("smart"), disk.get("smart_cached")
+    if not isinstance(smart, dict):
+        return None
+    line = Text(no_wrap=True, overflow="ellipsis")
+    if isinstance(cached, dict) and cached.get("ok"):
+        passed = cached.get("health_passed")
+        mark, style = ("✓", "green") if passed is True else (("✗", "bold red") if passed is False else ("?", "grey58"))
+        parts = []
+        if cached.get("percentage_used") is not None:
+            parts.append(t("smart_used", p=f"{cached['percentage_used']:.0f}"))
+        if cached.get("temp_c") is not None:
+            parts.append(f"{cached['temp_c']:.0f}°C")
+        parts.append(_ago(cached.get("age_s") or 0, t))
+        line.append("SMART ", style="grey74")
+        line.append(mark, style=style)
+        line.append(" " + " · ".join(parts), style="grey58")
+        if cached.get("stale"):
+            line.append(f" · {t('smart_stale')}", style="yellow")
+    elif isinstance(cached, dict):  # el último intento guardado falló
+        line.append(f"SMART: {t('smart_readfail')} · {_ago(cached.get('age_s') or 0, t)}", style="yellow")
+    elif not smart.get("smartctl"):
+        line.append(f"SMART: {t('smart_no_tool')}", style="grey58")
+    else:
+        line.append(f"SMART: {t('smart_none')}", style="grey58")
+    return line
+
+
 def system_panel(state, t, th) -> Panel:
     info = state["sys"]
     table = Table.grid(padding=(0, 2))
@@ -310,6 +349,7 @@ def system_panel(state, t, th) -> Panel:
     disks.add_column(min_width=11)
     disks.add_column()
     disks.add_column()
+    smart_rows = []
     for disk in info["disks"]:
         usage = Text(f" {disk['used_gb']:.0f}/{disk['total_gb']:.0f}G ({disk['percent']}%)")
         if info["nvme_temps"] and disk["mount"] in ("/", "/var/home", "/home"):
@@ -327,8 +367,12 @@ def system_panel(state, t, th) -> Panel:
             bar(disk["percent"], 18, th["bar"]),
             usage,
         )
+        smart = smart_line(disk, t)
+        if smart is not None:  # fuera de la rejilla: el texto largo no desplaza las columnas
+            smart_rows.append(Text(f"{disk['label']:<12}", style="grey74", no_wrap=True,
+                                   overflow="ellipsis") + smart)
 
-    return Panel(Group(table, disks), title=Text(f" {t('system')} ", style=th["title"]),
+    return Panel(Group(table, disks, *smart_rows), title=Text(f" {t('system')} ", style=th["title"]),
                  border_style=th["border"])
 
 

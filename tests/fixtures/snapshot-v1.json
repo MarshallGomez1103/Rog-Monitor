@@ -282,7 +282,25 @@
     "write_iops": 0.0,
     "busy_pct": 0.0,
     "removable": false,
-    "temp": 51.85
+    "temp": 51.85,
+    "smart": {
+     "smartctl": true,
+     "type": "nvme",
+     "has_cache": true
+    },
+    "smart_cached": {
+     "ts_epoch": 1760000000,
+     "age_s": 7200.0,
+     "stale": false,
+     "ok": true,
+     "health_passed": true,
+     "temp_c": 48,
+     "percentage_used": 3,
+     "power_on_hours": 1234,
+     "media_errors": 0,
+     "critical_warning": 0,
+     "err": null
+    }
    },
    {
     "mount": "/mnt/disk1",
@@ -299,7 +317,13 @@
     "write_iops": 0.0,
     "busy_pct": 0.0,
     "removable": false,
-    "temp": 46.85
+    "temp": 46.85,
+    "smart": {
+     "smartctl": true,
+     "type": "nvme",
+     "has_cache": false
+    },
+    "smart_cached": null
    }
   ],
   "nvme_temps": [
@@ -337,7 +361,25 @@
     "write_mbps": 0.0,
     "read_iops": 0.0,
     "write_iops": 0.0,
-    "busy_pct": 0.0
+    "busy_pct": 0.0,
+    "smart": {
+     "smartctl": true,
+     "type": "nvme",
+     "has_cache": true
+    },
+    "smart_cached": {
+     "ts_epoch": 1760000000,
+     "age_s": 7200.0,
+     "stale": false,
+     "ok": true,
+     "health_passed": true,
+     "temp_c": 48,
+     "percentage_used": 3,
+     "power_on_hours": 1234,
+     "media_errors": 0,
+     "critical_warning": 0,
+     "err": null
+    }
    },
    {
     "dev": "nvme1n1",
@@ -348,7 +390,13 @@
     "write_mbps": 0.0,
     "read_iops": 0.0,
     "write_iops": 0.0,
-    "busy_pct": 0.0
+    "busy_pct": 0.0,
+    "smart": {
+     "smartctl": true,
+     "type": "nvme",
+     "has_cache": false
+    },
+    "smart_cached": null
    }
   ]
  },

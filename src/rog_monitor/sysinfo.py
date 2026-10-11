@@ -1,5 +1,6 @@
 """System info: RAM, swap, network rates, disk usage, NVMe temps, load, uptime."""
 
+import json
 import os
 import re
 import shutil
@@ -166,6 +167,102 @@ def _smart_block_devices(sys_root: str = "/sys") -> list[str]:
     except OSError:
         pass
     return devs
+
+
+# ---------------------------------------------------------------------------
+# SMART sin root: capacidad + caché que escribe la app de escritorio.
+# Leer SMART fresco exige root (pkexec) y SIEMPRE es una acción explícita del
+# usuario en la app; aquí sólo se LEE la caché ~/.cache/rog-monitor/smart.json
+# ({"/dev/nvme0n1": {ts_epoch, ok, health_passed, temp_c, ...}}). Claves aditivas
+# por disco: `smart` (capacidad) y `smart_cached` (último resultado o None).
+# ---------------------------------------------------------------------------
+SMART_STALE_S = 24 * 3600     # más viejo que esto se marca stale
+_SMART_MAX_BYTES = 256 * 1024  # una caché sana pesa <2 KB: lo grande es basura
+_smartctl_memo: tuple[float, bool] = (-1e9, False)
+_smart_file_memo: tuple = (None, None)  # ((path, mtime_ns, size), {dev: entry})
+
+
+def smart_cache_path() -> str:
+    base = os.environ.get("XDG_CACHE_HOME") or os.path.join(os.path.expanduser("~"), ".cache")
+    return os.path.join(base, "rog-monitor", "smart.json")
+
+
+def _smartctl_present() -> bool:
+    """shutil.which cacheado 60 s (se llama en cada snapshot)."""
+    global _smartctl_memo
+    now = time.perf_counter()  # no monotonic: los tests de tasas lo simulan con side_effect
+    if now - _smartctl_memo[0] > 60:
+        _smartctl_memo = (now, shutil.which("smartctl") is not None)
+    return _smartctl_memo[1]
+
+
+def _smart_type(block_dev: str) -> str | None:
+    if block_dev.startswith("nvme"):
+        return "nvme"
+    return "sata" if re.match(r"sd[a-z]+$", block_dev) else None
+
+
+def _read_smart_file(path: str) -> dict:
+    """{"/dev/x": entrada} o {} si falta, es de otro usuario, enorme o corrupta.
+    Memoizada por (mtime, tamaño): el stat es barato, el parseo no se repite."""
+    global _smart_file_memo
+    try:
+        st = os.stat(path)
+    except OSError:
+        return {}
+    if st.st_uid != os.getuid() or st.st_size > _SMART_MAX_BYTES:
+        return {}  # sólo se confía en un archivo propio (la app lo crea 0600)
+    sig = (path, st.st_mtime_ns, st.st_size)
+    if _smart_file_memo[0] == sig:
+        return _smart_file_memo[1]
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        data = {}
+    data = data if isinstance(data, dict) else {}
+    _smart_file_memo = (sig, data)
+    return data
+
+
+def _num_or_none(v):
+    return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+
+def smart_cached(entry, now: float | None = None) -> dict | None:
+    """Normaliza una entrada de la caché a {age_s, stale, ok, ...} o None si no
+    es utilizable (sin ts_epoch válido). Un reloj atrasado da edad 0, no negativa."""
+    if not isinstance(entry, dict):
+        return None
+    ts = _num_or_none(entry.get("ts_epoch"))
+    if ts is None:
+        return None
+    age = max(0.0, (time.time() if now is None else now) - ts)
+    passed = entry.get("health_passed")
+    err = entry.get("err")
+    return {
+        "ts_epoch": ts,
+        "age_s": age,
+        "stale": age > SMART_STALE_S,
+        "ok": entry.get("ok") is True,
+        "health_passed": passed if isinstance(passed, bool) else None,
+        "temp_c": _num_or_none(entry.get("temp_c")),
+        "percentage_used": _num_or_none(entry.get("percentage_used")),
+        "power_on_hours": _num_or_none(entry.get("power_on_hours")),
+        "media_errors": _num_or_none(entry.get("media_errors")),
+        "critical_warning": _num_or_none(entry.get("critical_warning")),
+        "err": err if isinstance(err, str) else None,
+    }
+
+
+def smart_info(block_dev: str, cache: dict, now: float | None = None) -> dict:
+    """(smart, smart_cached) para un disco, sin root."""
+    cached = smart_cached(cache.get(f"/dev/{block_dev}"), now)
+    return {
+        "smart": {"smartctl": _smartctl_present(), "type": _smart_type(block_dev),
+                  "has_cache": cached is not None},
+        "smart_cached": cached,
+    }
 
 
 class SysReader:
@@ -341,6 +438,11 @@ class SysReader:
         io = self._io_tick()
         disks = self._disks(io, temps)
         disk_io = self._disk_io(io, temps)
+        smart_cache = _read_smart_file(smart_cache_path())
+        for d in disks:
+            d.update(smart_info(d["block_dev"], smart_cache))
+        for d in disk_io:
+            d.update(smart_info(d["dev"], smart_cache))
 
         nvme_temps = []
         for dev in self.nvme_devs:
