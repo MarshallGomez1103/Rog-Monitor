@@ -52,7 +52,7 @@ case "$cmd" in
         ;;
 
     guardian)
-        enabled=""; mode=""; cpu=""; gpu=""
+        enabled=""; mode=""; cpu=""; gpu=""; dry=0
         while [[ $# -gt 0 ]]; do
             [[ $# -ge 2 ]] || die "falta valor para $1"
             case "$1" in
@@ -60,12 +60,14 @@ case "$cmd" in
                 --mode)    mode="$2" ;;
                 --cpu)     cpu="$2" ;;
                 --gpu)     gpu="$2" ;;
+                --dry)     dry="$2" ;;   # 1 = simulación (no toca hardware)
                 *) die "argumento desconocido: $1" ;;
             esac
             shift 2
         done
         [[ "$enabled" == 0 || "$enabled" == 1 ]] || die "--enabled debe ser 0 o 1"
         [[ "$mode" == protection || "$mode" == gaming ]] || die "--mode debe ser protection o gaming"
+        [[ "$dry" == 0 || "$dry" == 1 ]] || die "--dry debe ser 0 o 1"
         int_in "$cpu" 70 100 || die "--cpu fuera de rango 70..100"
         int_in "$gpu" 70 87 || die "--gpu fuera de rango 70..87"
         cpu=$((10#$cpu)); gpu=$((10#$gpu))
@@ -78,6 +80,7 @@ case "$cmd" in
             printf 'Environment="ROG_THERMAL_CPU_CEILING=%s"\n' "$cpu"
             printf 'Environment="ROG_THERMAL_GPU_CEILING=%s"\n' "$gpu"
             printf 'Environment="ROG_THERMAL_CEILING=%s"\n' "$gpu"
+            printf 'Environment="ROG_THERMAL_DRY=%s"\n' "$dry"
         } > "$UNIT_DIR/$GUARDIAN.d/override.conf"
         systemctl daemon-reload
         if [[ "$enabled" == 1 ]]; then

@@ -1,73 +1,78 @@
 #!/usr/bin/env bash
-# rog-thermal-guardian.sh — Guardián térmico CPU/GPU: VENTILADORES PRIMERO
+# rog-thermal-guardian.sh — Guardián térmico CPU/GPU 2.0: VENTILADORES PRIMERO
 #
 # Filosofía de diseño:
 #   1. CPU/GPU demasiado caliente → subir ventiladores primero.
-#   2. Si sigue subiendo → recortar nv_dynamic_boost y, si hace falta, PL.
-#   3. Al enfriar → revertir suavemente.
-#   FALLA-SEGURO: si no puede leer temperatura → sube fans, NO sube potencia.
+#   2. Si sigue subiendo → recortar nv_dynamic_boost y, si hace falta, PL2.
+#   3. Al enfriar → revertir GRADUALMENTE (mismo escalón por intervalo de corte,
+#      solo tras `restore_hold` s por debajo de techo-margen) y NUNCA por encima
+#      del objetivo del perfil activo.
+#   FALLA-SEGURO: si no puede leer una temperatura → ventiladores arriba, NUNCA
+#   recorta ni sube potencia por falta de datos (ver "Sensor ausente" abajo).
+#
+# Guardián 2.0 (CP-6.06..6.09):
+#   - TODA escritura de hardware pasa por hw_write(). ROG_THERMAL_DRY=1 solo
+#     registra "[SIM] would write <ruta>=<valor> (motivo)" y NO escribe; en
+#     simulación las lecturas ven los valores simulados, así se ve la rampa.
+#   - ROG_SYSFS_ROOT antepone un prefijo a TODA ruta sysfs/proc/run (pruebas
+#     como usuario normal contra un árbol falso). ROG_THERMAL_FAKE_TEMPS=<archivo>
+#     ("cpu gpu", "-" = ausente) sustituye a los sensores, releído cada ciclo.
+#   - Cada decisión deja UNA línea de journal estructurada:
+#       decision=<cut|restore|hold|boost|unboost> reason=<..> cpu=<t> gpu=<t>
+#       ceiling=<cpu>/<gpu> pl2=<antes>-><después> db=<antes>-><después> sim=<0|1>
+#     y el JSON de estado trae `last_decision` y `history` (últimas 20).
+#   - throttle_thermal_policy YA NO se escribe (ver set_fan_aggression, H3).
+#   - Antes del primer recorte se persiste /run/rog-monitor/guardian-precut; si el
+#     proceso muere (SIGKILL/OOM/corte), el siguiente arranque restaura primero.
+#
+# Sensor ausente (decisión documentada, M3): si falta UNO o AMBOS sensores, se
+# suben ventiladores (performance) y se registra; NUNCA se recorta ni se
+# restaura potencia por la sola falta de dato. Con un sensor presente, ESE dato
+# sí puede recortar (es un dato real). La restauración exige ambos sensores.
+# Un sensor que no vuelve deja los ventiladores arriba y los límites como
+# estaban hasta que vuelva o se detenga el servicio (la parada restaura).
+#
+# Limitación conocida (M5/H2): si el usuario cambia a mano de perfil mientras el
+# guardián tiene los ventiladores en "performance", no se puede distinguir de la
+# subida del guardián si el nuevo perfil es "performance"; en cualquier otro
+# caso se respeta el perfil del usuario y NO se pisa al restaurar.
 #
 # v13 (guardian suave): por defecto NO modula platform_profile por carga.
-# El guardián solo empuja ventiladores cuando la temperatura se acerca al
-# techo; el recorte real de potencia espera un exceso sostenido. Esto evita
-# que una sesión de juego se sienta peor con el guardián activo que sin él.
-# Si alguien quiere la modulación por carga anterior, puede activar
-# ROG_THERMAL_MODULATE_LOAD=1 en un override de systemd.
-#
-# v12 (A-FANS): corrección de histéresis — cada escalón de bajada reinicia su
-# propio contador COOLDOWN (antes el segundo escalón se aplicaba STEP_DELAY
-# después del primero sin esperar COOLDOWN de nuevo). Esto evita que los fans
-# bajen de golpe en 2 escalones en COOLDOWN+STEP_DELAY s. Con la corrección,
-# cada escalón requiere COOLDOWN s de carga baja sostenida (≈ 20 s quiet,
-# 20 s balanced → 40 s totales para ir de high a silence). Esto es
-# exactamente el comportamiento buscado: "bajan pero no de golpe".
+# Si alguien quiere la modulación por carga, ROG_THERMAL_MODULATE_LOAD=1.
+# v12: cada escalón de bajada de la modulación reinicia su COOLDOWN.
 #
 # Integración con rog-profile-sync:
-#   - Este daemon NUNCA escribe directamente a pwm*_auto_pointN (eso lo hace
-#     rog-profile-sync.sh). Solo modifica throttle_thermal_policy para pedir
-#     más o menos agresividad al firmware, y escribe a nv_dynamic_boost y
-#     ppt_pl2_sppt cuando hay emergencia térmica.
-#   - Se comunica con rog-profile-sync.sh a través de la política de plataforma
-#     (/sys/firmware/acpi/platform_profile) — cuando el guardián quiere más
-#     ventiladores, escribe "performance" ahí y deja que rog-profile-sync haga
-#     su trabajo sin pelea de daemons por el mismo sysfs.
-#   - Publica su estado (modo silence/normal/high + motivo) en un JSON de
-#     SOLO LECTURA para la app: ~/.local/share/rog-monitor/
-#     thermal-guardian-state.json (glob de home como rog-profile-sync.sh,
-#     porque este script corre como root). La app (fans.py:guardian_status)
-#     lo lee para mostrarlo en el stream NDJSON; nunca lo escribe.
+#   - Este daemon NUNCA escribe a pwm*_auto_pointN (eso lo hace
+#     rog-profile-sync.sh). Pide ventiladores vía /sys/firmware/acpi/platform_profile
+#     y recorta nv_dynamic_boost / ppt_pl2_sppt en emergencia térmica.
+#   - Publica su estado en ~/.local/share/rog-monitor/thermal-guardian-state.json
+#     (glob de home como rog-profile-sync.sh, porque corre como root). La app
+#     (fans.py:guardian_status) lo lee; nunca lo escribe.
 #
 # Configuración (variables de entorno o argumentos):
 #   ROG_THERMAL_CPU_CEILING — techo CPU en °C (default 92, rango UI 70-100)
 #   ROG_THERMAL_GPU_CEILING — techo GPU en °C (default 83, máx firmware 87)
 #   ROG_THERMAL_CEILING     — alias legacy para GPU ceiling
-#   ROG_THERMAL_WARN        — umbral GPU legacy (default gpu_ceiling-5)
 #   ROG_THERMAL_INTERVAL    — intervalo del loop en segundos (default 2)
-#   ROG_THERMAL_DB_PATH     — ruta a nv_dynamic_boost sysfs
-#   ROG_THERMAL_PL2_PATH    — ruta a ppt_pl2_sppt sysfs
-#   ROG_THERMAL_LOAD_IDLE   — % de carga (CPU o GPU) bajo el cual se considera
-#                             "idle" para entrar en modo silencio (default 15)
-#   ROG_THERMAL_LOAD_HIGH   — % de carga desde el cual se considera "carga
-#                             alta" y se pide modo alto (default 60)
-#   ROG_THERMAL_MODULATE_LOAD — 1 para permitir que el guardián cambie
-#                             platform_profile por carga; default 0
-#   ROG_THERMAL_OVER_GRACE  — segundos sobre el techo antes de recortar
-#                             potencia; default 12
-#   ROG_THERMAL_DB_STEP     — W por paso al recortar nv_dynamic_boost; default 2
-#   ROG_THERMAL_PL2_STEP    — W por paso al recortar PL2/SPPT; default 5
-#   ROG_THERMAL_CUT_INTERVAL — segundos minimos entre recortes; default 10
-#   ROG_THERMAL_RESTORE_MARGIN — margen bajo el techo para restaurar; default 4
-#   ROG_THERMAL_COOLDOWN    — segundos que debe mantenerse la carga/temp baja
-#                             ANTES de empezar a bajar un escalón (default 20)
-#   ROG_THERMAL_STEP_DELAY  — segundos entre cada escalón de bajada una vez
-#                             iniciada (default 10) — bajada ESCALONADA, no
-#                             de golpe, para que no "rebote" para arriba.
+#   ROG_THERMAL_DB_PATH / ROG_THERMAL_PL2_PATH — rutas sysfs de nv_dynamic_boost / ppt_pl2_sppt
+#   ROG_THERMAL_LOAD_IDLE / LOAD_HIGH / MODULATE_LOAD — modulación por carga (default OFF)
+#   ROG_THERMAL_OVER_GRACE  — segundos sobre el techo antes de recortar; default 12
+#   ROG_THERMAL_BAND_MEMORY — segundos que la gracia sobrevive en banda de alerta; default max(30, 3*gracia)
+#   ROG_THERMAL_DB_STEP / PL2_STEP — W por paso (recorte Y restauración); default 2 / 5
+#   ROG_THERMAL_CUT_INTERVAL — segundos mínimos entre recortes/restauraciones; default 10
+#   ROG_THERMAL_RESTORE_MARGIN — °C bajo el techo para empezar a restaurar; default 4
+#   ROG_THERMAL_RESTORE_HOLD — s sostenidos bajo techo-margen antes de restaurar; default 20
+#   ROG_THERMAL_DRY         — 1 = simulación (no toca hardware); default 0
+#   ROG_SYSFS_ROOT          — prefijo de rutas (pruebas); default vacío
+#   ROG_THERMAL_FAKE_TEMPS  — archivo "cpu gpu" que sustituye los sensores (pruebas)
+#   ROG_THERMAL_STATE_DIR   — único directorio para el JSON de estado (pruebas)
+#   ROG_PY_LAUNCHER         — lanzador python aislado (default /usr/local/libexec/rog-monitor/rog-py.sh)
 #
 # Uso:
 #   rog-thermal-guardian.sh [--cpu-ceiling 92] [--gpu-ceiling 83] [--interval 2]
 #
 # Instalación:
-#   Ver systemd/rog-thermal-guardian.service — instalar con pkexec.
+#   Ver systemd/rog-thermal-guardian.service — instalar con scripts/install-system.sh.
 #   Para recuperación desde TTY: scripts/rog-monitor-safe-mode.sh.
 
 set -euo pipefail
@@ -97,6 +102,9 @@ DB_STEP="${ROG_THERMAL_DB_STEP:-2}"
 PL2_STEP="${ROG_THERMAL_PL2_STEP:-5}"
 CUT_INTERVAL="${ROG_THERMAL_CUT_INTERVAL:-10}"
 RESTORE_MARGIN="${ROG_THERMAL_RESTORE_MARGIN:-4}"
+RESTORE_HOLD="${ROG_THERMAL_RESTORE_HOLD:-20}"
+DRY="${ROG_THERMAL_DRY:-0}"
+SR="${ROG_SYSFS_ROOT:-}"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -114,34 +122,39 @@ while [[ $# -gt 0 ]]; do
         --cut-interval) CUT_INTERVAL="$2"; shift 2 ;;
         --cooldown) COOLDOWN="$2"; shift 2 ;;
         --step-delay) STEP_DELAY="$2"; shift 2 ;;
+        --restore-hold) RESTORE_HOLD="$2"; shift 2 ;;
+        --dry) DRY="$2"; shift 2 ;;
         --) shift; break ;;
         *) echo "Argumento desconocido: $1" >&2; exit 1 ;;
     esac
 done
 
 [[ "$MODE" == "gaming" || "$MODE" == "protection" ]] || MODE="protection"
+[[ "$DRY" == "1" ]] || DRY=0
 (( CPU_CEILING < 70 )) && CPU_CEILING=70
 (( CPU_CEILING > 100 )) && CPU_CEILING=100
 (( GPU_CEILING < 70 )) && GPU_CEILING=70
 (( GPU_CEILING > 87 )) && GPU_CEILING=87
 GPU_WARN_TEMP="${WARN_OFFSET:-$(( GPU_CEILING - WARN_DELTA ))}"
 CPU_WARN_TEMP="${ROG_THERMAL_CPU_WARN:-$(( CPU_CEILING - WARN_DELTA ))}"
+BAND_MEMORY="${ROG_THERMAL_BAND_MEMORY:-$(( OVER_GRACE * 3 > 30 ? OVER_GRACE * 3 : 30 ))}"
 
 # ------------------------------------------------------------------
-# Rutas sysfs con overrides por entorno (facilita testing)
+# Rutas (todas bajo $SR para poder probar contra un árbol falso)
 # ------------------------------------------------------------------
-ATTRS_BASE="${ROG_FW_ATTRS_DIR:-/sys/class/firmware-attributes/asus-armoury/attributes}"
+ATTRS_BASE="${ROG_FW_ATTRS_DIR:-$SR/sys/class/firmware-attributes/asus-armoury/attributes}"
 DB_PATH="${ROG_THERMAL_DB_PATH:-$ATTRS_BASE/nv_dynamic_boost}"
 PL2_PATH="${ROG_THERMAL_PL2_PATH:-$ATTRS_BASE/ppt_pl2_sppt}"
-PLATFORM_PROFILE="/sys/firmware/acpi/platform_profile"
-THROTTLE_POLICY="/sys/devices/platform/asus-nb-wmi/throttle_thermal_policy"
+PLATFORM_PROFILE="$SR/sys/firmware/acpi/platform_profile"
+HWMON_GLOB="$SR/sys/class/hwmon/hwmon"
+PROC_STAT="$SR/proc/stat"
+MARKER_DIR="$SR/run/rog-monitor"
+MARKER_FILE="$MARKER_DIR/guardian-precut"
+PY_LAUNCHER="${ROG_PY_LAUNCHER:-/usr/local/libexec/rog-monitor/rog-py.sh}"
+FAKE_TEMPS="${ROG_THERMAL_FAKE_TEMPS:-}"
 
-# Fuentes de temperatura GPU (se prueban en orden).
-GPU_TEMP_SOURCES=(
-    # nvidia-smi más fiable (instantánea real del sensor)
-    ""   # marcador; se rellena al inicio
-    # sysfs hwmon asus o nvidia
-)
+# Valores simulados (solo DRY): ruta → último valor "escrito".
+declare -A SIM_VALUES=()
 
 # ------------------------------------------------------------------
 # Helpers de logging
@@ -155,13 +168,81 @@ warn_log() {
 }
 
 # ------------------------------------------------------------------
-# Leer temperatura GPU (falla-seguro: devuelve "" si no puede)
+# Leer/escribir hardware. hw_write es el ÚNICO punto de escritura de hardware.
 # ------------------------------------------------------------------
+hw_read() {
+    local path="$1"
+    if [[ -n "${SIM_VALUES[$path]+x}" ]]; then
+        printf '%s' "${SIM_VALUES[$path]}"
+    else
+        cat "$path" 2>/dev/null || true
+    fi
+}
+
+read_sysfs_int() {
+    local path="$1"
+    [[ -n "${SIM_VALUES[$path]+x}" || -f "$path" ]] || { echo ""; return 0; }
+    local v
+    v="$(hw_read "$path")"
+    [[ "$v" =~ ^-?[0-9]+$ ]] && echo "$v" || echo ""
+}
+
+read_profile() {
+    local p
+    p="$(hw_read "$PLATFORM_PROFILE" | tr -d '[:space:]')"
+    echo "$p"
+}
+
+hw_write() {
+    local path="$1" val="$2" why="${3:-}"
+    if [[ "$DRY" == "1" ]]; then
+        log "[SIM] would write ${path}=${val} (${why})"
+        SIM_VALUES["$path"]="$val"
+        return 0
+    fi
+    [[ -e "$path" ]] || { warn_log "No existe: $path"; return 1; }
+    printf '%s' "$val" > "$path" 2>/dev/null || {
+        warn_log "No se pudo escribir $val en $path (¿root?)"; return 1;
+    }
+    return 0
+}
+
+clamp_int() {
+    local v="$1" lo="$2" hi="$3"
+    (( v < lo )) && v="$lo"
+    (( v > hi )) && v="$hi"
+    echo "$v"
+}
+
+get_db_range() {
+    local lo hi cur
+    lo=$(read_sysfs_int "$DB_PATH/min_value")
+    hi=$(read_sysfs_int "$DB_PATH/max_value")
+    cur=$(read_sysfs_int "$DB_PATH/current_value")
+    echo "${lo:-5} ${hi:-25} ${cur:-25}"
+}
+
+get_pl2_range() {
+    local lo hi cur
+    lo=$(read_sysfs_int "$PL2_PATH/min_value")
+    hi=$(read_sysfs_int "$PL2_PATH/max_value")
+    cur=$(read_sysfs_int "$PL2_PATH/current_value")
+    echo "${lo:-28} ${hi:-175} ${cur:-175}"
+}
+
+# ------------------------------------------------------------------
+# Sensores (falla-seguro: "" si no se puede leer o el valor es implausible)
+# ------------------------------------------------------------------
+plausible_temp() {   # 20..110 °C o ""
+    local t="$1"
+    if [[ "$t" =~ ^[0-9]+$ ]] && (( t >= 20 && t <= 110 )); then echo "$t"; else echo ""; fi
+}
+
 read_gpu_temp() {
-    # Intento 1: nvidia-smi
+    # Intento 1: nvidia-smi con timeout (un nvidia-smi colgado no debe bloquear el bucle).
     if command -v nvidia-smi &>/dev/null; then
         local t
-        t=$(nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -d ' ')
+        t=$(timeout 3 nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -d ' ' || true)
         if [[ "$t" =~ ^[0-9]+$ ]]; then
             echo "$t"
             return 0
@@ -169,15 +250,14 @@ read_gpu_temp() {
     fi
 
     # Intento 2: hwmon nvidia
-    for hwmon_dir in /sys/class/hwmon/hwmon*; do
-        local name_file="$hwmon_dir/name"
+    local hwmon_dir name_file hw_name temp_file raw
+    for hwmon_dir in "$HWMON_GLOB"*; do
+        name_file="$hwmon_dir/name"
         [[ -f "$name_file" ]] || continue
-        local hw_name
         hw_name=$(cat "$name_file" 2>/dev/null || echo "")
         if [[ "$hw_name" == *nvidia* ]] || [[ "$hw_name" == *nouveau* ]]; then
             for temp_file in "$hwmon_dir"/temp*_input; do
                 [[ -f "$temp_file" ]] || continue
-                local raw
                 raw=$(cat "$temp_file" 2>/dev/null || echo "")
                 if [[ "$raw" =~ ^[0-9]+$ ]] && (( raw > 1000 )); then
                     echo "$(( raw / 1000 ))"
@@ -195,7 +275,7 @@ read_cpu_temp() {
     local best=""
     local hwmon_dir name_file hw_name temp_file raw c
 
-    for hwmon_dir in /sys/class/hwmon/hwmon*; do
+    for hwmon_dir in "$HWMON_GLOB"*; do
         name_file="$hwmon_dir/name"
         [[ -f "$name_file" ]] || continue
         hw_name=$(cat "$name_file" 2>/dev/null || echo "")
@@ -218,6 +298,19 @@ read_cpu_temp() {
     echo "$best"
 }
 
+# Rellena CPU_TEMP / GPU_TEMP (con la sustitución de pruebas si hay archivo).
+read_temps() {
+    if [[ -n "$FAKE_TEMPS" ]]; then
+        local c="" g=""
+        read -r c g < "$FAKE_TEMPS" 2>/dev/null || true
+        CPU_TEMP="$(plausible_temp "${c:-}")"
+        GPU_TEMP="$(plausible_temp "${g:-}")"
+    else
+        CPU_TEMP="$(plausible_temp "$(read_cpu_temp)")"
+        GPU_TEMP="$(plausible_temp "$(read_gpu_temp)")"
+    fi
+}
+
 # ------------------------------------------------------------------
 # Leer carga CPU/GPU (falla-segura: "" si no se puede → se trata como ALTA,
 # nunca como idle, para no relajar fans por error de lectura)
@@ -228,7 +321,7 @@ PREV_CPU_IDLE=""
 read_cpu_load() {
     # % de uso CPU total desde /proc/stat (delta entre dos lecturas).
     local line rest user nice system idle iowait irq softirq steal
-    read -r line < /proc/stat 2>/dev/null || { echo ""; return; }
+    read -r line < "$PROC_STAT" 2>/dev/null || { echo ""; return; }
     # shellcheck disable=SC2034
     read -r _ user nice system idle iowait irq softirq steal rest <<< "$line"
     local total=$(( user + nice + system + idle + iowait + irq + softirq + steal ))
@@ -248,45 +341,108 @@ read_cpu_load() {
 }
 
 read_gpu_load() {
-    if command -v nvidia-smi &>/dev/null; then
+    if [[ -z "$FAKE_TEMPS" ]] && command -v nvidia-smi &>/dev/null; then
         local u
-        u=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -d ' ')
+        u=$(timeout 3 nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -d ' ' || true)
         [[ "$u" =~ ^[0-9]+$ ]] && { echo "$u"; return 0; }
     fi
     echo ""
 }
 
 # ------------------------------------------------------------------
+# Estado del guardián y trazabilidad (CP-6.08)
+# ------------------------------------------------------------------
+GUARDIAN_STATE="normal"   # "normal" | "fans-up" | "boost-down" | "pl-down"
+PRE_DB=""                 # valores ANTES del primer recorte (también en el marcador)
+PRE_PL2=""
+ORIGINAL_PROFILE=""       # perfil de plataforma ANTES de subir ventiladores
+FAN_PROFILE_PUSHED=false
+POWER_CUT=0               # 1 desde el primer recorte del episodio
+INTERVENTION_COUNT=0
+OVER_SINCE=0              # inicio de la gracia (NO se reinicia en banda de alerta)
+LAST_OVER_TS=0
+COOL_SINCE=0              # desde cuándo llevamos por debajo de techo-margen
+LAST_POWER_CUT=0
+LAST_RESTORE=0
+LAST_DECISION_KEY=""
+LAST_DECISION_JSON="null"
+HISTORY=()
+NOW=0
+CPU_TEMP=""
+GPU_TEMP=""
+
+# decide <decision> <motivo> [db_antes db_después pl2_antes pl2_después]
+# UNA línea estructurada al journal + last_decision/history del JSON. Los "hold"
+# repetidos con el mismo motivo se omiten (si no, 1 línea cada 2 s).
+decide() {
+    local dec="$1" why="$2" key="$1:$2"
+    if [[ "$dec" == "hold" && "$key" == "$LAST_DECISION_KEY" ]]; then
+        return 0
+    fi
+    LAST_DECISION_KEY="$key"
+    local db_old db_new pl_old pl_new
+    if [[ $# -ge 6 ]]; then
+        db_old="$3"; db_new="$4"; pl_old="$5"; pl_new="$6"
+    else
+        db_old="$(read_sysfs_int "$DB_PATH/current_value")"; db_old="${db_old:--}"; db_new="$db_old"
+        pl_old="$(read_sysfs_int "$PL2_PATH/current_value")"; pl_old="${pl_old:--}"; pl_new="$pl_old"
+    fi
+    log "decision=${dec} reason=${why} cpu=${CPU_TEMP:--} gpu=${GPU_TEMP:--} ceiling=${CPU_CEILING}/${GPU_CEILING} pl2=${pl_old}->${pl_new} db=${db_old}->${db_new} sim=${DRY}"
+    local obj
+    printf -v obj '{"ts":%s,"decision":"%s","reason":"%s","values":{"cpu":"%s","gpu":"%s","ceiling":"%s/%s","pl2":"%s->%s","db":"%s->%s","sim":%s}}' \
+        "$NOW" "$dec" "$why" "${CPU_TEMP:--}" "${GPU_TEMP:--}" "$CPU_CEILING" "$GPU_CEILING" \
+        "$pl_old" "$pl_new" "$db_old" "$db_new" "$DRY"
+    LAST_DECISION_JSON="$obj"
+    HISTORY+=("$obj")
+    if (( ${#HISTORY[@]} > 20 )); then
+        HISTORY=("${HISTORY[@]: -20}")
+    fi
+    return 0
+}
+
+# ------------------------------------------------------------------
 # Publicar estado para la UI (solo lectura para la app; este script es la
 # única fuente de escritura). Falla en silencio si no hay home de usuario.
-# Formato: {"mode": "silence|normal|high", "reason": str, "updated": epoch,
-#           "aggression": "quiet|balanced|performance",
-#           "thermal_state": "normal|fans-up|boost-down|pl-down",
-#           "cooldown_remaining": segundos hasta siguiente escalón (0 si no aplica),
-#           "interventions": N}
+# Campos previos intactos; nuevos: configured_mode, dry, last_decision, history.
+# guardian_mode es el modo EFECTIVO: "gaming" solo mientras el guardián está
+# activo (state != normal), para que el tope de ventiladores de Gaming
+# (rog-profile-sync.sh / fans.py) dependa de la temperatura y no sea permanente (M5).
 # ------------------------------------------------------------------
 write_guardian_state() {
     local mode="$1" reason="$2"
     local now; now="$(date +%s)"
     local remaining=0
-    # Calcular segundos restantes hasta el próximo escalón (para la UI).
     if (( LOW_SINCE > 0 && CURRENT_LOAD_LEVEL > 0 )); then
         local elapsed=$(( now - LOW_SINCE ))
         remaining=$(( COOLDOWN - elapsed ))
         (( remaining < 0 )) && remaining=0
     fi
+    local effective="protection"
+    if [[ "$MODE" == "gaming" && "${GUARDIAN_STATE:-normal}" != "normal" ]]; then
+        effective="gaming"
+    fi
+    local hist="" h
+    for h in "${HISTORY[@]}"; do
+        hist+="${hist:+,}$h"
+    done
     local payload
     printf -v payload \
-        '{"mode":"%s","reason":"%s","updated":%s,"guardian_mode":"%s","aggression":"%s","thermal_state":"%s","cooldown_remaining":%s,"interventions":%s,"cpu_ceiling":%s,"gpu_ceiling":%s,"cpu_temp":"%s","gpu_temp":"%s"}' \
-        "$mode" "$reason" "$now" "$MODE" \
+        '{"mode":"%s","reason":"%s","updated":%s,"guardian_mode":"%s","configured_mode":"%s","aggression":"%s","thermal_state":"%s","cooldown_remaining":%s,"interventions":%s,"cpu_ceiling":%s,"gpu_ceiling":%s,"cpu_temp":"%s","gpu_temp":"%s","dry":%s,"last_decision":%s,"history":[%s]}' \
+        "$mode" "$reason" "$now" "$effective" "$MODE" \
         "${LOAD_LEVELS[$CURRENT_LOAD_LEVEL]:-balanced}" \
         "${GUARDIAN_STATE:-normal}" \
         "$remaining" \
         "${INTERVENTION_COUNT:-0}" \
         "$CPU_CEILING" "$GPU_CEILING" \
-        "${CPU_TEMP:-}" "${GPU_TEMP:-}"
-    local f
-    for f in /var/home/*/.local/share/rog-monitor /home/*/.local/share/rog-monitor; do
+        "${CPU_TEMP:-}" "${GPU_TEMP:-}" \
+        "$DRY" "$LAST_DECISION_JSON" "$hist"
+    local f dirs
+    if [[ -n "${ROG_THERMAL_STATE_DIR:-}" ]]; then
+        dirs=("$ROG_THERMAL_STATE_DIR")
+    else
+        dirs=("$SR"/var/home/*/.local/share/rog-monitor "$SR"/home/*/.local/share/rog-monitor)
+    fi
+    for f in "${dirs[@]}"; do
         # Un symlink aquí haría que root escriba donde el usuario quiera.
         [[ -d "$f" && ! -L "$f" ]] || continue
         # Root escribe en un directorio que controla el usuario: borrar el .tmp y
@@ -296,77 +452,176 @@ write_guardian_state() {
             mv -f "$f/thermal-guardian-state.json.tmp" "$f/thermal-guardian-state.json" 2>/dev/null || true
         fi
     done
+    return 0
 }
 
 # ------------------------------------------------------------------
-# Leer/escribir sysfs con seguridad
+# Ventiladores vía platform_profile (ÚNICA vía; H3)
 # ------------------------------------------------------------------
-read_sysfs_int() {
-    local path="$1"
-    [[ -f "$path" ]] || { echo ""; return; }
-    local v
-    v=$(cat "$path" 2>/dev/null || echo "")
-    [[ "$v" =~ ^-?[0-9]+$ ]] && echo "$v" || echo ""
-}
-
-write_sysfs_int() {
-    local path="$1" val="$2"
-    [[ -f "$path" ]] || { warn_log "No existe: $path"; return 1; }
-    printf '%s' "$val" > "$path" 2>/dev/null || {
-        warn_log "No se pudo escribir $val en $path (¿root?)"; return 1;
-    }
-}
-
-clamp_int() {
-    local v="$1" lo="$2" hi="$3"
-    (( v < lo )) && v="$lo"
-    (( v > hi )) && v="$hi"
-    echo "$v"
-}
-
-# ------------------------------------------------------------------
-# Leer rangos de dynamic_boost y PL2
-# ------------------------------------------------------------------
-get_db_range() {
-    local lo hi cur
-    lo=$(read_sysfs_int "$DB_PATH/min_value")
-    hi=$(read_sysfs_int "$DB_PATH/max_value")
-    cur=$(read_sysfs_int "$DB_PATH/current_value")
-    echo "${lo:-5} ${hi:-25} ${cur:-25}"
-}
-
-get_pl2_range() {
-    local lo hi cur
-    lo=$(read_sysfs_int "$PL2_PATH/min_value")
-    hi=$(read_sysfs_int "$PL2_PATH/max_value")
-    cur=$(read_sysfs_int "$PL2_PATH/current_value")
-    echo "${lo:-28} ${hi:-175} ${cur:-175}"
-}
-
-# ------------------------------------------------------------------
-# Escribir platform_profile para pedir agresividad de ventiladores
-# ------------------------------------------------------------------
+# NO se escribe throttle_thermal_policy: el ABI de asus-wmi en ROG/TUF es
+# 0=default(balanced), 1=overboost(performance), 2=silent, es decir, lo opuesto
+# a lo que escribía el guardián v13 (performance→2 pedía SILENCIO). El driver ya
+# mantiene throttle_thermal_policy sincronizado con platform_profile, así que
+# basta el interfaz estándar /sys/firmware/acpi/platform_profile.
 set_fan_aggression() {
-    local level="$1"   # "performance" | "balanced" | "quiet"
-    if [[ -f "$PLATFORM_PROFILE" ]]; then
-        printf '%s' "$level" > "$PLATFORM_PROFILE" 2>/dev/null || true
+    local level="$1" why="${2:-modulacion-por-carga}"   # performance | balanced | quiet
+    if [[ -e "$PLATFORM_PROFILE" || "$DRY" == "1" ]]; then
+        [[ "$(read_profile)" == "$level" ]] || hw_write "$PLATFORM_PROFILE" "$level" "$why" || true
     fi
-    # También escribir throttle_policy directo como respaldo
-    if [[ -f "$THROTTLE_POLICY" ]]; then
-        local want
-        case "$level" in
-            performance) want=2 ;;
-            balanced)    want=1 ;;
-            quiet)       want=0 ;;
-            *)           want=1 ;;
-        esac
-        local n=0
-        while (( n < 3 )); do
-            printf '%s' "$want" > "$THROTTLE_POLICY" 2>/dev/null && break || true
-            n=$(( n + 1 ))
-            sleep 0.3
+    return 0
+}
+
+# Perfil que el USUARIO considera activo: si el guardián subió a performance y
+# sigue en performance, es el original; si cambió a otro, ese es el del usuario.
+effective_profile() {
+    local cur; cur="$(read_profile)"
+    if [[ "$FAN_PROFILE_PUSHED" == true && "$cur" == "performance" && -n "$ORIGINAL_PROFILE" ]]; then
+        echo "$ORIGINAL_PROFILE"
+    else
+        echo "${cur:-${ORIGINAL_PROFILE:-balanced}}"
+    fi
+}
+
+# ------------------------------------------------------------------
+# Marcador pre-recorte (H5): sobrevive a SIGKILL/OOM; en tmpfs (/run).
+# ------------------------------------------------------------------
+persist_marker() {
+    [[ "$DRY" == "1" ]] && return 0
+    [[ -L "$MARKER_DIR" ]] && return 0
+    mkdir -p -m 0755 "$MARKER_DIR" 2>/dev/null || return 0
+    local tmp="$MARKER_FILE.tmp"
+    rm -f -- "$tmp" 2>/dev/null || true
+    if printf 'ts=%s\nprofile=%s\ndb=%s\npl2=%s\npushed=%s\ncut=%s\n' \
+        "$NOW" "$ORIGINAL_PROFILE" "$PRE_DB" "$PRE_PL2" \
+        "$([[ "$FAN_PROFILE_PUSHED" == true ]] && echo 1 || echo 0)" "$POWER_CUT" > "$tmp" 2>/dev/null; then
+        mv -f -- "$tmp" "$MARKER_FILE" 2>/dev/null || true
+    fi
+    return 0
+}
+
+clear_marker() {
+    [[ "$DRY" == "1" ]] && return 0
+    rm -f -- "$MARKER_FILE" "$MARKER_FILE.tmp" 2>/dev/null || true
+    return 0
+}
+
+capture_pre_power() {
+    local cur
+    read -r _ _ cur <<< "$(get_db_range)"
+    PRE_DB="$cur"
+    read -r _ _ cur <<< "$(get_pl2_range)"
+    PRE_PL2="$cur"
+}
+
+# Sube ventiladores. Guarda ANTES el perfil original y los límites actuales
+# (M1: nunca quedar en performance sin saber a qué volver).
+push_fans() {
+    local why="$1"
+    [[ "$FAN_PROFILE_PUSHED" == true ]] && return 0
+    if [[ -z "$ORIGINAL_PROFILE" ]]; then
+        ORIGINAL_PROFILE="$(read_profile)"
+        ORIGINAL_PROFILE="${ORIGINAL_PROFILE:-balanced}"
+    fi
+    [[ -n "$PRE_DB" ]] || capture_pre_power
+    FAN_PROFILE_PUSHED=true
+    persist_marker
+    hw_write "$PLATFORM_PROFILE" "performance" "$why" || true
+    decide boost "$why"
+    return 0
+}
+
+# Devuelve el perfil original SOLO si lo que hay es lo que escribimos nosotros.
+unboost_fans() {
+    [[ "$FAN_PROFILE_PUSHED" == true ]] || return 0
+    local cur; cur="$(read_profile)"
+    if [[ "$cur" == "performance" && -n "$ORIGINAL_PROFILE" && "$ORIGINAL_PROFILE" != "performance" ]]; then
+        hw_write "$PLATFORM_PROFILE" "$ORIGINAL_PROFILE" "restaurar-perfil-original" || true
+    fi
+    FAN_PROFILE_PUSHED=false
+    return 0
+}
+
+# ------------------------------------------------------------------
+# Objetivo de restauración (H2): el del PERFIL ACTUAL, nunca por encima.
+# ------------------------------------------------------------------
+# Techo de cada límite = objetivo calibrado del perfil activo (subcomando de solo
+# lectura `profile-limits` del lanzador python aislado). Si el perfil no cambió
+# desde antes del recorte, además se respeta el valor previo si era menor
+# (p. ej. un ajuste manual del usuario). Si el perfil cambió, rog-profile-sync
+# ya aplicó los límites del perfil nuevo: sin objetivo conocido no se toca nada.
+CEIL_DB=""
+CEIL_PL2=""
+
+compute_ceilings() {
+    local tgt_db="" tgt_pl2="" prof out kv unchanged=1
+    prof="$(effective_profile)"
+    [[ -z "$ORIGINAL_PROFILE" || "$prof" == "$ORIGINAL_PROFILE" ]] || unchanged=0
+    if [[ -x "$PY_LAUNCHER" && "$prof" =~ ^[a-z-]+$ ]]; then
+        out="$(timeout 5 "$PY_LAUNCHER" rog_monitor.power_control profile-limits "$prof" 2>/dev/null || true)"
+        for kv in $out; do
+            case "$kv" in
+                pl2=[0-9]*)           tgt_pl2="${kv#*=}" ;;
+                dynamic_boost=[0-9]*) tgt_db="${kv#*=}" ;;
+            esac
         done
     fi
+    [[ "$tgt_db" =~ ^[0-9]+$ ]] || tgt_db=""
+    [[ "$tgt_pl2" =~ ^[0-9]+$ ]] || tgt_pl2=""
+    CEIL_DB="$tgt_db"; CEIL_PL2="$tgt_pl2"
+    if (( unchanged )); then
+        [[ "$PRE_DB" =~ ^[0-9]+$ ]] && { [[ -z "$CEIL_DB" || "$PRE_DB" -lt "$CEIL_DB" ]] && CEIL_DB="$PRE_DB"; }
+        [[ "$PRE_PL2" =~ ^[0-9]+$ ]] && { [[ -z "$CEIL_PL2" || "$PRE_PL2" -lt "$CEIL_PL2" ]] && CEIL_PL2="$PRE_PL2"; }
+    fi
+    return 0
+}
+
+# restore_power <jump|step> <motivo>: sube DB/PL2 hacia su techo SIN pasarlo y
+# NUNCA baja nada. Devuelve 0 si todo está en su techo (o no hay qué restaurar),
+# 1 si queda pendiente (o una escritura falló → se reintenta).
+restore_power() {
+    local how="$1" why="$2"
+    (( POWER_CUT )) || return 0
+    compute_ceilings
+    local db_lo db_hi db_cur pl_lo pl_hi pl_cur want pending=0 changed=0
+    read -r db_lo db_hi db_cur <<< "$(get_db_range)"
+    read -r pl_lo pl_hi pl_cur <<< "$(get_pl2_range)"
+    local db_new="$db_cur" pl_new="$pl_cur"
+
+    if [[ -n "$CEIL_DB" ]] && (( db_cur < CEIL_DB )) && [[ -d "$DB_PATH" ]]; then
+        want="$CEIL_DB"
+        [[ "$how" == "step" ]] && (( db_cur + DB_STEP < want )) && want=$(( db_cur + DB_STEP ))
+        want="$(clamp_int "$want" "$db_lo" "$db_hi")"
+        if hw_write "$DB_PATH/current_value" "$want" "restaurar-dynamic-boost"; then
+            db_new="$want"; changed=1
+        fi
+        (( db_new < CEIL_DB )) && pending=1
+    fi
+    if [[ -n "$CEIL_PL2" ]] && (( pl_cur < CEIL_PL2 )) && [[ -d "$PL2_PATH" ]]; then
+        want="$CEIL_PL2"
+        [[ "$how" == "step" ]] && (( pl_cur + PL2_STEP < want )) && want=$(( pl_cur + PL2_STEP ))
+        want="$(clamp_int "$want" "$pl_lo" "$pl_hi")"
+        if hw_write "$PL2_PATH/current_value" "$want" "restaurar-pl2"; then
+            pl_new="$want"; changed=1
+        fi
+        (( pl_new < CEIL_PL2 )) && pending=1
+    fi
+    LAST_RESTORE="$NOW"
+    (( changed )) && decide restore "$why" "$db_cur" "$db_new" "$pl_cur" "$pl_new"
+    return "$pending"
+}
+
+# Fin de episodio: ventiladores al perfil original, limpiar marcador y estado.
+finish_restore() {
+    local why="$1"
+    local was_pushed="$FAN_PROFILE_PUSHED"
+    unboost_fans
+    clear_marker
+    GUARDIAN_STATE="normal"
+    PRE_DB=""; PRE_PL2=""; ORIGINAL_PROFILE=""
+    POWER_CUT=0; INTERVENTION_COUNT=0
+    OVER_SINCE=0; LAST_OVER_TS=0; COOL_SINCE=0; LAST_POWER_CUT=0; LAST_RESTORE=0
+    if [[ "$was_pushed" == true ]]; then decide unboost "$why"; fi
+    return 0
 }
 
 # ------------------------------------------------------------------
@@ -452,48 +707,70 @@ evaluate_load() {
 }
 
 # ------------------------------------------------------------------
-# Estado del guardián (emergencia térmica — para evitar oscilaciones)
+# Recorte de potencia (un escalón). Persiste el marcador ANTES de escribir.
 # ------------------------------------------------------------------
-GUARDIAN_STATE="normal"   # "normal" | "fans-up" | "boost-down" | "pl-down"
-ORIGINAL_DB=""
-ORIGINAL_PL2=""
-ORIGINAL_PROFILE=""
-FAN_PROFILE_PUSHED=false
-INTERVENTION_COUNT=0
-OVER_SINCE=0
-LAST_POWER_CUT=0
+do_cut() {
+    local over_for="$1"
+    if (( POWER_CUT == 0 )); then
+        capture_pre_power      # valores frescos, justo antes del primer recorte
+        POWER_CUT=1
+        persist_marker
+    fi
+    LAST_POWER_CUT="$NOW"
 
-save_originals_once() {
-    if [[ -z "$ORIGINAL_PROFILE" ]]; then
-        ORIGINAL_PROFILE=$(cat "$PLATFORM_PROFILE" 2>/dev/null || echo "balanced")
+    local db_lo db_hi db_cur pl_lo pl_hi pl_cur
+    read -r db_lo db_hi db_cur <<< "$(get_db_range)"
+    read -r pl_lo pl_hi pl_cur <<< "$(get_pl2_range)"
+    local db_new="$db_cur" pl_new="$pl_cur" db_cut=0 pl_cut=0 next="boost-down"
+
+    # 1.er escalón: nv_dynamic_boost
+    local want
+    want="$(clamp_int $(( db_cur - DB_STEP )) "$db_lo" "$db_hi")"
+    if (( want < db_cur )) && [[ -d "$DB_PATH" ]]; then
+        if hw_write "$DB_PATH/current_value" "$want" "recorte-dynamic-boost sobre-techo ${over_for}s"; then
+            db_new="$want"; db_cut=1
+        fi
     fi
-    if [[ -z "$ORIGINAL_DB" ]]; then
-        local range
-        read -r _ _ cur <<< "$(get_db_range)"
-        ORIGINAL_DB="${cur:-25}"
+
+    # PL2/SPPT solo entra si el boost ya se tocó antes o si dynamic_boost
+    # no puede bajar más. Es el segundo escalón, no la primera reacción.
+    if [[ "$GUARDIAN_STATE" == "boost-down" || "$GUARDIAN_STATE" == "pl-down" || "$db_cut" == "0" ]]; then
+        want="$(clamp_int $(( pl_cur - PL2_STEP )) "$pl_lo" "$pl_hi")"
+        if (( want < pl_cur )) && [[ -d "$PL2_PATH" ]]; then
+            if hw_write "$PL2_PATH/current_value" "$want" "recorte-pl2 sostenido"; then
+                pl_new="$want"; pl_cut=1
+            fi
+        fi
+        next="pl-down"
     fi
-    if [[ -z "$ORIGINAL_PL2" ]]; then
-        local range
-        read -r _ _ cur <<< "$(get_pl2_range)"
-        ORIGINAL_PL2="${cur:-175}"
+
+    if (( db_cut == 0 && pl_cut == 0 )); then
+        # Nada que bajar (pisos) o la escritura falló: no avanzar el estado (M6).
+        decide hold "sin-margen-de-recorte-o-escritura-fallida" "$db_cur" "$db_cur" "$pl_cur" "$pl_cur"
+        return 0
     fi
+    GUARDIAN_STATE="$next"
+    INTERVENTION_COUNT=$(( INTERVENTION_COUNT + 1 ))
+    decide cut "sobre-techo-sostenido-${over_for}s" "$db_cur" "$db_new" "$pl_cur" "$pl_new"
+    return 0
 }
 
 # ------------------------------------------------------------------
 # Lógica principal por ciclo
 # ------------------------------------------------------------------
 handle_temp() {
-    local cpu_temp="$1"
-    local gpu_temp="$2"
+    local cpu_temp="$1" gpu_temp="$2"
 
+    # --- Sensores ausentes: ventiladores arriba, jamás potencia por falta de dato.
     if [[ -z "$cpu_temp" && -z "$gpu_temp" ]]; then
-        # FALLA-SEGURO: sin temperaturas → subir fans, NO tocar potencia
-        warn_log "No se pudo leer temp CPU/GPU → modo falla-seguro (fans max)"
-        set_fan_aggression "performance"
-        FAN_PROFILE_PUSHED=true
-        GUARDIAN_STATE="fans-up"
-        return
+        COOL_SINCE=0
+        push_fans "sensor-ausente-ambos"
+        [[ "$GUARDIAN_STATE" == "normal" ]] && GUARDIAN_STATE="fans-up"
+        decide hold "sensor-ausente-ambos-failsafe"
+        return 0
     fi
+    local missing=0
+    [[ -z "$cpu_temp" || -z "$gpu_temp" ]] && missing=1
 
     local cpu_over=0 gpu_over=0 cpu_warn=0 gpu_warn=0
     [[ -n "$cpu_temp" ]] && (( cpu_temp >= CPU_CEILING )) && cpu_over=1
@@ -504,146 +781,156 @@ handle_temp() {
     if (( cpu_over == 1 || gpu_over == 1 )); then
         # TECHO: fans primero. El recorte de potencia espera un exceso sostenido
         # para no castigar picos cortos normales durante juego.
-        save_originals_once
-        set_fan_aggression "performance"
-        FAN_PROFILE_PUSHED=true
-        # MODO GAMING: solo ventiladores. Nunca recorta dynamic_boost/PL2, así
-        # que no hay thermal throttling y el juego no pierde rendimiento.
+        COOL_SINCE=0
+        push_fans "techo-superado"
+        [[ "$GUARDIAN_STATE" == "normal" ]] && GUARDIAN_STATE="fans-up"
+        # MODO GAMING: solo ventiladores. Nunca recorta dynamic_boost/PL2.
         if [[ "$MODE" == "gaming" ]]; then
-            GUARDIAN_STATE="fans-up"
-            write_guardian_state "high" "gaming: techo cpu=${cpu_temp:-?}°C/gpu=${gpu_temp:-?}°C — fans al máximo, sin recorte de potencia"
-            return
+            decide hold "gaming-solo-ventiladores"
+            return 0
         fi
-        local now over_for
-        now=$(date +%s)
-        if (( OVER_SINCE == 0 )); then
-            OVER_SINCE="$now"
-            log "Temp cpu=${cpu_temp:-?}°C/gpu=${gpu_temp:-?}°C >= techo cpu=${CPU_CEILING}°C/gpu=${GPU_CEILING}°C — fans alto; esperando ${OVER_GRACE}s antes de recortar potencia"
+        # Gracia acumulada: NO se reinicia en banda de alerta (M4); solo caduca
+        # si llevamos más de BAND_MEMORY s sin tocar el techo.
+        if (( OVER_SINCE == 0 || NOW - LAST_OVER_TS > BAND_MEMORY )); then
+            OVER_SINCE="$NOW"
         fi
-        over_for=$(( now - OVER_SINCE ))
+        LAST_OVER_TS="$NOW"
+        local over_for=$(( NOW - OVER_SINCE ))
         if (( over_for < OVER_GRACE )); then
-            GUARDIAN_STATE="fans-up"
-            return
+            decide hold "gracia-antes-de-recortar"
+            return 0
         fi
-
-        if (( LAST_POWER_CUT > 0 && now - LAST_POWER_CUT < CUT_INTERVAL )); then
-            return
+        if (( LAST_POWER_CUT > 0 && NOW - LAST_POWER_CUT < CUT_INTERVAL )); then
+            decide hold "intervalo-entre-recortes"
+            return 0
         fi
-        LAST_POWER_CUT="$now"
-
-        log "Temp sobre techo por ${over_for}s — recorte suave de potencia"
-
-        # Recortar nv_dynamic_boost
-        local db_lo db_hi db_cur db_cut=0
-        read -r db_lo db_hi db_cur <<< "$(get_db_range)"
-        local new_db
-        new_db="$(clamp_int $(( db_cur - DB_STEP )) "$db_lo" "$db_hi")"
-        if (( new_db < db_cur )); then
-            if [[ -d "$DB_PATH" ]]; then
-                write_sysfs_int "$DB_PATH/current_value" "$new_db" && \
-                    log "nv_dynamic_boost: ${db_cur} → ${new_db} W"
-                db_cut=1
-            fi
-        fi
-
-        # PL2/SPPT solo entra si el boost ya se tocó antes o si dynamic_boost
-        # no puede bajar más. Es el segundo escalón, no la primera reacción.
-        if [[ "$GUARDIAN_STATE" == "boost-down" || "$GUARDIAN_STATE" == "pl-down" || "$db_cut" == "0" ]]; then
-            local pl_lo pl_hi pl_cur
-            read -r pl_lo pl_hi pl_cur <<< "$(get_pl2_range)"
-            local new_pl
-            new_pl="$(clamp_int $(( pl_cur - PL2_STEP )) "$pl_lo" "$pl_hi")"
-            if (( new_pl < pl_cur )); then
-                if [[ -d "$PL2_PATH" ]]; then
-                    write_sysfs_int "$PL2_PATH/current_value" "$new_pl" && \
-                        log "ppt_pl2_sppt: ${pl_cur} → ${new_pl} W (sostenido)"
-                fi
-            fi
-            GUARDIAN_STATE="pl-down"
-        else
-            GUARDIAN_STATE="boost-down"
-        fi
-        INTERVENTION_COUNT=$(( INTERVENTION_COUNT + 1 ))
+        do_cut "$over_for"
+        return 0
 
     elif (( cpu_warn == 1 || gpu_warn == 1 )); then
-        # ADVERTENCIA: acercándose al techo → solo fans
-        save_originals_once
-        OVER_SINCE=0
-        if [[ "$GUARDIAN_STATE" == "normal" ]]; then
-            log "Temp cpu=${cpu_temp:-?}°C/gpu=${gpu_temp:-?}°C >= umbral alerta cpu=${CPU_WARN_TEMP}°C/gpu=${GPU_WARN_TEMP}°C — subir fans"
-            set_fan_aggression "performance"
-            FAN_PROFILE_PUSHED=true
-            GUARDIAN_STATE="fans-up"
+        # ALERTA: solo fans. La gracia NO se reinicia aquí (M4).
+        COOL_SINCE=0
+        push_fans "banda-de-alerta"
+        [[ "$GUARDIAN_STATE" == "normal" ]] && GUARDIAN_STATE="fans-up"
+        decide hold "banda-de-alerta"
+        return 0
+    fi
+
+    # --- Por debajo de la alerta.
+    OVER_SINCE=0
+    if (( missing )); then
+        # Un sensor falta: no se puede verificar el margen → ni recortar ni restaurar.
+        COOL_SINCE=0
+        push_fans "sensor-ausente"
+        [[ "$GUARDIAN_STATE" == "normal" ]] && GUARDIAN_STATE="fans-up"
+        decide hold "sensor-ausente-failsafe"
+        return 0
+    fi
+    [[ "$GUARDIAN_STATE" != "normal" ]] || return 0
+
+    # --- Restauración con histéresis (M2): margen + retención + escalones.
+    local cpu_margin=$(( CPU_CEILING - cpu_temp )) gpu_margin=$(( GPU_CEILING - gpu_temp ))
+    if (( cpu_margin < RESTORE_MARGIN || gpu_margin < RESTORE_MARGIN )); then
+        COOL_SINCE=0
+        decide hold "esperando-margen-de-restauracion"
+        return 0
+    fi
+    (( COOL_SINCE > 0 )) || COOL_SINCE="$NOW"
+    if (( NOW - COOL_SINCE < RESTORE_HOLD )); then
+        decide hold "retencion-antes-de-restaurar"
+        return 0
+    fi
+    if (( LAST_RESTORE > 0 && NOW - LAST_RESTORE < CUT_INTERVAL )); then
+        decide hold "intervalo-entre-restauraciones"
+        return 0
+    fi
+    if restore_power step "temp-bajo-margen"; then
+        finish_restore "restauracion-completa"
+    fi
+    return 0
+}
+
+# ------------------------------------------------------------------
+# Recuperación de un cierre anormal previo (H5)
+# ------------------------------------------------------------------
+startup_recover() {
+    [[ -f "$MARKER_FILE" && ! -L "$MARKER_FILE" ]] || return 0
+    if [[ "$DRY" == "1" ]]; then
+        log "Marcador pre-recorte presente: ignorado en simulación (no se toca nada)"
+        return 0
+    fi
+    local k v m_profile="" m_db="" m_pl2="" m_pushed=0 m_cut=0
+    while IFS='=' read -r k v; do
+        case "$k" in
+            profile) [[ "$v" =~ ^[a-z-]*$ ]] && m_profile="$v" ;;
+            db)      [[ "$v" =~ ^[0-9]*$ ]] && m_db="$v" ;;
+            pl2)     [[ "$v" =~ ^[0-9]*$ ]] && m_pl2="$v" ;;
+            pushed)  [[ "$v" == 1 ]] && m_pushed=1 ;;
+            cut)     [[ "$v" == 1 ]] && m_cut=1 ;;
+        esac
+    done < "$MARKER_FILE"
+    log "Marcador pre-recorte encontrado (cierre anormal previo): perfil=${m_profile:--} db=${m_db:--} pl2=${m_pl2:--} cut=${m_cut} — recuperando primero"
+    ORIGINAL_PROFILE="$m_profile"; PRE_DB="$m_db"; PRE_PL2="$m_pl2"
+    POWER_CUT="$m_cut"
+    [[ "$m_pushed" == 1 ]] && FAN_PROFILE_PUSHED=true
+    GUARDIAN_STATE="fans-up"
+    (( POWER_CUT )) && GUARDIAN_STATE="pl-down"
+
+    # Si ya está frío, restaurar de una vez (a lo sumo al objetivo del perfil);
+    # si no, adoptar el estado y dejar que la rampa gradual normal lo resuelva.
+    read_temps
+    if [[ -n "$CPU_TEMP" && -n "$GPU_TEMP" ]] \
+        && (( CPU_CEILING - CPU_TEMP >= RESTORE_MARGIN && GPU_CEILING - GPU_TEMP >= RESTORE_MARGIN )); then
+        if restore_power jump "recuperacion-de-arranque"; then
+            finish_restore "recuperacion-de-arranque"
+        else
+            warn_log "No se pudo restaurar del todo; se conserva el marcador y se reintenta en el bucle"
         fi
-        # Si ya estábamos con fans up y sigue igual → no hacer nada extra
-
     else
-        # NORMAL: por debajo del umbral → revertir suavemente
-        OVER_SINCE=0
-        if [[ "$GUARDIAN_STATE" != "normal" ]]; then
-            local cpu_margin=99 gpu_margin=99
-            [[ -n "$cpu_temp" ]] && cpu_margin=$(( CPU_CEILING - cpu_temp ))
-            [[ -n "$gpu_temp" ]] && gpu_margin=$(( GPU_CEILING - gpu_temp ))
-            if (( cpu_margin >= RESTORE_MARGIN && gpu_margin >= RESTORE_MARGIN )); then
-                # Suficiente margen: restaurar
-                log "Temp cpu=${cpu_temp:-?}°C/gpu=${gpu_temp:-?}°C — margen suficiente — restaurando configuración"
+        log "Temperatura alta o desconocida al arrancar: se adopta el estado previo y se restaura gradualmente"
+    fi
+    return 0
+}
 
-                # Restaurar dynamic_boost
-                if [[ -n "$ORIGINAL_DB" && -d "$DB_PATH" ]]; then
-                    write_sysfs_int "$DB_PATH/current_value" "$ORIGINAL_DB" && \
-                        log "nv_dynamic_boost restaurado a ${ORIGINAL_DB} W"
-                fi
-
-                # Restaurar PL2
-                if [[ -n "$ORIGINAL_PL2" && -d "$PL2_PATH" ]]; then
-                    write_sysfs_int "$PL2_PATH/current_value" "$ORIGINAL_PL2" && \
-                        log "ppt_pl2_sppt restaurado a ${ORIGINAL_PL2} W"
-                fi
-
-                # Restaurar perfil de ventiladores
-                if [[ "$FAN_PROFILE_PUSHED" == "true" && -n "$ORIGINAL_PROFILE" ]]; then
-                    set_fan_aggression "$ORIGINAL_PROFILE"
-                    FAN_PROFILE_PUSHED=false
-                fi
-
-                GUARDIAN_STATE="normal"
-                ORIGINAL_DB=""
-                ORIGINAL_PL2=""
-                ORIGINAL_PROFILE=""
-                INTERVENTION_COUNT=0
-                OVER_SINCE=0
-                LAST_POWER_CUT=0
-            fi
-            # Si el margen es bajo, esperar otro ciclo antes de revertir (evitar oscilación)
+# ------------------------------------------------------------------
+# Parada / salida: restaura al objetivo del perfil (salto, no rampa)
+# ------------------------------------------------------------------
+CLEANED=0
+cleanup() {
+    set +e
+    (( CLEANED )) && return 0
+    CLEANED=1
+    trap - EXIT
+    log "Deteniendo guardián — restaurando configuración de emergencia si aplica"
+    NOW="$(date +%s)"
+    if [[ "$GUARDIAN_STATE" != "normal" || "$FAN_PROFILE_PUSHED" == true || "$POWER_CUT" == 1 ]]; then
+        if restore_power jump "parada-del-servicio"; then
+            finish_restore "parada-del-servicio"
+        else
+            unboost_fans
+            warn_log "Restauración incompleta al parar; se conserva el marcador"
         fi
     fi
+    log "Guardián detenido limpiamente."
 }
 
 # ------------------------------------------------------------------
 # Loop principal
 # ------------------------------------------------------------------
-log "Iniciando guardián térmico CPU/GPU [modo=${MODE}] (cpu=${CPU_CEILING}°C, gpu=${GPU_CEILING}°C, warn cpu=${CPU_WARN_TEMP}°C/gpu=${GPU_WARN_TEMP}°C, gracia=${OVER_GRACE}s, recorte_cada=${CUT_INTERVAL}s, intervalo=${INTERVAL}s, modula_carga=${LOAD_MODULATION})"
+log "Iniciando guardián térmico CPU/GPU 2.0 [modo=${MODE}] (cpu=${CPU_CEILING}°C, gpu=${GPU_CEILING}°C, warn cpu=${CPU_WARN_TEMP}°C/gpu=${GPU_WARN_TEMP}°C, gracia=${OVER_GRACE}s, recorte_cada=${CUT_INTERVAL}s, restaurar: margen=${RESTORE_MARGIN}°C retención=${RESTORE_HOLD}s, intervalo=${INTERVAL}s, modula_carga=${LOAD_MODULATION}, sim=${DRY})"
 [[ "$MODE" == "gaming" ]] && log "MODO GAMING: solo ventiladores, sin recorte de potencia (cero throttling)."
+[[ "$DRY" == "1" ]] && log "SIMULACIÓN: no se escribe NINGÚN valor de hardware; solo se registran las decisiones."
 
-# Trap para limpieza al detener el servicio
-cleanup() {
-    log "Deteniendo guardián — restaurando configuración de emergencia si aplica"
-    if [[ "$GUARDIAN_STATE" != "normal" ]]; then
-        [[ -n "$ORIGINAL_DB"  && -d "$DB_PATH"  ]] && \
-            write_sysfs_int "$DB_PATH/current_value"  "$ORIGINAL_DB"  2>/dev/null || true
-        [[ -n "$ORIGINAL_PL2" && -d "$PL2_PATH" ]] && \
-            write_sysfs_int "$PL2_PATH/current_value" "$ORIGINAL_PL2" 2>/dev/null || true
-        [[ "$FAN_PROFILE_PUSHED" == "true" && -n "$ORIGINAL_PROFILE" ]] && \
-            set_fan_aggression "$ORIGINAL_PROFILE" 2>/dev/null || true
-    fi
-    log "Guardián detenido limpiamente."
-    exit 0
-}
-trap cleanup SIGTERM SIGINT SIGHUP
+# Señales → salida limpia; EXIT cubre además errores inesperados (set -e).
+trap cleanup EXIT
+trap 'exit 0' SIGTERM SIGINT SIGHUP
+
+printf -v NOW '%(%s)T' -1
+startup_recover
 
 while true; do
-    CPU_TEMP="$(read_cpu_temp)"
-    GPU_TEMP="$(read_gpu_temp)"
+    printf -v NOW '%(%s)T' -1
+    read_temps
     handle_temp "$CPU_TEMP" "$GPU_TEMP"
     # La modulación por carga solo decide la agresividad de fans cuando NO
     # hay una emergencia térmica activa — durante "fans-up"/"boost-down"/

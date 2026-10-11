@@ -82,7 +82,12 @@ status JSON there; both are data, never executed or imported.
   symlink) of at most 256 KiB, and the Python that parses it opens it with
   `O_NOFOLLOW | O_NONBLOCK` and re-checks type and size on the open descriptor.
   The guardian skips a state directory that is a symlink and writes through a
-  temp file created with `O_EXCL`. Residual: a user who can swap a *parent*
+  temp file created with `O_EXCL`.
+  Its only hardware writes are `ppt_pl2_sppt`, `nv_dynamic_boost` and
+  `/sys/firmware/acpi/platform_profile`, all through one `hw_write` function
+  (simulation mode `ROG_THERMAL_DRY=1` writes nothing); its crash marker lives
+  in root-only `/run/rog-monitor`, and the python it calls for per-profile
+  limits is the isolated `rog-py.sh` launcher. Residual: a user who can swap a *parent*
   directory between check and open is not fully excluded; the only data taken
   from those files is numbers that are range-checked again (below).
 - `enable-asusd.sh` copies the Homebrew `asusd` payload to `/usr/local` as root.

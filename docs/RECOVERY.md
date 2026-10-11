@@ -130,6 +130,18 @@ sudo systemctl daemon-reload
 Then restore power limits as in "Bad power limit" if it had trimmed them.
 Its status file is `~/.local/share/rog-monitor/thermal-guardian-state.json`.
 
+Guardian 2.0 notes:
+
+- Simulation: with `ROG_THERMAL_DRY=1` (the app's "Simulation" toggle) it writes
+  **nothing** to the hardware; the journal shows `[SIM] would write ...` and one
+  `decision=... reason=... sim=1` line per decision
+  (`journalctl -u rog-thermal-guardian.service`).
+- Before the first power cut it saves `/run/rog-monitor/guardian-precut`. If the
+  service dies (crash, SIGKILL, power loss mid-cut), the next start restores
+  first. On a normal stop it restores to the active profile's calibrated limits
+  (never above). If limits are still low after a crash with the service off:
+  `sudo bash scripts/rog-monitor-safe-mode.sh` or "Bad power limit" above.
+
 ## Login or desktop problems after installing
 
 1. From the TTY, run the "Disable everything" step and reboot.

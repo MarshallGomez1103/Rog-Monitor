@@ -338,6 +338,10 @@ def guardian_status() -> dict:
         "thermal_state": data.get("thermal_state"),
         "cooldown_remaining": data.get("cooldown_remaining", 0),
         "interventions": data.get("interventions", 0),
+        # Guardián 2.0 (campos nuevos, opcionales; los anteriores no cambian).
+        "configured_mode": data.get("configured_mode"),
+        "dry": bool(data.get("dry", 0)),
+        "last_decision": data.get("last_decision"),
     }
 
 

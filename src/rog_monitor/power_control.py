@@ -766,7 +766,25 @@ def main(argv=None) -> int:
         help="quiet | balanced | performance (accepts power-saver = quiet).",
     )
 
+    lim_p = sub.add_parser(
+        "profile-limits",
+        help="Print (read-only) the calibrated pl2/dynamic_boost for a profile "
+             "as 'pl2=N dynamic_boost=N'. Used by the thermal guardian.",
+    )
+    lim_p.add_argument("profile", metavar="PROFILE")
+
     args = parser.parse_args(argv)
+
+    if args.cmd == "profile-limits":
+        # Solo lectura: no instancia PowerControl ni escribe nada. Sin salida
+        # y código 1 si el perfil es desconocido o el equipo no tiene tabla.
+        values = profile_power_for(args.profile, _active_profile_entry())
+        if not values:
+            return 1
+        print(" ".join(f"{k}={values[k]}" for k in ("pl2", "dynamic_boost")
+                       if k in values))
+        return 0
+
     pc = PowerControl()
 
     if args.cmd == "state":

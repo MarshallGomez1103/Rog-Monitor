@@ -105,7 +105,12 @@ test('validateDevice: solo nvme/sd en /dev', () => {
 test('guardianArgs: rangos y enum', () => {
   assert.deepEqual(
     priv.guardianArgs({ enabled: true, mode: 'gaming', cpu: 95, gpu: 87 }),
-    ['guardian', '--enabled', '1', '--mode', 'gaming', '--cpu', '95', '--gpu', '87']);
+    ['guardian', '--enabled', '1', '--mode', 'gaming', '--cpu', '95', '--gpu', '87', '--dry', '0']);
+  assert.deepEqual(
+    priv.guardianArgs({ enabled: true, mode: 'protection', cpu: 92, gpu: 83, dry: true }).slice(-2),
+    ['--dry', '1']);
+  assert.equal(priv.guardianArgs({ enabled: true, mode: 'gaming', cpu: 90, gpu: 80, dry: '1;id' }), null);
+  assert.equal(priv.guardianArgs({ enabled: true, mode: 'gaming', cpu: 90, gpu: 80, dry: 2 }), null);
   assert.deepEqual(
     priv.guardianArgs({ enabled: false, mode: 'protection', cpu: 70, gpu: 70 }).slice(0, 3),
     ['guardian', '--enabled', '0']);

@@ -112,12 +112,15 @@ function validateBatteryLimit(v) { return intInRange(v, 20, 100); }
 function validateDevice(d) { return typeof d === 'string' && DEVICE_RE.test(d) ? d : null; }
 
 // Devuelve argv de `rog-ctl.sh guardian` o null si algo no es válido.
-function guardianArgs({ enabled, mode, cpu, gpu }) {
+function guardianArgs({ enabled, mode, cpu, gpu, dry }) {
   const c = intInRange(cpu, 70, 100);
   const g = intInRange(gpu, 70, 87);
   if (c === null || g === null) return null;
   if (mode !== 'protection' && mode !== 'gaming') return null;
-  return ['guardian', '--enabled', enabled ? '1' : '0', '--mode', mode, '--cpu', String(c), '--gpu', String(g)];
+  // dry: simulación (1) o real (0). Se exige un valor explícito válido o se omite (=0).
+  if (dry !== undefined && dry !== true && dry !== false && dry !== 0 && dry !== 1) return null;
+  return ['guardian', '--enabled', enabled ? '1' : '0', '--mode', mode, '--cpu', String(c), '--gpu', String(g),
+    '--dry', dry ? '1' : '0'];
 }
 
 const POWER_KEYS = ['pl1', 'pl2', 'dynamic_boost', 'thermal_target'];

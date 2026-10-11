@@ -174,6 +174,10 @@
         ko: '게이밍에서만: 팬이 이 상한까지 올라갈 수 있습니다(기본값=실측 최대). 냉각을 더 원하면 올리고, 소음을 줄이려면 낮추세요.',
       },
       'power.guardian.gamingCapSaved': { es: 'Tope de Gaming: {v} RPM ✓', en: 'Gaming cap: {v} RPM ✓', fr: 'Plafond Jeu : {v} RPM ✓', it: 'Limite Gaming: {v} RPM ✓', pt: 'Limite Gaming: {v} RPM ✓', zh: '游戏上限：{v} RPM ✓', ja: 'ゲーム上限: {v} RPM ✓', ko: '게이밍 상한: {v} RPM ✓' },
+      'power.guardian.sim': { es: 'Simulación (no toca el hardware)', en: 'Simulation (does not touch the hardware)', fr: 'Simulation (ne touche pas au matériel)', it: 'Simulazione (non tocca l’hardware)', pt: 'Simulação (não toca no hardware)', zh: '模拟（不改动硬件）', ja: 'シミュレーション（ハードウェアには触れません）', ko: '시뮬레이션(하드웨어를 건드리지 않음)' },
+      'power.guardian.simHint': { es: 'Recomendado la primera vez: el guardián solo registra qué haría (journal y última decisión). Desactívala para que recorte potencia de verdad.', en: 'Recommended the first time: the guardian only logs what it would do (journal and last decision). Turn it off to let it really cut power.', fr: 'Recommandé la première fois : le gardien note seulement ce qu’il ferait (journal et dernière décision). Désactivez-le pour qu’il réduise vraiment la puissance.', it: 'Consigliato la prima volta: il guardiano registra solo ciò che farebbe (journal e ultima decisione). Disattivalo per ridurre davvero la potenza.', pt: 'Recomendado na primeira vez: o guardião só regista o que faria (journal e última decisão). Desative para cortar potência a sério.', zh: '首次建议开启：守护只记录它会做什么（日志与最近决策）。关闭后才会真正限制功率。', ja: '初回は推奨：ガーディアンは実行する内容を記録するだけです（ジャーナルと直近の判断）。オフにすると実際に電力を制限します。', ko: '처음에는 권장: 가디언은 수행할 작업만 기록합니다(저널 및 마지막 결정). 끄면 실제로 전력을 제한합니다.' },
+      'power.guardian.lastDecision': { es: 'Última decisión', en: 'Last decision', fr: 'Dernière décision', it: 'Ultima decisione', pt: 'Última decisão', zh: '最近决策', ja: '直近の判断', ko: '마지막 결정' },
+      'power.guardian.simulated': { es: 'simulada', en: 'simulated', fr: 'simulée', it: 'simulata', pt: 'simulada', zh: '模拟', ja: 'シミュレーション', ko: '시뮬레이션' },
       'power.guardian.fanCap': { es: 'Tope de ventiladores', en: 'Fan cap', fr: 'Plafond des ventilateurs', it: 'Limite ventole', pt: 'Limite de ventoinhas', zh: '风扇上限', ja: 'ファン上限', ko: '팬 상한' },
       'power.guardian.fanCapBody': { es: 'El guardián usa el cap global que ya configuraste en Ventiladores. Si quieres menos ruido, baja ese cap; si quieres más protección térmica, súbelo.', en: 'The guardian uses the global cap already configured in Fans. Lower that cap for less noise; raise it for more thermal protection.', fr: 'Le gardien utilise le plafond global déjà configuré dans Ventilateurs. Baissez-le pour moins de bruit ; montez-le pour plus de protection thermique.', it: 'Il guardiano usa il limite globale già configurato in Ventole. Abbassalo per meno rumore; alzalo per più protezione termica.', pt: 'O guardião usa o limite global já configurado em Ventoinhas. Reduza esse limite para menos ruído; aumente para mais proteção térmica.', zh: '守护模式使用已在“风扇”中配置的全局上限。降低可减少噪声；提高可增强热保护。', ja: 'ガーディアンは「ファン」で設定済みのグローバル上限を使います。静音には下げ、熱保護には上げてください。', ko: '가디언은 팬에서 이미 설정한 전역 상한을 사용합니다. 소음을 줄이려면 낮추고, 열 보호를 강화하려면 올리세요.' },
       'power.guardian.cost': { es: 'Costo estimado', en: 'Estimated cost', fr: 'Coût estimé', it: 'Costo stimato', pt: 'Custo estimado', zh: '估算成本', ja: '推定コスト', ko: '예상 비용' },
@@ -970,6 +974,37 @@
         'El guardián usa el cap global que ya configuraste en Ventiladores. Si quieres menos ruido, baja ese cap; si quieres más protección térmica, súbelo.'));
     section.appendChild(fanNote);
 
+    // Simulación: ON por defecto en el primer enable; si ya hay servicio, se
+    // respeta lo que dice el override (result.dry).
+    const simBox = document.createElement('label');
+    simBox.className = 'power-control-row power-guardian-sim';
+    const simCheck = document.createElement('input');
+    simCheck.type = 'checkbox';
+    simCheck.checked = (result.active || result.enabled) ? !!result.dry : true;
+    const simText = document.createElement('span');
+    simText.className = 'power-control-unit';
+    simText.textContent = tf('power.guardian.sim', 'Simulación (no toca el hardware)');
+    simBox.appendChild(simCheck);
+    simBox.appendChild(simText);
+    section.appendChild(simBox);
+    const simHint = document.createElement('span');
+    simHint.className = 'power-control-tooltip';
+    simHint.textContent = tf('power.guardian.simHint',
+      'Recomendado la primera vez: el guardián solo registra qué haría (journal y última decisión). Desactívala para que recorte potencia de verdad.');
+    section.appendChild(simHint);
+
+    // Última decisión (JSON del guardián): decisión · motivo · temps.
+    const ld = result.lastDecision;
+    if (ld && ld.decision) {
+      const v = ld.values || {};
+      const dec = document.createElement('p');
+      dec.className = 'power-guardian-note';
+      const simTag = Number(v.sim) === 1 ? ` (${tf('power.guardian.simulated', 'simulada')})` : '';
+      dec.innerHTML = `<b>${tf('power.guardian.lastDecision', 'Última decisión')}:</b> ` +
+        escapeHtmlLocal(`${ld.decision} · ${ld.reason || ''}${simTag} — CPU ${v.cpu ?? '-'}°C GPU ${v.gpu ?? '-'}°C · PL2 ${v.pl2 ?? '-'} · DB ${v.db ?? '-'}`);
+      section.appendChild(dec);
+    }
+
     section.appendChild(renderGuardianCost());
 
     const toggleBtn = document.createElement('button');
@@ -986,6 +1021,7 @@
           cpuCeiling: Number(cpuRow.slider.value),
           gpuCeiling: Number(gpuRow.slider.value),
           mode: selectedMode,
+          dry: simCheck.checked,
         });
       } catch (err) {
         powerToast(`${t('power.thermalError')}: ${err.message}`, 'err');
