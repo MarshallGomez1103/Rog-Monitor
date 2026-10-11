@@ -1,0 +1,6 @@
+# Versiones exactas probadas (F0-05, Python 3.14.7). Rango aceptado: requirements.txt
+# Entorno de tests: python3 -m venv .venv && .venv/bin/pip install -r requirements-lock.txt
+markdown-it-py==4.2.0
+mdurl==0.1.2
+Pygments==2.20.0
+rich==15.0.0
