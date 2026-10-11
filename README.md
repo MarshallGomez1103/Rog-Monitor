@@ -65,7 +65,9 @@ Current desktop screenshots:
   normal user.
 - **Allowlisted privileged actions.** Power, fan, SMART, and service changes go
   through explicit `pkexec` prompts and bounded scripts. Polkit handles the
-  password; ROG Monitor never sees or stores it.
+  password; ROG Monitor never sees or stores it. Root only runs root-owned
+  copies of those scripts, never files from your clone
+  ([details](SECURITY.md#privilege-boundary)).
 - **Double clamp before firmware writes.** Power values are clamped by the UI and
   again by the privileged helper against firmware-reported `_min` / `_max`
   values.
@@ -80,7 +82,7 @@ Threat model and reporting process: [SECURITY.md](SECURITY.md).
 
 - **CPU**: per-core temperature, average/max/min, package temperature,
   frequency, count of cores over 90 °C, and thermal-throttling counter.
-- **GPU**: NVIDIA (`nvidia-smi`) and AMD (`hwmon/amdgpu`) telemetry:
+- **GPU**: NVIDIA (NVML, with `nvidia-smi` as fallback) and AMD (`hwmon/amdgpu`) telemetry:
   temperature, utilization, power, VRAM, core clock, and memory clock. Detects
   Hybrid / Integrated / AsusMuxDgpu (MUX) through `supergfxctl` and handles the
   dGPU being powered down.
@@ -152,7 +154,8 @@ To add your own machine or tune ranges, see
 - Rich charts without flicker, refreshed once per second.
 - Semantic colors shared with the desktop app: blue = cold, green = normal,
   orange = near limit, red = critical.
-- Mouse tracking that does not break scrolling.
+- No mouse capture, so terminal selection and scrolling work normally
+  ([why](docs/adr/0003-tui-mouse-off.md)).
 
 ## Installation
 
@@ -171,6 +174,13 @@ bash install.sh
 
 It does not install anything that automatically changes your GPU mode or power
 profile.
+
+System integration needs one `sudo bash scripts/install-system.sh`. Preview what
+it will do first with `bash scripts/install-system.sh --dry-run` (no root, changes
+nothing). Run it again after any update that changes `VERSION`: until you do,
+privileged actions are refused, and the app offers **REINSTALL / REPAIR** under
+**System -> Maintenance**. Why root only runs installed copies:
+[docs/adr/0001-privilege-boundary.md](docs/adr/0001-privilege-boundary.md).
 
 Run it with:
 
@@ -310,6 +320,19 @@ See [docs/supported-devices.md](docs/supported-devices.md) for:
 No data is sent to any server. The only allowed network actions are the update
 button (`git fetch` on your own clone) and the report button, which opens GitHub
 with system information pre-filled. ROG Monitor never runs `git push`.
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md): components, data flow, privilege
+  boundary, and the [decision records](docs/adr/0001-privilege-boundary.md).
+- [Security](SECURITY.md): threat model, privilege boundary, reporting.
+- [Recovery](docs/RECOVERY.md): fixing fans, power limits, guardian or login
+  problems from a TTY.
+- [Benchmarks](docs/BENCHMARKS.md): how results are measured and compared.
+- [Supported devices](docs/supported-devices.md): compatibility matrix and how
+  to add your machine.
+- [Translating](docs/TRANSLATING.md), [Contributing](CONTRIBUTING.md),
+  [Roadmap](docs/roadmap.md).
 
 ## License
 

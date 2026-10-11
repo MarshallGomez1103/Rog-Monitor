@@ -39,16 +39,20 @@ which asks first and runs the same script through `pkexec`):
 
 | What | Where | Owner / mode |
 | --- | --- | --- |
-| Root helper scripts + `VERSION` | `/usr/local/libexec/rog-monitor/` | `root:root`, dir 0755, scripts 0755 |
+| Root helper scripts + `VERSION` | `/usr/local/libexec/rog-monitor/` | `root:root`, dir 0755, scripts 0755, `VERSION` 0644 |
 | Python package `rog_monitor` | `/usr/local/lib/rog-monitor/rog_monitor/` | `root:root`, dirs 0755, files 0644 |
 | systemd units | `/etc/systemd/system/rog-*.service` | `root:root`, 0644 (`ExecStart` points into libexec) |
+| Resume hook for the charge limit | `/etc/systemd/system-sleep/rog-battery-limit` | `root:root`, 0755 (calls the libexec copy) |
 
 - Root Python always runs isolated through `rog-py.sh`
   (`/usr/bin/python3 -I`, `sys.path` fixed to `/usr/local/lib/rog-monitor`), so
   `PYTHONPATH`, the user's site-packages and the current directory are ignored.
-- The installer itself is the only repo file executed as root, and only after
-  the user confirms. Read it first; `--dry-run` prints every action and changes
-  nothing, `ROG_PREFIX=/tmp/x` installs into a scratch tree without root.
+- The app never runs a repo file as root, with one exception: the installer,
+  and only after the user confirms. Read it first; `--dry-run` prints every
+  action and changes nothing, `ROG_PREFIX=/tmp/x` installs into a scratch tree
+  without root. Scripts you start yourself with `sudo` from a clone (for
+  example the TTY recovery script below) run as root from your clone by your
+  explicit choice; inside the app the same actions use the installed copy.
 - The app calls `/usr/bin/pkexec` by absolute path with a helper from the list
   in `desktop/priv.js`. Arguments are validated (integer ranges, enums, a device
   regex such as `^/dev/(nvme\d+n\d+|sd[a-z]+)$`) in the app and again by the
@@ -116,10 +120,10 @@ status JSON there; both are data, never executed or imported.
   power cut cannot be trapped; then the leftover marker is detected by the
   service within ~30 s (or at boot, since `/run` is a tmpfs) and the curves are
   restored.
-- **systemd units** run with `NoNewPrivileges=yes`, `ProtectSystem=full` and
-  `PrivateTmp=yes`. `ProtectSystem=strict`, `ProtectKernelTunables` and
+- **Root systemd units** run with `NoNewPrivileges=yes`, `ProtectSystem=full`
+  and `PrivateTmp=yes`. `ProtectSystem=strict`, `ProtectKernelTunables` and
   `ProtectHome` are deliberately not used (the units write `/sys` and read/write
-  under `/var/home`; a `ProtectHome=true` once broke the guardian).
+  under the user's home; a `ProtectHome=true` once broke the guardian).
 
 ## Hard safety rules
 
