@@ -1710,13 +1710,15 @@ const THERMAL_GUARDIAN_SCRIPT = path.join(REPO, 'scripts', 'rog-thermal-guardian
 
 function readGuardianOverride() {
   const overridePath = `/etc/systemd/system/${THERMAL_GUARDIAN_SERVICE}.d/override.conf`;
-  const out = { cpuCeiling: 92, gpuCeiling: 83, mode: 'protection' };
+  const out = { cpuCeiling: 92, gpuCeiling: 83, mode: 'protection', dry: false };
   try {
     const text = fs.readFileSync(overridePath, 'utf-8');
     const cpu = text.match(/ROG_THERMAL_CPU_CEILING=(\d+)/);
     const gpu = text.match(/ROG_THERMAL_GPU_CEILING=(\d+)/);
     const legacy = text.match(/ROG_THERMAL_CEILING=(\d+)/);
     const mode = text.match(/ROG_THERMAL_MODE=(\w+)/);
+    const dry = text.match(/ROG_THERMAL_DRY=(\d)/);
+    if (dry) out.dry = dry[1] === '1';
     if (cpu) out.cpuCeiling = parseInt(cpu[1], 10);
     if (gpu) out.gpuCeiling = parseInt(gpu[1], 10);
     else if (legacy) out.gpuCeiling = parseInt(legacy[1], 10);
@@ -1726,6 +1728,17 @@ function readGuardianOverride() {
   out.gpuCeiling = Math.max(70, Math.min(87, out.gpuCeiling));
   out.ceiling = out.gpuCeiling;
   return out;
+}
+
+// Última decisión del guardián (solo lectura, del JSON que publica el servicio).
+function readGuardianLastDecision() {
+  try {
+    const f = path.join(os.homedir(), '.local', 'share', 'rog-monitor', 'thermal-guardian-state.json');
+    const st = JSON.parse(fs.readFileSync(f, 'utf-8'));
+    if (!st || !st.last_decision || typeof st.last_decision !== 'object') return null;
+    const stale = !(Date.now() / 1000 - Number(st.updated || 0) < 30);
+    return { ...st.last_decision, stale };
+  } catch (_) { return null; }
 }
 
 ipcMain.handle('get-thermal-guardian', async () => {
@@ -1742,10 +1755,11 @@ ipcMain.handle('get-thermal-guardian', async () => {
     ...ceilings,
     serviceUnit: THERMAL_GUARDIAN_SERVICE,
     status: active.out || 'unknown',
+    lastDecision: readGuardianLastDecision(),
   };
 });
 
-ipcMain.handle('set-thermal-guardian', async (_e, { enabled, cpuCeiling, gpuCeiling, ceiling, mode }) => {
+ipcMain.handle('set-thermal-guardian', async (_e, { enabled, cpuCeiling, gpuCeiling, ceiling, mode, dry }) => {
   const guardianMode = mode === 'gaming' ? 'gaming' : 'protection';
   // En modo Gaming los techos por defecto suben (95/87): la meta es jugar sin
   // throttling, solo subiendo ventiladores. El usuario igual puede ajustarlos.
@@ -1753,7 +1767,7 @@ ipcMain.handle('set-thermal-guardian', async (_e, { enabled, cpuCeiling, gpuCeil
   const defGpu = guardianMode === 'gaming' ? 87 : 83;
   const cpu = Math.max(70, Math.min(100, Math.round(Number(cpuCeiling) || defCpu)));
   const gpu = Math.max(70, Math.min(87, Math.round(Number(gpuCeiling || ceiling) || defGpu)));
-  const argv = priv.guardianArgs({ enabled: !!enabled, mode: guardianMode, cpu, gpu });
+  const argv = priv.guardianArgs({ enabled: !!enabled, mode: guardianMode, cpu, gpu, dry: !!dry });
   if (!argv) return { ok: false, err: 'Parámetros del guardián inválidos.' };
   // rog-ctl.sh escribe el override.conf, recarga systemd y habilita/deshabilita.
   const res = await runPriv('rog-ctl.sh', argv, 30000);
@@ -1769,6 +1783,7 @@ ipcMain.handle('set-thermal-guardian', async (_e, { enabled, cpuCeiling, gpuCeil
     gpuCeiling: gpu,
     ceiling: gpu,
     mode: guardianMode,
+    dry: !!dry,
   };
 });
 

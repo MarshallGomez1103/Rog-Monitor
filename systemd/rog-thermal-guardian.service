@@ -23,9 +23,19 @@ Environment="ROG_THERMAL_OVER_GRACE=12"
 Environment="ROG_THERMAL_CUT_INTERVAL=10"
 Environment="ROG_THERMAL_DB_STEP=2"
 Environment="ROG_THERMAL_PL2_STEP=5"
+Environment="ROG_THERMAL_RESTORE_HOLD=20"
+# 1 = simulacion: el guardian solo registra decisiones y NO escribe hardware.
+# La app lo cambia en override.conf (rog-ctl.sh guardian --dry 0|1).
+Environment="ROG_THERMAL_DRY=0"
+# /run/rog-monitor/guardian-precut: marcador de recorte que sobrevive a un crash
+# o reinicio del servicio (RuntimeDirectoryPreserve), para restaurar al arrancar.
+RuntimeDirectory=rog-monitor
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
+TimeoutStopSec=20
 Restart=on-failure
 RestartSec=5
-# Necesita escribir en sysfs (asus-armoury, platform_profile, throttle_thermal_policy)
+# Necesita escribir en sysfs (asus-armoury y platform_profile)
 # y leer temperatura via nvidia-smi: requiere root. NO ejecutar como usuario.
 User=root
 Group=root
