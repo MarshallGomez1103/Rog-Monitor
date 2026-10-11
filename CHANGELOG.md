@@ -1,5 +1,64 @@
 # Changelog
 
+## 21.0.0 — 2026-10-10
+
+Hardening release from a full audit (security, correctness, performance, tests).
+**Breaking for system integration:** root helpers moved to root-owned locations —
+run `sudo bash scripts/install-system.sh` once (`--dry-run` first). Until then the
+app reports "system components missing" for privileged actions.
+
+### Security
+- **Privilege boundary:** root never executes or imports user-writable code. Helpers
+  are installed root-owned in `/usr/local/libexec/rog-monitor`, the Python package in
+  `/usr/local/lib/rog-monitor`, root Python runs isolated (`python3 -I`). The app only
+  `pkexec`s those helpers (`desktop/priv.js` allowlist, owner/version checks); every
+  `pkexec sh -c "<string>"` was replaced by `rog-ctl.sh` with validated argv.
+- Input validation: power limits refused out of range / non-numeric; fan curves
+  validated (8 points, increasing temps, PWM floor when hot) in the app and again as root.
+- Root reads of user JSON refuse symlinks/FIFOs and cap size; guardian state writes
+  no longer follow symlinks. Root units: `NoNewPrivileges`, `ProtectSystem=full`, `PrivateTmp`.
+- `enable-asusd.sh` refuses user-owned binaries (Homebrew) unless explicitly overridden.
+- User PATH dirs appended, never prepended, for spawned commands; HTML escaping of
+  process/disk names in the renderer.
+- Complete, idempotent uninstall (`--dry-run`, `--purge`) and `docs/RECOVERY.md`.
+
+### Fixed
+- **TUI:** mouse clicks, wheel and unbound keys no longer make the screen "jump"
+  (escape sequences were leaking as keys and every key re-sampled the history).
+  Mouse tracking is off; Esc closes overlays; small-terminal notice; N/A with reasons;
+  the TUI no longer freezes after the first alert.
+- **Desktop:** the backend now resumes after minimizing (it stayed frozen).
+- **Thermal guardian 2.0:** never writes `throttle_thermal_policy` (it set *silent*
+  when meaning performance); restores to the current profile's limits instead of a
+  stale value; recovers after a crash mid-cut; hysteresis + gradual restore;
+  **simulation mode** (on by default for the first enable) and one traceable
+  `decision=… reason=…` log line per decision.
+- CPU usage double-counted guest time; warm-up samples no longer report 0 %.
+- Corrupt `fan-curves.json` is backed up instead of losing calibration; atomic config writes.
+- NDJSON stream survives a failing sample; first line is primed.
+
+### Changed
+- GPU telemetry via NVML instead of spawning `nvidia-smi` every second (subprocess
+  churn 1.5/s → 0.13/s) and the dGPU is **not woken** when runtime-suspended
+  ("dGPU asleep" state in the UI). Slow probes cached with TTL/backoff.
+- Snapshot carries `schema: 1`; series stay aligned (gaps are `null`, charts break lines).
+- Events: context (`source/type/value/threshold`), combinable filters (desktop) and a
+  severity filter key `f` (TUI), per-key cooldown, hysteresis and `×N` dedup.
+- Benchmarks: recorded conditions, warm-up, repetitions, p50/p95/p99, CPU throughput,
+  JSON+CSV export (`docs/BENCHMARKS.md`).
+- Metrics: RAM available/cache, swap %, disk IOPS and busy %, NVMe temperature, LUKS/dm
+  and removable disks resolved correctly.
+- Design tokens, stale/loading/error states, visible keyboard focus, dialog roles,
+  contrast fixes, reduced-motion; memory shown in GiB/MiB.
+- Electron 42.11.12.
+
+### Tests & CI
+- New stdlib suites: unit, contract (Python↔JS), PTY TUI, guardian simulation,
+  installer dry-run; `node:test` suites; CI runs them all plus an Electron E2E smoke
+  (`scripts/e2e-smoke.mjs`) under xvfb, `bash -n` on every script, Dependabot.
+- `scripts/measure.py` measures the monitor's own CPU/RAM/subprocess cost.
+- Docs: `docs/ARCHITECTURE.md`, ADRs 0001-0005, compatibility matrix.
+
 ## 19.0.0 — 2026-06-25
 
 Launch-prep release: command transparency, the Diagnostics fix, and P0/Launch
