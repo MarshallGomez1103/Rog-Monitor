@@ -1,6 +1,6 @@
 [Unit]
 Description=ROG Monitor — Guardian Termico CPU/GPU (fans primero, potencia despues)
-Documentation=https://github.com/rog-monitor/rog-monitor
+Documentation=https://github.com/MarshallGomez1103/Rog-Monitor
 After=multi-user.target nvidia-persistenced.service
 Wants=nvidia-persistenced.service
 

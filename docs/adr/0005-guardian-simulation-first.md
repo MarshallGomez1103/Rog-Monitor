@@ -1,7 +1,9 @@
 # ADR-0005: Guardian writes go through one switch; simulate before enabling
 
-- Status: accepted. The simulation mode itself is being added; check
-  `scripts/rog-thermal-guardian.sh` and the app for its current state.
+- Status: accepted and implemented. Every hardware write goes through
+  `hw_write`; `ROG_THERMAL_DRY=1` logs `[SIM] would write …` instead of writing
+  (toggle "Simulation" in the app's guardian panel, on by default for the first
+  enable). Each decision is logged as one `decision=… reason=…` journal line.
 - Applies to: `scripts/rog-thermal-guardian.sh`, `systemd/rog-thermal-guardian.service`
 
 ## Context
@@ -16,7 +18,7 @@ machine, and not every contributor has hardware to test it on.
 ## Decision
 
 - Every guardian write to sysfs goes through a single function
-  (`write_sysfs_int` in the script). There is no other write path, so one
+  (`hw_write` in the script). There is no other write path, so one
   place decides whether a write happens.
 - The guardian gets a simulation mode controlled at that one place: it runs the
   full decision loop, logs the writes it would make, and writes nothing. A new

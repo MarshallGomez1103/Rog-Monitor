@@ -8,7 +8,7 @@ or unit changed):
      list in desktop/test/contract.test.js;
   3. re-record tests/fixtures/snapshot-v<N>.json
      (`PYTHONPATH=src python3 -m rog_monitor --json`, then sanitize names/paths).
-Source of the key list: docs/agent-work/checkpoints/CP-0.04b.md (section F).
+Source of the key list: the snapshot keys each renderer file / ui.py actually reads (grep desktop/renderer and src/rog_monitor/ui.py).
 
 Spec syntax: path -> "type|type"; types: num (int/float, not bool), str, bool,
 list, dict, null. `[]` = first element of a list (skipped when the list is empty);
