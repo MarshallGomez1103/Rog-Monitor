@@ -85,6 +85,7 @@ REQUIRED = {
     # history + events (series alineadas; huecos = null desde que Series.push guarda None)
     "series": "dict", "series.cpu_temp": "list", "series.gpu_temp": "list",
     "series.cpu_power": "list", "series.gpu_power": "list",
+    "series.cpu_usage": "list", "series.ram_used": "list", "series.swap_used": "list",
     "events": "list",
 }
 

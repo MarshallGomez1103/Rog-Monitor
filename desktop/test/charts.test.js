@@ -18,10 +18,12 @@ const code = [
   grab(/^function chartTail\(values, n\) \{[\s\S]*?^\}/m, 'chartTail'),
   grab(/^function chartRange\(data, fromZero\) \{[\s\S]*?^\}/m, 'chartRange'),
   grab(/^function chartRuns\(data\) \{[\s\S]*?^\}/m, 'chartRuns'),
+  grab(/^const HIST_MODES = \{[\s\S]*?^\};/m, 'HIST_MODES'),
+  grab(/^function histSlots\(mode\) \{[\s\S]*?^\}/m, 'histSlots'),
   grab(/^function clampPct\(v\) \{[\s\S]*?^\}/m, 'clampPct'),
 ].join('\n');
-const { CHART_MAX_POINTS, chartTail, chartRange, chartRuns, clampPct } =
-  new Function(`${code}; return { CHART_MAX_POINTS, chartTail, chartRange, chartRuns, clampPct };`)();
+const { CHART_MAX_POINTS, chartTail, chartRange, chartRuns, clampPct, HIST_MODES, histSlots } =
+  new Function(`${code}; return { CHART_MAX_POINTS, chartTail, chartRange, chartRuns, clampPct, HIST_MODES, histSlots };`)();
 
 test('chartRange salta null/NaN y no los trata como 0', () => {
   assert.deepStrictEqual(chartRange([null, 62, null, 71], false), { lo: 60, hi: 75 });
@@ -56,4 +58,20 @@ test('clampPct deja todo en 0-100 y null/NaN en 0', () => {
   assert.strictEqual(clampPct(undefined), 0);
   assert.strictEqual(clampPct('abc'), 0);
   assert.strictEqual(clampPct(42.5), 42.5);
+});
+
+test('histSlots: modo desconocido cae a temp; ambos modos usan los mismos 4 canvas', () => {
+  assert.strictEqual(histSlots('usage'), HIST_MODES.usage);
+  assert.strictEqual(histSlots('basura'), HIST_MODES.temp);
+  assert.strictEqual(histSlots(null), HIST_MODES.temp);
+  const ids = (m) => HIST_MODES[m].map((r) => r[0]);
+  assert.deepStrictEqual(ids('usage'), ids('temp'));
+  assert.strictEqual(new Set(ids('temp')).size, 4);
+});
+
+test('histSlots: las series de uso existen en el contrato y van en % 0-100', () => {
+  const keys = HIST_MODES.usage.map((r) => r[1]).filter(Boolean);
+  assert.deepStrictEqual(keys, ['cpu_usage', 'ram_used', 'swap_used']);
+  HIST_MODES.usage.filter((r) => r[1]).forEach((r) => assert.strictEqual(r[3].unit, '%'));
+  assert.strictEqual(HIST_MODES.usage[3][1], null); // 4º hueco oculto en modo uso
 });

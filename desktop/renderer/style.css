@@ -1388,6 +1388,7 @@ input[type="number"] {
 
 /* ---------- v7.1: layout & polish ---------- */
 .chart-row.grid2 { grid-template-columns: 1fr 1fr; }
+.hist-toggle { padding: 2px 8px; font-size: 11px; letter-spacing: 0.5px; }
 @media (max-width: 760px) { .chart-row.grid2 { grid-template-columns: 1fr; } }
 .size-title { margin-top: 16px; margin-bottom: 8px; font-size: 13px; }
 #ram-procs,

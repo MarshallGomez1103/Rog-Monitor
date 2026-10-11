@@ -62,6 +62,11 @@ class App:
             "gpu_temp": Series(secs),
             "cpu_power": Series(secs),
             "gpu_power": Series(secs),
+            # Uso en % (0-100) para compartir escala en las gráficas; huecos = None
+            # (cpu.usage en la 1ª muestra; swap_percent sin swap).
+            "cpu_usage": Series(secs),
+            "ram_used": Series(secs),
+            "swap_used": Series(secs),
         }
         self.theme = self.config["theme"]
         self.help_visible = False
@@ -99,6 +104,10 @@ class App:
         active = gpu.get("active") or {}
         self.series["gpu_temp"].push(active.get("temp"))
         self.series["gpu_power"].push(active.get("power"))
+        sysd = self.sys.read()  # una sola lectura por ciclo (deltas de red/disco)
+        self.series["cpu_usage"].push(cpu.get("usage"))
+        self.series["ram_used"].push(sysd.get("ram_percent"))
+        self.series["swap_used"].push(sysd.get("swap_percent"))
 
         self.alerts.check(cpu, gpu, fans, watts)
         self._drain_gpu_results()
@@ -115,7 +124,7 @@ class App:
             "asus_profile": active_profile,
             "ppd_profile": ppd_profile(),
             "battery": self.battery.read(),
-            "sys": self.sys.read(),
+            "sys": sysd,
             "procs": self.procs.read(),
             # Procesos agrupados por núcleo lógico (vista de detalle por núcleo,
             # cores.js). Aditivo y opcional; reusa el ciclo de read() de arriba.

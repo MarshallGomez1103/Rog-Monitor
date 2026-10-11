@@ -621,6 +621,46 @@ function toast(message, kind) {
 // poder redibujar con crosshair y saber qué valor hay bajo el cursor.
 const chartState = new Map();
 
+/* Historial: 2 modos sobre los MISMOS 4 canvas (sin tocar la rejilla). Cada fila:
+   [canvas, serie del snapshot, color CSS, opts de drawChart (+unit para el hover), clave i18n].
+   En 'usage' (todo en %, 0-100) el 4º hueco se oculta. Puro: lo prueba charts.test.js. */
+const HIST_MODES = {
+  temp: [
+    ['chart-cpu', 'cpu_temp', '--cold', { unit: '°C' }, 'chart.cpu_temp'],
+    ['chart-power', 'cpu_power', '--accent', { fromZero: true, unit: 'W' }, 'chart.cpu_power'],
+    ['chart-gpu', 'gpu_temp', '--okstate', { unit: '°C' }, 'chart.gpu_temp'],
+    ['chart-gpu-power', 'gpu_power', '--hot', { fromZero: true, unit: 'W' }, 'chart.gpu_power'],
+  ],
+  usage: [
+    ['chart-cpu', 'cpu_usage', '--cold', { fromZero: true, unit: '%' }, 'chart.cpu_usage'],
+    ['chart-power', 'ram_used', '--accent', { fromZero: true, unit: '%' }, 'chart.ram_usage'],
+    ['chart-gpu', 'swap_used', '--okstate', { fromZero: true, unit: '%' }, 'chart.swap_usage'],
+    ['chart-gpu-power', null, '--hot', {}, null],
+  ],
+};
+
+function histSlots(mode) {
+  return HIST_MODES[mode] || HIST_MODES.temp; // valor guardado corrupto -> temp
+}
+
+let histMode = histSlots(lsGet('histMode')) === HIST_MODES.usage ? 'usage' : 'temp';
+
+function setHistMode(mode) {
+  histMode = histSlots(mode) === HIST_MODES.usage ? 'usage' : 'temp';
+  lsSet('histMode', histMode);
+  histSlots(histMode).forEach(([id, key, , , label]) => {
+    const wrap = $(id).parentElement;
+    wrap.classList.toggle('hidden', !key);
+    const lbl = wrap.querySelector('label');
+    if (label) { lbl.dataset.i18n = label; lbl.textContent = t(label); }
+  });
+  // el botón ofrece el OTRO modo
+  const btn = $('hist-mode');
+  btn.dataset.i18n = histMode === 'usage' ? 'chart.mode_temp' : 'chart.mode_usage';
+  btn.textContent = t(btn.dataset.i18n);
+  if (lastStats) update(lastStats);
+}
+
 /* Helpers puros de las gráficas (sin DOM; los prueba desktop/test/charts.test.js).
    La serie puede traer null = hueco (dGPU dormida): no es 0, no entra en
    min/max y corta la línea. */
@@ -806,7 +846,7 @@ function wireChartHover(canvasId, unit) {
     const i = chartIndexAt(state, chartHover.px);
     // una muestra por segundo: la distancia al final ES la antigüedad
     const v = state.data[i];
-    tip.textContent = `${Number.isFinite(v) ? `${v.toFixed(1)} ${unit}` : t('chart.no_sample')} · ${agoText(state.data.length - 1 - i)}`;
+    tip.textContent = `${Number.isFinite(v) ? `${v.toFixed(1)} ${state.opts.unit || unit}` : t('chart.no_sample')} · ${agoText(state.data.length - 1 - i)}`;
     tip.classList.remove('hidden');
     const tw = tip.offsetWidth;
     const left = Math.min(Math.max(e.clientX - tw / 2, 6), window.innerWidth - tw - 6);
@@ -1900,10 +1940,9 @@ function update(stats) {
   const visible = !document.hidden;
   if (visible) {
     const series = stats.series || {};
-    drawChart($('chart-cpu'), series.cpu_temp, cssVar('--cold'));
-    drawChart($('chart-gpu'), series.gpu_temp, cssVar('--okstate'));
-    drawChart($('chart-power'), series.cpu_power, cssVar('--accent'), { fromZero: true });
-    drawChart($('chart-gpu-power'), series.gpu_power, cssVar('--hot'), { fromZero: true });
+    histSlots(histMode).forEach(([id, key, color, opts]) => {
+      if (key) drawChart($(id), series[key], cssVar(color), opts);
+    });
   }
 
   $('rapl-note').classList.toggle('hidden', !!stats.rapl_available);
@@ -2189,6 +2228,8 @@ wireChartHover('chart-cpu', '°C');
 wireChartHover('chart-gpu', '°C');
 wireChartHover('chart-power', 'W');
 wireChartHover('chart-gpu-power', 'W');
+$('hist-mode').addEventListener('click', () => setHistMode(histMode === 'usage' ? 'temp' : 'usage'));
+if (histMode === 'usage') setHistMode('usage'); // restaurar el modo guardado (i18n.apply del arranque respeta data-i18n)
 
 window.rog.onStats(update);
 document.addEventListener('visibilitychange', () => {
