@@ -118,6 +118,15 @@ STRINGS = {
         "fans_none": "sin ventiladores detectados",
         "gpu_suspended": "dGPU suspendida (ahorro de energía)",
         "gpu_mode_na": "supergfxd no disponible",
+        # SMART sin root (caché de la app de escritorio)
+        "smart_used": "{p}% usado",
+        "smart_ago_min": "hace {n} min",
+        "smart_ago_h": "hace {n} h",
+        "smart_ago_d": "hace {n} d",
+        "smart_stale": "antiguo",
+        "smart_none": "sin datos (ábrelo desde la app; requiere root)",
+        "smart_no_tool": "smartctl no instalado",
+        "smart_readfail": "última lectura falló",
     },
     "en": {
         "profile": "PROFILE",
@@ -231,6 +240,15 @@ STRINGS = {
         "fans_none": "no fans detected",
         "gpu_suspended": "dGPU suspended (power saving)",
         "gpu_mode_na": "supergfxd unavailable",
+        # SMART sin root (caché de la app de escritorio)
+        "smart_used": "{p}% used",
+        "smart_ago_min": "{n} min ago",
+        "smart_ago_h": "{n} h ago",
+        "smart_ago_d": "{n} d ago",
+        "smart_stale": "stale",
+        "smart_none": "no data (open it from the app; needs root)",
+        "smart_no_tool": "smartctl not installed",
+        "smart_readfail": "last read failed",
     },
     "fr": {
         "profile": "PROFIL",
@@ -344,6 +362,15 @@ STRINGS = {
         "fans_none": "aucun ventilateur détecté",
         "gpu_suspended": "dGPU suspendue (économie d'énergie)",
         "gpu_mode_na": "supergfxd indisponible",
+        # SMART sin root (caché de la app de escritorio)
+        "smart_used": "{p}% utilisé",
+        "smart_ago_min": "il y a {n} min",
+        "smart_ago_h": "il y a {n} h",
+        "smart_ago_d": "il y a {n} j",
+        "smart_stale": "périmé",
+        "smart_none": "aucune donnée (ouvrez-le depuis l'app ; root requis)",
+        "smart_no_tool": "smartctl non installé",
+        "smart_readfail": "dernière lecture échouée",
     },
     "it": {
         "profile": "PROFILO",
@@ -457,6 +484,15 @@ STRINGS = {
         "fans_none": "nessuna ventola rilevata",
         "gpu_suspended": "dGPU sospesa (risparmio energetico)",
         "gpu_mode_na": "supergfxd non disponibile",
+        # SMART sin root (caché de la app de escritorio)
+        "smart_used": "{p}% usato",
+        "smart_ago_min": "{n} min fa",
+        "smart_ago_h": "{n} h fa",
+        "smart_ago_d": "{n} g fa",
+        "smart_stale": "obsoleto",
+        "smart_none": "nessun dato (aprilo dall'app; richiede root)",
+        "smart_no_tool": "smartctl non installato",
+        "smart_readfail": "ultima lettura fallita",
     },
     "pt": {
         "profile": "PERFIL",
@@ -570,6 +606,15 @@ STRINGS = {
         "fans_none": "nenhuma ventoinha detectada",
         "gpu_suspended": "dGPU suspensa (economia de energia)",
         "gpu_mode_na": "supergfxd indisponível",
+        # SMART sin root (caché de la app de escritorio)
+        "smart_used": "{p}% usado",
+        "smart_ago_min": "há {n} min",
+        "smart_ago_h": "há {n} h",
+        "smart_ago_d": "há {n} d",
+        "smart_stale": "desatualizado",
+        "smart_none": "sem dados (abra no app; requer root)",
+        "smart_no_tool": "smartctl não instalado",
+        "smart_readfail": "última leitura falhou",
     },
     "zh": {
         "profile": "配置",
@@ -682,6 +727,15 @@ STRINGS = {
         "fans_none": "未检测到风扇",
         "gpu_suspended": "dGPU 已挂起（节能）",
         "gpu_mode_na": "supergfxd 不可用",
+        # SMART sin root (caché de la app de escritorio)
+        "smart_used": "已用 {p}%",
+        "smart_ago_min": "{n} 分钟前",
+        "smart_ago_h": "{n} 小时前",
+        "smart_ago_d": "{n} 天前",
+        "smart_stale": "已过期",
+        "smart_none": "无数据（请在应用中打开；需要 root）",
+        "smart_no_tool": "未安装 smartctl",
+        "smart_readfail": "上次读取失败",
     },
     "ja": {
         "profile": "プロファイル",
@@ -795,6 +849,15 @@ STRINGS = {
         "fans_none": "ファンが検出されません",
         "gpu_suspended": "dGPU 一時停止中（省電力）",
         "gpu_mode_na": "supergfxd 利用不可",
+        # SMART sin root (caché de la app de escritorio)
+        "smart_used": "使用 {p}%",
+        "smart_ago_min": "{n}分前",
+        "smart_ago_h": "{n}時間前",
+        "smart_ago_d": "{n}日前",
+        "smart_stale": "古い",
+        "smart_none": "データなし（アプリから開いてください。root が必要）",
+        "smart_no_tool": "smartctl 未インストール",
+        "smart_readfail": "前回の読み取りに失敗",
     },
     "ko": {
         "profile": "프로파일",
@@ -908,6 +971,15 @@ STRINGS = {
         "fans_none": "팬이 감지되지 않음",
         "gpu_suspended": "dGPU 일시 중지됨 (절전)",
         "gpu_mode_na": "supergfxd 사용 불가",
+        # SMART sin root (caché de la app de escritorio)
+        "smart_used": "{p}% 사용",
+        "smart_ago_min": "{n}분 전",
+        "smart_ago_h": "{n}시간 전",
+        "smart_ago_d": "{n}일 전",
+        "smart_stale": "오래됨",
+        "smart_none": "데이터 없음 (앱에서 여세요; root 필요)",
+        "smart_no_tool": "smartctl 미설치",
+        "smart_readfail": "마지막 읽기 실패",
     },
 }
 

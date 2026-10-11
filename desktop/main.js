@@ -7,6 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const priv = require('./priv');
+const smartCache = require('./smart');
 
 // En dev: la raíz del repo es el padre de desktop/. Empaquetado (AppImage): el
 // backend Python, scripts y VERSION viajan como extraResources en resourcesPath.
@@ -898,22 +899,21 @@ ipcMain.handle('readSmart', async (_e, device) => {
   }
   // smartctl -j -a vía rog-ctl.sh (que valida el dispositivo de nuevo).
   const res = await runPriv('rog-ctl.sh', ['smart-json', device], 30000);
-  if (res.needsInstall) return { ok: false, needsInstall: true, err: res.err };
-  // smartctl devuelve código ≠ 0 si hay atributos de fallo (bits 2..7).
-  // Pero si pkexec fue cancelado (código 126/127) o smartctl no existe (127),
-  // no hay JSON útil → reportar error.
-  if (!res.out) {
-    const cancelled = (res.err || '').toLowerCase().includes('cancel') ||
-                      (res.err || '').includes('126') ||
-                      String(res.out || '').trim() === '';
-    return { ok: false, err: cancelled ? 'pkexec cancelado o smartctl no disponible' : (res.err || 'sin salida') };
-  }
+  if (res.needsInstall) return { ok: false, needsInstall: true, reason: 'needs_install', err: res.err };
+  // smartctl devuelve código ≠ 0 si hay atributos de fallo (bits 2..7): con salida hay JSON útil.
+  // Sin salida (pkexec cancelado/denegado, smartctl ausente) no hay nada que mostrar.
+  if (!res.out) return { ok: false, reason: smartCache.classifyFailure(res), err: res.err || 'sin salida' };
+  let json;
   try {
-    const json = JSON.parse(res.out);
-    return { ok: true, ...json };
+    json = JSON.parse(res.out);
   } catch (err) {
-    return { ok: false, err: `JSON inválido de smartctl: ${err.message}` };
+    return { ok: false, reason: 'invalid', err: `JSON inválido de smartctl: ${err.message}` };
   }
+  const noData = smartCache.noDataReason(json);
+  if (noData) return { ok: false, reason: 'no_data', err: noData };
+  // Lectura buena iniciada por el usuario: dejar el resumen en la caché sin root (TUI/backend).
+  const cached = smartCache.recordSmart(device, json);
+  return { ok: true, ...json, rog_ts_epoch: Math.floor(Date.now() / 1000), rog_cached: cached };
 });
 
 /* ---------- settings (alert thresholds / colors) ---------- */

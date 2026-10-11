@@ -76,6 +76,15 @@ REQUIRED = {
     "sys.disk_io": "list", "sys.disk_io[].dev": "str", "sys.disk_io[].busy_pct": "num",
     "sys.disk_io[].read_mbps": "num", "sys.disk_io[].write_mbps": "num",
     "sys.disk_io[].read_iops": "num", "sys.disk_io[].write_iops": "num",
+    # SMART sin root (aditivo): capacidad + último resultado de la caché de la app
+    "sys.disks[].smart": "dict", "sys.disks[].smart.smartctl": "bool",
+    "sys.disks[].smart.type": "str|null", "sys.disks[].smart.has_cache": "bool",
+    "sys.disks[].smart_cached": "dict|null", "sys.disks[].smart_cached.age_s": "num",
+    "sys.disks[].smart_cached.stale": "bool", "sys.disks[].smart_cached.ok": "bool",
+    "sys.disks[].smart_cached.health_passed": "bool|null",
+    "sys.disks[].smart_cached.temp_c": "num|null",
+    "sys.disks[].smart_cached.percentage_used": "num|null",
+    "sys.disk_io[].smart": "dict", "sys.disk_io[].smart_cached": "dict|null",
     # processes
     "procs": "list", "procs[].pid": "num", "procs[].name": "str",
     "procs[].cpu": "num", "procs[].cpu_core": "num", "procs[].mem_mb": "num",

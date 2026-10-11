@@ -1,9 +1,10 @@
 /* ROG Monitor — panel de discos en vivo + SMART bajo demanda (v18).
  * Renderiza en el bloque dedicado "Discos" (#disks-live) con métricas enriquecidas:
  * barra de uso, %, total/usado, temp NVMe, modelo, fstype, tasas I/O.
- * El botón "Salud SMART" per-disco llama window.rog.readSmart (pkexec), muestra
- * spinner, cachea resultado en sesión y presenta: salud, horas, ciclos, desgaste,
- * sectores reasignados, temperatura.
+ * El botón "Salud SMART" per-disco muestra la caché sin root (smart_cached del backend,
+ * con edad y aviso de obsoleto) o, si no hay, llama window.rog.readSmart (pkexec) tras el
+ * clic; "Actualizar SMART" repite esa lectura. Presenta: salud, horas, ciclos, desgaste,
+ * sectores reasignados, errores de medio, temperatura. Los errores traen su motivo.
  */
 
 (function () {
@@ -41,6 +42,19 @@
         'disks.smart_na':       'No disponible',
         'disks.smart_err':      'Error SMART',
         'disks.smart_nosmartctl': 'smartmontools no instalado o pkexec cancelado.',
+        'disks.smart_ago': 'datos de hace {x}',
+        'disks.smart_source': 'origen: smartctl vía pkexec',
+        'disks.smart_stale': 'OBSOLETO (>24 h)',
+        'disks.smart_refresh': 'Actualizar SMART',
+        'disks.smart_cancelled': 'Autorización cancelada: no se leyó SMART.',
+        'disks.smart_denied': 'Autorización denegada por pkexec.',
+        'disks.smart_missing': 'smartctl no está instalado (instala smartmontools).',
+        'disks.smart_needs_install': 'Falta instalar la integración de sistema (Mantenimiento → Reinstalar).',
+        'disks.smart_media': 'Errores de medio',
+        'disks.smart_age_now': 'unos segundos',
+        'disks.smart_age_min': '{n} min',
+        'disks.smart_age_h': '{n} h',
+        'disks.smart_age_d': '{n} d',
         'disks.no_data':        'Sin datos de disco',
       },
       en: {
@@ -60,6 +74,19 @@
         'disks.smart_cycles':   'Power cycles',
         'disks.smart_wear':     'Wear',
         'disks.smart_nosmartctl': 'smartmontools not installed or pkexec cancelled.',
+        'disks.smart_ago': 'data from {x} ago',
+        'disks.smart_source': 'source: smartctl via pkexec',
+        'disks.smart_stale': 'STALE (>24 h)',
+        'disks.smart_refresh': 'Refresh SMART',
+        'disks.smart_cancelled': 'Authorization cancelled: SMART was not read.',
+        'disks.smart_denied': 'Authorization denied by pkexec.',
+        'disks.smart_missing': 'smartctl is not installed (install smartmontools).',
+        'disks.smart_needs_install': 'System integration is not installed (Maintenance → Reinstall).',
+        'disks.smart_media': 'Media errors',
+        'disks.smart_age_now': 'a few seconds',
+        'disks.smart_age_min': '{n} min',
+        'disks.smart_age_h': '{n} h',
+        'disks.smart_age_d': '{n} d',
         'disks.smart_realloc':  'Reallocated sectors',
         'disks.smart_temp':     'SMART temp',
         'disks.smart_na':       'N/A',
@@ -87,6 +114,19 @@
         'disks.smart_na':       'N/D',
         'disks.smart_err':      'Erreur SMART',
         'disks.smart_nosmartctl': 'smartmontools absent ou pkexec annulé.',
+        'disks.smart_ago': 'données d\'il y a {x}',
+        'disks.smart_source': 'source : smartctl via pkexec',
+        'disks.smart_stale': 'PÉRIMÉ (>24 h)',
+        'disks.smart_refresh': 'Actualiser SMART',
+        'disks.smart_cancelled': 'Autorisation annulée : SMART non lu.',
+        'disks.smart_denied': 'Autorisation refusée par pkexec.',
+        'disks.smart_missing': 'smartctl n\'est pas installé (installez smartmontools).',
+        'disks.smart_needs_install': 'Intégration système non installée (Maintenance → Réinstaller).',
+        'disks.smart_media': 'Erreurs de média',
+        'disks.smart_age_now': 'quelques secondes',
+        'disks.smart_age_min': '{n} min',
+        'disks.smart_age_h': '{n} h',
+        'disks.smart_age_d': '{n} j',
         'disks.no_data':        'Pas de données disque',
       },
       it: {
@@ -110,6 +150,19 @@
         'disks.smart_na':       'N/D',
         'disks.smart_err':      'Errore SMART',
         'disks.smart_nosmartctl': 'smartmontools non installato o pkexec annullato.',
+        'disks.smart_ago': 'dati di {x} fa',
+        'disks.smart_source': 'origine: smartctl tramite pkexec',
+        'disks.smart_stale': 'OBSOLETO (>24 h)',
+        'disks.smart_refresh': 'Aggiorna SMART',
+        'disks.smart_cancelled': 'Autorizzazione annullata: SMART non letto.',
+        'disks.smart_denied': 'Autorizzazione negata da pkexec.',
+        'disks.smart_missing': 'smartctl non è installato (installa smartmontools).',
+        'disks.smart_needs_install': 'Integrazione di sistema non installata (Manutenzione → Reinstalla).',
+        'disks.smart_media': 'Errori del supporto',
+        'disks.smart_age_now': 'pochi secondi',
+        'disks.smart_age_min': '{n} min',
+        'disks.smart_age_h': '{n} h',
+        'disks.smart_age_d': '{n} g',
         'disks.no_data':        'Nessun dato disco',
       },
       pt: {
@@ -133,6 +186,19 @@
         'disks.smart_na':       'N/D',
         'disks.smart_err':      'Erro SMART',
         'disks.smart_nosmartctl': 'smartmontools não instalado ou pkexec cancelado.',
+        'disks.smart_ago': 'dados de há {x}',
+        'disks.smart_source': 'origem: smartctl via pkexec',
+        'disks.smart_stale': 'DESATUALIZADO (>24 h)',
+        'disks.smart_refresh': 'Atualizar SMART',
+        'disks.smart_cancelled': 'Autorização cancelada: SMART não foi lido.',
+        'disks.smart_denied': 'Autorização negada pelo pkexec.',
+        'disks.smart_missing': 'smartctl não está instalado (instale smartmontools).',
+        'disks.smart_needs_install': 'Integração de sistema não instalada (Manutenção → Reinstalar).',
+        'disks.smart_media': 'Erros de mídia',
+        'disks.smart_age_now': 'alguns segundos',
+        'disks.smart_age_min': '{n} min',
+        'disks.smart_age_h': '{n} h',
+        'disks.smart_age_d': '{n} d',
         'disks.no_data':        'Sem dados de disco',
       },
       zh: {
@@ -156,6 +222,19 @@
         'disks.smart_na':       '不适用',
         'disks.smart_err':      'SMART错误',
         'disks.smart_nosmartctl': 'smartmontools未安装或pkexec已取消。',
+        'disks.smart_ago': '{x}前的数据',
+        'disks.smart_source': '来源：smartctl（通过 pkexec）',
+        'disks.smart_stale': '已过期（>24 小时）',
+        'disks.smart_refresh': '刷新SMART',
+        'disks.smart_cancelled': '授权已取消：未读取SMART。',
+        'disks.smart_denied': 'pkexec拒绝了授权。',
+        'disks.smart_missing': '未安装smartctl（请安装smartmontools）。',
+        'disks.smart_needs_install': '未安装系统集成（维护 → 重新安装）。',
+        'disks.smart_media': '介质错误',
+        'disks.smart_age_now': '几秒',
+        'disks.smart_age_min': '{n}分钟',
+        'disks.smart_age_h': '{n}小时',
+        'disks.smart_age_d': '{n}天',
         'disks.no_data':        '无磁盘数据',
       },
       ja: {
@@ -179,6 +258,19 @@
         'disks.smart_na':       'N/A',
         'disks.smart_err':      'SMARTエラー',
         'disks.smart_nosmartctl': 'smartmontools未インストールまたはpkexecキャンセル済み。',
+        'disks.smart_ago': '{x}前のデータ',
+        'disks.smart_source': '取得元: pkexec経由のsmartctl',
+        'disks.smart_stale': '古いデータ（24時間超）',
+        'disks.smart_refresh': 'SMARTを更新',
+        'disks.smart_cancelled': '認証がキャンセルされました。SMARTは読み取られていません。',
+        'disks.smart_denied': 'pkexecにより認証が拒否されました。',
+        'disks.smart_missing': 'smartctlがインストールされていません（smartmontoolsを導入してください）。',
+        'disks.smart_needs_install': 'システム統合が未インストールです（メンテナンス → 再インストール）。',
+        'disks.smart_media': 'メディアエラー',
+        'disks.smart_age_now': '数秒',
+        'disks.smart_age_min': '{n}分',
+        'disks.smart_age_h': '{n}時間',
+        'disks.smart_age_d': '{n}日',
         'disks.no_data':        'ディスクデータなし',
       },
       ko: {
@@ -202,15 +294,33 @@
         'disks.smart_na':       'N/A',
         'disks.smart_err':      'SMART 오류',
         'disks.smart_nosmartctl': 'smartmontools 미설치 또는 pkexec 취소됨.',
+        'disks.smart_ago': '{x} 전 데이터',
+        'disks.smart_source': '출처: pkexec를 통한 smartctl',
+        'disks.smart_stale': '오래됨 (24시간 초과)',
+        'disks.smart_refresh': 'SMART 새로고침',
+        'disks.smart_cancelled': '인증이 취소되어 SMART를 읽지 않았습니다.',
+        'disks.smart_denied': 'pkexec가 인증을 거부했습니다.',
+        'disks.smart_missing': 'smartctl이 설치되어 있지 않습니다 (smartmontools 설치).',
+        'disks.smart_needs_install': '시스템 통합이 설치되지 않았습니다 (유지보수 → 재설치).',
+        'disks.smart_media': '미디어 오류',
+        'disks.smart_age_now': '몇 초',
+        'disks.smart_age_min': '{n}분',
+        'disks.smart_age_h': '{n}시간',
+        'disks.smart_age_d': '{n}일',
         'disks.no_data':        '디스크 데이터 없음',
       },
     });
   }
 
-  /* ---- SMART cache: device → parsed result (session-lived) ---- */
+  /* ---- Estado SMART por dispositivo ----
+   * smartCache: última lectura fresca (pkexec) de ESTA sesión; smartErr: motivo del último
+   * intento fallido; diskInfo: última fila del backend (trae smart_cached = caché sin root,
+   * que dejó una lectura anterior de la app). Leer SMART fresco SIEMPRE lo inicia el usuario. */
   const smartCache = new Map();
-  // Track which devices are currently loading (to show spinner, avoid duplicate calls)
+  const smartErr = new Map();
+  const diskInfo = new Map();
   const smartLoading = new Set();
+  const SMART_STALE_S = 24 * 3600;
 
   /* ---- Parse smartctl -j output into a compact summary ---- */
   function parseSmart(json) {
@@ -227,6 +337,7 @@
       power_cycles: nvmeLog.power_cycles       != null ? nvmeLog.power_cycles       : ataAttrs['Power_Cycle_Count'],
       percent_used: nvmeLog.percentage_used    != null ? nvmeLog.percentage_used    : null,
       reallocated:  ataAttrs['Reallocated_Sector_Ct'] != null ? ataAttrs['Reallocated_Sector_Ct'] : null,
+      media_errors: nvmeLog.media_errors != null ? nvmeLog.media_errors : null,
       temp_c:       (json.temperature || {}).current  != null ? json.temperature.current : null,
     };
   }
@@ -238,10 +349,57 @@
     return v.toFixed(2);
   }
 
+  const panelIdFor = (device) => `smart-panel-${device.replace(/\//g, '-').replace(/^-/, '')}`;
+
+  function fmtAge(s) {
+    if (s < 60) return t('disks.smart_age_now');
+    if (s < 3600) return t('disks.smart_age_min', { n: Math.floor(s / 60) });
+    if (s < 86400) return t('disks.smart_age_h', { n: Math.floor(s / 3600) });
+    return t('disks.smart_age_d', { n: Math.floor(s / 86400) });
+  }
+
+  /* Lo que se muestra: lectura fresca de la sesión, si no la caché del backend, si no null. */
+  function smartView(device) {
+    const fresh = smartCache.get(device);
+    if (fresh && fresh.ok) {
+      return { s: parseSmart(fresh), ts: fresh.rog_ts_epoch || Math.floor(Date.now() / 1000), cached: false };
+    }
+    const c = (diskInfo.get(device) || {}).smart_cached;
+    if (c && c.ok && c.ts_epoch != null) {
+      return {
+        s: {
+          passed: c.health_passed === true, power_on_h: c.power_on_hours, power_cycles: null,
+          percent_used: c.percentage_used, reallocated: null, media_errors: c.media_errors,
+          temp_c: c.temp_c,
+        },
+        ts: c.ts_epoch, cached: true,
+      };
+    }
+    return null;
+  }
+
+  function errMessage(e) {
+    switch (e.reason) {
+      case 'cancelled':     return t('disks.smart_cancelled');
+      case 'denied':        return t('disks.smart_denied');
+      case 'no_smartctl':   return t('disks.smart_missing');
+      case 'needs_install': return t('disks.smart_needs_install');
+      case 'empty':         return t('disks.smart_nosmartctl');
+      default:              return `${t('disks.smart_err')}: ${e.err || '?'}`;
+    }
+  }
+
+  /* "datos de hace 2 h (origen: smartctl vía pkexec)" + insignia si pasó de 24 h */
+  function ageLabel(ts) {
+    const age = Math.max(0, Date.now() / 1000 - ts);
+    const stale = age > SMART_STALE_S
+      ? ` <span class="disk-smart-stale">${escapeHtml(t('disks.smart_stale'))}</span>` : '';
+    return `${escapeHtml(t('disks.smart_ago', { x: fmtAge(age) }))} (${escapeHtml(t('disks.smart_source'))})${stale}`;
+  }
+
   /* ---- Render SMART result panel below the disk row ---- */
   function renderSmartPanel(device, container) {
-    const panelId = `smart-panel-${device.replace(/\//g, '-').replace(/^-/, '')}`;
-    let panel = document.getElementById(panelId);
+    const panel = document.getElementById(panelIdFor(device));
     if (!panel) return; // disk row gone
 
     if (smartLoading.has(device)) {
@@ -249,58 +407,46 @@
       return;
     }
 
-    const cached = smartCache.get(device);
-    if (!cached) return;
+    const err = smartErr.get(device);
+    const view = smartView(device);
+    let html = err ? `<div class="disk-smart-err">${escapeHtml(errMessage(err))}</div>` : '';
 
-    if (!cached.ok) {
-      const msg = cached.err && cached.err.toLowerCase().includes('cancel')
-        ? t('disks.smart_nosmartctl')
-        : `${t('disks.smart_err')}: ${cached.err || '?'}`;
-      panel.innerHTML = `<span class="disk-smart-err">${escapeHtml(msg)}</span>`;
-      return;
+    if (view) {
+      const s = view.s;
+      const passedClass = s.passed ? 'disk-smart-ok' : 'disk-smart-fail';
+      const passedLabel = s.passed ? t('disks.smart_passed') : t('disks.smart_failed');
+      const na = t('disks.smart_na');
+      const rows = [
+        [`<span class="${passedClass}">${passedLabel}</span>`, ''],
+        [t('disks.smart_hours'), s.power_on_h != null ? `${s.power_on_h} h` : na],
+      ];
+      if (s.power_cycles != null || !view.cached) rows.push([t('disks.smart_cycles'), s.power_cycles != null ? s.power_cycles : na]);
+      if (s.percent_used != null) rows.push([t('disks.smart_wear'), `${s.percent_used}%`]);
+      if (s.reallocated  != null) rows.push([t('disks.smart_realloc'), s.reallocated]);
+      if (s.media_errors != null) rows.push([t('disks.smart_media'), s.media_errors]);
+      if (s.temp_c       != null) rows.push([t('disks.smart_temp'),  `${s.temp_c}°C`]);
+      // Transparencia: muestra el comando exacto que produjo estos datos.
+      const devArg = device.startsWith('/dev/') ? device : `/dev/${device}`;
+      html += `<div class="disk-smart-origin"><span class="disk-smart-age" data-ts="${Number(view.ts)}">${ageLabel(view.ts)}</span></div>` +
+        `<code class="cmd-argv" style="margin-bottom:8px">pkexec /usr/local/libexec/rog-monitor/rog-ctl.sh smart-json ${escapeHtml(devArg)}</code>` +
+        `<table class="disk-smart-table">${
+          rows.map(([k, v]) => `<tr><td class="dsk">${k}</td><td>${escapeHtml(v)}</td></tr>`).join('')
+        }</table>`;
+    } else if (!err) {
+      const cap = (diskInfo.get(device) || {}).smart;
+      if (cap && cap.smartctl === false) html += `<div class="dim">${escapeHtml(t('disks.smart_missing'))}</div>`;
     }
-
-    const s = parseSmart(cached);
-    const passedClass = s.passed ? 'disk-smart-ok' : 'disk-smart-fail';
-    const passedLabel = s.passed ? t('disks.smart_passed') : t('disks.smart_failed');
-    const na = t('disks.smart_na');
-
-    const rows = [
-      [`<span class="${passedClass}">${passedLabel}</span>`, ''],
-      [t('disks.smart_hours'),  s.power_on_h   != null ? `${s.power_on_h} h` : na],
-      [t('disks.smart_cycles'), s.power_cycles  != null ? s.power_cycles      : na],
-    ];
-    if (s.percent_used != null) rows.push([t('disks.smart_wear'), `${s.percent_used}%`]);
-    if (s.reallocated  != null) rows.push([t('disks.smart_realloc'), s.reallocated]);
-    if (s.temp_c       != null) rows.push([t('disks.smart_temp'),  `${s.temp_c}°C`]);
-
-    // Transparencia: muestra el comando exacto que produjo estos datos.
-    const devArg = device.startsWith('/dev/') ? device : `/dev/${device}`;
-    panel.innerHTML = `<code class="cmd-argv" style="margin-bottom:8px">pkexec /usr/local/libexec/rog-monitor/rog-ctl.sh smart-json ${escapeHtml(devArg)}</code>` +
-      `<table class="disk-smart-table">${
-        rows.map(([k, v]) => `<tr><td class="dsk">${k}</td><td>${escapeHtml(v)}</td></tr>`).join('')
-      }</table>`;
+    html += `<button class="ghost disk-smart-refresh" data-device="${escapeHtml(device)}">${escapeHtml(t('disks.smart_refresh'))}</button>`;
+    panel.innerHTML = html;
+    const btn = panel.querySelector('.disk-smart-refresh');
+    if (btn) btn.addEventListener('click', () => readSmartNow(device, container));
   }
 
-  /* ---- Toggle SMART panel: read on first click, show/hide after ---- */
-  function toggleSmart(device, container) {
-    const panelId = `smart-panel-${device.replace(/\//g, '-').replace(/^-/, '')}`;
-    let panel = document.getElementById(panelId);
-
-    if (!panel) return;
-    const wasHidden = panel.classList.contains('hidden');
-    panel.classList.toggle('hidden', !wasHidden);
-    if (!wasHidden) return; // collapsing, no need to fetch
-
-    if (smartCache.has(device)) {
-      renderSmartPanel(device, container);
-      return;
-    }
+  /* Lectura fresca vía pkexec: sólo tras un clic del usuario (abrir el panel o "Actualizar"). */
+  function readSmartNow(device, container) {
     if (smartLoading.has(device)) return;
-
-    // First read: fetch from backend via pkexec
     if (!window.rog || typeof window.rog.readSmart !== 'function') {
-      smartCache.set(device, { ok: false, err: 'readSmart not available' });
+      smartErr.set(device, { reason: 'unavailable', err: 'readSmart not available' });
       renderSmartPanel(device, container);
       return;
     }
@@ -309,13 +455,43 @@
     const devArg = device.startsWith('/dev/') ? device : `/dev/${device}`;
     window.rog.readSmart(devArg).then((result) => {
       smartLoading.delete(device);
-      smartCache.set(device, result);
+      if (result && result.ok) { smartCache.set(device, result); smartErr.delete(device); }
+      else smartErr.set(device, { reason: result && result.reason, err: result && result.err });
       renderSmartPanel(device, container);
     }).catch((err) => {
       smartLoading.delete(device);
-      smartCache.set(device, { ok: false, err: String(err && err.message ? err.message : err) });
+      smartErr.set(device, { reason: 'ipc', err: String(err && err.message ? err.message : err) });
       renderSmartPanel(device, container);
     });
+  }
+
+  /* ---- Toggle SMART panel: muestra la caché si existe; si no, lee al primer clic ---- */
+  function toggleSmart(device, container) {
+    const panel = document.getElementById(panelIdFor(device));
+    if (!panel) return;
+    const wasHidden = panel.classList.contains('hidden');
+    panel.classList.toggle('hidden', !wasHidden);
+    if (!wasHidden) return; // collapsing, no need to fetch
+
+    if (smartView(device) || smartErr.has(device) || smartLoading.has(device)) {
+      renderSmartPanel(device, container);
+      return;
+    }
+    readSmartNow(device, container); // sin datos previos: el clic del usuario pide la lectura
+  }
+
+  /* Cada tick: guarda la fila del backend y, con el panel abierto, refresca la edad
+   * (sin reconstruir el panel) o lo redibuja si apareció una caché nueva. */
+  function syncSmartPanel(device, container) {
+    const panel = document.getElementById(panelIdFor(device));
+    if (!panel || panel.classList.contains('hidden') || smartLoading.has(device)) return;
+    const view = smartView(device);
+    const age = panel.querySelector('.disk-smart-age');
+    if (!view || !age || Number(age.dataset.ts) !== Number(view.ts)) {
+      if (view || age) renderSmartPanel(device, container);
+      return;
+    }
+    age.innerHTML = ageLabel(view.ts);
   }
 
   /* ---- Main render: called from app.js on each stats tick ---- */
@@ -326,6 +502,8 @@
       container.innerHTML = `<p class="dim">${t('disks.no_data')}</p>`;
       return;
     }
+
+    disks.forEach((d) => diskInfo.set(d.block_dev || d.label, d));
 
     // Match NVMe temp to disks on root/home mounts (same heuristic as TUI)
     const rootTemp = nvme_temps && nvme_temps.length ? Math.max(...nvme_temps) : null;
@@ -364,6 +542,7 @@
           const tempVal = getTempForDisk(d, rootTemp);
           temp.textContent = tempVal != null ? `${t('disks.temp')}: ${tempVal}°C` : '';
         }
+        syncSmartPanel(device, container);
       });
     }
   }
@@ -384,7 +563,7 @@
 
   function buildDiskHtml(d, rootTemp) {
     const device = d.block_dev || d.label;
-    const panelId = `smart-panel-${device.replace(/\//g, '-').replace(/^-/, '')}`;
+    const panelId = panelIdFor(device);
     const tempVal = getTempForDisk(d, rootTemp);
     const tempHtml = tempVal != null
       ? `<span class="disk-temp">${t('disks.temp')}: ${tempVal}°C</span>` : '';

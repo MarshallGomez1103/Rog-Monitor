@@ -146,3 +146,24 @@
   font-weight: 700;
   text-shadow: 0 0 5px var(--crit);
 }
+
+/* Procedencia y edad de los datos SMART (caché sin root o lectura fresca) */
+.disk-smart-origin {
+  margin-bottom: 0.3rem;
+  color: var(--dim);
+}
+
+.disk-smart-stale {
+  margin-left: 0.4rem;
+  padding: 0 0.35rem;
+  border: 1px solid var(--hot);
+  color: var(--hot);
+  font-weight: 700;
+}
+
+.disk-smart-refresh {
+  margin-top: 0.4rem;
+  font-size: 0.66rem;
+  padding: 0.1rem 0.45rem;
+  height: auto;
+}

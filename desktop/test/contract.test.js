@@ -44,6 +44,13 @@ const REQUIRED = [
   'sys.disk_io', 'sys.disk_io[].dev', 'sys.disk_io[].busy_pct',
   'sys.disk_io[].read_mbps', 'sys.disk_io[].write_mbps',
   'sys.disk_io[].read_iops', 'sys.disk_io[].write_iops',
+  // SMART sin root (aditivo): capacidad + último resultado de la caché de la app
+  'sys.disks[].smart', 'sys.disks[].smart.smartctl', 'sys.disks[].smart.type',
+  'sys.disks[].smart.has_cache', 'sys.disks[].smart_cached',
+  'sys.disks[].smart_cached.age_s', 'sys.disks[].smart_cached.stale',
+  'sys.disks[].smart_cached.ok', 'sys.disks[].smart_cached.health_passed',
+  'sys.disks[].smart_cached.temp_c', 'sys.disks[].smart_cached.percentage_used',
+  'sys.disk_io[].smart', 'sys.disk_io[].smart_cached',
   'procs', 'procs[].pid', 'procs[].name', 'procs[].cpu', 'procs[].cpu_core',
   'procs[].mem_mb', 'procs_by_core', 'procs_mem', 'procs_vram',
   'aura',
