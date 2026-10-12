@@ -166,7 +166,7 @@
           <div class="vram-stat clickable" id="gpu-vram-stat" role="button" tabindex="0" data-i18n-attr="title:tip.vram_meter" title="Clic para ver qué está usando la VRAM"><label data-i18n="common.vram">VRAM</label><b id="gpu-vram">--</b></div>
           <div><label data-i18n="common.mhz">MHz</label><b id="gpu-clock" data-i18n-attr="title:tip.gpu_clock" title="Frecuencia actual del núcleo gráfico">--</b></div>
           <div><label>VRAM MHz</label><b id="gpu-vram-clock" class="small" data-i18n-attr="title:tip.gpu_vram_clock" title="Frecuencia actual de la memoria de video">--</b></div>
-          <div><label data-i18n="common.mode">Modo</label><b id="gpu-mode" class="small">--</b></div>
+          <div id="gpu-mode-stat" class="hidden" data-i18n-attr="title:tip.gpu_mode" title="Modo de gráficos (supergfxctl): Integrated = solo la gráfica integrada, Hybrid = integrada + NVIDIA bajo demanda, dGPU = solo NVIDIA"><label data-i18n="gpu.mode_label">Modo GPU</label><b id="gpu-mode" class="small">--</b></div>
         </div>
         <p id="gpu-off-note" class="note hidden" data-i18n="widget.gpu_off">dGPU apagada (modo Integrated)</p>
       </article>

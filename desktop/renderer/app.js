@@ -1889,7 +1889,9 @@ function update(stats) {
   const gpu = stats.gpu || {};
   const active = gpu.active;
   refreshGpuTooltips(active);
+  // Sin supergfxd no hay modo que mostrar: la celda se oculta en vez de enseñar '--'.
   $('gpu-mode').textContent = (gpu.mode || '--') + (gpu.pending ? ` → ${gpu.pending}` : '');
+  $('gpu-mode-stat').classList.toggle('hidden', !gpu.mode);
   if (active) {
     $('gpu-off-note').classList.add('hidden');
     $('gpu-name').textContent = active.name || '';
