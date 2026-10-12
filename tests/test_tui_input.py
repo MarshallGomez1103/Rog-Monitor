@@ -45,9 +45,10 @@ finally:
 """
 
 
-def _pump(master, out, seconds):
+def _pump(master, out, seconds, until=None):
+    # until: corta en cuanto aparece ese texto (evita fallos por carga del equipo)
     end = time.monotonic() + seconds
-    while time.monotonic() < end:
+    while time.monotonic() < end and not (until and until in b"".join(out)):
         if select.select([master], [], [], 0.05)[0]:
             try:
                 out.append(os.read(master, 65536))
@@ -207,7 +208,7 @@ class TuiPty(unittest.TestCase):
                     out.clear()
                     fcntl.ioctl(master, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
                     proc.send_signal(signal.SIGWINCH)
-                    _pump(master, out, 1.0)
+                    _pump(master, out, 4.0, until=expected)
                     self.assertIsNone(proc.poll(), "la TUI murió con SIGWINCH")
                     self.assertIn(expected, b"".join(out), f"sin redibujo a {cols}x{rows}")
                 self._stop(master, proc, out)

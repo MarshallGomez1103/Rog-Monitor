@@ -623,7 +623,8 @@ const chartState = new Map();
 
 /* Historial: 2 modos sobre los MISMOS 4 canvas (sin tocar la rejilla). Cada fila:
    [canvas, serie del snapshot, color CSS, opts de drawChart (+unit para el hover), clave i18n].
-   En 'usage' (todo en %, 0-100) el 4º hueco se oculta. Puro: lo prueba charts.test.js. */
+   opts.max fija el techo del eje (% → 100); opts.maxKey lo toma de stats.sys
+   (RAM/swap en GiB → 0..total). Puro: lo prueba charts.test.js. */
 const HIST_MODES = {
   temp: [
     ['chart-cpu', 'cpu_temp', '--cold', { unit: '°C' }, 'chart.cpu_temp'],
@@ -632,10 +633,10 @@ const HIST_MODES = {
     ['chart-gpu-power', 'gpu_power', '--hot', { fromZero: true, unit: 'W' }, 'chart.gpu_power'],
   ],
   usage: [
-    ['chart-cpu', 'cpu_usage', '--cold', { fromZero: true, unit: '%' }, 'chart.cpu_usage'],
-    ['chart-power', 'ram_used', '--accent', { fromZero: true, unit: '%' }, 'chart.ram_usage'],
-    ['chart-gpu', 'swap_used', '--okstate', { fromZero: true, unit: '%' }, 'chart.swap_usage'],
-    ['chart-gpu-power', null, '--hot', {}, null],
+    ['chart-cpu', 'cpu_usage', '--cold', { max: 100, unit: '%' }, 'chart.cpu_usage'],
+    ['chart-power', 'ram_gb', '--accent', { maxKey: 'ram_total_gb', unit: 'GiB' }, 'chart.ram_gib'],
+    ['chart-gpu', 'swap_gb', '--ink', { maxKey: 'swap_total_gb', unit: 'GiB' }, 'chart.swap_gib'],
+    ['chart-gpu-power', 'gpu_util', '--hot', { max: 100, unit: '%' }, 'chart.gpu_usage'],
   ],
 };
 
@@ -670,7 +671,7 @@ function chartTail(values, n) {
   return values.slice(-Math.min(CHART_MAX_POINTS, Math.max(2, n)));
 }
 
-function chartRange(data, fromZero) {
+function chartRange(data, fromZero, ceil) {
   let min = Infinity, max = -Infinity;
   for (const v of data) {
     if (!Number.isFinite(v)) continue;
@@ -678,6 +679,8 @@ function chartRange(data, fromZero) {
     if (v > max) max = v;
   }
   if (min === Infinity) return null;      // todo huecos: nada que escalar
+  // techo fijo (% → 100, GiB → total): la escala no salta con los datos
+  if (Number.isFinite(ceil) && ceil > 0) return { lo: 0, hi: ceil };
   // snap the axis to steps of 5 so min/max don't jitter every second
   // fromZero: los watts arrancan en 0 — si no, una bajada de 10→3 W llena
   // toda la altura de la gráfica y parece un desplome dramático
@@ -727,7 +730,7 @@ function drawChart(canvas, values, color, opts = {}) {
 
   if (!values || values.length < 2) { chartState.delete(canvas.id); return; }
   const data = chartTail(values, Math.max(60, Math.floor(w / 4)));
-  const range = chartRange(data, opts.fromZero);
+  const range = chartRange(data, opts.fromZero, opts.max);
   if (!range) { chartState.delete(canvas.id); return; }  // solo huecos (dGPU dormida)
   const { lo, hi } = range;
   const pad = 8;
@@ -1861,8 +1864,11 @@ function update(stats) {
   const cpuTemp = $('cpu-temp');
   cpuTemp.textContent = fmt(cpu.avg, 1);
   cpuTemp.className = tempClass(cpu.avg, limits.cpu);
-  $('cpu-max').textContent = fmt(cpu.max, 0) + '°';
-  $('cpu-min').textContent = fmt(cpu.min, 0) + '°';
+  // Uso total (None en la 1ª muestra → '--', nunca un 0 falso)
+  $('cpu-util').textContent = cpu.usage == null ? '--' : fmt(clampPct(cpu.usage), 0) + '%';
+  const cpuMax = $('cpu-max');
+  cpuMax.textContent = fmt(cpu.max, 0) + '°';
+  cpuMax.title = `${t('common.min')} ${fmt(cpu.min, 0)}°`;
   $('cpu-pkg').textContent = fmt(cpu.package, 0) + '°';
   $('cpu-hot').textContent = cpu.hot90 ?? '--';
   $('cpu-freq').textContent = fmt(cpu.freq_ghz, 2);
@@ -1941,7 +1947,14 @@ function update(stats) {
   if (visible) {
     const series = stats.series || {};
     histSlots(histMode).forEach(([id, key, color, opts]) => {
-      if (key) drawChart($(id), series[key], cssVar(color), opts);
+      if (!key) return;
+      const o = opts.maxKey ? { ...opts, max: sys[opts.maxKey] } : opts;
+      drawChart($(id), series[key], cssVar(color), o);
+      if (key === 'swap_gb') {           // sin swap: decirlo, no dibujar un 0 falso
+        const lbl = $(id).parentElement.querySelector('label');
+        const k = sys.swap_total_gb > 0 ? 'chart.swap_gib' : 'chart.no_swap';
+        if (lbl.dataset.i18n !== k) { lbl.dataset.i18n = k; lbl.textContent = t(k); }
+      }
     });
   }
 

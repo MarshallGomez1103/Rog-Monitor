@@ -198,6 +198,9 @@ try {
       return a !== b;
     })();
     check('CPU temp numérica y viva', vals.some((v) => /^\d/.test(v)) && (vals.length > 1 || live), `temps vistas=${vals.join(',')} cambio-otros-campos=${live}`);
+    // uso % en la tarjeta CPU (F2-02): '--' solo en la 1ª muestra, luego "N%"
+    const util = await waitFor(async () => /^\d+%$/.test((await text('#cpu-util')).trim()), 5000, 200);
+    check('tarjeta CPU muestra uso %', !!util, `cpu-util=${(await text('#cpu-util')).trim()}`);
   } else {
     log('SKIP  CPU temp viva (cpu-block empty: sin sensor, p. ej. CI)');
   }
@@ -273,6 +276,17 @@ try {
   const shotPath = path.join(OUT, 'e2e-smoke.png');
   writeFileSync(shotPath, Buffer.from(shot.data, 'base64'));
   log(`screenshot: ${shotPath}`);
+
+  // 8) modo uso del historial (F2-03/05): CPU %, RAM GiB, swap GiB, GPU % con ejes fijos
+  if (await click('#hist-mode')) {
+    await ev(`document.getElementById('history-block').scrollIntoView({block:'start'})`);
+    await sleep(1500);
+    const labels = await ev(`[...document.querySelectorAll('#history-block .chart label')].map(l=>l.dataset.i18n).filter(Boolean).join(',')`);
+    check('historial modo uso: RAM en GiB', /chart\.ram_gib/.test(labels), labels);
+    const shot2 = await cdp('Page.captureScreenshot', { format: 'png' });
+    writeFileSync(path.join(OUT, 'e2e-usage.png'), Buffer.from(shot2.data, 'base64'));
+    await click('#hist-mode'); // restaurar
+  }
   await sleep(300); // deja llegar excepciones tardías
 } catch (e) {
   check('ejecución sin error del runner', false, e.message);

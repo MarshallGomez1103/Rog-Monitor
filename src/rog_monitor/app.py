@@ -33,6 +33,10 @@ BOUND_KEYS = frozenset("qhvtpgef")  # teclas con acción; cualquier otra se igno
 EVENT_FILTERS = ("all", "warn", "crit")  # filtro de severidad del panel de eventos (f)
 
 
+def _gib(v):
+    return None if v is None else round(v, 2)
+
+
 class App:
     def __init__(self, args):
         self.config = Config()
@@ -67,6 +71,10 @@ class App:
             "cpu_usage": Series(secs),
             "ram_used": Series(secs),
             "swap_used": Series(secs),
+            # GiB reales para graficar con eje 0..total (F2-03/04) y uso de GPU en %.
+            "ram_gb": Series(secs),
+            "swap_gb": Series(secs),
+            "gpu_util": Series(secs),
         }
         self.theme = self.config["theme"]
         self.help_visible = False
@@ -108,6 +116,10 @@ class App:
         self.series["cpu_usage"].push(cpu.get("usage"))
         self.series["ram_used"].push(sysd.get("ram_percent"))
         self.series["swap_used"].push(sysd.get("swap_percent"))
+        self.series["ram_gb"].push(_gib(sysd.get("ram_used_gb")))
+        # sin swap -> hueco, no un 0 GiB falso
+        self.series["swap_gb"].push(_gib(sysd.get("swap_used_gb")) if sysd.get("swap_total_gb") else None)
+        self.series["gpu_util"].push(active.get("util"))
 
         self.alerts.check(cpu, gpu, fans, watts)
         self._drain_gpu_results()
