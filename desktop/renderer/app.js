@@ -621,45 +621,77 @@ function toast(message, kind) {
 // poder redibujar con crosshair y saber qué valor hay bajo el cursor.
 const chartState = new Map();
 
-/* Historial: 2 modos sobre los MISMOS 4 canvas (sin tocar la rejilla). Cada fila:
-   [canvas, serie del snapshot, color CSS, opts de drawChart (+unit para el hover), clave i18n].
+/* Historial configurable (F4-04..06): catálogo de gráficas y lista elegida por el
+   usuario (cuáles y en qué orden), guardada en localStorage 'histCharts'. Cada entrada:
+   key de la serie del snapshot -> [color CSS, opts de drawChart, clave i18n].
    opts.max fija el techo del eje (% → 100); opts.maxKey lo toma de stats.sys
    (RAM/swap en GiB → 0..total). Puro: lo prueba charts.test.js. */
-const HIST_MODES = {
-  temp: [
-    ['chart-cpu', 'cpu_temp', '--cold', { unit: '°C' }, 'chart.cpu_temp'],
-    ['chart-power', 'cpu_power', '--accent', { fromZero: true, unit: 'W' }, 'chart.cpu_power'],
-    ['chart-gpu', 'gpu_temp', '--okstate', { unit: '°C' }, 'chart.gpu_temp'],
-    ['chart-gpu-power', 'gpu_power', '--hot', { fromZero: true, unit: 'W' }, 'chart.gpu_power'],
-  ],
-  usage: [
-    ['chart-cpu', 'cpu_usage', '--cold', { max: 100, unit: '%' }, 'chart.cpu_usage'],
-    ['chart-power', 'ram_gb', '--accent', { maxKey: 'ram_total_gb', unit: 'GiB' }, 'chart.ram_gib'],
-    ['chart-gpu', 'swap_gb', '--ink', { maxKey: 'swap_total_gb', unit: 'GiB' }, 'chart.swap_gib'],
-    ['chart-gpu-power', 'gpu_util', '--hot', { max: 100, unit: '%' }, 'chart.gpu_usage'],
-  ],
+const CHART_CATALOG = {
+  cpu_temp: ['--cold', { unit: '°C' }, 'chart.cpu_temp'],
+  cpu_power: ['--accent', { fromZero: true, unit: 'W' }, 'chart.cpu_power'],
+  gpu_temp: ['--okstate', { unit: '°C' }, 'chart.gpu_temp'],
+  gpu_power: ['--hot', { fromZero: true, unit: 'W' }, 'chart.gpu_power'],
+  cpu_usage: ['--cold', { max: 100, unit: '%' }, 'chart.cpu_usage'],
+  ram_gb: ['--accent', { maxKey: 'ram_total_gb', unit: 'GiB' }, 'chart.ram_gib'],
+  swap_gb: ['--ink', { maxKey: 'swap_total_gb', unit: 'GiB' }, 'chart.swap_gib'],
+  gpu_util: ['--hot', { max: 100, unit: '%' }, 'chart.gpu_usage'],
+};
+const HIST_PRESETS = {
+  temp: ['cpu_temp', 'cpu_power', 'gpu_temp', 'gpu_power'],
+  usage: ['cpu_usage', 'ram_gb', 'swap_gb', 'gpu_util'],
 };
 
-function histSlots(mode) {
-  return HIST_MODES[mode] || HIST_MODES.temp; // valor guardado corrupto -> temp
+/* Lista válida de gráficas: solo claves del catálogo, sin repetidas, ≥1. Un valor
+   guardado corrupto o vacío vuelve al conjunto de temperatura. */
+function histCharts(saved) {
+  let list = saved;
+  if (typeof saved === 'string') { try { list = JSON.parse(saved); } catch (_) { list = null; } }
+  if (!Array.isArray(list)) return [...HIST_PRESETS.temp];
+  const out = [];
+  for (const k of list) if (CHART_CATALOG[k] && !out.includes(k)) out.push(k);
+  return out.length ? out : [...HIST_PRESETS.temp];
 }
 
-let histMode = histSlots(lsGet('histMode')) === HIST_MODES.usage ? 'usage' : 'temp';
+/* Mueve la gráfica `key` una posición (dir -1 arriba / +1 abajo). Puro. */
+function moveChart(list, key, dir) {
+  const i = list.indexOf(key), j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return list;
+  const out = [...list];
+  [out[i], out[j]] = [out[j], out[i]];
+  return out;
+}
 
-function setHistMode(mode) {
-  histMode = histSlots(mode) === HIST_MODES.usage ? 'usage' : 'temp';
-  lsSet('histMode', histMode);
-  histSlots(histMode).forEach(([id, key, , , label]) => {
-    const wrap = $(id).parentElement;
-    wrap.classList.toggle('hidden', !key);
-    const lbl = wrap.querySelector('label');
-    if (label) { lbl.dataset.i18n = label; lbl.textContent = t(label); }
-  });
-  // el botón ofrece el OTRO modo
+let histList = histCharts(lsGet('histCharts') || (lsGet('histMode') === 'usage' ? HIST_PRESETS.usage : null));
+
+function setHistCharts(list) {
+  histList = histCharts(list);
+  lsSet('histCharts', JSON.stringify(histList));
+  const row = document.querySelector('#history-block .chart-row');
+  row.innerHTML = histList.map((k) =>
+    `<div class="chart"><label data-i18n="${CHART_CATALOG[k][2]}">${escapeHtml(t(CHART_CATALOG[k][2]))}</label><canvas id="chart-${k}"></canvas></div>`).join('');
+  histList.forEach((k) => wireChartHover(`chart-${k}`, CHART_CATALOG[k][1].unit));
+  // el botón rápido alterna entre los dos conjuntos predefinidos
+  const isUsage = histList.join() === HIST_PRESETS.usage.join();
   const btn = $('hist-mode');
-  btn.dataset.i18n = histMode === 'usage' ? 'chart.mode_temp' : 'chart.mode_usage';
+  btn.dataset.i18n = isUsage ? 'chart.mode_temp' : 'chart.mode_usage';
   btn.textContent = t(btn.dataset.i18n);
+  renderHistEditor();
   if (lastStats) update(lastStats);
+}
+
+function renderHistEditor() {
+  const box = $('hist-editor');
+  if (!box || box.classList.contains('hidden')) return;
+  const keys = [...histList, ...Object.keys(CHART_CATALOG).filter((k) => !histList.includes(k))];
+  box.innerHTML = `<p class="note">${escapeHtml(t('chart.editor_hint'))}</p>` + keys.map((k) => {
+    const on = histList.includes(k), i = histList.indexOf(k);
+    return `<div class="hist-edit-row${on ? '' : ' off'}" data-key="${k}">
+      <label><input type="checkbox" ${on ? 'checked' : ''} data-act="toggle"> ${escapeHtml(t(CHART_CATALOG[k][2]))}</label>
+      <span class="hist-edit-btns">
+        <button class="ghost" data-act="up" ${!on || i === 0 ? 'disabled' : ''} aria-label="${escapeHtml(t('chart.move_up'))}">↑</button>
+        <button class="ghost" data-act="down" ${!on || i === histList.length - 1 ? 'disabled' : ''} aria-label="${escapeHtml(t('chart.move_down'))}">↓</button>
+      </span></div>`;
+  }).join('') + `<div class="hist-edit-presets"><button class="ghost" data-act="preset" data-preset="temp">${escapeHtml(t('chart.mode_temp'))}</button><button class="ghost" data-act="preset" data-preset="usage">${escapeHtml(t('chart.mode_usage'))}</button></div>`;
 }
 
 /* Helpers puros de las gráficas (sin DOM; los prueba desktop/test/charts.test.js).
@@ -2000,8 +2032,10 @@ function update(stats) {
   const visible = !document.hidden;
   if (visible) {
     const series = stats.series || {};
-    histSlots(histMode).forEach(([id, key, color, opts]) => {
-      if (!key) return;
+    histList.forEach((key) => {
+      const [color, opts] = CHART_CATALOG[key];
+      const id = `chart-${key}`;
+      if (!$(id)) return;
       const o = opts.maxKey ? { ...opts, max: sys[opts.maxKey] } : opts;
       drawChart($(id), series[key], cssVar(color), o);
       if (key === 'swap_gb') {           // sin swap: decirlo, no dibujar un 0 falso
@@ -2288,12 +2322,29 @@ $('maint-uninstall')?.addEventListener('click', async () => {
 
 /* ---------- wiring ---------- */
 
-wireChartHover('chart-cpu', '°C');
-wireChartHover('chart-gpu', '°C');
-wireChartHover('chart-power', 'W');
-wireChartHover('chart-gpu-power', 'W');
-$('hist-mode').addEventListener('click', () => setHistMode(histMode === 'usage' ? 'temp' : 'usage'));
-if (histMode === 'usage') setHistMode('usage'); // restaurar el modo guardado (i18n.apply del arranque respeta data-i18n)
+$('hist-mode').addEventListener('click', () =>
+  setHistCharts(histList.join() === HIST_PRESETS.usage.join() ? HIST_PRESETS.temp : HIST_PRESETS.usage));
+$('hist-edit').addEventListener('click', () => {
+  const box = $('hist-editor');
+  box.classList.toggle('hidden');
+  $('hist-edit').setAttribute('aria-expanded', String(!box.classList.contains('hidden')));
+  renderHistEditor();
+});
+$('hist-editor').addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!el || el.disabled) return;
+  const key = el.closest('[data-key]')?.dataset.key;
+  const act = el.dataset.act;
+  if (act === 'preset') return setHistCharts(HIST_PRESETS[el.dataset.preset]);
+  if (act === 'toggle') {
+    const on = histList.includes(key);
+    if (on && histList.length === 1) { el.checked = true; return; }   // siempre al menos una
+    return setHistCharts(on ? histList.filter((k) => k !== key) : [...histList, key]);
+  }
+  setHistCharts(moveChart(histList, key, act === 'up' ? -1 : 1));
+  $('hist-editor').querySelector(`[data-key="${key}"] [data-act="${act}"]`)?.focus();
+});
+setHistCharts(histList);
 
 window.rog.onStats(update);
 document.addEventListener('visibilitychange', () => {
