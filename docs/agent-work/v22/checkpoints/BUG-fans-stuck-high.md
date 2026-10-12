@@ -9,3 +9,8 @@ Cambio (`scripts/rog-profile-sync.sh`): `check_stuck_fans` en cada vuelta (≤30
 Tests: `tests/test_fan_stuck.py` (interpolación; 6000 rpm frío → re-aplica a los ≥60 s y no a los 30; caliente → nada; rpm normal → nada; episodio se reinicia; solo GPU alto → nada). Suite completa OK. `install-system.sh --dry-run` OK.
 Tests TUI pty: Esc/resize verifican "SYSTEM" esperando por condición (con el equipo caliente PROCESSES sale de pantalla por eventos de throttling).
 No verificado: comportamiento real del EC tras la re-aplicación (lo confirma el propietario tras instalar: jugar, salir, esperar 2 min en performance).
+
+## Relacionado: límites de potencia por perfil casi nunca aplicados
+Evidencia: journal 2026-10-09..12 — 14 de 15 "Could not apply <perfil> power limits" con `printf: write error: Device or resource busy` en `ppt_pl2_sppt/current_value`, todas justo tras un cambio de perfil; la única OK fue un reinicio del servicio sin cambio de perfil. `sync_once` marcaba LAST_POWER_PROFILE aunque fallara → nunca se reintentaba.
+Cambio: `apply_profile_power` devuelve 1 si falla; `sync_power` reintenta en cada vuelta (≤30 s) hasta 5 veces y luego se rinde (log) hasta el próximo cambio de perfil.
+Tests: `tests/test_fan_stuck.py::PowerLimitRetry` (EBUSY×2 → aplica a la 3ª y no reintenta más; siempre EBUSY → 5 intentos y "Giving up").

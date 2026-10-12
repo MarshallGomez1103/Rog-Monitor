@@ -88,3 +88,32 @@ class GpuFanHighWithColdCpu(unittest.TestCase):
             curve = tree(root, 3200, 60)
             (root / "sys/class/hwmon/hwmon6/fan2_input").write_text("6500\n")  # GPU caliente, juego
             self.assertEqual(run(root, curve, [0, 30, 90])[1], 0)
+
+
+class PowerLimitRetry(unittest.TestCase):
+    """Límites de potencia: EBUSY tras cambiar de perfil -> reintentar en las vueltas siguientes."""
+
+    def run_steps(self, fail_first: int, steps: int, target="performance"):
+        with tempfile.TemporaryDirectory() as d:
+            fake = Path(d) / "rog-py.sh"
+            cnt = Path(d) / "n"
+            cnt.write_text("0")
+            fake.write_text(f'#!/bin/bash\nn=$(( $(cat {cnt}) + 1 )); echo $n > {cnt}\n'
+                            f'(( n > {fail_first} )) || {{ echo "Device or resource busy" >&2; exit 1; }}\n')
+            fake.chmod(0o755)
+            calls = "".join(f'sync_power {target}; echo "last=${{LAST_POWER_PROFILE:-}}";\n' for _ in range(steps))
+            r = subprocess.run(["bash", "-c", f'source "{SCRIPT}"; ROG_PY="{fake}"\n{calls}'],
+                               capture_output=True, text=True, stdin=subprocess.DEVNULL)
+            return r.stdout.split(), r.stderr, int(cnt.read_text())
+
+    def test_busy_then_ok_is_retried(self):
+        last, err, tries = self.run_steps(fail_first=2, steps=4)
+        self.assertEqual(last, ["last=", "last=", "last=performance", "last=performance"])
+        self.assertEqual(tries, 3)                      # no reintenta tras el éxito
+        self.assertIn("Applied performance power limits", err)
+
+    def test_gives_up_after_five(self):
+        last, err, tries = self.run_steps(fail_first=99, steps=7)
+        self.assertEqual(tries, 5)
+        self.assertIn("Giving up", err)
+        self.assertEqual(last[-1], "last=performance")

@@ -117,6 +117,28 @@ apply_profile_power() {
         log "Applied $profile power limits"
     else
         log "Could not apply $profile power limits: $out"
+        return 1
+    fi
+}
+
+# Justo tras cambiar platform_profile el firmware responde EBUSY a ppt_* durante unos
+# segundos: casi todas las aplicaciones fallaban y no se reintentaban hasta el siguiente
+# cambio de perfil. Ahora se reintenta en cada vuelta (≤30 s) hasta POWER_MAX_TRIES.
+POWER_MAX_TRIES=5
+POWER_TRIES=0
+sync_power() {
+    local target="$1"
+    [[ "${LAST_POWER_PROFILE:-}" != "$target" ]] || return 0
+    if apply_profile_power "$target"; then
+        LAST_POWER_PROFILE="$target"
+        POWER_TRIES=0
+        return 0
+    fi
+    POWER_TRIES=$((POWER_TRIES + 1))
+    if (( POWER_TRIES >= POWER_MAX_TRIES )); then
+        log "Giving up on $target power limits after $POWER_TRIES tries (until the next profile change)"
+        LAST_POWER_PROFILE="$target"
+        POWER_TRIES=0
     fi
 }
 
@@ -510,10 +532,7 @@ sync_once() {
         log "Mapped PPD $ppd_profile to ASUS $target"
     fi
 
-    if [[ "${LAST_POWER_PROFILE:-}" != "$target" ]]; then
-        apply_profile_power "$target"
-        LAST_POWER_PROFILE="$target"
-    fi
+    sync_power "$target"
 
     # Reaplica si cambió el perfil, si las curvas quedaron deshabilitadas o si
     # alguien (firmware/asusd al cambiar de perfil) pisó los valores — esto
