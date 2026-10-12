@@ -219,3 +219,40 @@ class ScriptShape(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HelperTrust(unittest.TestCase):
+    """F1-02: la ruta Python a pkexec aplica la misma regla que priv.js."""
+
+    def setUp(self):
+        import tempfile
+        from pathlib import Path
+        from rog_monitor import power_control as pc
+        self.pc, self.tmp = pc, tempfile.TemporaryDirectory()
+        self.lib = Path(self.tmp.name)
+        self.script = self.lib / "apply-power-control.sh"
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_missing_helper_needs_install(self):
+        r = self.pc._helper_problem(self.script, self.lib)
+        self.assertTrue(r["needsInstall"])
+
+    def test_version_mismatch_needs_install(self):
+        self.script.write_text("#!/bin/bash\n")
+        (self.lib / "VERSION").write_text("0.0.1\n")
+        r = self.pc._helper_problem(self.script, self.lib)
+        self.assertTrue(r["needsInstall"])
+        self.assertIn("0.0.1", r["err"])
+
+    def test_user_owned_helper_is_refused(self):
+        import os
+        if os.geteuid() == 0:
+            self.skipTest("corre como root")
+        from rog_monitor import __version__
+        self.script.write_text("#!/bin/bash\n")
+        (self.lib / "VERSION").write_text(__version__)
+        r = self.pc._helper_problem(self.script, self.lib)
+        self.assertFalse(r["ok"])
+        self.assertNotIn("needsInstall", r)
