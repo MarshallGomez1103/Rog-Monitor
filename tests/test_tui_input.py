@@ -212,10 +212,12 @@ class TuiPty(unittest.TestCase):
             out = []
             try:
                 _pump(master, out, 2.5)
-                self.assertIn(b"PROCESSES", b"".join(out))
+                # SYSTEM y no PROCESSES: con un evento (p. ej. throttling en un equipo
+                # caliente) el panel de eventos empuja PROCESSES fuera de 40 filas.
+                self.assertIn(b"SYSTEM", b"".join(out))
                 for rows, cols, expected in ((30, 80, b"ROG MONITOR"),
                                              (15, 50, b"Terminal too small"),
-                                             (40, 120, b"PROCESSES")):
+                                             (40, 120, b"SYSTEM")):
                     out.clear()
                     fcntl.ioctl(master, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
                     proc.send_signal(signal.SIGWINCH)

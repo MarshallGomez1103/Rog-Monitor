@@ -33,6 +33,14 @@ BOUND_KEYS = frozenset("qhvtpgef")  # teclas con acción; cualquier otra se igno
 EVENT_FILTERS = ("all", "warn", "crit")  # filtro de severidad del panel de eventos (f)
 
 
+def _next_deadline(prev: float, interval: float, now: float) -> float:
+    """Cadencia por reloj monotónico (F3-07): el tiempo de muestreo se descuenta del
+    sleep en vez de sumarse. Si una muestra se pasó de un periodo entero, no se
+    recupera en ráfaga: se reancla en `now`."""
+    nxt = prev + interval
+    return nxt if nxt > now else now + interval
+
+
 def _gib(v):
     return None if v is None else round(v, 2)
 
@@ -258,6 +266,7 @@ class App:
         self.procs.read()
         self.rapl.read_watts()
         time.sleep(0.5)
+        next_tick = time.monotonic()
         try:
             while True:
                 try:
@@ -268,7 +277,8 @@ class App:
                     self._log_error()
                 else:
                     print(line, flush=True)
-                time.sleep(self.interval)
+                next_tick = _next_deadline(next_tick, self.interval, time.monotonic())
+                time.sleep(max(0.0, next_tick - time.monotonic()))
         except (KeyboardInterrupt, BrokenPipeError):
             pass
 
@@ -301,8 +311,9 @@ class App:
                 auto_refresh=False,
             ) as live:
                 running = True
+                deadline = time.monotonic()
                 while running:
-                    deadline = time.monotonic() + self.interval
+                    deadline = _next_deadline(deadline, self.interval, time.monotonic())
                     while running and time.monotonic() < deadline:
                         # Responder a resize antes de esperar la próxima tecla
                         if self._resized:
