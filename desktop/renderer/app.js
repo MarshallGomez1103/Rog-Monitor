@@ -867,18 +867,23 @@ function wireChartHover(canvasId, unit) {
 
 /* ---------- fans ---------- */
 
+/* Aspas en su propio <svg> (.fan-blades) girado por CSS transform: el compositor lo
+   anima sin repintar. Antes giraba un <g> interno y cada fotograma repintaba el SVG:
+   ~22 % de CPU con la ventana visible (medido en F0-09/D-02). Aro y buje, estáticos encima. */
 const FAN_SVG = `
-<svg viewBox="0 0 64 64">
-  <circle cx="32" cy="32" r="29" fill="none" stroke="var(--hair)" stroke-width="2"/>
-  <g>
+<div class="fan-icon">
+  <svg class="fan-blades" viewBox="0 0 64 64" aria-hidden="true">
     <path d="M32 32 L32 7 A25 25 0 0 1 49 16 Z" fill="var(--dim)"/>
     <path d="M32 32 L53 22 A25 25 0 0 1 51 46 Z" fill="var(--dim)"/>
     <path d="M32 32 L44 53 A25 25 0 0 1 20 53 Z" fill="var(--dim)"/>
     <path d="M32 32 L13 47 A25 25 0 0 1 11 23 Z" fill="var(--dim)"/>
     <path d="M32 32 L15 13 A25 25 0 0 1 32 7 Z" fill="var(--hair)"/>
-  </g>
-  <circle cx="32" cy="32" r="6" fill="var(--accent)"/>
-</svg>`;
+  </svg>
+  <svg class="fan-frame" viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="32" cy="32" r="29" fill="none" stroke="var(--hair)" stroke-width="2"/>
+    <circle cx="32" cy="32" r="6" fill="var(--accent)"/>
+  </svg>
+</div>`;
 
 /* v17-D: grab-to-pause — track which fan widgets are being dragged */
 const _fanGrabbed = new Set();
@@ -900,7 +905,7 @@ function renderFans(fans) {
       const el = $(`fan-${i}`);
       el.addEventListener('mousedown', () => {
         _fanGrabbed.add(i);
-        const g = el.querySelector('svg g');
+        const g = el.querySelector('.fan-blades');
         if (g) g.style.animationPlayState = 'paused';
       });
     });
@@ -910,7 +915,7 @@ function renderFans(fans) {
         _fanGrabbed.forEach((i) => {
           const el = $(`fan-${i}`);
           if (!el) return;
-          const g = el.querySelector('svg g');
+          const g = el.querySelector('.fan-blades');
           // Only resume if fan is actually spinning (rpm > 0)
           if (g && el.dataset.fanRpm > 0) g.style.animationPlayState = 'running';
         });
@@ -924,11 +929,11 @@ function renderFans(fans) {
     el.querySelector('.rpm').textContent = fan.rpm ?? '--';
     el.querySelector('label').textContent = fan.label.replace('_fan', '').toUpperCase();
     el.querySelector('.pct').textContent = fan.percent + '%';
-    const g = el.querySelector('svg g');
+    const g = el.querySelector('.fan-blades');
     // Don't override animationPlayState if the user is currently grabbing this fan
     if (!_fanGrabbed.has(i)) {
       if (fan.rpm > 0) {
-        g.style.animationDuration = Math.max(0.15, 60 / (fan.rpm / 25)).toFixed(2) + 's';
+        g.style.animationDuration = Math.max(0.8, 60 / (fan.rpm / 25)).toFixed(2) + 's';
         g.style.animationPlayState = 'running';
       } else {
         g.style.animationPlayState = 'paused';

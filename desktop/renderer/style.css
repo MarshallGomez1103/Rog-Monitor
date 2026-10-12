@@ -815,9 +815,14 @@ input[type="color"] {
 .fans { display: flex; gap: 18px; justify-content: space-around; flex-wrap: wrap; }
 .fan { text-align: center; }
 /* v17-D: grab cursor to signal drag-to-pause interaction */
-.fan svg { width: 64px; height: 64px; cursor: grab; }
-.fan svg:active { cursor: grabbing; }
-.fan svg g { transform-origin: 32px 32px; animation: spin 1s linear infinite; }
+.fan-icon { position: relative; width: 64px; height: 64px; margin: 0 auto; cursor: grab; }
+.fan-icon:active { cursor: grabbing; }
+.fan-icon svg { position: absolute; inset: 0; width: 64px; height: 64px; }
+/* Giro a saltos (steps(10) = 36°, con 5 aspas se ve continuo) y como mucho ~12 saltos/s
+   (app.js limita la duración a ≥0.8 s): cada fotograma regenera la página en Wayland y el
+   giro continuo costaba ~20 % de CPU con la ventana visible (medido, D-02). */
+.fan-blades { animation: spin 1s steps(10) infinite; will-change: transform; }
+@media (prefers-reduced-motion: reduce) { .fan-blades { animation: none; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 .fan .rpm { font-family: var(--mono); font-size: 17px; font-weight: 700; margin-top: 6px; }
 .fan label { display: block; font-size: 11px; letter-spacing: 1px; color: var(--dim); }
