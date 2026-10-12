@@ -30,6 +30,7 @@
         'disks.temp':           'Temp',
         'disks.read':           'Lectura',
         'disks.write':          'Escritura',
+        'disks.busy':           'ocupado',
         'disks.smart_btn':      'Salud SMART',
         'disks.smart_loading':  'Leyendo SMART…',
         'disks.smart_passed':   'APROBADO',
@@ -66,6 +67,7 @@
         'disks.temp':           'Temp',
         'disks.read':           'Read',
         'disks.write':          'Write',
+        'disks.busy':           'busy',
         'disks.smart_btn':      'SMART Health',
         'disks.smart_loading':  'Reading SMART…',
         'disks.smart_passed':   'PASSED',
@@ -102,6 +104,7 @@
         'disks.temp':           'Temp',
         'disks.read':           'Lecture',
         'disks.write':          'Écriture',
+        'disks.busy':           'occupé',
         'disks.smart_btn':      'Santé SMART',
         'disks.smart_loading':  'Lecture SMART…',
         'disks.smart_passed':   'OK',
@@ -138,6 +141,7 @@
         'disks.temp':           'Temp',
         'disks.read':           'Lettura',
         'disks.write':          'Scrittura',
+        'disks.busy':           'occupato',
         'disks.smart_btn':      'Salute SMART',
         'disks.smart_loading':  'Lettura SMART…',
         'disks.smart_passed':   'OK',
@@ -174,6 +178,7 @@
         'disks.temp':           'Temp',
         'disks.read':           'Leitura',
         'disks.write':          'Escrita',
+        'disks.busy':           'ocupado',
         'disks.smart_btn':      'Saúde SMART',
         'disks.smart_loading':  'A ler SMART…',
         'disks.smart_passed':   'OK',
@@ -210,6 +215,7 @@
         'disks.temp':           '温度',
         'disks.read':           '读取',
         'disks.write':          '写入',
+        'disks.busy':           '繁忙',
         'disks.smart_btn':      'SMART健康',
         'disks.smart_loading':  '读取SMART…',
         'disks.smart_passed':   '通过',
@@ -246,6 +252,7 @@
         'disks.temp':           '温度',
         'disks.read':           '読み込み',
         'disks.write':          '書き込み',
+        'disks.busy':           'ビジー',
         'disks.smart_btn':      'SMART健全性',
         'disks.smart_loading':  'SMARTを読み込み中…',
         'disks.smart_passed':   '合格',
@@ -282,6 +289,7 @@
         'disks.temp':           '온도',
         'disks.read':           '읽기',
         'disks.write':          '쓰기',
+        'disks.busy':           '사용 중',
         'disks.smart_btn':      'SMART 상태',
         'disks.smart_loading':  'SMART 읽는 중…',
         'disks.smart_passed':   '정상',
@@ -558,7 +566,13 @@
     if (d.read_mbps == null && d.write_mbps == null) return '';
     const r = fmtMbps(d.read_mbps);
     const w = fmtMbps(d.write_mbps);
-    return `${t('disks.read')} ${r} · ${t('disks.write')} ${w} MB/s`;
+    let txt = `${t('disks.read')} ${r} · ${t('disks.write')} ${w} MB/s`;
+    // IOPS y % ocupado (io_ticks): actividad real, distinta de la capacidad usada
+    if (d.read_iops != null || d.write_iops != null) {
+      txt += ` · ${Math.round((d.read_iops || 0) + (d.write_iops || 0))} IOPS`;
+    }
+    if (d.busy_pct != null) txt += ` · ${t('disks.busy')} ${Math.round(d.busy_pct)}%`;
+    return txt;
   }
 
   function buildDiskHtml(d, rootTemp) {
