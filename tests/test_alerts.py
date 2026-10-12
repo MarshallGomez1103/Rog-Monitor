@@ -152,3 +152,36 @@ class AlertEngineTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MemoryDisk(unittest.TestCase):
+    """F5-02..04: RAM, swap y disco lleno producen eventos con source ram/disk (filtros de la UI)."""
+
+    def run_sys(self, eng, sysd, dt=1):
+        eng._clock.now += dt
+        eng.check({"avg": 50}, {"active": None}, [], None, sysd)
+
+    def test_ram_swap_disk_fire_with_sources_only_disk_notifies(self):
+        eng = make()
+        with mock.patch("subprocess.Popen") as popen:
+            self.run_sys(eng, {"ram_percent": 93, "swap_percent": 85,
+                               "disks": [{"mount": "/", "percent": 97}, {"mount": "/data", "percent": 40}]})
+        # RAM/swap solo al registro; disco casi lleno sí avisa en el escritorio
+        self.assertEqual(popen.call_count, 1)
+        self.assertIn("alert_disk:97", popen.call_args[0][0])
+        srcs = sorted((e[4]["source"], e[4]["key"]) for e in eng.events)
+        self.assertEqual(srcs, [("disk", "disk_/"), ("ram", "ram"), ("ram", "swap")])
+
+    def test_below_threshold_and_no_swap_are_silent(self):
+        eng = make()
+        self.run_sys(eng, {"ram_percent": 60, "swap_percent": None, "disks": [{"mount": "/", "percent": 50}]})
+        self.assertEqual(len(eng.events), 0)
+
+    def test_ram_hysteresis_and_dedup(self):
+        eng = make()
+        self.run_sys(eng, {"ram_percent": 91})
+        self.run_sys(eng, {"ram_percent": 88}, dt=120)  # dentro del margen (90-5): sigue activo
+        self.run_sys(eng, {"ram_percent": 80}, dt=120)  # se despeja
+        self.run_sys(eng, {"ram_percent": 95}, dt=120)  # episodio nuevo
+        ram = [e for e in eng.events if e[4]["key"] == "ram"]
+        self.assertEqual([e[4]["count"] for e in ram], [2, 1])

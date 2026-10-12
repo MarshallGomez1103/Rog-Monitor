@@ -83,7 +83,8 @@ class AlertEngine:
                "count": count, "key": alert_key}
         self.events.append((datetime.now().strftime("%H:%M:%S"), level, message, key, ctx))
 
-    def check(self, cpu: dict, gpu: dict, fan_list: list[dict], cpu_watts: float | None) -> None:
+    def check(self, cpu: dict, gpu: dict, fan_list: list[dict], cpu_watts: float | None,
+              sysd: dict | None = None) -> None:
         t = self.t
         mt = self.cfg.get("hysteresis_temp", 3)
         mp = self.cfg.get("hysteresis_pct", 5)
@@ -130,6 +131,25 @@ class AlertEngine:
         if self._over("cpu_power", cpu_watts, thr, thr * mp / 100):
             self._fire("cpu_power", t("alert_power", v=cpu_watts), "warn", category="power",
                        source="power", value=cpu_watts, threshold=thr)
+
+        if sysd:
+            self._check_memory_disk(sysd, mp)
+
+    def _check_memory_disk(self, sysd: dict, margin: float) -> None:
+        """RAM / swap al registro (sin notificación); disco casi lleno sí notifica."""
+        t = self.t
+        for key, msg, value in (("ram", "alert_ram", sysd.get("ram_percent")),
+                                ("swap", "alert_swap", sysd.get("swap_percent"))):
+            thr = self.cfg.get(f"{key}_percent_warn", 90 if key == "ram" else 80)
+            if self._over(key, value, thr, margin):
+                self._fire(key, t(msg, v=value), "warn", notify=False, category="memory",
+                           source="ram", value=value, threshold=thr)
+        thr = self.cfg.get("disk_percent_warn", 95)
+        for d in sysd.get("disks") or []:
+            key = f"disk_{d.get('mount')}"
+            if self._over(key, d.get("percent"), thr, margin):
+                self._fire(key, t("alert_disk", m=d.get("mount"), v=d.get("percent")), "warn",
+                           category="disk", source="disk", value=d.get("percent"), threshold=thr)
 
 
 if __name__ == "__main__":

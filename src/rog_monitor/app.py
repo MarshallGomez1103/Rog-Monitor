@@ -121,7 +121,7 @@ class App:
         self.series["swap_gb"].push(_gib(sysd.get("swap_used_gb")) if sysd.get("swap_total_gb") else None)
         self.series["gpu_util"].push(active.get("util"))
 
-        self.alerts.check(cpu, gpu, fans, watts)
+        self.alerts.check(cpu, gpu, fans, watts, sysd)
         self._drain_gpu_results()
         if time.monotonic() > self._message_until:
             self.message = ""
