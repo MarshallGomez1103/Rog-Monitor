@@ -3,7 +3,7 @@ Plan: `PLAN_MAESTRO_ROG_MONITOR.md` (raíz). Los 90 CP anteriores ya se ejecutar
 Rama de trabajo: `feat/v22` (sin upstream, sin push). master = origin/master = 7d49333 (v21, pusheado por orden del propietario 2026-10-11).
 Respaldo: `~/MyFiles/Backups/rog-monitor/2026-10-11-pre-v22/` (bundle + ignorados + ZIP, SHA256SUMS).
 
-## Fase actual: F0 CERRADA (con excepciones D-01 CI e2e y D-02 coste de la app visible) — esperando aprobación para F1
+## Fase actual: F0 cerrada; el propietario autorizó seguir arreglando (2026-10-11). En curso: F1/F2/F3/F5/F8 por prioridad visible
 | CP | Estado | Nota |
 |---|---|---|
 | F0-01 | ACCEPTED | snapshot Git = informe 01 |
@@ -18,3 +18,27 @@ Respaldo: `~/MyFiles/Backups/rog-monitor/2026-10-11-pre-v22/` (bundle + ignorado
 | F0-10 | ACCEPTED | matriz de defectos + ADR-0006 |
 
 Gate F0: F0-08 queda TESTED con excepción D-01 registrada (no se corrige en F0). Abrir F1 requiere aprobación del propietario.
+
+## Hecho tras F0 (rama feat/v22, sin push)
+| CP / bug | Estado | Commit |
+|---|---|---|
+| D-01 CI e2e (Node 22 + binario electron) + índice node tests | TESTED (CI remoto se verá al publicar la rama) | ver git log |
+| F2-02 uso % en tarjeta CPU | TESTED | 563cf4c |
+| F2-03..05 RAM/swap GiB, ejes fijos, GPU % | TESTED (modo % alternativo en F4-07) | 563cf4c |
+| F2-06 IOPS/ocupado en discos | TESTED | 00d00a5 |
+| F2-07 red ≥ 0 | TESTED | 5b0052f |
+| F8-02 TUI sin TTY | TESTED | 5b0052f |
+| F5-02..04 alertas RAM/swap/disco | TESTED | 95810a1 |
+| F1-06/07 escritura atómica + timeouts | TESTED | 6b89e8d |
+| F1-04/05 RECOVERY + uninstall copia root | TESTED | 335aa55 |
+| F1-02 verificación VERSION/dueño en Python | TESTED | c0ca804 |
+| F1-03 profile-sync opt-in | BLOCKED (decisión propietario) | – |
+| F3-05 SIGCONT antes de matar backend | TESTED | 58cee5e |
+| F3-07 cadencia monotónica (1128→1002 ms) | TESTED | a8f68cd |
+| D-02 animaciones a saltos (app visible 30-60 % → 11-19 %) | TESTED | 77885ea |
+| BUG ventiladores pegados a 6000 rpm con CPU fría | TESTED con fakes; requiere sudo install-system.sh | 34f710d |
+| BUG límites de potencia EBUSY sin reintento | TESTED con fakes; requiere sudo install-system.sh | 2fede12 |
+| GPU "Mode --" → "Modo GPU" oculto sin supergfxd | TESTED | ver git log |
+
+Pendiente del propietario: `sudo bash scripts/install-system.sh` (despliega rog-profile-sync nuevo) + reiniciar la app; probar: jugar → salir → 2 min en performance → ventiladores deben bajar solos.
+Siguientes candidatos: F2-08 (ts/stale), F2-09 schema 2 deltas, F3-06 timeout VRAM NVML, F4 (editor de gráficas, duplicación), F6 overlay, F7 dueño único (asusd escribe curvas en cada cambio de perfil).
