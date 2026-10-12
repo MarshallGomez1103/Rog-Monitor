@@ -147,7 +147,11 @@ let closePromptOpen = false;
 function startBackend() {
   if (backend) {
     backend.removeAllListeners();
+    // Un proceso en SIGSTOP no atiende SIGTERM hasta reanudarse: sin SIGCONT quedaba
+    // en estado T para siempre al reiniciar con la ventana oculta (ARC-03 / F3-05).
+    try { backend.kill('SIGCONT'); } catch (_) { /* ya murió */ }
     backend.kill();
+    backendPaused = false;
   }
   backend = spawn(PYTHON, ['-m', 'rog_monitor', '--json-stream', '--interval', '1'], {
     env: PY_ENV,
