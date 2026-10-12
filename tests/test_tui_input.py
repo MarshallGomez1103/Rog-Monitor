@@ -242,10 +242,12 @@ class TuiPty(unittest.TestCase):
                 self.assertIn(b"HELP", b"".join(out))
                 out.clear()
                 os.write(master, b"\x1b")
-                _pump(master, out, 3.0, until=b"SYSTEM")
-                data = b"".join(out)
-                self.assertIn(b"SYSTEM", data, "Esc no cerró la ayuda")  # PROCESSES sale de pantalla si hay eventos
-                self.assertNotIn(b"close this help", data)
+                _pump(master, out, 2.0)
+                # Solo el último fotograma completo (rich empieza cada uno con ESC[H): el
+                # texto de la ayuda puede seguir llegando en el fotograma anterior.
+                last = b"".join(out).rsplit(b"\x1b[H", 1)[-1]
+                self.assertIn(b"SYSTEM", last, "Esc no cerró la ayuda")  # PROCESSES sale de pantalla si hay eventos
+                self.assertNotIn(b"close this help", last)
                 self._stop(master, proc, out)
             finally:
                 if proc.poll() is None:
