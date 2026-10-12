@@ -1788,6 +1788,19 @@ function gpuRequestToast(mode, res) {
 /* Mapa clave-de-orden → clase de la celda que se resalta en neón (compartido
    por la tabla #procs y el modal #allprocs). El atributo data-sort-col del
    <table> lleva esta clase y el CSS resalta SOLO esa columna. */
+const EPP_SHORT = {
+  performance: 'perf', balance_performance: 'bal-perf', balance_power: 'bal-power',
+  power: 'power', default: 'default',
+};
+
+/* Núcleos ocupados por el proceso (cpu_core es estilo top: 100 = 1 núcleo, 235 = 2.35).
+   Mostrarlo como "235%" confundía (parecía pasar de 100 %); ahora es "2.35". */
+function procCoresHtml(p) {
+  if (p.cpu_core == null) return '<span class="dim">—</span>';
+  const cores = p.cpu_core / 100;
+  return `<span class="procs-core" title="${escapeHtml(t('tip.proc_cores', { n: cores.toFixed(2) }))}">${cores.toFixed(cores < 10 ? 2 : 1)}</span>`;
+}
+
 const PROC_COL_CLASS = { pid: 'pid', name: 'pname', cpu: 'cpu', cpu_core: 'cpu-core', mem_mb: 'mem' };
 
 function sortProcRows(rows, sortKey, sortDir) {
@@ -1882,7 +1895,10 @@ function update(stats) {
   // only flag power that is actually abnormal, not just "is a number"
   cpuWatts.className = (stats.cpu_watts ?? 0) >= 140 ? 'accent' : '';
   $('cpu-throttle').textContent = cpu.throttle_count ?? '--';
-  $('cpu-epp').textContent = cpu.epp || '--';
+  // EPP corto: "balance_performance" no cabía en la celda y pisaba a Uptime.
+  const epp = $('cpu-epp');
+  epp.textContent = EPP_SHORT[cpu.epp] || cpu.epp || '--';
+  epp.title = cpu.epp ? `EPP (energy_performance_preference): ${cpu.epp}` : '';
   $('cpu-uptime').textContent = fmtUptime(sys.uptime_s ?? (sys.uptime_h ? sys.uptime_h * 3600 : 0));
 
   /* gpu */
@@ -2034,11 +2050,7 @@ function update(stats) {
   lastProcsSig = procsSig;
   if (procsTable) procsTable.dataset.sortCol = PROC_COL_CLASS[procsSortKey] || '';
   $('procs-body').innerHTML = sortProcRows(procRows, procsSortKey, procsSortDir).map((p) => {
-    const core = p.cpu_core != null
-      ? `<span class="procs-core" title="${p.cpu_core >= 100
-            ? Math.floor(p.cpu_core / 100) + ' núcleo(s) completo(s)'
-            : 'fracción de un núcleo'}">${p.cpu_core.toFixed(0)}%</span>`
-      : '<span class="dim">—</span>';
+    const core = procCoresHtml(p);
     return `<tr data-pid="${escapeHtml(p.pid)}" data-name="${escapeHtml(p.name)}" title="${escapeHtml(t('procs.kill', { name: p.name }))}">
         <td class="pid">${escapeHtml(p.pid)}</td><td class="pname">${escapeHtml(p.name)}</td>
         <td class="cpu r">${p.cpu.toFixed(1)}%</td>
@@ -3906,9 +3918,7 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
   }
 
   function rowHtml(p) {
-    const core = p.cpu_core != null
-      ? `<span class="procs-core">${p.cpu_core.toFixed(0)}%</span>`
-      : '<span class="dim">—</span>';
+    const core = procCoresHtml(p);
     return `<tr data-pid="${p.pid}" data-name="${escapeHtml(p.name)}" title="${escapeHtml(t('procs.kill', { name: p.name }))}">
         <td class="pid">${escapeHtml(p.pid)}</td><td class="pname">${escapeHtml(p.name)}</td>
         <td class="cpu r">${p.cpu.toFixed(1)}%</td>

@@ -1542,3 +1542,6 @@ html[data-mode="dark"][data-theme="neon-nights"] .block::before {
    el texto lleva un matiz rojo de aviso, y al pasar el mouse se llena de rojo. */
 .ghost.danger { color: var(--state-hot); }
 .ghost.danger:hover { background: var(--state-hot); color: var(--bg); border-color: var(--state-hot); }
+
+/* Celdas de texto de las tarjetas (EPP, modo…): nunca invaden la celda vecina */
+.statgrid b.small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
