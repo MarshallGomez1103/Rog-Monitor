@@ -397,6 +397,87 @@ curves_enabled() {
     [[ "$checked" -gt 0 ]]
 }
 
+# --- Ventiladores pegados arriba (bug reportado 2026-10-12) ---------------------
+# Con la curva propia activa, el EC puede dejar los ventiladores a ~6000 rpm aunque la
+# CPU ya se enfrió (performance, tras jugar: 59.9 °C y 6000 rpm durante horas; al cambiar
+# de perfil bajaron al instante porque se reescribió la curva). Si el paquete está frío y
+# un ventilador gira muy por encima de lo que pide la curva APLICADA durante ≥60 s, se
+# reescribe la curva del perfil (enable=2 un segundo y otra vez la curva + enable=1).
+# ponytail: umbral fijo (≥5500 rpm con la curva pidiendo <140/255 y paquete <70 °C);
+# si da falsos positivos, usar la calibración rpm↔pwm de fan-curves.json.
+STUCK_RPM=5500
+STUCK_MAX_PWM=140
+STUCK_COLD_C=70
+STUCK_HOLD_S=60
+STUCK_SINCE=0
+
+hwmon_by_name() {            # <nombre> [raíz sysfs] -> dir del hwmon
+    local dir name
+    for dir in "${2:-}"/sys/class/hwmon/hwmon*; do
+        [[ -r "$dir/name" ]] || continue
+        IFS= read -r name < "$dir/name"
+        [[ "$name" == "$1" ]] && { printf '%s\n' "$dir"; return 0; }
+    done
+    return 1
+}
+
+# PWM que pide la curva aplicada en <hwmon> para el ventilador <fan> a <temp> °C (interpolado).
+curve_pwm_at() {
+    local hwmon="$1" fan="$2" temp="$3" i t p pts=""
+    for i in 1 2 3 4 5 6 7 8; do
+        IFS= read -r t < "$hwmon/pwm${fan}_auto_point${i}_temp" || return 1
+        IFS= read -r p < "$hwmon/pwm${fan}_auto_point${i}_pwm" || return 1
+        pts+="$t $p "
+    done
+    awk -v T="$temp" -v pts="$pts" 'BEGIN{n=split(pts,a," ");
+        if (T<=a[1]) {print a[2]; exit} for(i=1;i<n-1;i+=2){t0=a[i];p0=a[i+1];t1=a[i+2];p1=a[i+3];
+        if (T<=t1) {print int(p0+(p1-p0)*(T-t0)/(t1>t0?t1-t0:1)); exit}} print a[n]}'
+}
+
+# 0 si el ventilador de CPU está pegado: <curve_hwmon> <asus_hwmon (fanN_input)> <temp °C>
+fans_stuck_now() {
+    local curve="$1" asus="$2" temp="$3" fan rpm want
+    (( temp < STUCK_COLD_C )) || return 1
+    # Solo el ventilador de CPU (1): su curva sigue a la CPU. GPU/MID pueden ir altos con
+    # razón en un juego que carga la GPU con la CPU fría, y no hay temp de GPU sin despertarla.
+    for fan in 1; do
+        [[ -r "$asus/fan${fan}_input" ]] || continue
+        IFS= read -r rpm < "$asus/fan${fan}_input" || continue
+        want="$(curve_pwm_at "$curve" "$fan" "$temp")" || continue
+        if (( rpm >= STUCK_RPM && want < STUCK_MAX_PWM )); then
+            log "Fan $fan stuck high: ${rpm} rpm at ${temp} °C (curve asks pwm $want/255)"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Llamado en cada vuelta: re-aplica la curva si el atasco dura ≥ STUCK_HOLD_S.
+check_stuck_fans() {
+    local target="$1" now pkg asus fan temp
+    pkg="$(hwmon_by_name coretemp "${ROG_SYSFS_ROOT:-}")" || return 0
+    asus="$(hwmon_by_name asus "${ROG_SYSFS_ROOT:-}")" || return 0
+    IFS= read -r temp < "$pkg/temp1_input" 2>/dev/null || return 0
+    temp=$((temp / 1000))
+    now="${STUCK_NOW:-$(date +%s)}"
+    if ! fans_stuck_now "$CURVE_HWMON" "$asus" "$temp" 2>/dev/null; then
+        STUCK_SINCE=0
+        return 0
+    fi
+    if (( STUCK_SINCE == 0 )); then
+        STUCK_SINCE="$now"
+        return 0
+    fi
+    (( now - STUCK_SINCE >= STUCK_HOLD_S )) || return 0
+    log "Fans stuck high for $((now - STUCK_SINCE)) s with the CPU at ${temp} °C: re-applying $target fan curves"
+    for fan in $(seq 1 "$MAX_FAN_ID"); do
+        [[ -w "$CURVE_HWMON/pwm${fan}_enable" ]] && printf '2\n' > "$CURVE_HWMON/pwm${fan}_enable"
+    done
+    sleep "${STUCK_TOGGLE_S:-1}"
+    apply_curves "$target" "$CURVE_HWMON"
+    STUCK_SINCE=0
+}
+
 sync_once() {
     local ppd_profile
     local target
@@ -442,10 +523,15 @@ sync_once() {
         ! curves_enabled "$CURVE_HWMON" ||
         ! apply_curves "$target" "$CURVE_HWMON" check-only; then
         apply_curves "$target" "$CURVE_HWMON" || return 1
+    else
+        check_stuck_fans "$target"
     fi
 
     LAST_PROFILE="$target"
 }
+
+# Importable desde tests (`source`): solo definiciones, sin bucle ni lecturas de /sys.
+[[ "${BASH_SOURCE[0]}" == "$0" ]] || return 0
 
 # --defaults <perfil>: imprime las curvas por defecto como JSON (sin root).
 # La app lo usa para mostrar la misma base que aplicaría el servicio.

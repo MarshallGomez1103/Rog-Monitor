@@ -242,9 +242,9 @@ class TuiPty(unittest.TestCase):
                 self.assertIn(b"HELP", b"".join(out))
                 out.clear()
                 os.write(master, b"\x1b")
-                _pump(master, out, 0.6)
+                _pump(master, out, 3.0, until=b"SYSTEM")
                 data = b"".join(out)
-                self.assertIn(b"PROCESSES", data, "Esc no cerró la ayuda")
+                self.assertIn(b"SYSTEM", data, "Esc no cerró la ayuda")  # PROCESSES sale de pantalla si hay eventos
                 self.assertNotIn(b"close this help", data)
                 self._stop(master, proc, out)
             finally:
