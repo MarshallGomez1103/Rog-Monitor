@@ -247,3 +247,34 @@ class RootScriptsStrictMode(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class UninstallPicksTrustedSafeMode(unittest.TestCase):
+    """F1-05: uninstall.sh ejecuta como root la copia root-owned instalada, nunca una del usuario."""
+
+    def pick(self, prefix):
+        fn = subprocess.run(["sed", "-n", "/^safe_mode_path()/,/^}/p", str(REPO / "scripts" / "uninstall.sh")],
+                            capture_output=True, text=True, check=True).stdout
+        r = subprocess.run(["bash", "-c", fn + '\nsafe_mode_path "$1"', "_", "/repo"],
+                           capture_output=True, text=True, env={**os.environ, "ROG_PREFIX": prefix},
+                           stdin=subprocess.DEVNULL)
+        return r.stdout.strip()
+
+    def test_user_owned_installed_copy_is_ignored(self):
+        if os.geteuid() == 0:
+            self.skipTest("corre como root")
+        with tempfile.TemporaryDirectory() as p:
+            inst = Path(p) / "usr/local/libexec/rog-monitor"
+            inst.mkdir(parents=True)
+            (inst / "rog-monitor-safe-mode.sh").write_text("# copia del usuario\n")
+            self.assertEqual(self.pick(p), "/repo/scripts/rog-monitor-safe-mode.sh")
+
+    def test_no_install_falls_back_to_repo(self):
+        with tempfile.TemporaryDirectory() as p:
+            self.assertEqual(self.pick(p), "/repo/scripts/rog-monitor-safe-mode.sh")
+
+    def test_real_root_owned_copy_is_preferred(self):
+        real = Path("/usr/local/libexec/rog-monitor/rog-monitor-safe-mode.sh")
+        if not real.exists() or real.stat().st_uid != 0:
+            self.skipTest("sin instalación root en este equipo")
+        self.assertEqual(self.pick(""), str(real))
