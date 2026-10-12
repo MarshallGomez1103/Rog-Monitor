@@ -42,3 +42,9 @@ Gate F0: F0-08 queda TESTED con excepción D-01 registrada (no se corrige en F0)
 
 Pendiente del propietario: `sudo bash scripts/install-system.sh` (despliega rog-profile-sync nuevo) + reiniciar la app; probar: jugar → salir → 2 min en performance → ventiladores deben bajar solos.
 Siguientes candidatos: F2-08 (ts/stale), F2-09 schema 2 deltas, F3-06 timeout VRAM NVML, F4 (editor de gráficas, duplicación), F6 overlay, F7 dueño único (asusd escribe curvas en cada cambio de perfil).
+
+## 2026-10-12 (tarde)
+- 17cb34d: barras núcleos E visibles, procesos en "núcleos" (2.35), EPP corto.
+- 15cf096: detector de ventiladores revisado (regla propietario: frío baja todo / caliente sube todo; 3 ventiladores vs su curva y calibración, 60 s, cooldown 5 min). **Requiere sudo install-system.sh.**
+- 14da3e4: regresión F1-02 como root corregida (límites ya se aplican: PL1 140 / PL2 175 / DB 25 verificado).
+- 98f1883: roadmap v21/v22, P1 parciales honestos.
