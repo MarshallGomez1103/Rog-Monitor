@@ -2,6 +2,7 @@
 
 import os
 import select
+import time
 import sys
 
 try:
@@ -93,6 +94,8 @@ class KeyReader:
 
     def get(self, timeout: float = 0.0) -> str | None:
         if self.fd is None:
+            # sin TTY no hay teclas: respetar el timeout (si no, el bucle de la TUI gira al 100 %)
+            time.sleep(timeout)
             return None
         if not self._queue:
             chunk = self._read(timeout)

@@ -107,6 +107,15 @@ class Memory(unittest.TestCase):
         with mock.patch.object(sysinfo.SysReader, "_net_bytes", return_value=(0, 0)):
             return rd.read()
 
+    def test_net_rate_never_negative_on_counter_reset(self):
+        rd = self.make(FX / "t0")                       # contador inicial (0, 0)
+        with mock.patch.object(sysinfo.SysReader, "_net_bytes", return_value=(5_000_000, 9_000_000)):
+            rd.read()
+        with mock.patch.object(sysinfo.SysReader, "_net_bytes", return_value=(1_000, 2_000)):
+            r = rd.read()                               # interfaz recreada: el contador baja
+        self.assertEqual(r["rx_mbps"], 0)
+        self.assertEqual(r["tx_mbps"], 0)
+
     def test_used_is_total_minus_available(self):
         r = self.read(self.make(FX / "t0"))
         gb = 1024 * 1024

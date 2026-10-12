@@ -56,6 +56,17 @@ def _pump(master, out, seconds, until=None):
                 return
 
 
+class KeyReaderNoTty(unittest.TestCase):
+    def test_get_without_tty_waits_instead_of_spinning(self):
+        # TUI-02: sin TTY get() volvía al instante y el bucle de la TUI giraba al ~94 % de CPU
+        from rog_monitor.keys import KeyReader
+        r = KeyReader()
+        r.fd = None
+        t0 = time.monotonic()
+        self.assertIsNone(r.get(timeout=0.2))
+        self.assertGreaterEqual(time.monotonic() - t0, 0.18)
+
+
 @unittest.skipUnless(os.name == "posix" and termios, "requiere POSIX/termios")
 class KeyReaderParser(unittest.TestCase):
     def test_only_real_keys_survive(self):
