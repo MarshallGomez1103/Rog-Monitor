@@ -16,7 +16,7 @@ function grab(re, what) {
 const code = [
   grab(/^const CHART_MAX_POINTS = \d+;/m, 'CHART_MAX_POINTS'),
   grab(/^function chartTail\(values, n\) \{[\s\S]*?^\}/m, 'chartTail'),
-  grab(/^function chartRange\(data, fromZero\) \{[\s\S]*?^\}/m, 'chartRange'),
+  grab(/^function chartRange\(data, fromZero, ceil\) \{[\s\S]*?^\}/m, 'chartRange'),
   grab(/^function chartRuns\(data\) \{[\s\S]*?^\}/m, 'chartRuns'),
   grab(/^const HIST_MODES = \{[\s\S]*?^\};/m, 'HIST_MODES'),
   grab(/^function histSlots\(mode\) \{[\s\S]*?^\}/m, 'histSlots'),
@@ -69,9 +69,19 @@ test('histSlots: modo desconocido cae a temp; ambos modos usan los mismos 4 canv
   assert.strictEqual(new Set(ids('temp')).size, 4);
 });
 
-test('histSlots: las series de uso existen en el contrato y van en % 0-100', () => {
-  const keys = HIST_MODES.usage.map((r) => r[1]).filter(Boolean);
-  assert.deepStrictEqual(keys, ['cpu_usage', 'ram_used', 'swap_used']);
-  HIST_MODES.usage.filter((r) => r[1]).forEach((r) => assert.strictEqual(r[3].unit, '%'));
-  assert.strictEqual(HIST_MODES.usage[3][1], null); // 4º hueco oculto en modo uso
+test('histSlots: modo uso = CPU % (0-100), RAM/swap en GiB (0..total), GPU %', () => {
+  const rows = HIST_MODES.usage;
+  assert.deepStrictEqual(rows.map((r) => r[1]), ['cpu_usage', 'ram_gb', 'swap_gb', 'gpu_util']);
+  assert.deepStrictEqual(rows.map((r) => r[3].unit), ['%', 'GiB', 'GiB', '%']);
+  assert.strictEqual(rows[0][3].max, 100);
+  assert.strictEqual(rows[3][3].max, 100);
+  assert.strictEqual(rows[1][3].maxKey, 'ram_total_gb');
+  assert.strictEqual(rows[2][3].maxKey, 'swap_total_gb');
+});
+
+test('chartRange con techo fijo: % siempre 0-100, GiB 0..total (no autoescala)', () => {
+  assert.deepStrictEqual(chartRange([30, 30, 30], true, 100), { lo: 0, hi: 100 });
+  assert.deepStrictEqual(chartRange([14.6, 14.8], false, 47), { lo: 0, hi: 47 });
+  assert.strictEqual(chartRange([null, null], false, 100), null);   // sin datos sigue siendo null
+  assert.deepStrictEqual(chartRange([30, 31], true, undefined), { lo: 0, hi: 35 }); // sin techo: como antes
 });

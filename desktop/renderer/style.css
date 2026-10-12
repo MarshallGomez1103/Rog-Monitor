@@ -815,9 +815,15 @@ input[type="color"] {
 .fans { display: flex; gap: 18px; justify-content: space-around; flex-wrap: wrap; }
 .fan { text-align: center; }
 /* v17-D: grab cursor to signal drag-to-pause interaction */
-.fan svg { width: 64px; height: 64px; cursor: grab; }
-.fan svg:active { cursor: grabbing; }
-.fan svg g { transform-origin: 32px 32px; animation: spin 1s linear infinite; }
+.fan-icon { position: relative; width: 64px; height: 64px; margin: 0 auto; cursor: grab; }
+.fan-icon:active { cursor: grabbing; }
+.fan-icon svg { position: absolute; inset: 0; width: 64px; height: 64px; }
+/* Giro fluido por defecto (lo pidió el propietario). Modo ahorro (Configuración →
+   html.fan-eco): a saltos, steps(10) y ≥0.8 s/vuelta. Medido con la app visible:
+   fluido ~58 % CPU, ahorro ~18 %, sin animación ~11 % (Wayland redibuja toda la ventana). */
+.fan-blades { animation: spin 1s linear infinite; will-change: transform; }
+html.fan-eco .fan-blades { animation-timing-function: steps(10); }
+@media (prefers-reduced-motion: reduce) { .fan-blades { animation: none; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 .fan .rpm { font-family: var(--mono); font-size: 17px; font-weight: 700; margin-top: 6px; }
 .fan label { display: block; font-size: 11px; letter-spacing: 1px; color: var(--dim); }
@@ -1537,3 +1543,6 @@ html[data-mode="dark"][data-theme="neon-nights"] .block::before {
    el texto lleva un matiz rojo de aviso, y al pasar el mouse se llena de rojo. */
 .ghost.danger { color: var(--state-hot); }
 .ghost.danger:hover { background: var(--state-hot); color: var(--bg); border-color: var(--state-hot); }
+
+/* Celdas de texto de las tarjetas (EPP, modo…): nunca invaden la celda vecina */
+.statgrid b.small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

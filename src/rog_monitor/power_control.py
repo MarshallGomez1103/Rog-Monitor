@@ -63,6 +63,37 @@ _NEEDS_INSTALL = (
     "(sudo bash scripts/install-system.sh). / System integration missing."
 )
 
+
+
+def _helper_problem(script: Path, libexec: Path = _LIBEXEC, check_version: bool = True) -> dict | None:
+    """Misma regla que desktop/priv.js resolveHelper (F1-02): el ayudante existe,
+    su VERSION coincide con la app y él y su directorio son de root sin escritura
+    para otros. Devuelve el dict de error o None si se puede usar.
+    check_version=False cuando ya corremos como root: entonces somos la copia
+    instalada (rog-profile-sync -> rog-py.sh), que no tiene VERSION propio."""
+    if not script.is_file():
+        return {"ok": False, "needsInstall": True, "err": f"{_NEEDS_INSTALL} ({script})"}
+    if not check_version:
+        return _owner_problem(script, libexec)
+    from . import __version__
+    try:
+        installed = (libexec / "VERSION").read_text().strip()
+    except OSError:
+        installed = None
+    if installed != str(__version__).strip():
+        return {"ok": False, "needsInstall": True,
+                "err": f"{_NEEDS_INSTALL} (instalado/installed: {installed or '-'}, app: {__version__})"}
+    return _owner_problem(script, libexec)
+
+
+def _owner_problem(script: Path, libexec: Path) -> dict | None:
+    for p in (libexec, script):
+        st = p.stat()
+        if st.st_uid != 0 or st.st_mode & 0o022:
+            return {"ok": False, "err": f"{p} no es de root o es escribible por otros: no se ejecuta como root."}
+    return None
+
+
 # Controls backed by asus-armoury sysfs (writable via apply-power-control.sh).
 _ATTR_KEYS = ("pl1", "pl2", "dynamic_boost", "thermal_target")
 
@@ -508,8 +539,9 @@ class PowerControl:
                 cmd = ["bash", str(_REPO_SCRIPT)] + args
                 env: dict | None = dict(os.environ)
             else:
-                if not _SCRIPT.is_file():
-                    return {"ok": False, "needsInstall": True, "err": _NEEDS_INSTALL}
+                problem = _helper_problem(_SCRIPT, check_version=not run_as_root)
+                if problem:
+                    return problem
                 cmd = ([str(_SCRIPT)] if run_as_root else [_PKEXEC, str(_SCRIPT)]) + args
                 env = None
             try:
@@ -544,12 +576,9 @@ class PowerControl:
                     }
 
             gpu_script_path = str(_GPU_CLOCKS_SCRIPT)
-            if not Path(gpu_script_path).exists():
-                return {
-                    "ok": False,
-                    "needsInstall": True,
-                    "err": f"{_NEEDS_INSTALL} ({gpu_script_path})",
-                }
+            problem = _helper_problem(_GPU_CLOCKS_SCRIPT, check_version=not run_as_root)
+            if problem:
+                return problem
 
             gpu_cmd = [gpu_script_path] if run_as_root else [_PKEXEC, gpu_script_path]
             gpu_cmd += [

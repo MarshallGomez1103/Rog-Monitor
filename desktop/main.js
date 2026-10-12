@@ -3,6 +3,7 @@
 
 const { app, BrowserWindow, ipcMain, dialog, shell, screen, Tray, Menu, nativeImage } = require('electron');
 const { spawn, spawnSync, execFile } = require('child_process');
+const { writeAtomic } = require('./fsutil');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -132,7 +133,7 @@ function writeAppConfig(patch) {
   try {
     const next = { ...readAppConfig(), ...patch };
     fs.mkdirSync(CONFIG_DIR_PATH, { recursive: true });
-    fs.writeFileSync(CONFIG_JSON_PATH, JSON.stringify(next, null, 2) + '\n', 'utf-8');
+    writeAtomic(CONFIG_JSON_PATH, JSON.stringify(next, null, 2) + '\n', 'utf-8');
   } catch (_) { /* close behavior must never crash the app */ }
 }
 
@@ -146,7 +147,11 @@ let closePromptOpen = false;
 function startBackend() {
   if (backend) {
     backend.removeAllListeners();
+    // Un proceso en SIGSTOP no atiende SIGTERM hasta reanudarse: sin SIGCONT quedaba
+    // en estado T para siempre al reiniciar con la ventana oculta (ARC-03 / F3-05).
+    try { backend.kill('SIGCONT'); } catch (_) { /* ya murió */ }
     backend.kill();
+    backendPaused = false;
   }
   backend = spawn(PYTHON, ['-m', 'rog_monitor', '--json-stream', '--interval', '1'], {
     env: PY_ENV,
@@ -485,7 +490,7 @@ function detectFanKeys() {
 // without root), so the editor shows the same baseline the service applies.
 function scriptDefaults(profile) {
   if (!fs.existsSync(SYNC_SCRIPT)) return null;
-  const res = spawnSync('bash', [SYNC_SCRIPT, '--defaults', profile], { encoding: 'utf-8', env: APP_ENV });
+  const res = spawnSync('bash', [SYNC_SCRIPT, '--defaults', profile], { encoding: 'utf-8', env: APP_ENV, timeout: 10000 });
   if (res.status !== 0 || !res.stdout) return null;
   try {
     const curves = JSON.parse(res.stdout);
@@ -573,7 +578,7 @@ ipcMain.handle('set-fan-config', async (_e, { profile, curves, cap, capByFan }) 
   delete store.cap_rpm;
   try {
     fs.mkdirSync(path.dirname(FAN_CURVES_JSON), { recursive: true });
-    fs.writeFileSync(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
+    writeAtomic(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
   } catch (err) {
     return { ok: false, err: `No pude guardar ${FAN_CURVES_JSON}: ${err.message}` };
   }
@@ -619,7 +624,7 @@ ipcMain.handle('set-fan-config-multi', async (_e, { profiles }) => {
   delete store.cap_rpm; // el cap es solo por perfil (ver set-fan-config)
   try {
     fs.mkdirSync(path.dirname(FAN_CURVES_JSON), { recursive: true });
-    fs.writeFileSync(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
+    writeAtomic(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
   } catch (err) {
     return { ok: false, err: `No pude guardar ${FAN_CURVES_JSON}: ${err.message}` };
   }
@@ -644,7 +649,7 @@ ipcMain.handle('set-gaming-cap', (_e, rpm) => {
   else delete store.gaming_cap_rpm;
   try {
     fs.mkdirSync(path.dirname(FAN_CURVES_JSON), { recursive: true });
-    fs.writeFileSync(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
+    writeAtomic(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
   } catch (err) {
     return { ok: false, err: String(err.message) };
   }
@@ -698,7 +703,7 @@ ipcMain.handle('fan-benchmark', async () => {
   store.max_rpm = max;
   try {
     fs.mkdirSync(path.dirname(FAN_CURVES_JSON), { recursive: true });
-    fs.writeFileSync(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
+    writeAtomic(FAN_CURVES_JSON, JSON.stringify(store, null, 2) + '\n');
   } catch (err) {
     return { ok: false, err: `Medí los máximos pero no pude guardar: ${err.message}` };
   }
@@ -745,7 +750,7 @@ ipcMain.handle('set-fps-logging', (_e, enabled) => {
   try {
     fs.mkdirSync(path.dirname(MANGOHUD_CONF), { recursive: true });
     fs.mkdirSync(FPS_LOG_DIR, { recursive: true });
-    fs.writeFileSync(MANGOHUD_CONF, conf.trimStart());
+    writeAtomic(MANGOHUD_CONF, conf.trimStart());
   } catch (err) {
     return { ok: false, err: `No pude editar ${MANGOHUD_CONF}: ${err.message}` };
   }
@@ -810,7 +815,7 @@ ipcMain.handle('import-config', async () => {
       const target = path.join(CONFIG_DIR_PATH, name);
       // respaldo del archivo actual antes de pisarlo
       if (fs.existsSync(target)) fs.copyFileSync(target, `${target}.pre-import`);
-      fs.writeFileSync(target, JSON.stringify(bundle.configs[name], null, 2) + '\n');
+      writeAtomic(target, JSON.stringify(bundle.configs[name], null, 2) + '\n');
       imported.push(name);
     }
   } catch (err) {
@@ -1067,7 +1072,7 @@ async function applyMusicFrame(level) {
 // stream.capture.sink=true.
 function resolveDefaultSink() {
   try {
-    const res = spawnSync('pactl', ['get-default-sink'], { encoding: 'utf-8', env: APP_ENV });
+    const res = spawnSync('pactl', ['get-default-sink'], { encoding: 'utf-8', env: APP_ENV, timeout: 3000 });
     const sink = (res.stdout || '').trim();
     if (res.status === 0 && sink) return sink;
   } catch (_) { /* ignore */ }
@@ -1076,7 +1081,7 @@ function resolveDefaultSink() {
 
 function whichBin(bin) {
   try {
-    const res = spawnSync('which', [bin], { encoding: 'utf-8', env: APP_ENV });
+    const res = spawnSync('which', [bin], { encoding: 'utf-8', env: APP_ENV, timeout: 3000 });
     return res.status === 0 ? res.stdout.trim() : null;
   } catch (_) {
     return null;
@@ -1342,7 +1347,7 @@ ipcMain.handle('set-autostart', (_e, enabled) => {
         '',
       ].join('\n');
       fs.mkdirSync(path.dirname(AUTOSTART_DESKTOP), { recursive: true });
-      fs.writeFileSync(AUTOSTART_DESKTOP, content);
+      writeAtomic(AUTOSTART_DESKTOP, content);
     } else {
       fs.rmSync(AUTOSTART_DESKTOP, { force: true });
     }

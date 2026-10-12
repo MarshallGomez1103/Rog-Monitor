@@ -24,6 +24,9 @@ ALERT_BOUNDS = {
     "fan_stopped_cpu_temp": (30, 100),
     "cooldown_seconds": (10, 3600),
     "throttle_min_ms": (0, 5000),
+    "ram_percent_warn": (50, 99),
+    "swap_percent_warn": (10, 99),
+    "disk_percent_warn": (50, 99),
 }
 # temp_colors lists [green_below, yellow_below, orange_below] bounded here
 COLOR_BOUNDS = {

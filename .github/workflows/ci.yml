@@ -43,7 +43,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
           cache-dependency-path: desktop/package-lock.json
 
@@ -73,13 +73,12 @@ jobs:
       - name: Installer dry-run (no root)
         run: bash scripts/install-system.sh --dry-run > /dev/null
 
-      # E2E smoke (CP-8.04): Electron real bajo xvfb, manejado por CDP. Usa el WebSocket global
-      # de Node >= 22 (el job usa Node 20), por eso este setup-node extra. Sin hardware ASUS los
+      # E2E smoke (CP-8.04): Electron real bajo xvfb, manejado por CDP. Sin hardware ASUS los
       # bloques salen "empty" (se acepta ok|empty). El script añade --no-sandbox solo si CI esta
       # definida (los runners no permiten el sandbox SUID de chrome-sandbox).
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
+      # electron >= 42 no baja el binario en `npm ci` (sin postinstall): se descarga aqui.
+      - name: Download Electron binary
+        run: node desktop/node_modules/electron/install.js
 
       - name: E2E smoke (Electron + CDP, xvfb)
         run: |

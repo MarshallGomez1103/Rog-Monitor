@@ -7,24 +7,32 @@ you do not need a working desktop.
 1. Press `Ctrl+Alt+F3` (or `F4`..`F6`) and log in with your user and password.
 2. `cd` into your ROG Monitor clone (the folder that contains `scripts/`). Below,
    `<repo>` stands for that folder.
-3. Pick the section that matches the problem.
+3. Point `SAFE` at the root-owned safe-mode copy the installer put in place. Use the
+   copy in the repo only if the installed one is missing:
+
+   ```bash
+   SAFE=/usr/local/libexec/rog-monitor/rog-monitor-safe-mode.sh
+   [ -f "$SAFE" ] || SAFE=<repo>/scripts/rog-monitor-safe-mode.sh
+   ```
+
+4. Pick the section that matches the problem.
 
 If nothing else works: boot with the power cable connected, run the "Disable
 everything" step, reboot. Nothing here deletes your configuration.
 
 ## Safe-mode actions
 
-`<repo>/scripts/rog-monitor-safe-mode.sh` is the single entry point. It needs
-root (`sudo`), except for `--dry-run`.
+`$SAFE` (see step 3) is the single entry point. It needs root (`sudo`), except
+for `--dry-run`. It always needs an action: run without one, it only prints usage.
 
 | Command | What it does |
 | --- | --- |
-| `sudo bash <repo>/scripts/rog-monitor-safe-mode.sh status` | Shows active/enabled state of the ROG Monitor services. |
-| `sudo bash <repo>/scripts/rog-monitor-safe-mode.sh disable` | Stops and disables every ROG Monitor root service. Keeps all files and config. |
-| `sudo bash <repo>/scripts/rog-monitor-safe-mode.sh no-auto-profile` | Turns off only the automatic profile switch on AC/battery (and its udev rule). |
-| `sudo bash <repo>/scripts/rog-monitor-safe-mode.sh uninstall` | Removes every root integration (units, helpers, asusd copy, RAPL rule). Keeps `/etc/rog-monitor/` and `/etc/asusd/`. Safe to run twice. |
-| `sudo bash <repo>/scripts/rog-monitor-safe-mode.sh uninstall --purge` | Same, and also deletes `/etc/rog-monitor/` (battery limit) and the `asusd.env` we installed. |
-| `bash <repo>/scripts/rog-monitor-safe-mode.sh uninstall --dry-run` | Prints what `uninstall` would do. Changes nothing, no root needed. |
+| `sudo bash "$SAFE" status` | Shows active/enabled state of the ROG Monitor services. |
+| `sudo bash "$SAFE" disable` | Stops and disables every ROG Monitor root service. Keeps all files and config. |
+| `sudo bash "$SAFE" no-auto-profile` | Turns off only the automatic profile switch on AC/battery (and its udev rule). |
+| `sudo bash "$SAFE" uninstall` | Removes every root integration (units, helpers, asusd copy, RAPL rule). Keeps `/etc/rog-monitor/` and `/etc/asusd/`. Safe to run twice. |
+| `sudo bash "$SAFE" uninstall --purge` | Same, and also deletes `/etc/rog-monitor/` (battery limit) and the `asusd.env` we installed. |
+| `bash "$SAFE" uninstall --dry-run` | Prints what `uninstall` would do. Changes nothing, no root needed. |
 
 After `disable`, reboot. Re-enable later from the app (**System -> Maintenance ->
 Reinstall / Repair**) or with `sudo bash <repo>/scripts/install-system.sh`.
@@ -32,7 +40,7 @@ Reinstall / Repair**) or with `sudo bash <repo>/scripts/install-system.sh`.
 ## Disable everything (the universal fix)
 
 ```bash
-sudo bash <repo>/scripts/rog-monitor-safe-mode.sh disable
+sudo bash "$SAFE" disable
 sudo reboot
 ```
 
@@ -84,19 +92,31 @@ sudo systemctl restart rog-profile-sync.service
 ## Bad power limit (PL1 / PL2 / Dynamic Boost / thermal target)
 
 Power values are validated against the device range before any write, but a
-value inside the range can still be unstable for your unit. Restore the
-firmware defaults:
+value inside the range can still be unstable for your unit. Reapply the active
+profile's calibrated limits (the fan service does it on start; the journal shows
+`Applied <profile> power limits`):
+
+```bash
+sudo systemctl restart rog-profile-sync.service
+journalctl -u rog-profile-sync.service -n 20 --no-pager
+```
+
+Last resort, only if that service is disabled or broken: the firmware's
+`default_value`. On some units this is the **maximum** (e.g. PL2 175 W on a
+G614JV), not a cool setting, so check it before writing:
 
 ```bash
 A=/sys/class/firmware-attributes/asus-armoury/attributes
 for a in ppt_pl1_spl ppt_pl2_sppt nv_dynamic_boost nv_temp_target; do
-  [ -r "$A/$a/default_value" ] && sudo sh -c "cat '$A/$a/default_value' > '$A/$a/current_value'"
+  [ -r "$A/$a/default_value" ] && echo "$a: current=$(cat "$A/$a/current_value") default=$(cat "$A/$a/default_value")"
 done
+# then, per attribute you want back at its default:
+# sudo sh -c "cat '$A/<attr>/default_value' > '$A/<attr>/current_value'"
 ```
 
 Also stop whatever may reapply them: `sudo systemctl disable --now rog-thermal-guardian.service`
 (the guardian trims PL2 / Dynamic Boost when it is too hot) and
-`sudo bash <repo>/scripts/rog-monitor-safe-mode.sh no-auto-profile`.
+`sudo bash "$SAFE" no-auto-profile`.
 
 The platform profile can be set directly too:
 
@@ -140,7 +160,7 @@ Guardian 2.0 notes:
   service dies (crash, SIGKILL, power loss mid-cut), the next start restores
   first. On a normal stop it restores to the active profile's calibrated limits
   (never above). If limits are still low after a crash with the service off:
-  `sudo bash scripts/rog-monitor-safe-mode.sh` or "Bad power limit" above.
+  follow "Bad power limit" above (restart `rog-profile-sync`).
 
 ## Login or desktop problems after installing
 
@@ -153,11 +173,11 @@ Guardian 2.0 notes:
    ```
 
 3. If the problem started on battery, the AC/battery auto-profile is the usual
-   suspect: `sudo bash <repo>/scripts/rog-monitor-safe-mode.sh no-auto-profile`.
+   suspect: `sudo bash "$SAFE" no-auto-profile`.
 4. If the black screen/login loop is about the GPU mode (Hybrid / Integrated),
    that is a manual `supergfxctl --mode Hybrid` followed by a reboot. ROG Monitor
    never changes the GPU mode on its own.
-5. Still stuck: `sudo bash <repo>/scripts/rog-monitor-safe-mode.sh uninstall`,
+5. Still stuck: `sudo bash "$SAFE" uninstall`,
    reboot, and report it (see `SECURITY.md` for how).
 
 ## Check the privileged install

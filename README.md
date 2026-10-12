@@ -12,24 +12,22 @@ background network calls, and no root access for the main monitoring path.
 > actions for power, fans, and firmware are designed to be reversible, but use
 > them with care. Bug reports and pull requests are welcome.
 
-```
-  ╔═ 01 CPU ══════════════════╗  ╔═ 05 History ══════════════╗
-  ║  Avg 58.4 °C  Pkg 69 °C  ║  ║  CPU temp ▁▃▅▇█▇▅▃▁  ▲   ║
-  ║  Power     28.4 W         ║  ║  GPU temp ▂▄▆▇▇▇▆▄▂  │   ║
-  ╚═══════════════════════════╝  ╚═══════════════════════════╝
-  ╔═ 02 GPU ══════════════════╗  ╔═ 06 Benchmarks ═══════════╗
-  ║  Mode  Hybrid             ║  ║  [BENCHMARK]  [EXPORT]    ║
-  ║  RTX 4060  51 °C  Use 12% ║  ╚═══════════════════════════╝
-  ╚═══════════════════════════╝
-  ╔═ 03 Fans ═════════════════╗
-  ║  CPU ████████░  3 300 RPM ║
-  ║  GPU ██████░░░  2 600 RPM ║
-  ╚═══════════════════════════╝
-  ╔═ 04 Lighting ═════════════╗
-  ║  [●] Rainbow  [○] Breathe ║
-  ║  Bright ●●●○  [APPLY]     ║
-  ╚═══════════════════════════╝
-```
+<p align="center">
+  <img src="assets/screenshots/00-dashboard.png" alt="ROG Monitor dashboard: CPU, GPU, fans, history and system" width="900">
+</p>
+
+## Highlights
+
+| | |
+| --- | --- |
+| 🌡️ **Everything at a glance** | CPU usage % and temperature, GPU usage / power / VRAM, fans in RPM, RAM and swap in GiB, disks with IOPS and % busy, network, battery health. |
+| 🌀 **Fans that behave** | Per-profile 8-point curves calibrated to real RPM. If the firmware leaves fans stuck at full speed after the machine cools down, ROG Monitor notices and re-applies the curve: cold means quiet, hot means loud. |
+| ⚡ **Power Center** | PL1 / PL2 / Dynamic Boost / thermal target per profile, clamped to firmware limits, with a one-click factory reset. |
+| 🛡️ **Safe by design** | No telemetry. Monitoring needs no root. Privileged actions go through an allowlist and root only runs root-owned copies. Every change can be undone ([RECOVERY.md](docs/RECOVERY.md)). |
+| 🔔 **Useful alerts** | CPU/GPU heat, throttling, stopped fans, power spikes, RAM / swap pressure and nearly-full disks — with cooldown and hysteresis, no spam. |
+| 🖥️ **Desktop + terminal** | Electron app with 12 themes in 8 languages, and a lightweight TUI for SSH or a TTY. |
+
+What changed recently: [CHANGELOG.md](CHANGELOG.md) · what is next: [roadmap](docs/roadmap.md).
 
 ## Demo
 
@@ -80,18 +78,18 @@ Threat model and reporting process: [SECURITY.md](SECURITY.md).
 
 ### Sensors (no root)
 
-- **CPU**: per-core temperature, average/max/min, package temperature,
-  frequency, count of cores over 90 °C, and thermal-throttling counter.
+- **CPU**: total usage %, per-core usage and temperature (P/E cores), average/max,
+  package temperature, frequency, count of cores over 90 °C, and thermal-throttling counter.
 - **GPU**: NVIDIA (NVML, with `nvidia-smi` as fallback) and AMD (`hwmon/amdgpu`) telemetry:
   temperature, utilization, power, VRAM, core clock, and memory clock. Detects
   Hybrid / Integrated / AsusMuxDgpu (MUX) through `supergfxctl` and handles the
   dGPU being powered down.
 - **Fans**: RPM, proportional bars, real PWM-to-RPM calibration, and runtime RPM
   caps applied by the root service.
-- **System**: RAM, real disks with NVMe temperature, network, load, uptime, and
-  battery charge limit.
-- **Processes**: top CPU and memory consumers with confirmation before closing a
-  process.
+- **System**: RAM and swap (GiB and %), real disks with NVMe temperature, IOPS and
+  % busy, network, load, uptime, and battery charge limit.
+- **Processes**: as many top consumers as fit, with CPU %, cores used and RAM, and
+  confirmation before closing a process.
 - **SMART health**: `smartctl` through one explicit `pkexec` prompt.
 - **FPS overlay**: MangoHud log integration, opt-in.
 
@@ -102,10 +100,12 @@ Threat model and reporting process: [SECURITY.md](SECURITY.md).
 - **Power Center**: calibrated CPU/GPU power limit control with firmware clamps.
 - **12 palettes** x light/dark mode: Magma, Nebula, Ocean, Glacier, Reactor,
   Graphite, Neon, Sunset, Neon Nights, Cyberpunk, Aurora, and Dawn.
-- **Interactive history charts**: hover shows the exact value and how many
+- **Interactive history charts**: temperature/power or usage mode (CPU % and GPU % on
+  0–100, RAM and swap in GiB on 0..total); hover shows the exact value and how many
   seconds ago it was recorded.
-- **Gaming overlay**: transparent, frameless, always-on-top, click-through
-  window for any monitor/corner.
+- **Gaming overlay** (opt-in): transparent, frameless, always-on-top, click-through
+  window; pick the monitor, one of 7 positions and which metrics to show. Not yet
+  verified over fullscreen games on KDE Wayland (see roadmap).
 - **First-run wizard**: detects fans, calibrates with `pkexec`, runs CPU/GPU
   benchmarks, and tours the app.
 - **Four widget states**: data, loading, empty, and error.

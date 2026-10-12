@@ -45,14 +45,26 @@ finally:
 """
 
 
-def _pump(master, out, seconds):
+def _pump(master, out, seconds, until=None):
+    # until: corta en cuanto aparece ese texto (evita fallos por carga del equipo)
     end = time.monotonic() + seconds
-    while time.monotonic() < end:
+    while time.monotonic() < end and not (until and until in b"".join(out)):
         if select.select([master], [], [], 0.05)[0]:
             try:
                 out.append(os.read(master, 65536))
             except OSError:
                 return
+
+
+class KeyReaderNoTty(unittest.TestCase):
+    def test_get_without_tty_waits_instead_of_spinning(self):
+        # TUI-02: sin TTY get() volvía al instante y el bucle de la TUI giraba al ~94 % de CPU
+        from rog_monitor.keys import KeyReader
+        r = KeyReader()
+        r.fd = None
+        t0 = time.monotonic()
+        self.assertIsNone(r.get(timeout=0.2))
+        self.assertGreaterEqual(time.monotonic() - t0, 0.18)
 
 
 @unittest.skipUnless(os.name == "posix" and termios, "requiere POSIX/termios")
@@ -200,14 +212,16 @@ class TuiPty(unittest.TestCase):
             out = []
             try:
                 _pump(master, out, 2.5)
-                self.assertIn(b"PROCESSES", b"".join(out))
+                # SYSTEM y no PROCESSES: con un evento (p. ej. throttling en un equipo
+                # caliente) el panel de eventos empuja PROCESSES fuera de 40 filas.
+                self.assertIn(b"SYSTEM", b"".join(out))
                 for rows, cols, expected in ((30, 80, b"ROG MONITOR"),
                                              (15, 50, b"Terminal too small"),
-                                             (40, 120, b"PROCESSES")):
+                                             (40, 120, b"SYSTEM")):
                     out.clear()
                     fcntl.ioctl(master, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
                     proc.send_signal(signal.SIGWINCH)
-                    _pump(master, out, 1.0)
+                    _pump(master, out, 4.0, until=expected)
                     self.assertIsNone(proc.poll(), "la TUI murió con SIGWINCH")
                     self.assertIn(expected, b"".join(out), f"sin redibujo a {cols}x{rows}")
                 self._stop(master, proc, out)
@@ -228,10 +242,12 @@ class TuiPty(unittest.TestCase):
                 self.assertIn(b"HELP", b"".join(out))
                 out.clear()
                 os.write(master, b"\x1b")
-                _pump(master, out, 0.6)
-                data = b"".join(out)
-                self.assertIn(b"PROCESSES", data, "Esc no cerró la ayuda")
-                self.assertNotIn(b"close this help", data)
+                _pump(master, out, 2.0)
+                # Solo el último fotograma completo (rich empieza cada uno con ESC[H): el
+                # texto de la ayuda puede seguir llegando en el fotograma anterior.
+                last = b"".join(out).rsplit(b"\x1b[H", 1)[-1]
+                self.assertIn(b"SYSTEM", last, "Esc no cerró la ayuda")  # PROCESSES sale de pantalla si hay eventos
+                self.assertNotIn(b"close this help", last)
                 self._stop(master, proc, out)
             finally:
                 if proc.poll() is None:

@@ -623,7 +623,8 @@ const chartState = new Map();
 
 /* Historial: 2 modos sobre los MISMOS 4 canvas (sin tocar la rejilla). Cada fila:
    [canvas, serie del snapshot, color CSS, opts de drawChart (+unit para el hover), clave i18n].
-   En 'usage' (todo en %, 0-100) el 4º hueco se oculta. Puro: lo prueba charts.test.js. */
+   opts.max fija el techo del eje (% → 100); opts.maxKey lo toma de stats.sys
+   (RAM/swap en GiB → 0..total). Puro: lo prueba charts.test.js. */
 const HIST_MODES = {
   temp: [
     ['chart-cpu', 'cpu_temp', '--cold', { unit: '°C' }, 'chart.cpu_temp'],
@@ -632,10 +633,10 @@ const HIST_MODES = {
     ['chart-gpu-power', 'gpu_power', '--hot', { fromZero: true, unit: 'W' }, 'chart.gpu_power'],
   ],
   usage: [
-    ['chart-cpu', 'cpu_usage', '--cold', { fromZero: true, unit: '%' }, 'chart.cpu_usage'],
-    ['chart-power', 'ram_used', '--accent', { fromZero: true, unit: '%' }, 'chart.ram_usage'],
-    ['chart-gpu', 'swap_used', '--okstate', { fromZero: true, unit: '%' }, 'chart.swap_usage'],
-    ['chart-gpu-power', null, '--hot', {}, null],
+    ['chart-cpu', 'cpu_usage', '--cold', { max: 100, unit: '%' }, 'chart.cpu_usage'],
+    ['chart-power', 'ram_gb', '--accent', { maxKey: 'ram_total_gb', unit: 'GiB' }, 'chart.ram_gib'],
+    ['chart-gpu', 'swap_gb', '--ink', { maxKey: 'swap_total_gb', unit: 'GiB' }, 'chart.swap_gib'],
+    ['chart-gpu-power', 'gpu_util', '--hot', { max: 100, unit: '%' }, 'chart.gpu_usage'],
   ],
 };
 
@@ -670,7 +671,7 @@ function chartTail(values, n) {
   return values.slice(-Math.min(CHART_MAX_POINTS, Math.max(2, n)));
 }
 
-function chartRange(data, fromZero) {
+function chartRange(data, fromZero, ceil) {
   let min = Infinity, max = -Infinity;
   for (const v of data) {
     if (!Number.isFinite(v)) continue;
@@ -678,6 +679,8 @@ function chartRange(data, fromZero) {
     if (v > max) max = v;
   }
   if (min === Infinity) return null;      // todo huecos: nada que escalar
+  // techo fijo (% → 100, GiB → total): la escala no salta con los datos
+  if (Number.isFinite(ceil) && ceil > 0) return { lo: 0, hi: ceil };
   // snap the axis to steps of 5 so min/max don't jitter every second
   // fromZero: los watts arrancan en 0 — si no, una bajada de 10→3 W llena
   // toda la altura de la gráfica y parece un desplome dramático
@@ -727,7 +730,7 @@ function drawChart(canvas, values, color, opts = {}) {
 
   if (!values || values.length < 2) { chartState.delete(canvas.id); return; }
   const data = chartTail(values, Math.max(60, Math.floor(w / 4)));
-  const range = chartRange(data, opts.fromZero);
+  const range = chartRange(data, opts.fromZero, opts.max);
   if (!range) { chartState.delete(canvas.id); return; }  // solo huecos (dGPU dormida)
   const { lo, hi } = range;
   const pad = 8;
@@ -864,18 +867,34 @@ function wireChartHover(canvasId, unit) {
 
 /* ---------- fans ---------- */
 
+/* Aspas en su propio <svg> (.fan-blades) girado por CSS transform: el compositor lo
+   anima sin repintar. Antes giraba un <g> interno y cada fotograma repintaba el SVG:
+   ~22 % de CPU con la ventana visible (medido en F0-09/D-02). Aro y buje, estáticos encima. */
+/* Animación de ventiladores: fluida (por defecto) o ahorro (a saltos, ~40 puntos menos de CPU). */
+function fanEco() { return lsGet('fanAnimEco') === '1'; }
+function applyFanAnim() { document.documentElement.classList.toggle('fan-eco', fanEco()); }
+document.addEventListener('DOMContentLoaded', () => {
+  applyFanAnim();
+  const box = document.getElementById('set-fan-eco');
+  if (!box) return;
+  box.checked = fanEco();
+  box.addEventListener('change', (e) => { lsSet('fanAnimEco', e.target.checked ? '1' : '0'); applyFanAnim(); });
+});
+
 const FAN_SVG = `
-<svg viewBox="0 0 64 64">
-  <circle cx="32" cy="32" r="29" fill="none" stroke="var(--hair)" stroke-width="2"/>
-  <g>
+<div class="fan-icon">
+  <svg class="fan-blades" viewBox="0 0 64 64" aria-hidden="true">
     <path d="M32 32 L32 7 A25 25 0 0 1 49 16 Z" fill="var(--dim)"/>
     <path d="M32 32 L53 22 A25 25 0 0 1 51 46 Z" fill="var(--dim)"/>
     <path d="M32 32 L44 53 A25 25 0 0 1 20 53 Z" fill="var(--dim)"/>
     <path d="M32 32 L13 47 A25 25 0 0 1 11 23 Z" fill="var(--dim)"/>
     <path d="M32 32 L15 13 A25 25 0 0 1 32 7 Z" fill="var(--hair)"/>
-  </g>
-  <circle cx="32" cy="32" r="6" fill="var(--accent)"/>
-</svg>`;
+  </svg>
+  <svg class="fan-frame" viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="32" cy="32" r="29" fill="none" stroke="var(--hair)" stroke-width="2"/>
+    <circle cx="32" cy="32" r="6" fill="var(--accent)"/>
+  </svg>
+</div>`;
 
 /* v17-D: grab-to-pause — track which fan widgets are being dragged */
 const _fanGrabbed = new Set();
@@ -897,7 +916,7 @@ function renderFans(fans) {
       const el = $(`fan-${i}`);
       el.addEventListener('mousedown', () => {
         _fanGrabbed.add(i);
-        const g = el.querySelector('svg g');
+        const g = el.querySelector('.fan-blades');
         if (g) g.style.animationPlayState = 'paused';
       });
     });
@@ -907,7 +926,7 @@ function renderFans(fans) {
         _fanGrabbed.forEach((i) => {
           const el = $(`fan-${i}`);
           if (!el) return;
-          const g = el.querySelector('svg g');
+          const g = el.querySelector('.fan-blades');
           // Only resume if fan is actually spinning (rpm > 0)
           if (g && el.dataset.fanRpm > 0) g.style.animationPlayState = 'running';
         });
@@ -921,11 +940,11 @@ function renderFans(fans) {
     el.querySelector('.rpm').textContent = fan.rpm ?? '--';
     el.querySelector('label').textContent = fan.label.replace('_fan', '').toUpperCase();
     el.querySelector('.pct').textContent = fan.percent + '%';
-    const g = el.querySelector('svg g');
+    const g = el.querySelector('.fan-blades');
     // Don't override animationPlayState if the user is currently grabbing this fan
     if (!_fanGrabbed.has(i)) {
       if (fan.rpm > 0) {
-        g.style.animationDuration = Math.max(0.15, 60 / (fan.rpm / 25)).toFixed(2) + 's';
+        g.style.animationDuration = Math.max(fanEco() ? 0.8 : 0.15, 60 / (fan.rpm / 25)).toFixed(2) + 's';
         g.style.animationPlayState = 'running';
       } else {
         g.style.animationPlayState = 'paused';
@@ -1780,6 +1799,39 @@ function gpuRequestToast(mode, res) {
 /* Mapa clave-de-orden → clase de la celda que se resalta en neón (compartido
    por la tabla #procs y el modal #allprocs). El atributo data-sort-col del
    <table> lleva esta clase y el CSS resalta SOLO esa columna. */
+const EPP_SHORT = {
+  performance: 'perf', balance_performance: 'bal-perf', balance_power: 'bal-power',
+  power: 'power', default: 'default',
+};
+
+/* Núcleos ocupados por el proceso (cpu_core es estilo top: 100 = 1 núcleo, 235 = 2.35).
+   Mostrarlo como "235%" confundía (parecía pasar de 100 %); ahora es "2.35". */
+function procCoresHtml(p) {
+  if (p.cpu_core == null) return '<span class="dim">—</span>';
+  const cores = p.cpu_core / 100;
+  return `<span class="procs-core" title="${escapeHtml(t('tip.proc_cores', { n: cores.toFixed(2) }))}">${cores.toFixed(cores < 10 ? 2 : 1)}</span>`;
+}
+
+/* Tantos procesos como quepan en el bloque (antes siempre 5 y quedaba un hueco).
+   Se mide el espacio libre bajo la tabla y se ajusta el nº de filas; converge en
+   1-2 pintadas y se recalcula al redimensionar la ventana. */
+let procsFit = 5;
+function fitProcsRows() {
+  const block = $('procs-block'), table = $('procs');
+  const row = table && table.tBodies[0] && table.tBodies[0].rows[0];
+  if (!block || !row) return;
+  const free = block.getBoundingClientRect().bottom - table.getBoundingClientRect().bottom
+    - parseFloat(getComputedStyle(block).paddingBottom || 0);
+  const rowH = row.getBoundingClientRect().height || 30;
+  const want = Math.max(3, Math.min(25, procsFit + Math.floor(free / rowH)));
+  if (want !== procsFit) {
+    procsFit = want;
+    lastProcsSig = '';                       // repintar con el nuevo número de filas
+    if (lastStats) requestAnimationFrame(() => update(lastStats));
+  }
+}
+window.addEventListener('resize', () => { procsFit = 5; lastProcsSig = ''; });
+
 const PROC_COL_CLASS = { pid: 'pid', name: 'pname', cpu: 'cpu', cpu_core: 'cpu-core', mem_mb: 'mem' };
 
 function sortProcRows(rows, sortKey, sortDir) {
@@ -1861,8 +1913,11 @@ function update(stats) {
   const cpuTemp = $('cpu-temp');
   cpuTemp.textContent = fmt(cpu.avg, 1);
   cpuTemp.className = tempClass(cpu.avg, limits.cpu);
-  $('cpu-max').textContent = fmt(cpu.max, 0) + '°';
-  $('cpu-min').textContent = fmt(cpu.min, 0) + '°';
+  // Uso total (None en la 1ª muestra → '--', nunca un 0 falso)
+  $('cpu-util').textContent = cpu.usage == null ? '--' : fmt(clampPct(cpu.usage), 0) + '%';
+  const cpuMax = $('cpu-max');
+  cpuMax.textContent = fmt(cpu.max, 0) + '°';
+  cpuMax.title = `${t('common.min')} ${fmt(cpu.min, 0)}°`;
   $('cpu-pkg').textContent = fmt(cpu.package, 0) + '°';
   $('cpu-hot').textContent = cpu.hot90 ?? '--';
   $('cpu-freq').textContent = fmt(cpu.freq_ghz, 2);
@@ -1871,14 +1926,19 @@ function update(stats) {
   // only flag power that is actually abnormal, not just "is a number"
   cpuWatts.className = (stats.cpu_watts ?? 0) >= 140 ? 'accent' : '';
   $('cpu-throttle').textContent = cpu.throttle_count ?? '--';
-  $('cpu-epp').textContent = cpu.epp || '--';
+  // EPP corto: "balance_performance" no cabía en la celda y pisaba a Uptime.
+  const epp = $('cpu-epp');
+  epp.textContent = EPP_SHORT[cpu.epp] || cpu.epp || '--';
+  epp.title = cpu.epp ? `EPP (energy_performance_preference): ${cpu.epp}` : '';
   $('cpu-uptime').textContent = fmtUptime(sys.uptime_s ?? (sys.uptime_h ? sys.uptime_h * 3600 : 0));
 
   /* gpu */
   const gpu = stats.gpu || {};
   const active = gpu.active;
   refreshGpuTooltips(active);
+  // Sin supergfxd no hay modo que mostrar: la celda se oculta en vez de enseñar '--'.
   $('gpu-mode').textContent = (gpu.mode || '--') + (gpu.pending ? ` → ${gpu.pending}` : '');
+  $('gpu-mode-stat').classList.toggle('hidden', !gpu.mode);
   if (active) {
     $('gpu-off-note').classList.add('hidden');
     $('gpu-name').textContent = active.name || '';
@@ -1941,7 +2001,14 @@ function update(stats) {
   if (visible) {
     const series = stats.series || {};
     histSlots(histMode).forEach(([id, key, color, opts]) => {
-      if (key) drawChart($(id), series[key], cssVar(color), opts);
+      if (!key) return;
+      const o = opts.maxKey ? { ...opts, max: sys[opts.maxKey] } : opts;
+      drawChart($(id), series[key], cssVar(color), o);
+      if (key === 'swap_gb') {           // sin swap: decirlo, no dibujar un 0 falso
+        const lbl = $(id).parentElement.querySelector('label');
+        const k = sys.swap_total_gb > 0 ? 'chart.swap_gib' : 'chart.no_swap';
+        if (lbl.dataset.i18n !== k) { lbl.dataset.i18n = k; lbl.textContent = t(k); }
+      }
     });
   }
 
@@ -2013,12 +2080,8 @@ function update(stats) {
   if (visible && procsSig !== lastProcsSig) {
   lastProcsSig = procsSig;
   if (procsTable) procsTable.dataset.sortCol = PROC_COL_CLASS[procsSortKey] || '';
-  $('procs-body').innerHTML = sortProcRows(procRows, procsSortKey, procsSortDir).map((p) => {
-    const core = p.cpu_core != null
-      ? `<span class="procs-core" title="${p.cpu_core >= 100
-            ? Math.floor(p.cpu_core / 100) + ' núcleo(s) completo(s)'
-            : 'fracción de un núcleo'}">${p.cpu_core.toFixed(0)}%</span>`
-      : '<span class="dim">—</span>';
+  $('procs-body').innerHTML = sortProcRows(procRows, procsSortKey, procsSortDir).slice(0, procsFit).map((p) => {
+    const core = procCoresHtml(p);
     return `<tr data-pid="${escapeHtml(p.pid)}" data-name="${escapeHtml(p.name)}" title="${escapeHtml(t('procs.kill', { name: p.name }))}">
         <td class="pid">${escapeHtml(p.pid)}</td><td class="pname">${escapeHtml(p.name)}</td>
         <td class="cpu r">${p.cpu.toFixed(1)}%</td>
@@ -2026,6 +2089,7 @@ function update(stats) {
         <td class="mem r">${p.mem_mb} MiB</td></tr>`;
   }).join('');
   updateProcsSortIndicators();
+  fitProcsRows();
   }
 
   $('backend-state').textContent =
@@ -2495,6 +2559,8 @@ $('alerts-save').addEventListener('click', async () => {
       'config.sub':           { es:'Apariencia, autoarranque y notificaciones. Todo se guarda automáticamente. Cambia el idioma con el botón 🌐 de la barra.', en:'Appearance, autostart and notifications. Everything is saved automatically. Change language with the 🌐 button in the toolbar.', fr:'Apparence, démarrage automatique et notifications. Tout est enregistré automatiquement. Changez la langue avec le bouton 🌐 de la barre.', it:'Aspetto, avvio automatico e notifiche. Tutto viene salvato automaticamente. Cambia lingua con il pulsante 🌐 nella barra.', pt:'Aparência, início automático e notificações. Tudo é salvo automaticamente. Muda o idioma com o botão 🌐 na barra.', zh:'外观、开机启动和通知。所有内容都会自动保存。通过工具栏的 🌐 按钮更改语言。', ja:'外観、自動起動、通知。すべて自動的に保存されます。ツールバーの 🌐 ボタンで言語を変更。', ko:'모양, 자동 시작 및 알림. 모든 것이 자동으로 저장됩니다. 도구 모음의 🌐 버튼으로 언어를 변경하세요.' },
       'config.lang_title':    { es:'Idioma', en:'Language', fr:'Langue', it:'Lingua', pt:'Idioma', zh:'语言', ja:'言語', ko:'언어' },
       'config.system_title':  { es:'Sistema', en:'System', fr:'Système', it:'Sistema', pt:'Sistema', zh:'系统', ja:'システム', ko:'시스템' },
+      'config.fan_eco':       { es:'Animación de ventiladores en modo ahorro (menos CPU)', en:'Fan animation in saver mode (less CPU)', fr:'Animation des ventilateurs en mode économie (moins de CPU)', it:'Animazione ventole in modalità risparmio (meno CPU)', pt:'Animação das ventoinhas no modo economia (menos CPU)', zh:'风扇动画节能模式（更少 CPU）', ja:'ファンのアニメーションを省電力モードに（CPU 削減）', ko:'팬 애니메이션 절약 모드(CPU 절감)' },
+      'config.fan_eco_title': { es:'Los ventiladores giran a saltos en vez de fluido: la app con la ventana abierta gasta mucha menos CPU (en Wayland cada fotograma redibuja toda la ventana).', en:'Fans turn in steps instead of smoothly: the open app uses much less CPU (on Wayland every frame redraws the whole window).', fr:'Les ventilateurs tournent par paliers au lieu d\u2019être fluides : l\u2019app ouverte consomme beaucoup moins de CPU (sous Wayland chaque image redessine toute la fenêtre).', it:'Le ventole girano a scatti invece che in modo fluido: l\u2019app aperta usa molta meno CPU (su Wayland ogni fotogramma ridisegna tutta la finestra).', pt:'As ventoinhas giram em passos em vez de suave: o app aberto gasta muito menos CPU (no Wayland cada quadro redesenha a janela inteira).', zh:'风扇分步转动而非平滑：打开的应用 CPU 占用大幅降低（在 Wayland 上每一帧都会重绘整个窗口）。', ja:'ファンが滑らかではなく段階的に回転：開いたアプリの CPU 使用が大幅に減ります（Wayland では毎フレームでウィンドウ全体を再描画）。', ko:'팬이 부드럽게 대신 단계적으로 회전: 열린 앱의 CPU 사용이 크게 줄어듭니다(Wayland에서는 매 프레임마다 창 전체를 다시 그림).' },
       'config.close_action':  { es:'Al cerrar la ventana', en:'When closing the window', fr:'À la fermeture de la fenêtre', it:'Alla chiusura della finestra', pt:'Ao fechar a janela', zh:'关闭窗口时', ja:'ウィンドウを閉じるとき', ko:'창을 닫을 때' },
       'config.close_quit':    { es:'Salir completo', en:'Quit completely', fr:'Quitter complètement', it:'Esci completamente', pt:'Sair por completo', zh:'完全退出', ja:'完全に終了', ko:'완전히 종료' },
       'config.close_tray':    { es:'Minimizar a bandeja', en:'Minimize to tray', fr:'Réduire dans la zone de notification', it:'Riduci nella tray', pt:'Minimizar para a bandeja', zh:'最小化到托盘', ja:'トレイに最小化', ko:'트레이로 최소화' },
@@ -3886,9 +3952,7 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
   }
 
   function rowHtml(p) {
-    const core = p.cpu_core != null
-      ? `<span class="procs-core">${p.cpu_core.toFixed(0)}%</span>`
-      : '<span class="dim">—</span>';
+    const core = procCoresHtml(p);
     return `<tr data-pid="${p.pid}" data-name="${escapeHtml(p.name)}" title="${escapeHtml(t('procs.kill', { name: p.name }))}">
         <td class="pid">${escapeHtml(p.pid)}</td><td class="pname">${escapeHtml(p.name)}</td>
         <td class="cpu r">${p.cpu.toFixed(1)}%</td>

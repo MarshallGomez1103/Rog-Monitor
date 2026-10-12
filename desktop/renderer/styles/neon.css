@@ -503,6 +503,9 @@ html[data-mode="light"] .aura-actions .aura-primary {
      ----------------------------------------------------------------------- */
 
   /* keyframes reutilizables — todos solo opacity */
+  /* steps(16): el brillo cambia ~3-8 veces/s en vez de a 60-110 fps. En Wayland cada
+     fotograma animado regenera la página entera: con ease continuo el "respiro" de los
+     11 bloques costaba ~15 % de CPU con la ventana visible (medido, D-02). */
   @keyframes th-breathe-slow   { from { opacity: 0.14; } to { opacity: 0.34; } }
   @keyframes th-breathe-mid    { from { opacity: 0.16; } to { opacity: 0.38; } }
   @keyframes th-pulse-sharp    { from { opacity: 0.10; } to { opacity: 0.32; } }
@@ -533,7 +536,7 @@ html[data-mode="light"] .aura-actions .aura-primary {
       color-mix(in srgb, var(--accent) 18%, transparent) 0%,
       color-mix(in srgb, var(--accent) 6%, transparent) 50%,
       transparent 80%);
-    animation: th-breathe-slow 5.8s ease-in-out infinite alternate;
+    animation: th-breathe-slow 5.8s steps(16) infinite alternate;
   }
 
   /* === OCÉANO — agua moviéndose: ola de brillo teal en movimiento ===
@@ -544,7 +547,7 @@ html[data-mode="light"] .aura-actions .aura-primary {
       color-mix(in srgb, var(--accent2) 18%, transparent) 0%,
       color-mix(in srgb, var(--accent) 8%, transparent) 45%,
       transparent 75%);
-    animation: th-tide 6.5s ease-in-out infinite alternate;
+    animation: th-tide 6.5s steps(16) infinite alternate;
   }
 
   /* === GLACIAR — hielo/escarcha: cristales en las esquinas ===
@@ -556,7 +559,7 @@ html[data-mode="light"] .aura-actions .aura-primary {
         color-mix(in srgb, var(--accent2) 22%, transparent), transparent 75%),
       radial-gradient(90px 60px at 100% 100%,
         color-mix(in srgb, var(--accent) 16%, transparent), transparent 75%);
-    animation: th-frost 7.8s ease-in-out infinite alternate;
+    animation: th-frost 7.8s steps(16) infinite alternate;
   }
 
   /* === REACTOR — pulso de energía: latido agudo como un reactor nuclear ===
@@ -567,7 +570,7 @@ html[data-mode="light"] .aura-actions .aura-primary {
       color-mix(in srgb, var(--accent) 22%, transparent) 0%,
       color-mix(in srgb, var(--accent) 8%, transparent) 50%,
       transparent 80%);
-    animation: th-pulse-sharp 2.4s ease-in-out infinite alternate;
+    animation: th-pulse-sharp 2.4s steps(16) infinite alternate;
   }
 
   /* === NÉBULA — estrellitas en el espacio: puntos que titilan ===
@@ -578,7 +581,7 @@ html[data-mode="light"] .aura-actions .aura-primary {
       radial-gradient(3px 3px at 22% 30%, color-mix(in srgb, var(--accent2) 65%, transparent), transparent 50%),
       radial-gradient(3px 3px at 70% 62%, color-mix(in srgb, var(--accent) 60%, transparent), transparent 50%),
       radial-gradient(2px 2px at 45% 85%, color-mix(in srgb, var(--accent2) 50%, transparent), transparent 50%);
-    animation: th-flicker-subtle 5.2s ease-in-out infinite alternate;
+    animation: th-flicker-subtle 5.2s steps(16) infinite alternate;
   }
 
   /* === NEÓN (arcade) — destello de cian desde el lateral izquierdo ===
@@ -589,7 +592,7 @@ html[data-mode="light"] .aura-actions .aura-primary {
       color-mix(in srgb, var(--accent) 18%, transparent) 0%,
       color-mix(in srgb, var(--accent2) 8%, transparent) 35%,
       transparent 65%);
-    animation: th-breathe-mid 3.2s ease-in-out infinite alternate;
+    animation: th-breathe-mid 3.2s steps(16) infinite alternate;
   }
 
   /* === ATARDECER — brillo cálido en la esquina inferior derecha ===
@@ -600,7 +603,7 @@ html[data-mode="light"] .aura-actions .aura-primary {
       color-mix(in srgb, var(--accent) 16%, transparent) 0%,
       color-mix(in srgb, var(--accent2) 10%, transparent) 40%,
       transparent 72%);
-    animation: th-breathe-slow 6.8s ease-in-out infinite alternate;
+    animation: th-breathe-slow 6.8s steps(16) infinite alternate;
   }
 
   /* === NEON NIGHTS (synthwave) — doble respiración cian + magenta ===
@@ -612,7 +615,7 @@ html[data-mode="light"] .aura-actions .aura-primary {
         color-mix(in srgb, var(--accent2) 14%, transparent), transparent 65%),
       radial-gradient(95% 75% at 95% 100%,
         color-mix(in srgb, var(--accent) 12%, transparent), transparent 65%);
-    animation: th-breathe-mid 4.4s ease-in-out infinite alternate;
+    animation: th-breathe-mid 4.4s steps(16) infinite alternate;
   }
 
   /* === CYBERPUNK — destello eléctrico cortante desde arriba ===
@@ -623,7 +626,7 @@ html[data-mode="light"] .aura-actions .aura-primary {
       color-mix(in srgb, var(--accent) 18%, transparent) 0%,
       color-mix(in srgb, var(--accent2) 6%, transparent) 35%,
       transparent 60%);
-    animation: th-pulse-sharp 1.9s ease-in-out infinite alternate;
+    animation: th-pulse-sharp 1.9s steps(16) infinite alternate;
   }
 
   /* === AURORA — cortinas boreales: dos gradientes angulados ===
@@ -635,7 +638,7 @@ html[data-mode="light"] .aura-actions .aura-primary {
         color-mix(in srgb, var(--accent) 14%, transparent) 0%, transparent 50%),
       linear-gradient(155deg,
         color-mix(in srgb, var(--accent2) 11%, transparent) 15%, transparent 60%);
-    animation: th-tide 9.0s ease-in-out infinite alternate;
+    animation: th-tide 9.0s steps(16) infinite alternate;
   }
 
   /* === ALBA — amanecer cálido: radial desde el horizonte inferior ===
@@ -646,7 +649,7 @@ html[data-mode="light"] .aura-actions .aura-primary {
       color-mix(in srgb, var(--accent) 18%, transparent) 0%,
       color-mix(in srgb, var(--accent2) 8%, transparent) 45%,
       transparent 75%);
-    animation: th-breathe-slow 8.2s ease-in-out infinite alternate;
+    animation: th-breathe-slow 8.2s steps(16) infinite alternate;
   }
 
   /* === GRAFITO — sin animación, sin ::after ===

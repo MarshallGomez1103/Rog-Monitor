@@ -121,8 +121,8 @@
         <h2><i class="dash-num"></i> <span data-i18n="block.cpu">CPU</span> <small id="cpu-model"></small></h2>
         <div class="bignum"><span id="cpu-temp">--</span><em>°C</em></div>
         <div class="statgrid gpu-statgrid">
+          <div><label data-i18n="common.usage">Uso</label><b id="cpu-util" data-i18n-attr="title:tip.cpu_util" title="Uso total de la CPU (todos los núcleos), igual que USO en la GPU">--</b></div>
           <div><label data-i18n="common.max">Máx</label><b id="cpu-max">--</b></div>
-          <div><label data-i18n="common.min">Mín</label><b id="cpu-min">--</b></div>
           <div><label data-i18n="common.package">Package</label><b id="cpu-pkg">--</b></div>
           <div><label>&gt;90°C</label><b id="cpu-hot">--</b></div>
           <div><label>GHz</label><b id="cpu-freq" data-i18n-attr="title:tip.cpu_freq" title="Frecuencia promedio de los núcleos (1 GHz = 1000 MHz)">--</b></div>
@@ -166,7 +166,7 @@
           <div class="vram-stat clickable" id="gpu-vram-stat" role="button" tabindex="0" data-i18n-attr="title:tip.vram_meter" title="Clic para ver qué está usando la VRAM"><label data-i18n="common.vram">VRAM</label><b id="gpu-vram">--</b></div>
           <div><label data-i18n="common.mhz">MHz</label><b id="gpu-clock" data-i18n-attr="title:tip.gpu_clock" title="Frecuencia actual del núcleo gráfico">--</b></div>
           <div><label>VRAM MHz</label><b id="gpu-vram-clock" class="small" data-i18n-attr="title:tip.gpu_vram_clock" title="Frecuencia actual de la memoria de video">--</b></div>
-          <div><label data-i18n="common.mode">Modo</label><b id="gpu-mode" class="small">--</b></div>
+          <div id="gpu-mode-stat" class="hidden" data-i18n-attr="title:tip.gpu_mode" title="Modo de gráficos (supergfxctl): Integrated = solo la gráfica integrada, Hybrid = integrada + NVIDIA bajo demanda, dGPU = solo NVIDIA"><label data-i18n="gpu.mode_label">Modo GPU</label><b id="gpu-mode" class="small">--</b></div>
         </div>
         <p id="gpu-off-note" class="note hidden" data-i18n="widget.gpu_off">dGPU apagada (modo Integrated)</p>
       </article>
@@ -380,7 +380,7 @@
             <div class="error-detail" data-i18n="widget.reconnecting">Reconectando con los sensores…</div>
           </div>
           <h2><i class="dash-num"></i> <span data-i18n="block.procs">Procesos</span>
-            <small data-i18n="block.procs_sub2">top 5 · clic en una fila para cerrarla</small></h2>
+            <small data-i18n="block.procs_sub2">los que más usan · clic en una fila para cerrarla</small></h2>
           <div class="procs-toolbar">
             <button id="procs-all-btn" class="ghost procs-tool-btn" data-i18n="procs.view_all" data-i18n-attr="title:tip.procs_all" title="Ver TODOS los procesos en una ventana ampliada">VER TODOS</button>
             <button id="procs-cores-btn" class="ghost procs-tool-btn" data-i18n="cores.btn" data-i18n-attr="title:tip.procs_cores" title="Ver uso por núcleo individual">NÚCLEOS</button>
@@ -390,7 +390,7 @@
               <tr><th class="sortable" data-sort="pid">PID</th>
                   <th class="sortable" data-sort="name" data-i18n="procs.col_name">proceso</th>
                   <th class="r sortable" data-sort="cpu" data-i18n="procs.col_cpu" data-i18n-attr="title:tip.col_cpu" title="% del CPU total (todos los núcleos)">% CPU</th>
-                  <th class="r sortable" data-sort="cpu_core" data-i18n="procs.col_core" data-i18n-attr="title:tip.col_core" title="% de un solo núcleo (estilo top)">% NÚCLEO</th>
+                  <th class="r sortable" data-sort="cpu_core" data-i18n="procs.col_core" data-i18n-attr="title:tip.col_core" title="Núcleos que ocupa el proceso: 1.00 = un núcleo completo">NÚCLEOS</th>
                   <th class="r sortable" data-sort="mem_mb" data-i18n="procs.col_ram" data-i18n-attr="title:tip.col_ram" title="Memoria RAM residente">RAM</th></tr>
             </thead>
             <tbody id="procs-body"></tbody>
@@ -488,7 +488,7 @@
             <tr><th class="sortable" data-sort="pid">PID</th>
                 <th class="sortable" data-sort="name" data-i18n="procs.col_name">proceso</th>
                 <th class="r sortable" data-sort="cpu" data-i18n="procs.col_cpu">% CPU</th>
-                <th class="r sortable" data-sort="cpu_core" data-i18n="procs.col_core">% NÚCLEO</th>
+                <th class="r sortable" data-sort="cpu_core" data-i18n="procs.col_core" data-i18n-attr="title:tip.col_core">NÚCLEOS</th>
                 <th class="r sortable" data-sort="mem_mb" data-i18n="procs.col_ram">RAM</th></tr>
           </thead>
           <tbody id="allprocs-body"></tbody>
@@ -607,6 +607,10 @@
       <label class="check-row" for="set-autostart" data-i18n-attr="title:alerts.autostart_title" title="Crea una entrada de inicio de sesión. La app abre minimizada y el monitor queda congelado (0% CPU) hasta que la abras.">
         <input type="checkbox" id="set-autostart">
         <span data-i18n="alerts.autostart">Iniciar con el sistema (minimizado, sin consumir recursos)</span>
+      </label>
+      <label class="check-row" for="set-fan-eco" data-i18n-attr="title:config.fan_eco_title" title="Los ventiladores giran a saltos en vez de fluido: la app con la ventana abierta gasta mucha menos CPU (en Wayland cada fotograma redibuja toda la ventana).">
+        <input type="checkbox" id="set-fan-eco">
+        <span data-i18n="config.fan_eco">Animación de ventiladores en modo ahorro (menos CPU)</span>
       </label>
       <label class="select-row" for="set-close-action">
         <span data-i18n="config.close_action">Al cerrar la ventana</span>

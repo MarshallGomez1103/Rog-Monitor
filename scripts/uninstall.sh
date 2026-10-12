@@ -25,6 +25,15 @@ PURGE=0
 SAFE_ARGS=()
 (( PURGE )) && SAFE_ARGS+=(--purge)
 
+safe_mode_path() {
+    local inst="${ROG_PREFIX:-}/usr/local/libexec/rog-monitor/rog-monitor-safe-mode.sh"
+    if [[ -f "$inst" && "$(stat -c %u "$inst")" == 0 ]]; then
+        printf '%s\n' "$inst"
+    else
+        printf '%s\n' "$1/scripts/rog-monitor-safe-mode.sh"
+    fi
+}
+
 printf '== Desinstalando ROG Monitor ==\n\n'
 
 # --- Nivel usuario (sin privilegios) ---
@@ -33,7 +42,9 @@ update-desktop-database "$APPS_DIR" 2>/dev/null || true
 printf 'Quitados: launcher, entrada de menú y autoarranque.\n'
 
 # --- Nivel sistema (sudo, con aviso) ---
-SAFE_MODE="$REPO/scripts/rog-monitor-safe-mode.sh"
+# ADR-0001: root ejecuta la copia root-owned instalada; la del repo solo si no hay instalación
+# (o la instalada no es de root: entonces no se confía en ella).
+SAFE_MODE="$(safe_mode_path "$REPO")"
 if [[ -f "$SAFE_MODE" ]]; then
     printf '\nSe pedirá sudo para quitar las integraciones de sistema:\n'
     printf '  - deshabilitar y borrar servicios systemd (ventiladores, guardián, power-source)\n'

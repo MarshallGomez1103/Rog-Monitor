@@ -430,8 +430,9 @@ class SysReader:
         now = time.monotonic()
         rx, tx = self._net_bytes()
         dt = max(now - self._net_ts, 0.001)
-        rx_rate = (rx - self._net_last[0]) / dt
-        tx_rate = (tx - self._net_last[1]) / dt
+        # contador que baja (interfaz caída/recreada, wrap): 0, nunca una tasa negativa
+        rx_rate = max(0, rx - self._net_last[0]) / dt
+        tx_rate = max(0, tx - self._net_last[1]) / dt
         self._net_last, self._net_ts = (rx, tx), now
 
         temps = self._nvme_temp_by_ctrl()

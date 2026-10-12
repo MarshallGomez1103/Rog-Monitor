@@ -41,6 +41,10 @@ DEFAULTS = {
         # ms of real throttle time per sample before alerting (micro-blips
         # of a few ms are normal on modern Intel HX chips)
         "throttle_min_ms": 100,
+        # memoria y disco (%, histéresis = hysteresis_pct puntos)
+        "ram_percent_warn": 90,
+        "swap_percent_warn": 80,
+        "disk_percent_warn": 95,
     },
     # color thresholds [green_below, yellow_below, orange_below] in °C;
     # at or above the last value everything turns red

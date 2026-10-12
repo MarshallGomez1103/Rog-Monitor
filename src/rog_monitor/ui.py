@@ -391,7 +391,7 @@ def processes_panel(state, t, th) -> Panel:
         Text("PID", style="grey42"), Text(t("proc_name"), style="grey42"),
         Text(t("proc_cpu"), style="grey42"), Text(t("proc_ram"), style="grey42"),
     )
-    for proc in state["procs"]:
+    for proc in state["procs"][:5]:
         table.add_row(
             Text(str(proc["pid"]), style="grey58"),
             Text(proc["name"]),

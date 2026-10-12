@@ -8,7 +8,8 @@
 :root {
   --p-core: var(--lvl-hot, #ff5e4d);
   --p-core-2: var(--lvl-crit, #ff2d55);
-  --e-core: var(--state-normal-glow);
+  /* fallback: sin él, si --state-normal-glow no resolvía, las barras E quedaban invisibles */
+  --e-core: var(--state-normal-glow, var(--lvl-ok, #19c37d));
   --e-core-2: #19c37d;
 }
 
@@ -102,7 +103,7 @@
   gap: 6px;
   margin-top: 1px;
 }
-.core-usage { font-size: .72rem; color: var(--ink); opacity: .85; font-variant-numeric: tabular-nums; }
+.core-usage { font-size: .8rem; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
 .core-ghz {
   font-size: .8rem;
   font-weight: 700;
@@ -115,7 +116,7 @@
 
 /* ---- barra de uso ---- */
 .core-bar {
-  height: 5px;
+  height: 8px;
   border-radius: 3px;
   background: color-mix(in srgb, var(--ink) 12%, transparent);
   overflow: hidden;

@@ -147,3 +147,16 @@ class Persistence(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Cadence(unittest.TestCase):
+    """F3-07: el siguiente tick se cuenta desde el anterior, no desde que acabó el muestreo."""
+
+    def test_sampling_time_is_absorbed(self):
+        from rog_monitor.app import _next_deadline
+        # tick en t=10, muestrear tardó 0.13 s: el siguiente sigue en 11 (no 11.13)
+        self.assertEqual(_next_deadline(10.0, 1.0, 10.13), 11.0)
+
+    def test_overrun_reanchors_without_burst(self):
+        from rog_monitor.app import _next_deadline
+        self.assertEqual(_next_deadline(10.0, 1.0, 12.5), 13.5)

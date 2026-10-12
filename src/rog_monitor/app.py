@@ -29,8 +29,22 @@ from .sysinfo import SysReader
 
 THEME_CYCLE = list(ui.THEMES)
 ERROR_LOG = DATA_DIR / "error.log"
+# El escritorio muestra los procesos que quepan en su bloque (hasta PROCS_TOP); la TUI, 5.
+PROCS_TOP = 25
 BOUND_KEYS = frozenset("qhvtpgef")  # teclas con acción; cualquier otra se ignora
 EVENT_FILTERS = ("all", "warn", "crit")  # filtro de severidad del panel de eventos (f)
+
+
+def _next_deadline(prev: float, interval: float, now: float) -> float:
+    """Cadencia por reloj monotónico (F3-07): el tiempo de muestreo se descuenta del
+    sleep en vez de sumarse. Si una muestra se pasó de un periodo entero, no se
+    recupera en ráfaga: se reancla en `now`."""
+    nxt = prev + interval
+    return nxt if nxt > now else now + interval
+
+
+def _gib(v):
+    return None if v is None else round(v, 2)
 
 
 class App:
@@ -67,6 +81,10 @@ class App:
             "cpu_usage": Series(secs),
             "ram_used": Series(secs),
             "swap_used": Series(secs),
+            # GiB reales para graficar con eje 0..total (F2-03/04) y uso de GPU en %.
+            "ram_gb": Series(secs),
+            "swap_gb": Series(secs),
+            "gpu_util": Series(secs),
         }
         self.theme = self.config["theme"]
         self.help_visible = False
@@ -108,8 +126,12 @@ class App:
         self.series["cpu_usage"].push(cpu.get("usage"))
         self.series["ram_used"].push(sysd.get("ram_percent"))
         self.series["swap_used"].push(sysd.get("swap_percent"))
+        self.series["ram_gb"].push(_gib(sysd.get("ram_used_gb")))
+        # sin swap -> hueco, no un 0 GiB falso
+        self.series["swap_gb"].push(_gib(sysd.get("swap_used_gb")) if sysd.get("swap_total_gb") else None)
+        self.series["gpu_util"].push(active.get("util"))
 
-        self.alerts.check(cpu, gpu, fans, watts)
+        self.alerts.check(cpu, gpu, fans, watts, sysd)
         self._drain_gpu_results()
         if time.monotonic() > self._message_until:
             self.message = ""
@@ -125,7 +147,7 @@ class App:
             "ppd_profile": ppd_profile(),
             "battery": self.battery.read(),
             "sys": sysd,
-            "procs": self.procs.read(),
+            "procs": self.procs.read(top=PROCS_TOP),
             # Procesos agrupados por núcleo lógico (vista de detalle por núcleo,
             # cores.js). Aditivo y opcional; reusa el ciclo de read() de arriba.
             "procs_by_core": self.procs.by_core(),
@@ -246,6 +268,7 @@ class App:
         self.procs.read()
         self.rapl.read_watts()
         time.sleep(0.5)
+        next_tick = time.monotonic()
         try:
             while True:
                 try:
@@ -256,7 +279,8 @@ class App:
                     self._log_error()
                 else:
                     print(line, flush=True)
-                time.sleep(self.interval)
+                next_tick = _next_deadline(next_tick, self.interval, time.monotonic())
+                time.sleep(max(0.0, next_tick - time.monotonic()))
         except (KeyboardInterrupt, BrokenPipeError):
             pass
 
@@ -289,8 +313,9 @@ class App:
                 auto_refresh=False,
             ) as live:
                 running = True
+                deadline = time.monotonic()
                 while running:
-                    deadline = time.monotonic() + self.interval
+                    deadline = _next_deadline(deadline, self.interval, time.monotonic())
                     while running and time.monotonic() < deadline:
                         # Responder a resize antes de esperar la próxima tecla
                         if self._resized:
