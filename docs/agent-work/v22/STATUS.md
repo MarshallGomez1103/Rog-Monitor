@@ -48,3 +48,5 @@ Siguientes candidatos: F2-08 (ts/stale), F2-09 schema 2 deltas, F3-06 timeout VR
 - 15cf096: detector de ventiladores revisado (regla propietario: frío baja todo / caliente sube todo; 3 ventiladores vs su curva y calibración, 60 s, cooldown 5 min). **Requiere sudo install-system.sh.**
 - 14da3e4: regresión F1-02 como root corregida (límites ya se aplican: PL1 140 / PL2 175 / DB 25 verificado).
 - 98f1883: roadmap v21/v22, P1 parciales honestos.
+- 2dd4f66: procesos que caben (hasta 25), ventiladores fluidos por defecto + modo ahorro.
+- **feat/v22 pusheado a origin (2026-10-12, orden del propietario "commit y push")**; CI remoto run 38300860771 VERDE completo (incl. e2e: D-01 resuelto). master sigue en v21 (7d49333). Siguiente: PR feat/v22 → master cuando el propietario lo pida.
