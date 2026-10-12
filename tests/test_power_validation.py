@@ -256,3 +256,23 @@ class HelperTrust(unittest.TestCase):
         r = self.pc._helper_problem(self.script, self.lib)
         self.assertFalse(r["ok"])
         self.assertNotIn("needsInstall", r)
+
+
+class HelperTrustAsRoot(unittest.TestCase):
+    """Regresión 2026-10-12: como root (rog-profile-sync -> copia instalada, sin VERSION
+    propio = 0.0.0-dev) la comprobación de versión daba needsInstall y los límites no se aplicaban."""
+
+    def test_root_path_skips_version_but_keeps_owner_check(self):
+        import os, tempfile
+        from pathlib import Path
+        from rog_monitor import power_control as pc
+        with tempfile.TemporaryDirectory() as d:
+            lib = Path(d); script = lib / "apply-power-control.sh"
+            script.write_text("#!/bin/bash\n")
+            (lib / "VERSION").write_text("21.0.0\n")
+            r = pc._helper_problem(script, lib, check_version=False)
+            if os.geteuid() != 0:   # dueño del usuario: sigue rechazado, pero NO por versión
+                self.assertFalse(r["ok"]); self.assertNotIn("needsInstall", r)
+        real = Path("/usr/local/libexec/rog-monitor/apply-power-control.sh")
+        if real.exists() and real.stat().st_uid == 0:
+            self.assertIsNone(pc._helper_problem(real, real.parent, check_version=False))
