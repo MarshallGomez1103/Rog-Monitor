@@ -1,5 +1,40 @@
 # Changelog
 
+## Unreleased (v22 in progress)
+
+After the post-90 audit (`docs/audits/post90/`). Root-side fixes need
+`sudo bash scripts/install-system.sh` once.
+
+### Fixed
+- **Fans stuck at full speed after the machine cooled down** (the firmware kept the old
+  speed until the curve was rewritten): `rog-profile-sync` compares each fan with what
+  its curve asks at its temperature (calibrated RPM; GPU read without waking it) and
+  re-applies all curves if one stays >1200 RPM too high for 60 s. Cold → all down.
+- **Per-profile power limits almost never applied**: the firmware answers EBUSY right
+  after a profile switch; the service now retries every ≤30 s (5 tries).
+- Network rate could go negative after a counter reset; TUI spun at ~94 % CPU with no
+  terminal; a paused backend could be left stopped (state T) on restart.
+- E-core usage bars were invisible in the CPU cores view; EPP text overlapped Uptime.
+- CI: Electron 42 binary is downloaded explicitly and the job uses Node 22; the E2E
+  smoke now runs green on GitHub.
+
+### Added
+- CPU card shows **usage %**; processes show **cores used** (2.35) instead of "235 %"
+  and fill the available space (up to 25).
+- History usage mode: CPU % and GPU % on 0–100, **RAM and swap in GiB on 0..total**.
+- **RAM, swap and disk-full alerts** (the RAM/Disk event filters now have producers).
+- IOPS and % busy in the disk panel. "GPU mode" explained and hidden when unknown.
+- Configuration → "Fan animation in saver mode" (smooth by default).
+
+### Performance
+- Exact sampling cadence (1.00 s instead of ~1.13 s).
+- Atomic writes for config, fan curves and autostart; timeouts on blocking calls.
+
+### Docs
+- Roadmap: v21 current, v22 in progress, P1 items marked **partial** with what is done
+  and what is missing. `docs/RECOVERY.md` uses the root-owned safe-mode and restores
+  power through the calibrated profile. ADR-0006 (host safety).
+
 ## 21.0.0 — 2026-10-10
 
 Hardening release from a full audit (security, correctness, performance, tests).
