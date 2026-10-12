@@ -870,6 +870,17 @@ function wireChartHover(canvasId, unit) {
 /* Aspas en su propio <svg> (.fan-blades) girado por CSS transform: el compositor lo
    anima sin repintar. Antes giraba un <g> interno y cada fotograma repintaba el SVG:
    ~22 % de CPU con la ventana visible (medido en F0-09/D-02). Aro y buje, estáticos encima. */
+/* Animación de ventiladores: fluida (por defecto) o ahorro (a saltos, ~40 puntos menos de CPU). */
+function fanEco() { return lsGet('fanAnimEco') === '1'; }
+function applyFanAnim() { document.documentElement.classList.toggle('fan-eco', fanEco()); }
+document.addEventListener('DOMContentLoaded', () => {
+  applyFanAnim();
+  const box = document.getElementById('set-fan-eco');
+  if (!box) return;
+  box.checked = fanEco();
+  box.addEventListener('change', (e) => { lsSet('fanAnimEco', e.target.checked ? '1' : '0'); applyFanAnim(); });
+});
+
 const FAN_SVG = `
 <div class="fan-icon">
   <svg class="fan-blades" viewBox="0 0 64 64" aria-hidden="true">
@@ -933,7 +944,7 @@ function renderFans(fans) {
     // Don't override animationPlayState if the user is currently grabbing this fan
     if (!_fanGrabbed.has(i)) {
       if (fan.rpm > 0) {
-        g.style.animationDuration = Math.max(0.8, 60 / (fan.rpm / 25)).toFixed(2) + 's';
+        g.style.animationDuration = Math.max(fanEco() ? 0.8 : 0.15, 60 / (fan.rpm / 25)).toFixed(2) + 's';
         g.style.animationPlayState = 'running';
       } else {
         g.style.animationPlayState = 'paused';
@@ -1801,6 +1812,26 @@ function procCoresHtml(p) {
   return `<span class="procs-core" title="${escapeHtml(t('tip.proc_cores', { n: cores.toFixed(2) }))}">${cores.toFixed(cores < 10 ? 2 : 1)}</span>`;
 }
 
+/* Tantos procesos como quepan en el bloque (antes siempre 5 y quedaba un hueco).
+   Se mide el espacio libre bajo la tabla y se ajusta el nº de filas; converge en
+   1-2 pintadas y se recalcula al redimensionar la ventana. */
+let procsFit = 5;
+function fitProcsRows() {
+  const block = $('procs-block'), table = $('procs');
+  const row = table && table.tBodies[0] && table.tBodies[0].rows[0];
+  if (!block || !row) return;
+  const free = block.getBoundingClientRect().bottom - table.getBoundingClientRect().bottom
+    - parseFloat(getComputedStyle(block).paddingBottom || 0);
+  const rowH = row.getBoundingClientRect().height || 30;
+  const want = Math.max(3, Math.min(25, procsFit + Math.floor(free / rowH)));
+  if (want !== procsFit) {
+    procsFit = want;
+    lastProcsSig = '';                       // repintar con el nuevo número de filas
+    if (lastStats) requestAnimationFrame(() => update(lastStats));
+  }
+}
+window.addEventListener('resize', () => { procsFit = 5; lastProcsSig = ''; });
+
 const PROC_COL_CLASS = { pid: 'pid', name: 'pname', cpu: 'cpu', cpu_core: 'cpu-core', mem_mb: 'mem' };
 
 function sortProcRows(rows, sortKey, sortDir) {
@@ -2049,7 +2080,7 @@ function update(stats) {
   if (visible && procsSig !== lastProcsSig) {
   lastProcsSig = procsSig;
   if (procsTable) procsTable.dataset.sortCol = PROC_COL_CLASS[procsSortKey] || '';
-  $('procs-body').innerHTML = sortProcRows(procRows, procsSortKey, procsSortDir).map((p) => {
+  $('procs-body').innerHTML = sortProcRows(procRows, procsSortKey, procsSortDir).slice(0, procsFit).map((p) => {
     const core = procCoresHtml(p);
     return `<tr data-pid="${escapeHtml(p.pid)}" data-name="${escapeHtml(p.name)}" title="${escapeHtml(t('procs.kill', { name: p.name }))}">
         <td class="pid">${escapeHtml(p.pid)}</td><td class="pname">${escapeHtml(p.name)}</td>
@@ -2058,6 +2089,7 @@ function update(stats) {
         <td class="mem r">${p.mem_mb} MiB</td></tr>`;
   }).join('');
   updateProcsSortIndicators();
+  fitProcsRows();
   }
 
   $('backend-state').textContent =
@@ -2527,6 +2559,8 @@ $('alerts-save').addEventListener('click', async () => {
       'config.sub':           { es:'Apariencia, autoarranque y notificaciones. Todo se guarda automáticamente. Cambia el idioma con el botón 🌐 de la barra.', en:'Appearance, autostart and notifications. Everything is saved automatically. Change language with the 🌐 button in the toolbar.', fr:'Apparence, démarrage automatique et notifications. Tout est enregistré automatiquement. Changez la langue avec le bouton 🌐 de la barre.', it:'Aspetto, avvio automatico e notifiche. Tutto viene salvato automaticamente. Cambia lingua con il pulsante 🌐 nella barra.', pt:'Aparência, início automático e notificações. Tudo é salvo automaticamente. Muda o idioma com o botão 🌐 na barra.', zh:'外观、开机启动和通知。所有内容都会自动保存。通过工具栏的 🌐 按钮更改语言。', ja:'外観、自動起動、通知。すべて自動的に保存されます。ツールバーの 🌐 ボタンで言語を変更。', ko:'모양, 자동 시작 및 알림. 모든 것이 자동으로 저장됩니다. 도구 모음의 🌐 버튼으로 언어를 변경하세요.' },
       'config.lang_title':    { es:'Idioma', en:'Language', fr:'Langue', it:'Lingua', pt:'Idioma', zh:'语言', ja:'言語', ko:'언어' },
       'config.system_title':  { es:'Sistema', en:'System', fr:'Système', it:'Sistema', pt:'Sistema', zh:'系统', ja:'システム', ko:'시스템' },
+      'config.fan_eco':       { es:'Animación de ventiladores en modo ahorro (menos CPU)', en:'Fan animation in saver mode (less CPU)', fr:'Animation des ventilateurs en mode économie (moins de CPU)', it:'Animazione ventole in modalità risparmio (meno CPU)', pt:'Animação das ventoinhas no modo economia (menos CPU)', zh:'风扇动画节能模式（更少 CPU）', ja:'ファンのアニメーションを省電力モードに（CPU 削減）', ko:'팬 애니메이션 절약 모드(CPU 절감)' },
+      'config.fan_eco_title': { es:'Los ventiladores giran a saltos en vez de fluido: la app con la ventana abierta gasta mucha menos CPU (en Wayland cada fotograma redibuja toda la ventana).', en:'Fans turn in steps instead of smoothly: the open app uses much less CPU (on Wayland every frame redraws the whole window).', fr:'Les ventilateurs tournent par paliers au lieu d\u2019être fluides : l\u2019app ouverte consomme beaucoup moins de CPU (sous Wayland chaque image redessine toute la fenêtre).', it:'Le ventole girano a scatti invece che in modo fluido: l\u2019app aperta usa molta meno CPU (su Wayland ogni fotogramma ridisegna tutta la finestra).', pt:'As ventoinhas giram em passos em vez de suave: o app aberto gasta muito menos CPU (no Wayland cada quadro redesenha a janela inteira).', zh:'风扇分步转动而非平滑：打开的应用 CPU 占用大幅降低（在 Wayland 上每一帧都会重绘整个窗口）。', ja:'ファンが滑らかではなく段階的に回転：開いたアプリの CPU 使用が大幅に減ります（Wayland では毎フレームでウィンドウ全体を再描画）。', ko:'팬이 부드럽게 대신 단계적으로 회전: 열린 앱의 CPU 사용이 크게 줄어듭니다(Wayland에서는 매 프레임마다 창 전체를 다시 그림).' },
       'config.close_action':  { es:'Al cerrar la ventana', en:'When closing the window', fr:'À la fermeture de la fenêtre', it:'Alla chiusura della finestra', pt:'Ao fechar a janela', zh:'关闭窗口时', ja:'ウィンドウを閉じるとき', ko:'창을 닫을 때' },
       'config.close_quit':    { es:'Salir completo', en:'Quit completely', fr:'Quitter complètement', it:'Esci completamente', pt:'Sair por completo', zh:'完全退出', ja:'完全に終了', ko:'완전히 종료' },
       'config.close_tray':    { es:'Minimizar a bandeja', en:'Minimize to tray', fr:'Réduire dans la zone de notification', it:'Riduci nella tray', pt:'Minimizar para a bandeja', zh:'最小化到托盘', ja:'トレイに最小化', ko:'트레이로 최소화' },

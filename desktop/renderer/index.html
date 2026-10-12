@@ -380,7 +380,7 @@
             <div class="error-detail" data-i18n="widget.reconnecting">Reconectando con los sensores…</div>
           </div>
           <h2><i class="dash-num"></i> <span data-i18n="block.procs">Procesos</span>
-            <small data-i18n="block.procs_sub2">top 5 · clic en una fila para cerrarla</small></h2>
+            <small data-i18n="block.procs_sub2">los que más usan · clic en una fila para cerrarla</small></h2>
           <div class="procs-toolbar">
             <button id="procs-all-btn" class="ghost procs-tool-btn" data-i18n="procs.view_all" data-i18n-attr="title:tip.procs_all" title="Ver TODOS los procesos en una ventana ampliada">VER TODOS</button>
             <button id="procs-cores-btn" class="ghost procs-tool-btn" data-i18n="cores.btn" data-i18n-attr="title:tip.procs_cores" title="Ver uso por núcleo individual">NÚCLEOS</button>
@@ -607,6 +607,10 @@
       <label class="check-row" for="set-autostart" data-i18n-attr="title:alerts.autostart_title" title="Crea una entrada de inicio de sesión. La app abre minimizada y el monitor queda congelado (0% CPU) hasta que la abras.">
         <input type="checkbox" id="set-autostart">
         <span data-i18n="alerts.autostart">Iniciar con el sistema (minimizado, sin consumir recursos)</span>
+      </label>
+      <label class="check-row" for="set-fan-eco" data-i18n-attr="title:config.fan_eco_title" title="Los ventiladores giran a saltos en vez de fluido: la app con la ventana abierta gasta mucha menos CPU (en Wayland cada fotograma redibuja toda la ventana).">
+        <input type="checkbox" id="set-fan-eco">
+        <span data-i18n="config.fan_eco">Animación de ventiladores en modo ahorro (menos CPU)</span>
       </label>
       <label class="select-row" for="set-close-action">
         <span data-i18n="config.close_action">Al cerrar la ventana</span>

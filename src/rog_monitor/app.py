@@ -29,6 +29,8 @@ from .sysinfo import SysReader
 
 THEME_CYCLE = list(ui.THEMES)
 ERROR_LOG = DATA_DIR / "error.log"
+# El escritorio muestra los procesos que quepan en su bloque (hasta PROCS_TOP); la TUI, 5.
+PROCS_TOP = 25
 BOUND_KEYS = frozenset("qhvtpgef")  # teclas con acción; cualquier otra se ignora
 EVENT_FILTERS = ("all", "warn", "crit")  # filtro de severidad del panel de eventos (f)
 
@@ -145,7 +147,7 @@ class App:
             "ppd_profile": ppd_profile(),
             "battery": self.battery.read(),
             "sys": sysd,
-            "procs": self.procs.read(),
+            "procs": self.procs.read(top=PROCS_TOP),
             # Procesos agrupados por núcleo lógico (vista de detalle por núcleo,
             # cores.js). Aditivo y opcional; reusa el ciclo de read() de arriba.
             "procs_by_core": self.procs.by_core(),

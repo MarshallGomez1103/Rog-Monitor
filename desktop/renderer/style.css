@@ -818,10 +818,11 @@ input[type="color"] {
 .fan-icon { position: relative; width: 64px; height: 64px; margin: 0 auto; cursor: grab; }
 .fan-icon:active { cursor: grabbing; }
 .fan-icon svg { position: absolute; inset: 0; width: 64px; height: 64px; }
-/* Giro a saltos (steps(10) = 36°, con 5 aspas se ve continuo) y como mucho ~12 saltos/s
-   (app.js limita la duración a ≥0.8 s): cada fotograma regenera la página en Wayland y el
-   giro continuo costaba ~20 % de CPU con la ventana visible (medido, D-02). */
-.fan-blades { animation: spin 1s steps(10) infinite; will-change: transform; }
+/* Giro fluido por defecto (lo pidió el propietario). Modo ahorro (Configuración →
+   html.fan-eco): a saltos, steps(10) y ≥0.8 s/vuelta. Medido con la app visible:
+   fluido ~58 % CPU, ahorro ~18 %, sin animación ~11 % (Wayland redibuja toda la ventana). */
+.fan-blades { animation: spin 1s linear infinite; will-change: transform; }
+html.fan-eco .fan-blades { animation-timing-function: steps(10); }
 @media (prefers-reduced-motion: reduce) { .fan-blades { animation: none; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 .fan .rpm { font-family: var(--mono); font-size: 17px; font-weight: 700; margin-top: 6px; }
