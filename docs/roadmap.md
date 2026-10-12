@@ -23,7 +23,7 @@ separate:
 The differentiator is the **combination + safety + UX**: everything in one place,
 English-first public docs and an 8-language UI, with a guardian nobody else ships.
 
-## Current (done) — through v20
+## Current (done) — through v21
 
 * [x] Unified CPU/GPU smart guardian with separate thermal ceilings.
 * [x] Guardian modes: **Protection** and **Gaming** (fans-only, no throttling). *(v14)*
@@ -65,27 +65,54 @@ English-first public docs and an 8-language UI, with a guardian nobody else ship
 * [x] **i18n long-tail polish**: history-chart hover text, fan-curve generated labels,
   and Power Center Guardian labels now follow the active UI language. *(v20)*
 
+* [x] **v21 — hardening release** (full audit, 90 checkpoints): root only runs root-owned
+  copies (`/usr/local/libexec/rog-monitor`, ADR-0001), validated power/fan inputs, hardened
+  systemd units, complete uninstall + `docs/RECOVERY.md`, NDJSON contract `schema: 1` with
+  contract tests, NVML instead of `nvidia-smi` per tick, dGPU no longer woken by the monitor,
+  TUI "gallery" scroll bug fixed, unified events (cooldown / hysteresis / dedup), Guardian
+  simulation mode + safe restore, reproducible benchmarks, SMART cache, CI with 160+ tests and
+  an Electron E2E smoke. *(v21)*
+
+## In progress — v22 (branch `feat/v22`, not released yet)
+
+* [x] CPU card shows **usage %** next to the temperature; per-process load shown as **cores
+  used** (2.35) instead of a confusing "235 %".
+* [x] History "usage" mode: CPU % and GPU % on a fixed 0–100 axis, **RAM and swap in GiB on a
+  0..total axis**, "no swap" label when there is none.
+* [x] **RAM, swap and disk-full alerts**: the RAM / Disk event filters finally have producers.
+* [x] Disk panel shows IOPS and % busy.
+* [x] **Fans that stay stuck high after the machine cools down** are detected and the profile
+  curves are re-applied (each fan vs its own curve, calibrated RPM, 60 s hold).
+* [x] Per-profile power limits are retried when the firmware answers "busy" right after a
+  profile switch (they almost never applied before).
+* [x] App with the window open: ~30–60 % → ~11–19 % CPU (animations stepped); exact 1.00 s
+  sampling cadence; atomic config writes; TUI no longer spins without a terminal.
+
 ## P1 — DIFFERENTIATORS (what nobody else bundles)
 
 The standout features that make ROG Monitor unique.
 
-* [ ] **Customizable overlay**: many overlay themes/skins, free placement and per-monitor
-  choice (multi-monitor users can park it on a second screen), and a picker for exactly
-  which metrics to show — FPS, CPU, GPU, fans, RAM, VRAM, disks, battery. Must stay
-  lightweight (no measurable FPS cost). Single-monitor users can keep it minimal; the
-  point is *the user decides what and where*.
+* [~] **Customizable overlay** — *partial*. **Done:** opt-in click-through overlay, thin row
+  or box layout, monitor picker, 7 anchor positions, choose CPU / GPU / fans / FPS (FPS via
+  MangoHud). **Missing:** themes/skins, free drag placement, RAM / VRAM / disks / battery and
+  CPU-usage metrics, metric order, live preview, and a real test on KDE Wayland over a
+  fullscreen game (not verified yet — Wayland may ignore positioning). Must stay lightweight.
 * [ ] **Per-game / per-application profiles**: on game launch, auto-apply power +
   fan curve + RGB + overlay. Detect via process / GameMode / MangoHud — nobody
   bundles all four. (`game_session.py` is the base.)
-* [ ] **Serious benchmarks (true torture)**: a GPU Path Tracing stress in Vulkan that
-  truly saturates the GPU and stresses the CPU via BVH build. Must degrade gracefully
-  if the GPU has no RT cores — do **not** assume RTX. CPU split AVX / int / float,
-  true multi-thread, reported per P-core / E-core, with a clear verdict:
+* [~] **Serious benchmarks** — *partial*. **Done (v21):** reproducible CPU and local-GPU
+  load tests with recorded conditions, warm-up, repetitions, p50 / p95 / p99, throughput,
+  throttle events, fan-cap verdict and export. **Missing:** the GPU Path Tracing stress in
+  Vulkan (BVH build on the CPU, graceful without RT cores — do **not** assume RTX), the CPU
+  AVX / int / float split reported per P-core / E-core, and a clear verdict:
   stable / throttling / headroom.
-* [ ] **Guardian 2.0**: local telemetry of what it throttled and when, a scheduled
-  "silent" mode, and configurable response curves.
-* [ ] **Single polkit privileged helper** instead of scattered `pkexec` prompts. This is a
-  risky security/UX refactor, so it follows the current transparent-command model.
+* [~] **Guardian 2.0** — *partial*. **Done (v21):** simulation mode (on by default the first
+  time), every decision logged with its reason, gradual and crash-safe power restore.
+  **Missing:** one owner per fan/power attribute (asusd also writes curves), a scheduled
+  "silent" mode and configurable response curves.
+* [~] **Single privileged helper** — *partial*. **Done (v21):** one root-owned entry point
+  (`rog-ctl.sh`) with validated arguments and an allowlist in the app. **Missing:** a real
+  polkit policy so each action does not need its own password prompt.
 
 ## P2 — REACH (more hardware, more depth)
 

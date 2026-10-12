@@ -15,9 +15,9 @@
    Para actualizar: edita estos objetos; el render es automático.
    ============================================================ */
 
-// NOTA: mantener esta versión (v20.0.0) sincronizada con desktop/package.json ("version").
+// NOTA: mantener esta versión (v21.0.0) sincronizada con desktop/package.json ("version").
 const ROADMAP_CURRENT = {
-  version: 'v20.0.0',
+  version: 'v21.0.0',
   label: {
     es: 'Armoury Crate para Linux — seguro, bonito, todo-en-uno, sin telemetría',
     en: 'Armoury Crate for Linux — safe, beautiful, all-in-one, no telemetry',
@@ -536,14 +536,14 @@ const ROADMAP_DONE = [
     },
     points: [
       {
-        es: 'Overlay siempre encima, transparente, click-through y sin robar foco (KDE/Wayland)',
-        en: 'Always-on-top overlay, transparent, click-through and without stealing focus (KDE/Wayland)',
-        fr: 'Overlay toujours au-dessus, transparent, click-through et sans voler le focus (KDE/Wayland)',
-        it: 'Overlay sempre in primo piano, trasparente, click-through e senza rubare il focus (KDE/Wayland)',
-        pt: 'Overlay sempre por cima, transparente, click-through e sem roubar o foco (KDE/Wayland)',
-        zh: '叠加层始终置顶、透明、可点击穿透且不抢占焦点（KDE/Wayland）',
-        ja: '常に最前面・透明・クリックスルーでフォーカスを奪わないオーバーレイ（KDE/Wayland）',
-        ko: '항상 위에 표시되고 투명하며 클릭 통과되고 포커스를 빼앗지 않는 오버레이(KDE/Wayland)',
+        es: 'Overlay siempre encima, transparente, click-through y sin robar foco',
+        en: 'Always-on-top overlay, transparent, click-through and without stealing focus',
+        fr: 'Overlay toujours au-dessus, transparent, click-through et sans voler le focus',
+        it: 'Overlay sempre in primo piano, trasparente, click-through e senza rubare il focus',
+        pt: 'Overlay sempre por cima, transparente, click-through e sem roubar o foco',
+        zh: '叠加层始终置顶、透明、可点击穿透且不抢占焦点',
+        ja: '常に最前面・透明・クリックスルーでフォーカスを奪わないオーバーレイ',
+        ko: '항상 위에 표시되고 투명하며 클릭 통과되고 포커스를 빼앗지 않는 오버레이',
       },
       {
         es: 'Aura: detecta SupportedBasicModes por D-Bus → solo ofrece los efectos que el teclado soporta de verdad',
@@ -1677,6 +1677,98 @@ const ROADMAP_DONE = [
       },
     ],
   },
+  {
+    date: '2026-10-10',
+    version: 'v21.0.0',
+    title: {
+      es: 'Release de endurecimiento: auditoría completa',
+      en: 'Hardening release: full audit',
+      fr: 'Version de durcissement : audit complet',
+      it: 'Release di hardening: audit completo',
+      pt: 'Release de endurecimento: auditoria completa',
+      zh: '加固版本：全面审计',
+      ja: '堅牢化リリース：全面監査',
+      ko: '강화 릴리스: 전체 감사',
+    },
+    points: [
+      {
+        es: 'Root solo ejecuta copias de root (/usr/local/libexec/rog-monitor); entradas de poder y ventiladores validadas; servicios systemd endurecidos; desinstalación completa y guía de recuperación',
+        en: 'Root only runs root-owned copies (/usr/local/libexec/rog-monitor); validated power and fan inputs; hardened systemd units; complete uninstall and recovery guide',
+        fr: 'Root n’exécute que des copies root (/usr/local/libexec/rog-monitor) ; entrées puissance/ventilateurs validées ; unités systemd durcies ; désinstallation complète et guide de récupération',
+        it: 'Root esegue solo copie di root (/usr/local/libexec/rog-monitor); input di potenza e ventole validati; unità systemd irrobustite; disinstallazione completa e guida di ripristino',
+        pt: 'Root só executa cópias de root (/usr/local/libexec/rog-monitor); entradas de energia e ventoinhas validadas; unidades systemd endurecidas; desinstalação completa e guia de recuperação',
+        zh: 'root 只运行 root 拥有的副本（/usr/local/libexec/rog-monitor）；功耗与风扇输入校验；systemd 单元加固；完整卸载与恢复指南',
+        ja: 'root は root 所有のコピーのみ実行（/usr/local/libexec/rog-monitor）；電力・ファン入力を検証；systemd ユニットを堅牢化；完全アンインストールと復旧ガイド',
+        ko: 'root는 root 소유 사본만 실행(/usr/local/libexec/rog-monitor); 전력·팬 입력 검증; systemd 유닛 강화; 완전 제거 및 복구 가이드',
+      },
+      {
+        es: 'NVML en vez de nvidia-smi y la dGPU ya no se despierta; contrato de datos versionado con tests; arreglado el salto "galería" de la TUI',
+        en: 'NVML instead of nvidia-smi and the dGPU is no longer woken up; versioned data contract with tests; TUI "gallery" jump fixed',
+        fr: 'NVML au lieu de nvidia-smi et le dGPU n’est plus réveillé ; contrat de données versionné avec tests ; saut « galerie » de la TUI corrigé',
+        it: 'NVML al posto di nvidia-smi e la dGPU non viene più svegliata; contratto dati versionato con test; corretto il salto "galleria" della TUI',
+        pt: 'NVML em vez de nvidia-smi e a dGPU não é mais acordada; contrato de dados versionado com testes; corrigido o salto "galeria" da TUI',
+        zh: '用 NVML 取代 nvidia-smi，不再唤醒独显；带测试的版本化数据契约；修复 TUI 的“图库”跳动',
+        ja: 'nvidia-smi の代わりに NVML、dGPU を起こさない；テスト付きのバージョン管理されたデータ契約；TUI の「ギャラリー」ジャンプを修正',
+        ko: 'nvidia-smi 대신 NVML, dGPU를 깨우지 않음; 테스트가 있는 버전 관리 데이터 계약; TUI "갤러리" 점프 수정',
+      },
+      {
+        es: 'Guardián 2.0 con simulación y restauración segura; eventos con enfriamiento e histéresis; benchmarks reproducibles (p50/p95/p99); más de 160 tests y prueba E2E',
+        en: 'Guardian 2.0 with simulation and safe restore; events with cooldown and hysteresis; reproducible benchmarks (p50/p95/p99); 160+ tests and an E2E smoke',
+        fr: 'Gardien 2.0 avec simulation et restauration sûre ; événements avec délai et hystérésis ; benchmarks reproductibles (p50/p95/p99) ; plus de 160 tests et un E2E',
+        it: 'Guardian 2.0 con simulazione e ripristino sicuro; eventi con cooldown e isteresi; benchmark riproducibili (p50/p95/p99); oltre 160 test e smoke E2E',
+        pt: 'Guardião 2.0 com simulação e restauração segura; eventos com espera e histerese; benchmarks reproduzíveis (p50/p95/p99); mais de 160 testes e E2E',
+        zh: '守护 2.0：模拟模式与安全恢复；事件冷却与迟滞；可复现基准（p50/p95/p99）；160+ 测试与 E2E 冒烟测试',
+        ja: 'ガーディアン 2.0：シミュレーションと安全な復元；クールダウンとヒステリシス付きイベント；再現可能なベンチマーク（p50/p95/p99）；160 以上のテストと E2E',
+        ko: '가디언 2.0: 시뮬레이션과 안전한 복원; 쿨다운·히스테리시스 이벤트; 재현 가능한 벤치마크(p50/p95/p99); 160개 이상 테스트와 E2E',
+      },
+    ],
+  },
+  {
+    date: '2026-10-12',
+    version: 'v22 (dev)',
+    title: {
+      es: 'En desarrollo: métricas claras, ventiladores y rendimiento',
+      en: 'In development: clear metrics, fans and performance',
+      fr: 'En développement : métriques claires, ventilateurs et performances',
+      it: 'In sviluppo: metriche chiare, ventole e prestazioni',
+      pt: 'Em desenvolvimento: métricas claras, ventoinhas e desempenho',
+      zh: '开发中：清晰指标、风扇与性能',
+      ja: '開発中：分かりやすい指標、ファン、性能',
+      ko: '개발 중: 명확한 지표, 팬, 성능',
+    },
+    points: [
+      {
+        es: 'Uso % en la tarjeta CPU; procesos en núcleos ocupados (2.35) en vez de "235 %"; RAM y swap en GiB con eje 0..total; % siempre 0-100',
+        en: 'Usage % on the CPU card; processes shown as cores used (2.35) instead of "235 %"; RAM and swap in GiB on a 0..total axis; % always 0-100',
+        fr: 'Utilisation % sur la carte CPU ; processus en cœurs utilisés (2,35) au lieu de « 235 % » ; RAM et swap en Gio sur un axe 0..total ; % toujours 0-100',
+        it: 'Uso % nella scheda CPU; processi in core usati (2.35) invece di "235 %"; RAM e swap in GiB con asse 0..totale; % sempre 0-100',
+        pt: 'Uso % no cartão da CPU; processos em núcleos usados (2.35) em vez de "235 %"; RAM e swap em GiB com eixo 0..total; % sempre 0-100',
+        zh: 'CPU 卡片显示使用率 %；进程以占用核心数（2.35）而非“235 %”显示；内存和交换分区以 GiB 显示，坐标 0..总量；百分比固定 0-100',
+        ja: 'CPU カードに使用率 %；プロセスは「235 %」ではなく使用コア数（2.35）；RAM とスワップは GiB で 0..合計軸；% は常に 0-100',
+        ko: 'CPU 카드에 사용률 %; 프로세스는 "235 %" 대신 사용 코어 수(2.35); RAM과 스왑은 0..전체 축의 GiB; %는 항상 0-100',
+      },
+      {
+        es: 'Ventiladores que se quedaban pegados arriba con el equipo frío: se detectan y se reaplica la curva; los límites de potencia del perfil se reintentan si el firmware está ocupado',
+        en: 'Fans that stayed stuck high with the machine cool are detected and the curve is re-applied; profile power limits are retried when the firmware is busy',
+        fr: 'Ventilateurs restés bloqués en haut machine froide : détectés et courbe réappliquée ; limites de puissance du profil réessayées si le firmware est occupé',
+        it: 'Ventole rimaste bloccate in alto a macchina fredda: rilevate e curva riapplicata; limiti di potenza del profilo ritentati se il firmware è occupato',
+        pt: 'Ventoinhas presas no alto com a máquina fria: detectadas e a curva é reaplicada; limites de potência do perfil são tentados de novo se o firmware estiver ocupado',
+        zh: '机器变凉后风扇仍卡在高速：自动检测并重新应用曲线；固件忙时重试配置的功耗限制',
+        ja: '冷えた後も高回転のままのファンを検出してカーブを再適用；ファームウェアがビジーならプロファイルの電力制限を再試行',
+        ko: '식은 뒤에도 고속에 멈춘 팬을 감지해 커브 재적용; 펌웨어가 바쁘면 프로필 전력 제한 재시도',
+      },
+      {
+        es: 'Alertas de RAM, swap y disco lleno; IOPS y % ocupado en discos; la app abierta gasta mucha menos CPU (animaciones a saltos) y muestrea cada 1,00 s exactos',
+        en: 'RAM, swap and disk-full alerts; IOPS and % busy on disks; the open app uses far less CPU (stepped animations) and samples every exact 1.00 s',
+        fr: 'Alertes RAM, swap et disque plein ; IOPS et % occupé des disques ; l’app ouverte consomme bien moins de CPU (animations par paliers) et échantillonne à 1,00 s exactes',
+        it: 'Avvisi di RAM, swap e disco pieno; IOPS e % occupato sui dischi; l’app aperta usa molta meno CPU (animazioni a scatti) e campiona ogni 1,00 s esatti',
+        pt: 'Alertas de RAM, swap e disco cheio; IOPS e % ocupado nos discos; o app aberto gasta bem menos CPU (animações em passos) e amostra a cada 1,00 s exatos',
+        zh: '内存、交换分区与磁盘将满告警；磁盘显示 IOPS 和繁忙 %；打开的应用 CPU 占用大幅下降（分步动画），精确每 1.00 秒采样',
+        ja: 'RAM・スワップ・ディスク満杯アラート；ディスクに IOPS と使用中 %；開いたアプリの CPU 使用を大幅削減（段階アニメーション）、正確に 1.00 秒ごとにサンプリング',
+        ko: 'RAM·스왑·디스크 가득 참 알림; 디스크에 IOPS와 사용 중 %; 열린 앱의 CPU 사용 대폭 감소(단계 애니메이션), 정확히 1.00초마다 샘플링',
+      },
+    ],
+  },
 ];
 
 // Pendientes (por hacer) — roadmap COMPETITIVO en fases P1/P2/P3.
@@ -1717,6 +1809,16 @@ const ROADMAP_TODO = [
           ko: '맞춤형 오버레이',
         },
         points: [
+          {
+            es: 'Estado: PARCIAL — hecho: overlay opcional click-through, fila o cuadro, elegir monitor, 7 posiciones y mostrar CPU/GPU/ventiladores/FPS (MangoHud). Falta: temas, mover libre, RAM/VRAM/discos/batería, orden, vista previa y probarlo en KDE Wayland sobre un juego',
+            en: 'Status: PARTIAL — done: opt-in click-through overlay, row or box, monitor picker, 7 positions and show CPU/GPU/fans/FPS (MangoHud). Missing: themes, free placement, RAM/VRAM/disks/battery, order, preview and a real test on KDE Wayland over a game',
+            fr: 'État : PARTIEL — fait : overlay optionnel click-through, ligne ou boîte, choix du moniteur, 7 positions et CPU/GPU/ventilateurs/FPS (MangoHud). Manque : thèmes, placement libre, RAM/VRAM/disques/batterie, ordre, aperçu et test réel sous KDE Wayland en jeu',
+            it: 'Stato: PARZIALE — fatto: overlay opzionale click-through, riga o riquadro, scelta monitor, 7 posizioni e CPU/GPU/ventole/FPS (MangoHud). Manca: temi, posizione libera, RAM/VRAM/dischi/batteria, ordine, anteprima e test reale su KDE Wayland in gioco',
+            pt: 'Estado: PARCIAL — feito: overlay opcional click-through, linha ou caixa, escolha do monitor, 7 posições e CPU/GPU/ventoinhas/FPS (MangoHud). Falta: temas, posição livre, RAM/VRAM/discos/bateria, ordem, prévia e teste real no KDE Wayland num jogo',
+            zh: '状态：部分完成 — 已完成：可选点击穿透叠加层、单行或方框、选择显示器、7 个位置、显示 CPU/GPU/风扇/FPS（MangoHud）。待完成：主题、自由摆放、内存/显存/磁盘/电池、排序、预览，以及在 KDE Wayland 游戏中实测',
+            ja: '状態：一部完了 — 済み：任意のクリックスルー・オーバーレイ、行またはボックス、モニター選択、7 つの位置、CPU/GPU/ファン/FPS（MangoHud）。未完：テーマ、自由配置、RAM/VRAM/ディスク/バッテリー、並び順、プレビュー、KDE Wayland のゲーム上での実機テスト',
+            ko: '상태: 부분 완료 — 완료: 선택형 클릭 통과 오버레이, 행/박스, 모니터 선택, 7개 위치, CPU/GPU/팬/FPS(MangoHud). 남음: 테마, 자유 배치, RAM/VRAM/디스크/배터리, 순서, 미리보기, KDE Wayland 게임 위 실제 테스트',
+          },
           {
             es: 'Muchos temas/skins de overlay, posición libre y elegir el monitor (en 2 pantallas, ponerlo en la otra)',
             en: 'Many overlay themes/skins, free placement and per-monitor choice (on dual screens, park it on the other)',
@@ -1796,6 +1898,16 @@ const ROADMAP_TODO = [
         },
         points: [
           {
+            es: 'Estado: PARCIAL — hecho (v21): pruebas de carga CPU y GPU local reproducibles con condiciones, calentamiento, repeticiones, p50/p95/p99, rendimiento, throttling y veredicto del tope de ventiladores. Falta: lo de abajo',
+            en: 'Status: PARTIAL — done (v21): reproducible CPU and local-GPU load tests with conditions, warm-up, repetitions, p50/p95/p99, throughput, throttling and fan-cap verdict. Missing: the items below',
+            fr: 'État : PARTIEL — fait (v21) : tests de charge CPU et GPU local reproductibles avec conditions, préchauffage, répétitions, p50/p95/p99, débit, throttling et verdict du plafond ventilateurs. Manque : ce qui suit',
+            it: 'Stato: PARZIALE — fatto (v21): test di carico CPU e GPU locale riproducibili con condizioni, riscaldamento, ripetizioni, p50/p95/p99, throughput, throttling e verdetto del cap ventole. Manca: quanto sotto',
+            pt: 'Estado: PARCIAL — feito (v21): testes de carga de CPU e GPU local reproduzíveis com condições, aquecimento, repetições, p50/p95/p99, vazão, throttling e veredito do teto das ventoinhas. Falta: o abaixo',
+            zh: '状态：部分完成 — 已完成（v21）：可复现的 CPU 与本地 GPU 负载测试，含条件记录、预热、重复、p50/p95/p99、吞吐、降频与风扇上限结论。待完成：以下各项',
+            ja: '状態：一部完了 — 済み（v21）：条件記録・ウォームアップ・反復・p50/p95/p99・スループット・スロットリング・ファン上限判定付きの再現可能な CPU/ローカル GPU 負荷テスト。未完：以下',
+            ko: '상태: 부분 완료 — 완료(v21): 조건 기록·워밍업·반복·p50/p95/p99·처리량·스로틀링·팬 상한 판정이 있는 재현 가능한 CPU/로컬 GPU 부하 테스트. 남음: 아래 항목',
+          },
+          {
             es: 'GPU Path Tracing en Vulkan que satura de verdad la GPU y estresa la CPU vía construcción de BVH',
             en: 'GPU Path Tracing in Vulkan that truly saturates the GPU and stresses the CPU via BVH build',
             fr: 'Path Tracing GPU en Vulkan saturant réellement le GPU et stressant le CPU via la construction de BVH',
@@ -1840,6 +1952,16 @@ const ROADMAP_TODO = [
         },
         points: [
           {
+            es: 'Estado: PARCIAL — hecho (v21): simulación (activa la primera vez), cada decisión registrada con su motivo y restauración gradual y a prueba de cuelgues. Falta: un solo dueño por ventilador/potencia (asusd también escribe curvas)',
+            en: 'Status: PARTIAL — done (v21): simulation (on the first time), every decision logged with its reason, gradual crash-safe restore. Missing: one owner per fan/power setting (asusd also writes curves)',
+            fr: 'État : PARTIEL — fait (v21) : simulation (activée la première fois), chaque décision journalisée avec sa raison, restauration progressive et sûre. Manque : un seul maître par réglage (asusd écrit aussi des courbes)',
+            it: 'Stato: PARZIALE — fatto (v21): simulazione (attiva la prima volta), ogni decisione registrata con il motivo, ripristino graduale e sicuro. Manca: un solo proprietario per impostazione (anche asusd scrive curve)',
+            pt: 'Estado: PARCIAL — feito (v21): simulação (ativa na primeira vez), cada decisão registrada com o motivo, restauração gradual e segura. Falta: um único dono por ajuste (o asusd também escreve curvas)',
+            zh: '状态：部分完成 — 已完成（v21）：模拟模式（首次默认开启）、每次决策记录原因、渐进且防崩溃的恢复。待完成：每个风扇/功耗设置只有一个控制者（asusd 也会写曲线）',
+            ja: '状態：一部完了 — 済み（v21）：シミュレーション（初回は既定でオン）、判断ごとの理由ログ、段階的でクラッシュに強い復元。未完：ファン/電力設定ごとの単一の管理者（asusd もカーブを書き込む）',
+            ko: '상태: 부분 완료 — 완료(v21): 시뮬레이션(처음엔 기본 켜짐), 모든 결정과 이유 기록, 단계적·충돌 안전 복원. 남음: 팬/전력 설정별 단일 관리자(asusd도 커브를 씀)',
+          },
+          {
             es: 'Telemetría local de qué limitó y cuándo; modo "silencioso" programado; curvas de respuesta configurables',
             en: 'Local telemetry of what it throttled and when; scheduled "silent" mode; configurable response curves',
             fr: 'Télémétrie locale de ce qui a été limité et quand ; mode « silencieux » programmé ; courbes de réponse configurables',
@@ -1863,6 +1985,16 @@ const ROADMAP_TODO = [
           ko: '단일 권한 헬퍼',
         },
         points: [
+          {
+            es: 'Estado: PARCIAL — hecho (v21): un único punto de entrada de root (rog-ctl.sh) con argumentos validados y lista permitida en la app. Falta: política polkit para no pedir contraseña en cada acción',
+            en: 'Status: PARTIAL — done (v21): a single root entry point (rog-ctl.sh) with validated arguments and an allowlist in the app. Missing: a polkit policy so each action does not ask for the password',
+            fr: 'État : PARTIEL — fait (v21) : un seul point d’entrée root (rog-ctl.sh) avec arguments validés et liste autorisée dans l’app. Manque : une politique polkit pour ne pas demander le mot de passe à chaque action',
+            it: 'Stato: PARZIALE — fatto (v21): un unico punto d’ingresso root (rog-ctl.sh) con argomenti validati e allowlist nell’app. Manca: una policy polkit per non chiedere la password a ogni azione',
+            pt: 'Estado: PARCIAL — feito (v21): um único ponto de entrada root (rog-ctl.sh) com argumentos validados e lista permitida no app. Falta: uma política polkit para não pedir a senha a cada ação',
+            zh: '状态：部分完成 — 已完成（v21）：唯一的 root 入口（rog-ctl.sh），参数校验并在应用中设白名单。待完成：polkit 策略，避免每次操作都要密码',
+            ja: '状態：一部完了 — 済み（v21）：引数を検証する単一の root 入口（rog-ctl.sh）とアプリ内の許可リスト。未完：操作ごとにパスワードを求めない polkit ポリシー',
+            ko: '상태: 부분 완료 — 완료(v21): 인수를 검증하는 단일 root 진입점(rog-ctl.sh)과 앱 내 허용 목록. 남음: 작업마다 비밀번호를 묻지 않는 polkit 정책',
+          },
           {
             es: 'Reemplazar prompts pkexec dispersos por un helper polkit auditado, manteniendo transparencia, límites seguros y ruta de recuperación',
             en: 'Replace scattered pkexec prompts with an audited polkit helper while keeping transparency, safe limits and a recovery path',
