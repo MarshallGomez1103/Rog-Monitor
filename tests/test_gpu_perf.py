@@ -1,5 +1,6 @@
 """CP-2.06/2.08: NVML en vez de nvidia-smi, dGPU dormida intacta, cachés con TTL."""
 
+import os
 import shutil
 import threading
 import time
@@ -54,7 +55,9 @@ class NvmlVsSmi(unittest.TestCase):
             self.assertEqual(r._read_nvidia()["power"], 3.6)
         self.assertFalse(r._nvml_ok)
 
-    @unittest.skipUnless(shutil.which("nvidia-smi"), "sin nvidia-smi")
+    # Toca NVML/nvidia-smi reales y puede despertar la dGPU (D3cold): solo con opt-in explícito.
+    @unittest.skipUnless(os.environ.get("ROG_LIVE_GPU") == "1" and shutil.which("nvidia-smi"),
+                         "GPU real: exportar ROG_LIVE_GPU=1")
     def test_live_shape(self):
         try:
             live = gpu_clocks.read_telemetry()
