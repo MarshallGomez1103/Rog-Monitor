@@ -242,6 +242,7 @@ if (window.i18n && window.i18n.register) {
     'fan.name.cpu': { es: 'CPU', en: 'CPU', fr: 'CPU', it: 'CPU', pt: 'CPU', zh: 'CPU', ja: 'CPU', ko: 'CPU' },
     'fan.name.gpu': { es: 'GPU', en: 'GPU', fr: 'GPU', it: 'GPU', pt: 'GPU', zh: 'GPU', ja: 'GPU', ko: 'GPU' },
     'fan.name.mid': { es: 'MID (central)', en: 'MID (center)', fr: 'MID (central)', it: 'MID (centrale)', pt: 'MID (central)', zh: 'MID（中部）', ja: 'MID（中央）', ko: 'MID (중앙)' },
+    'thermal.stale': { es: 'SIN DATOS · {v} s', en: 'NO DATA · {v} s', fr: 'PAS DE DONNÉES · {v} s', it: 'NESSUN DATO · {v} s', pt: 'SEM DADOS · {v} s', zh: '无数据 · {v} 秒', ja: 'データなし · {v} 秒', ko: '데이터 없음 · {v}초' },
     'fan.dba_est': { es: '{v} dBA est.', en: '{v} dBA est.', fr: '{v} dBA estimés', it: '{v} dBA stim.', pt: '{v} dBA est.', zh: '估算 {v} dBA', ja: '推定 {v} dBA', ko: '예상 {v} dBA' },
     'fan.temp_hint': { es: 'A esta temperatura…', en: 'At this temperature…', fr: 'À cette température…', it: 'A questa temperatura…', pt: 'A esta temperatura…', zh: '在此温度…', ja: 'この温度で…', ko: '이 온도에서…' },
     'fan.speed_hint': { es: '…el ventilador gira a este porcentaje de su máximo', en: '…the fan spins at this percentage of its maximum', fr: '…le ventilateur tourne à ce pourcentage de son maximum', it: '…la ventola gira a questa percentuale del massimo', pt: '…a ventoinha gira a esta percentagem do máximo', zh: '…风扇以其最大值的这个百分比旋转', ja: '…ファンは最大値に対するこの割合で回転します', ko: '…팬이 최대값의 이 비율로 회전합니다' },
@@ -1919,8 +1920,27 @@ function renderRamProcs(procs) {
 let lastEventsSig = null;
 let lastProcsSig = null;
 
+// F2-08: sin muestras en STALE_MS (backend colgado o reiniciando) → lámpara gris
+// "SIN DATOS · N s" y paneles atenuados: nunca mostrar números viejos como en vivo.
+// Oculta, el backend está pausado a propósito: no cuenta.
+const STALE_MS = 6000;
+let lastStatsAt = Date.now();
+document.addEventListener('visibilitychange', () => { if (!document.hidden) lastStatsAt = Date.now(); });
+setInterval(() => {
+  const age = Date.now() - lastStatsAt;
+  const stale = !document.hidden && age > STALE_MS;
+  document.body.classList.toggle('stale', stale);
+  if (!stale) return;
+  $('thermal-lamp').className = 'lamp';
+  const label = $('thermal-label');
+  label.className = 'lamp-label';
+  label.textContent = t('thermal.stale', { v: Math.round(age / 1000) });
+}, 1000);
+
 function update(stats) {
   lastStats = stats;
+  lastStatsAt = Date.now();
+  document.body.classList.remove('stale');
   const cpu = stats.cpu || {};
   const sys = stats.sys || {};
   const limits = stats.limits || {};
@@ -2898,13 +2918,13 @@ const FAN_PROFILE_RECOMMENDED_CAP = {
   performance: 6500,
 };
 const FAN_GRAPH = {
-  tempMin: 30,
+  tempMin: 40,
   tempMax: 105,
   x0: 42,
   x1: 520,
   yTop: 36,
   yBottom: 204,
-  ticks: [30, 45, 60, 75, 90, 105],
+  ticks: [40, 50, 60, 70, 80, 90, 100],
 };
 
 localStorage.removeItem('fanMax'); // legado: vivía aquí y nunca era real

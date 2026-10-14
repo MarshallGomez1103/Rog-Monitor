@@ -276,3 +276,19 @@ class HelperTrustAsRoot(unittest.TestCase):
         real = Path("/usr/local/libexec/rog-monitor/apply-power-control.sh")
         if real.exists() and real.stat().st_uid == 0:
             self.assertIsNone(pc._helper_problem(real, real.parent, check_version=False))
+
+
+class ProfilePowerLiveRange(unittest.TestCase):
+    """quiet deja nv_dynamic_boost en [0, 0]: el set se recorta, no se rechaza entero."""
+
+    def test_quiet_clamps_db_to_live_range(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = Path(d, "nv_dynamic_boost")
+            db.mkdir()
+            (db / "min_value").write_text("0\n")
+            (db / "max_value").write_text("0\n")
+            entry = dict(ENTRY, profile_power={"quiet": {"pl1": 45, "pl2": 45, "dynamic_boost": 5}})
+            with mock.patch.dict(os.environ, {"ROG_FW_ATTRS_DIR": d}):
+                vals = pc.profile_power_for("quiet", entry)
+                self.assertEqual(vals["dynamic_boost"], 0)
+                self.assertIsNotNone(pc.validate_changes(vals, entry)[0])

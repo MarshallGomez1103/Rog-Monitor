@@ -18,6 +18,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -169,6 +170,7 @@ class SnapshotContract(unittest.TestCase):
         live = json.loads(proc.stdout.strip().splitlines()[-1])
         self.assertEqual(live["schema"], EXPECTED_SCHEMA)
         self.assertEqual(check(live, REQUIRED), [])
+        self.assertLess(abs(live["ts"] - time.time()), 120)       # F2-08: hora de la muestra
 
     def test_checker_catches_breakage(self):
         self.assertTrue(check({"a": {}}, {"a.b": "num"}))           # missing key

@@ -15,15 +15,17 @@ jobs:
           python-version: "3.12"
 
       - name: Install Python deps
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt coverage
 
       - name: Compile Python package
         run: python -m py_compile src/rog_monitor/*.py
 
-      - name: Python unit, contract and TUI (pty) tests
+      - name: Python unit, contract and TUI (pty) tests + coverage
         env:
           PYTHONPATH: src
-        run: python -m unittest discover -s tests -v
+        run: |
+          python -m coverage run --source=src/rog_monitor -m unittest discover -s tests -v
+          python -m coverage report --sort=cover --fail-under=50
 
       - name: Validate device_profiles.json
         run: python -c "import json; json.load(open('src/rog_monitor/device_profiles.json')); print('device_profiles.json OK')"
@@ -57,8 +59,8 @@ jobs:
             echo "checking $f"; node --check "$f"
           done
 
-      - name: node:test (priv, contract, escape)
-        run: node --test desktop/test/*.test.js
+      - name: node:test (priv, contract, escape) + coverage
+        run: node --test --experimental-test-coverage --test-coverage-lines=90 desktop/test/*.test.js
 
       - name: Validate i18n (base langs, no undefined data-i18n, command texts)
         run: node scripts/validate-i18n.mjs

@@ -263,6 +263,7 @@ b, .num { font-variant-numeric: tabular-nums; }
 .lamp.critical { background: var(--crit); box-shadow: 0 0 13px var(--crit); }
 
 .lamp-label { font-size: 13px; letter-spacing: 2px; color: var(--dim); }
+body.stale main { opacity: .45; transition: opacity .3s; }
 .lamp-label.cold { color: var(--cold); }
 .lamp-label.normal { color: var(--okstate); }
 .lamp-label.hot { color: var(--hot); }

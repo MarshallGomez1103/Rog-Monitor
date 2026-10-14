@@ -159,15 +159,15 @@ default_curve_for() {
     local profile="$1"
     local key="$2"
     case "$profile:$key" in
-        performance:gpu) printf '30 50 60 65 72 76 80 83|26 38 71 107 158 204 250 250\n' ;;
-        performance:mid) printf '30 50 60 70 80 85 90 95|26 41 66 107 158 204 247 247\n' ;;
-        performance:*)   printf '30 50 60 70 80 85 90 95|31 46 69 115 166 207 247 247\n' ;;
-        balanced:gpu)    printf '30 50 60 65 72 76 80 83|18 30 56 92 133 168 200 205\n' ;;
-        balanced:mid)    printf '30 50 60 70 80 85 90 95|18 33 56 92 133 168 200 205\n' ;;
-        balanced:*)      printf '30 50 60 70 80 85 90 95|20 36 56 92 138 173 205 205\n' ;;
-        quiet:gpu)       printf '30 50 60 65 72 76 80 83|13 23 43 66 99 128 160 170\n' ;;
-        quiet:mid)       printf '30 50 60 70 80 85 90 95|13 26 46 72 105 135 165 170\n' ;;
-        quiet:*)         printf '30 50 60 70 80 85 90 95|15 28 46 72 105 135 165 170\n' ;;
+        performance:gpu) printf '50 58 64 70 75 79 83 87|46 66 97 127 168 209 242 255\n' ;;
+        performance:mid) printf '50 60 68 75 82 88 92 96|46 66 97 127 168 209 242 255\n' ;;
+        performance:*)   printf '50 60 68 75 82 88 92 96|46 66 97 127 168 209 242 255\n' ;;
+        balanced:gpu)    printf '50 58 64 70 75 79 83 87|33 51 76 107 143 178 209 224\n' ;;
+        balanced:mid)    printf '50 60 68 75 82 88 92 96|33 51 76 107 143 178 209 224\n' ;;
+        balanced:*)      printf '50 60 68 75 82 88 92 96|33 51 76 107 143 178 209 224\n' ;;
+        quiet:gpu)       printf '50 58 64 70 75 79 83 87|20 36 56 82 112 143 168 184\n' ;;
+        quiet:mid)       printf '50 60 68 75 82 88 92 96|20 36 56 82 112 143 168 184\n' ;;
+        quiet:*)         printf '50 60 68 75 82 88 92 96|20 36 56 82 112 143 168 184\n' ;;
         *) return 1 ;;
     esac
 }
@@ -340,23 +340,33 @@ set_curve() {
             > "$hwmon/pwm${fan}_auto_point${point}_pwm" || return 1
     done
 
-    # ASUS custom curves use 1=enabled and 2=disabled.
+    # ASUS custom curves use 1=enabled and 2=disabled. Un EINVAL aquí suele ser asusd
+    # escribiendo la misma curva a la vez (cambio de perfil): se reintenta una vez.
+    printf '1\n' > "$hwmon/pwm${fan}_enable" 2>/dev/null && return 0
+    sleep "${CURVE_RETRY_S:-0.5}"
     printf '1\n' > "$hwmon/pwm${fan}_enable" || return 1
 }
 
-# ¿La curva aplicada en hardware coincide con la esperada? Mira el punto 8
-# (el tope, donde vive el cap) de cada ventilador. Detecta cuando el firmware
-# o asusd resetean las curvas al cambiar de perfil sin que cambie el PPD.
+# ¿La curva aplicada en hardware coincide con la esperada? Compara los 8 puntos
+# (temperatura exacta, pwm ±2 por el redondeo a % del driver). Antes solo miraba
+# el punto 8 (donde vive el cap): un cambio en la parte baja de la curva —o asusd
+# pisando solo esos puntos— pasaba desapercibido hasta el siguiente cambio de perfil.
 curves_match() {
     local hwmon="$1"
     local fan="$2"
-    local pwm_values="$3"
-    local -a pwms
-    local current
+    local temp_values="$3"
+    local pwm_values="$4"
+    local -a temps pwms
+    local i t p
 
+    read -r -a temps <<< "$temp_values"
     read -r -a pwms <<< "$pwm_values"
-    IFS= read -r current < "$hwmon/pwm${fan}_auto_point8_pwm" || return 1
-    [[ "$current" == "${pwms[7]}" ]]
+    for i in 0 1 2 3 4 5 6 7; do
+        IFS= read -r t < "$hwmon/pwm${fan}_auto_point$((i + 1))_temp" || return 1
+        IFS= read -r p < "$hwmon/pwm${fan}_auto_point$((i + 1))_pwm" || return 1
+        [[ "$t" == "${temps[$i]}" ]] || return 1
+        (( p - pwms[i] <= 2 && pwms[i] - p <= 2 )) || return 1
+    done
 }
 
 # apply_curves <profile> <hwmon> [check-only]
@@ -391,7 +401,7 @@ apply_curves() {
             pwms="${out##*|}"
         fi
         if [[ "$mode" == "check-only" ]]; then
-            curves_match "$hwmon" "$fan" "$pwms" || return 1
+            curves_match "$hwmon" "$fan" "$temps" "$pwms" || return 1
             applied=$((applied + 1))
             continue
         fi
@@ -424,14 +434,19 @@ curves_enabled() {
 # la máquina se enfría (performance tras jugar: 6000 rpm con la CPU a 60-74 °C; al cambiar
 # de perfil bajaban al instante porque se reescribía la curva). Regla del propietario:
 # frío → bajan todos, caliente → suben todos. Cada vuelta (≤30 s) se compara cada
-# ventilador con lo que pide SU curva a SU temperatura (CPU/MID: paquete CPU; GPU: la
+# ventilador con lo que pide SU curva a la temperatura más caliente (paquete CPU o la
 # GPU, sin despertarla) pasado a rpm con la calibración medida. Si alguno va más de
-# STUCK_MARGIN rpm por encima durante ≥60 s, se reescriben TODAS las curvas del perfil
-# (enable=2 un segundo y otra vez la curva + enable=1). Tras re-aplicar, espera 5 min.
-STUCK_MARGIN=1200
-STUCK_MIN_RPM=4500
+# STUCK_MARGIN rpm (o un 25 %, lo mayor) por encima durante ≥60 s, se reescriben TODAS
+# las curvas del perfil (enable=2 un segundo —el driver reescribe el modo térmico, igual
+# que cambiar de perfil a mano— y otra vez la curva + enable=1). Tras re-aplicar, espera
+# 3 min y deja en el journal si funcionó. Medido en este equipo: el EC sube/baja ~60 rpm/s,
+# así que 60 s cubren de sobra la rampa normal tras una carga.
+# Antes solo miraba ≥4500 rpm: en quiet (cap 4500) y balanced nunca saltaba.
+STUCK_MARGIN=900
+STUCK_MIN_RPM=3000
 STUCK_HOLD_S=60
-STUCK_COOLDOWN_S=300
+STUCK_COOLDOWN_S=180
+STUCK_VERIFY=0   # 1 = la vuelta siguiente a un re-aplicado comprueba si bajaron
 STUCK_SINCE=""   # vacío = sin atasco en curso
 STUCK_LAST_FIX=0
 
@@ -515,16 +530,21 @@ PY
 
 # 0 si algún ventilador está pegado: <curve_hwmon> <asus_hwmon> <cpu °C> <gpu °C> [json]
 fans_stuck_now() {
-    local curve="$1" asus="$2" cpu_t="$3" gpu_t="$4" json="${5:-}" fan rpm want exp temp key
+    local curve="$1" asus="$2" cpu_t="$3" gpu_t="$4" json="${5:-}" fan rpm want exp temp key margin
     for fan in 1 2 3; do
         [[ -r "$asus/fan${fan}_input" ]] || continue
         IFS= read -r rpm < "$asus/fan${fan}_input" || continue
         (( rpm >= STUCK_MIN_RPM )) || continue
         key="$(fan_key "$fan")"
-        temp="$cpu_t"; [[ "$key" == gpu ]] && temp="$gpu_t"
+        # Cada ventilador contra SU curva a la temperatura MÁS caliente (CPU o GPU): los
+        # tres comparten disipador y el EC sube el de la GPU con la CPU caliente (medido).
+        # Frío → todos bajan; caliente → todos suben. Conservador: nunca acusa a un
+        # ventilador que gira lo que pide el componente caliente.
+        temp=$(( cpu_t > gpu_t ? cpu_t : gpu_t ))
         want="$(curve_pwm_at "$curve" "$fan" "$temp")" || continue
         exp="$(expected_rpm "$key" "$want" "$json")" || continue
-        if (( rpm > exp + STUCK_MARGIN )); then
+        margin=$(( exp / 4 > STUCK_MARGIN ? exp / 4 : STUCK_MARGIN ))
+        if (( rpm > exp + margin )); then
             log "Fan $key stuck high: ${rpm} rpm at ${temp} °C (curve asks pwm $want ≈ ${exp} rpm)"
             return 0
         fi
@@ -536,16 +556,22 @@ fans_stuck_now() {
 check_stuck_fans() {
     local target="$1" now pkg asus fan cpu_t gpu_t
     now="${STUCK_NOW:-$(date +%s)}"
-    (( now - STUCK_LAST_FIX >= STUCK_COOLDOWN_S )) || return 0
     pkg="$(hwmon_by_name coretemp "${ROG_SYSFS_ROOT:-}")" || return 0
     asus="$(hwmon_by_name asus "${ROG_SYSFS_ROOT:-}")" || return 0
     IFS= read -r cpu_t < "$pkg/temp1_input" 2>/dev/null || return 0
     cpu_t=$((cpu_t / 1000))
     gpu_t="$(gpu_temp)" || gpu_t=100   # sin lectura de GPU: no acusar a su ventilador
     if ! fans_stuck_now "$CURVE_HWMON" "$asus" "$cpu_t" "$gpu_t" "$(find_curves_json || true)"; then
+        (( STUCK_VERIFY )) && log "Fans back on their curve after re-apply"
+        STUCK_VERIFY=0
         STUCK_SINCE=""
         return 0
     fi
+    if (( STUCK_VERIFY )); then
+        log "Fans still high right after re-apply (EC ramping down or ignoring the curve)"
+        STUCK_VERIFY=0
+    fi
+    (( now - STUCK_LAST_FIX >= STUCK_COOLDOWN_S )) || return 0
     if [[ -z "$STUCK_SINCE" ]]; then
         STUCK_SINCE="$now"
         return 0
@@ -559,6 +585,7 @@ check_stuck_fans() {
     apply_curves "$target" "$CURVE_HWMON"
     STUCK_SINCE=""
     STUCK_LAST_FIX="$now"
+    STUCK_VERIFY=1
 }
 
 sync_once() {
