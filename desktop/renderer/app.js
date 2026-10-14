@@ -651,25 +651,11 @@ const HIST_PRESETS = {
   usage: ['cpu_usage', 'ram_gb', 'swap_gb', 'gpu_util'],
 };
 
-/* Lista válida de gráficas: solo claves del catálogo, sin repetidas, ≥1. Un valor
-   guardado corrupto o vacío vuelve al conjunto de temperatura. */
-function histCharts(saved) {
-  let list = saved;
-  if (typeof saved === 'string') { try { list = JSON.parse(saved); } catch (_) { list = null; } }
-  if (!Array.isArray(list)) return [...HIST_PRESETS.temp];
-  const out = [];
-  for (const k of list) if (CHART_CATALOG[k] && !out.includes(k)) out.push(k);
-  return out.length ? out : [...HIST_PRESETS.temp];
-}
+const CE = window.RogChartEditor;   // lista/orden/toggle/presets: chart-editor-model.js (puro, con tests)
+const CHART_KEYS = Object.keys(CHART_CATALOG);
 
-/* Mueve la gráfica `key` una posición (dir -1 arriba / +1 abajo). Puro. */
-function moveChart(list, key, dir) {
-  const i = list.indexOf(key), j = i + dir;
-  if (i < 0 || j < 0 || j >= list.length) return list;
-  const out = [...list];
-  [out[i], out[j]] = [out[j], out[i]];
-  return out;
-}
+/* Lista válida guardada: solo claves PROPIAS del catálogo, sin repetidas, ≥1; corrupta → temperatura. */
+function histCharts(saved) { return CE.normalizeChartList(saved, CHART_KEYS, HIST_PRESETS.temp); }
 
 let histList = histCharts(lsGet('histCharts') || (lsGet('histMode') === 'usage' ? HIST_PRESETS.usage : null));
 
@@ -681,9 +667,8 @@ function setHistCharts(list) {
     `<div class="chart"><label data-i18n="${CHART_CATALOG[k][2]}">${escapeHtml(t(CHART_CATALOG[k][2]))}</label><canvas id="chart-${k}"></canvas></div>`).join('');
   histList.forEach((k) => wireChartHover(`chart-${k}`, CHART_CATALOG[k][1].unit));
   // el botón rápido alterna entre los dos conjuntos predefinidos
-  const isUsage = histList.join() === HIST_PRESETS.usage.join();
   const btn = $('hist-mode');
-  btn.dataset.i18n = isUsage ? 'chart.mode_temp' : 'chart.mode_usage';
+  btn.dataset.i18n = CE.presetOf(histList, HIST_PRESETS) === 'usage' ? 'chart.mode_temp' : 'chart.mode_usage';
   btn.textContent = t(btn.dataset.i18n);
   renderHistEditor();
   if (lastStats) update(lastStats);
@@ -692,14 +677,13 @@ function setHistCharts(list) {
 function renderHistEditor() {
   const box = $('hist-editor');
   if (!box || box.classList.contains('hidden')) return;
-  const keys = [...histList, ...Object.keys(CHART_CATALOG).filter((k) => !histList.includes(k))];
-  box.innerHTML = `<p class="note">${escapeHtml(t('chart.editor_hint'))}</p>` + keys.map((k) => {
-    const on = histList.includes(k), i = histList.indexOf(k);
-    return `<div class="hist-edit-row${on ? '' : ' off'}" data-key="${k}">
-      <label><input type="checkbox" ${on ? 'checked' : ''} data-act="toggle"> ${escapeHtml(t(CHART_CATALOG[k][2]))}</label>
+  box.innerHTML = `<p class="note">${escapeHtml(t('chart.editor_hint'))}</p>` + CE.editorRows(histList, CHART_KEYS).map((r) => {
+    const k = r.key;
+    return `<div class="hist-edit-row${r.on ? '' : ' off'}" data-key="${k}">
+      <label><input type="checkbox" ${r.on ? 'checked' : ''} data-act="toggle"> ${escapeHtml(t(CHART_CATALOG[k][2]))}</label>
       <span class="hist-edit-btns">
-        <button class="ghost" data-act="up" ${!on || i === 0 ? 'disabled' : ''} aria-label="${escapeHtml(t('chart.move_up'))}">↑</button>
-        <button class="ghost" data-act="down" ${!on || i === histList.length - 1 ? 'disabled' : ''} aria-label="${escapeHtml(t('chart.move_down'))}">↓</button>
+        <button class="ghost" data-act="up" ${!r.canUp ? 'disabled' : ''} aria-label="${escapeHtml(t('chart.move_up'))}">↑</button>
+        <button class="ghost" data-act="down" ${!r.canDown ? 'disabled' : ''} aria-label="${escapeHtml(t('chart.move_down'))}">↓</button>
       </span></div>`;
   }).join('') + `<div class="hist-edit-presets"><button class="ghost" data-act="preset" data-preset="temp">${escapeHtml(t('chart.mode_temp'))}</button><button class="ghost" data-act="preset" data-preset="usage">${escapeHtml(t('chart.mode_usage'))}</button></div>`;
 }
@@ -2336,8 +2320,7 @@ $('maint-uninstall')?.addEventListener('click', async () => {
 
 /* ---------- wiring ---------- */
 
-$('hist-mode').addEventListener('click', () =>
-  setHistCharts(histList.join() === HIST_PRESETS.usage.join() ? HIST_PRESETS.temp : HIST_PRESETS.usage));
+$('hist-mode').addEventListener('click', () => setHistCharts(CE.nextPresetList(histList, HIST_PRESETS)));
 $('hist-edit').addEventListener('click', () => {
   const box = $('hist-editor');
   box.classList.toggle('hidden');
@@ -2351,12 +2334,14 @@ $('hist-editor').addEventListener('click', (e) => {
   const act = el.dataset.act;
   if (act === 'preset') return setHistCharts(HIST_PRESETS[el.dataset.preset]);
   if (act === 'toggle') {
-    const on = histList.includes(key);
-    if (on && histList.length === 1) { el.checked = true; return; }   // siempre al menos una
-    return setHistCharts(on ? histList.filter((k) => k !== key) : [...histList, key]);
+    const next = CE.toggleChart(histList, key, CHART_KEYS);
+    if (next.length === histList.length && next.every((k, i) => k === histList[i])) { el.checked = true; return; }   // siempre al menos una
+    return setHistCharts(next);
   }
-  setHistCharts(moveChart(histList, key, act === 'up' ? -1 : 1));
-  $('hist-editor').querySelector(`[data-key="${key}"] [data-act="${act}"]`)?.focus();
+  const dir = act === 'up' ? -1 : 1;
+  const focusAct = CE.focusActAfterMove(histList, key, dir);   // el botón que seguirá habilitado (no se pierde en el borde)
+  setHistCharts(CE.moveChart(histList, key, dir));
+  $('hist-editor').querySelector(`[data-key="${key}"] [data-act="${focusAct}"]`)?.focus();
 });
 setHistCharts(histList);
 

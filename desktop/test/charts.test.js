@@ -20,12 +20,11 @@ const code = [
   grab(/^function chartRuns\(data\) \{[\s\S]*?^\}/m, 'chartRuns'),
   grab(/^const CHART_CATALOG = \{[\s\S]*?^\};/m, 'CHART_CATALOG'),
   grab(/^const HIST_PRESETS = \{[\s\S]*?^\};/m, 'HIST_PRESETS'),
-  grab(/^function histCharts\(saved\) \{[\s\S]*?^\}/m, 'histCharts'),
-  grab(/^function moveChart\(list, key, dir\) \{[\s\S]*?^\}/m, 'moveChart'),
   grab(/^function clampPct\(v\) \{[\s\S]*?^\}/m, 'clampPct'),
 ].join('\n');
-const { CHART_MAX_POINTS, chartTail, chartRange, chartRuns, clampPct, CHART_CATALOG, HIST_PRESETS, histCharts, moveChart } =
-  new Function(`${code}; return { CHART_MAX_POINTS, chartTail, chartRange, chartRuns, clampPct, CHART_CATALOG, HIST_PRESETS, histCharts, moveChart };`)();
+const { CHART_MAX_POINTS, chartTail, chartRange, chartRuns, clampPct, CHART_CATALOG, HIST_PRESETS } =
+  new Function(`${code}; return { CHART_MAX_POINTS, chartTail, chartRange, chartRuns, clampPct, CHART_CATALOG, HIST_PRESETS };`)();
+const CE = require('../renderer/chart-editor-model.js');
 
 test('chartRange salta null/NaN y no los trata como 0', () => {
   assert.deepStrictEqual(chartRange([null, 62, null, 71], false), { lo: 60, hi: 75 });
@@ -62,21 +61,25 @@ test('clampPct deja todo en 0-100 y null/NaN en 0', () => {
   assert.strictEqual(clampPct(42.5), 42.5);
 });
 
-test('histCharts: valida lo guardado (JSON corrupto, claves desconocidas, repetidas, vacío)', () => {
-  assert.deepStrictEqual(histCharts(null), HIST_PRESETS.temp);
-  assert.deepStrictEqual(histCharts('{basura'), HIST_PRESETS.temp);
-  assert.deepStrictEqual(histCharts('[]'), HIST_PRESETS.temp);
-  assert.deepStrictEqual(histCharts('["ram_gb","nope","ram_gb","cpu_temp"]'), ['ram_gb', 'cpu_temp']);
-  assert.deepStrictEqual(histCharts(['gpu_util']), ['gpu_util']);
+// histCharts/moveChart salieron de app.js (N-A3-01): su lógica y sus pruebas viven en
+// chart-editor-model.js / chart-editor-model.test.js. Aquí se comprueba el contrato con el catálogo real.
+test('app.js usa el modelo (sin copias locales de histCharts/moveChart) y se carga antes que app.js', () => {
+  assert.ok(!/^function moveChart\(/m.test(src), 'moveChart duplicada en app.js');
+  assert.match(src, /CE\.normalizeChartList\(saved, CHART_KEYS, HIST_PRESETS\.temp\)/);
+  assert.match(src, /CE\.nextPresetList\(histList, HIST_PRESETS\)/);
+  const html = fs.readFileSync(path.join(__dirname, '..', 'renderer', 'index.html'), 'utf8');
+  const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(scripts.indexOf('chart-editor-model.js') >= 0 && scripts.indexOf('chart-editor-model.js') < scripts.indexOf('app.js'));
 });
 
-test('moveChart sube/baja una posición y no se sale de los bordes', () => {
-  const l = ['a', 'b', 'c'];
-  assert.deepStrictEqual(moveChart(l, 'b', -1), ['b', 'a', 'c']);
-  assert.deepStrictEqual(moveChart(l, 'b', 1), ['a', 'c', 'b']);
-  assert.deepStrictEqual(moveChart(l, 'a', -1), l);
-  assert.deepStrictEqual(moveChart(l, 'c', 1), l);
-  assert.deepStrictEqual(l, ['a', 'b', 'c']);   // no muta
+test('catálogo real + modelo: JSON corrupto/heredado vuelve a temperatura y lo válido conserva el orden', () => {
+  const keys = Object.keys(CHART_CATALOG);
+  const norm = (v) => CE.normalizeChartList(v, keys, HIST_PRESETS.temp);
+  assert.deepStrictEqual(norm(null), HIST_PRESETS.temp);
+  assert.deepStrictEqual(norm('{basura'), HIST_PRESETS.temp);
+  assert.deepStrictEqual(norm('["constructor"]'), HIST_PRESETS.temp);   // Hallazgo A: antes tumbaba la app
+  assert.deepStrictEqual(norm('["ram_gb","nope","ram_gb","cpu_temp"]'), ['ram_gb', 'cpu_temp']);
+  assert.deepStrictEqual(norm(HIST_PRESETS.usage), HIST_PRESETS.usage);
 });
 
 test('catálogo: preset uso = CPU % (0-100), RAM/swap GiB (0..total), GPU %', () => {
