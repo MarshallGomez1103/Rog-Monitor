@@ -47,6 +47,46 @@ def _gib(v):
     return None if v is None else round(v, 2)
 
 
+# Valores de "lector no disponible" (N-DEF-03). Misma forma y tipos que devuelven los
+# lectores y que fija tests/test_contract.py (huecos = None / listas vacías): si un
+# lector lanza, solo su campo queda así y el resto del snapshot sale normal.
+def _cpu_unavailable() -> dict:
+    return {
+        "model": None, "cores": [], "core_grid": [],
+        "usage": None, "iowait": None, "steal": None,
+        "avg": None, "max": None, "min": None, "package": None, "hot90": 0,
+        "freq_ghz": None, "governor": None, "driver": None, "epp": None,
+        "throttle_count": 0, "throttle_ms": 0, "throttle_delta": 0,
+        "throttle_ms_delta": 0, "throttled_now": False,
+    }
+
+
+def _gpu_unavailable() -> dict:
+    return {"mode": None, "pending": None, "pending_action": None,
+            "supported": [], "active": None}
+
+
+def _sys_unavailable() -> dict:
+    return {
+        "ram_total_gb": None, "ram_used_gb": None, "ram_percent": None,
+        "ram_available_gb": None, "ram_buffers_gb": None, "ram_cached_gb": None,
+        "swap_used_gb": None, "swap_total_gb": None, "swap_percent": None,
+        "rx_mbps": None, "tx_mbps": None,
+        "disks": [], "disk_io": [], "nvme_temps": [], "smart_block_devices": [],
+        "load": None, "uptime_s": None, "uptime_h": None, "dmi": {},
+    }
+
+
+def _fan_meta_unavailable() -> dict:
+    return {"schema_version": None, "active_profile": None,
+            "guardian": {"mode": None, "running": False}}
+
+
+def _vram_unavailable() -> dict:
+    return {"available": False, "reason": "lector no disponible",
+            "vendor": None, "procs": []}
+
+
 class App:
     def __init__(self, args):
         self.config = Config()
@@ -95,34 +135,52 @@ class App:
         self._gpu_thread: threading.Thread | None = None
         self._gpu_results: queue.Queue = queue.Queue()
         self._resized = False  # bandera para SIGWINCH
+        self._reader_errors: set[str] = set()  # lectores que fallan ahora (log único)
 
     def flash(self, message: str) -> None:
         self.message = message
         self._message_until = time.monotonic() + 5
 
-    def _log_error(self) -> None:
+    def _log_error(self, what: str = "") -> None:
         try:
             ERROR_LOG.parent.mkdir(parents=True, exist_ok=True)
             with open(ERROR_LOG, "a") as fh:
-                fh.write(f"--- {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+                fh.write(f"--- {time.strftime('%Y-%m-%d %H:%M:%S')}"
+                         f"{' [' + what + ']' if what else ''}\n")
                 traceback.print_exc(file=fh)
         except OSError:
             pass
         self.flash(self.t("internal_error", path=str(ERROR_LOG)))
 
-    def sample(self) -> dict:
-        cpu = self.cpu.read()
-        gpu = self.gpu.read()
-        active_profile = asus_profile()
-        fans = self.fans.read(active_profile)
-        watts = self.rapl.read_watts()
+    def _safe(self, name: str, read, fallback):
+        """Ejecuta un lector aislado (N-DEF-03): si lanza, el campo queda con su valor
+        de «no disponible» (`fallback` o su fábrica) y el tick sigue. El fallo se
+        registra una vez por racha (sin spam por tick); al recuperarse se rearma."""
+        try:
+            value = read()
+        except Exception:
+            if name not in self._reader_errors:
+                self._reader_errors.add(name)
+                self._log_error(f"lector {name}")
+            return fallback() if callable(fallback) else fallback
+        self._reader_errors.discard(name)
+        return value
 
-        self.series["cpu_temp"].push(cpu["avg"])
+    def sample(self) -> dict:
+        safe = self._safe
+        cpu = safe("cpu", self.cpu.read, _cpu_unavailable)
+        gpu = safe("gpu", self.gpu.read, _gpu_unavailable)
+        active_profile = safe("asus_profile", asus_profile, None)
+        fans = safe("fans", lambda: self.fans.read(active_profile), list)
+        watts = safe("rapl", self.rapl.read_watts, None)
+
+        self.series["cpu_temp"].push(cpu.get("avg"))
         self.series["cpu_power"].push(watts)
         active = gpu.get("active") or {}
         self.series["gpu_temp"].push(active.get("temp"))
         self.series["gpu_power"].push(active.get("power"))
-        sysd = self.sys.read()  # una sola lectura por ciclo (deltas de red/disco)
+        # una sola lectura por ciclo (deltas de red/disco)
+        sysd = safe("sys", self.sys.read, _sys_unavailable)
         self.series["cpu_usage"].push(cpu.get("usage"))
         self.series["ram_used"].push(sysd.get("ram_percent"))
         self.series["swap_used"].push(sysd.get("swap_percent"))
@@ -131,8 +189,8 @@ class App:
         self.series["swap_gb"].push(_gib(sysd.get("swap_used_gb")) if sysd.get("swap_total_gb") else None)
         self.series["gpu_util"].push(active.get("util"))
 
-        self.alerts.check(cpu, gpu, fans, watts, sysd)
-        self._drain_gpu_results()
+        safe("alerts", lambda: self.alerts.check(cpu, gpu, fans, watts, sysd), None)
+        safe("gpu_results", self._drain_gpu_results, None)
         if time.monotonic() > self._message_until:
             self.message = ""
 
@@ -140,22 +198,23 @@ class App:
             "cpu": cpu,
             "gpu": gpu,
             "fans": fans,
-            "fan_meta": self.fans.meta(),
+            "fan_meta": safe("fan_meta", self.fans.meta, _fan_meta_unavailable),
             "cpu_watts": watts,
             "rapl_available": self.rapl.available,
             "asus_profile": active_profile,
-            "ppd_profile": ppd_profile(),
-            "battery": self.battery.read(),
+            "ppd_profile": safe("ppd_profile", ppd_profile, None),
+            "battery": safe("battery", self.battery.read, None),
             "sys": sysd,
-            "procs": self.procs.read(top=PROCS_TOP),
+            "procs": safe("procs", lambda: self.procs.read(top=PROCS_TOP), list),
             # Procesos agrupados por núcleo lógico (vista de detalle por núcleo,
             # cores.js). Aditivo y opcional; reusa el ciclo de read() de arriba.
-            "procs_by_core": self.procs.by_core(),
-            "procs_mem": self.procs.top_memory(),
-            "procs_vram": self.gpu.vram_processes(active),
-            "aura": self.aura.snapshot(),
-            "power_control": self.power.snapshot(),
-            "fps": read_fps(),
+            "procs_by_core": safe("procs_by_core", self.procs.by_core, dict),
+            "procs_mem": safe("procs_mem", self.procs.top_memory, list),
+            "procs_vram": safe("procs_vram", lambda: self.gpu.vram_processes(active),
+                               _vram_unavailable),
+            "aura": safe("aura", self.aura.snapshot, None),
+            "power_control": safe("power_control", self.power.snapshot, None),
+            "fps": safe("fps", read_fps, None),
             "series": self.series,
             "events": self.alerts.events,
             "limits": self.config["temp_colors"],

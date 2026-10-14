@@ -1,8 +1,9 @@
-"""Orquestación de app.py (N-B-11).
+"""Orquestación de app.py (N-B-11) y aislamiento de lectores (N-DEF-03).
 
 Todo con fakes: ningún lector real toca /sys ni /proc, el reloj es falso (nada duerme
 de verdad), el log de errores va a un directorio temporal y los hilos/teclado/Live
-de la TUI se sustituyen.
+de la TUI se sustituyen. El contrato `schema: 1` se verifica con la misma
+especificación que tests/test_contract.py.
 """
 
 import io
@@ -18,6 +19,11 @@ from unittest import mock
 import rog_monitor
 from rog_monitor import app
 from rog_monitor.i18n import Translator
+
+try:  # `unittest discover -s tests` (raíz = tests/) o `-m unittest tests.…` (raíz = repo)
+    from test_contract import REQUIRED, check
+except ImportError:  # pragma: no cover - depende de cómo se descubra
+    from tests.test_contract import REQUIRED, check
 
 
 # --------------------------------------------------------------------------- fakes
@@ -137,6 +143,7 @@ class AppCase(unittest.TestCase):
         a._gpu_thread = None
         a._gpu_results = queue.Queue()
         a._resized = False
+        a._reader_errors = set()
         return a
 
     def error_log_text(self):
@@ -189,6 +196,7 @@ class AppInit(unittest.TestCase):
         m["GpuReader"].assert_called_once_with(["chipA"], enabled=True)
         self.assertFalse(a.help_visible or a.events_visible)
         self.assertEqual((a.events_filter, a.message), ("all", ""))
+        self.assertEqual(a._reader_errors, set())
 
     def test_args_pisan_la_configuracion(self):
         cfg = FakeConfig()
@@ -358,6 +366,180 @@ class SnapshotJson(AppCase):
         self.clock.now += 2.0
         second = json.loads(self.app.snapshot_json())["ts"]
         self.assertAlmostEqual(second - first, 2.0, places=3)
+
+
+# --------------------------------------------------------------------------- N-DEF-03
+
+
+# (lector que falla, clave del estado, subconjunto esperado de ese campo)
+READER_FAILURES = [
+    ("cpu.read", "cpu", {"avg": None, "usage": None, "package": None, "core_grid": [],
+                         "cores": [], "hot90": 0, "throttled_now": False}),
+    ("gpu.read", "gpu", {"active": None, "mode": None, "pending": None,
+                         "pending_action": None}),
+    ("fans.read", "fans", []),
+    ("rapl.read_watts", "cpu_watts", None),
+    ("sys.read", "sys", {"ram_percent": None, "load": None, "rx_mbps": None,
+                         "swap_percent": None, "uptime_s": None, "disks": [],
+                         "disk_io": [], "nvme_temps": []}),
+    ("fans.meta", "fan_meta", {"schema_version": None, "active_profile": None,
+                               "guardian": {"mode": None, "running": False}}),
+    ("battery.read", "battery", None),
+    ("procs.read", "procs", []),
+    ("procs.by_core", "procs_by_core", {}),
+    ("procs.top_memory", "procs_mem", []),
+    ("gpu.vram_processes", "procs_vram", {"available": False, "vendor": None, "procs": []}),
+    ("aura.snapshot", "aura", None),
+    ("power.snapshot", "power_control", None),
+    ("<asus>", "asus_profile", None),
+    ("<ppd>", "ppd_profile", None),
+    ("<fps>", "fps", None),
+]
+
+
+class ReaderIsolation(AppCase):
+    def arm(self, a, path, exc):
+        if path == "<asus>":
+            self.asus.side_effect = exc
+        elif path == "<ppd>":
+            self.ppd.side_effect = exc
+        elif path == "<fps>":
+            self.fps.side_effect = exc
+        else:
+            obj, meth = path.split(".")
+            getattr(getattr(a, obj), meth).side_effect = exc
+
+    def test_un_lector_que_lanza_solo_apaga_su_campo(self):
+        baseline = self.make_app().sample()
+        for path, key, expected in READER_FAILURES:
+            with self.subTest(reader=path):
+                for shared in (self.asus, self.ppd, self.fps):
+                    shared.side_effect = None
+                a = self.make_app()
+                self.arm(a, path, OSError(f"{path} roto"))
+                snap = a.sample()  # RED: hoy propaga la excepción y no hay snapshot
+                got = snap[key]
+                if isinstance(expected, dict) and isinstance(got, dict):
+                    self.assertEqual({k: got[k] for k in expected}, expected)
+                else:
+                    self.assertEqual(got, expected)
+                rest = {k: v for k, v in snap.items() if k not in (key, "message")}
+                base = {k: v for k, v in baseline.items() if k not in (key, "message")}
+                # las series sí cambian (hueco) cuando el lector alimenta una; lo demás no
+                rest.pop("series"), base.pop("series")
+                self.assertEqual(rest, base)
+                self.assertEqual(json.loads(a.snapshot_json(snap))["schema"], 1)
+
+    def test_getloadavg_roto_no_descarta_el_tick(self):
+        self.app.sys.read.side_effect = OSError("getloadavg: no disponible")
+        data = json.loads(self.app.snapshot_json())
+        self.assertIsNone(data["sys"]["load"])
+        self.assertEqual(data["cpu"]["avg"], 55.0)
+        self.assertEqual(data["series"]["cpu_temp"], [55.0])
+        self.assertEqual(data["series"]["ram_used"], [None])
+
+    def test_cpu_caido_deja_huecos_alineados_en_las_series(self):
+        self.app.cpu.read.side_effect = RuntimeError("hwmon")
+        for _ in range(2):
+            self.app.sample()
+        series = {n: s.values() for n, s in self.app.series.items()}
+        self.assertEqual(series["cpu_temp"], [None, None])
+        self.assertEqual(series["cpu_usage"], [None, None])
+        self.assertEqual(series["cpu_power"], [14.5, 14.5])
+        self.assertEqual({len(v) for v in series.values()}, {2})
+
+    def test_alertas_rotas_no_descartan_el_tick(self):
+        self.app.alerts.check.side_effect = KeyError("cfg")
+        snap = self.app.sample()
+        self.assertEqual(snap["cpu"]["avg"], 55.0)
+        self.assertIn("[lector alerts]", self.error_log_text())
+
+    def test_drenado_gpu_roto_no_descarta_el_tick(self):
+        self.app._gpu_results.put((True, "Integrated", False, ""))
+        self.app.gpu.invalidate.side_effect = RuntimeError("x")
+        snap = self.app.sample()
+        self.assertEqual(snap["cpu"]["avg"], 55.0)
+
+    def test_todos_los_lectores_caidos_siguen_cumpliendo_el_contrato(self):
+        a = self.app
+        for obj, meths in (("cpu", ["read"]), ("gpu", ["read", "vram_processes"]),
+                           ("fans", ["read", "meta"]), ("rapl", ["read_watts"]),
+                           ("battery", ["read"]), ("sys", ["read"]),
+                           ("procs", ["read", "by_core", "top_memory"]),
+                           ("aura", ["snapshot"]), ("power", ["snapshot"])):
+            for meth in meths:
+                getattr(getattr(a, obj), meth).side_effect = OSError("caído")
+        for mocked in (self.asus, self.ppd, self.fps):
+            mocked.side_effect = OSError("caído")
+        data = json.loads(a.snapshot_json())
+        self.assertEqual(check(data, REQUIRED), [])
+        self.assertEqual(data["schema"], 1)
+        self.assertEqual((data["fans"], data["procs"], data["procs_mem"]), ([], [], []))
+        self.assertIsNone(data["battery"])
+        self.assertIsNone(data["fps"])
+
+    def test_error_se_registra_una_sola_vez_por_racha(self):
+        self.app.sys.read.side_effect = OSError("getloadavg")
+        for _ in range(4):
+            self.app.sample()
+        text = self.error_log_text()
+        self.assertEqual(text.count("[lector sys]"), 1)
+        self.assertIn("OSError: getloadavg", text)
+        self.assertIn("Internal error", self.app.message)
+
+    def test_dos_lectores_distintos_se_registran_cada_uno(self):
+        self.app.sys.read.side_effect = OSError("a")
+        self.app.battery.read.side_effect = OSError("b")
+        for _ in range(3):
+            self.app.sample()
+        text = self.error_log_text()
+        self.assertEqual((text.count("[lector sys]"), text.count("[lector battery]")), (1, 1))
+
+    def test_al_recuperarse_se_rearma_el_registro(self):
+        self.app.sys.read.side_effect = OSError("a")
+        self.app.sample()
+        self.app.sys.read.side_effect = None
+        self.app.sys.read.return_value = dict(SYS)
+        self.assertEqual(self.app.sample()["sys"]["ram_percent"], 40)
+        self.assertEqual(self.app._reader_errors, set())
+        self.app.sys.read.side_effect = OSError("b")
+        self.app.sample()
+        self.assertEqual(self.error_log_text().count("[lector sys]"), 2)
+
+    def test_lector_sano_no_deja_rastro_de_errores(self):
+        self.app.sample()
+        self.assertEqual(self.error_log_text(), "")
+        self.assertEqual(self.app._reader_errors, set())
+
+
+class LogError(AppCase):
+    def test_escribe_traza_y_avisa(self):
+        try:
+            raise ValueError("boom")
+        except ValueError:
+            self.app._log_error("lector x")
+        text = self.error_log_text()
+        self.assertIn("--- 2026-10-14 10:00:00 [lector x]", text)
+        self.assertIn("ValueError: boom", text)
+        self.assertEqual(self.app.message, f"Internal error (logged to {self.log})")
+        self.assertEqual(self.app._message_until, self.clock.now + 5)
+
+    def test_sin_etiqueta_el_encabezado_no_lleva_corchetes(self):
+        try:
+            raise ValueError("boom")
+        except ValueError:
+            self.app._log_error()
+        self.assertEqual(self.error_log_text().splitlines()[0], "--- 2026-10-14 10:00:00")
+
+    def test_si_no_se_puede_escribir_el_log_igual_avisa(self):
+        blocker = Path(self.tmp.name) / "archivo"
+        blocker.write_text("x")
+        with mock.patch.object(app, "ERROR_LOG", blocker / "sub" / "error.log"):
+            try:
+                raise ValueError("boom")
+            except ValueError:
+                self.app._log_error("lector x")  # no debe propagar OSError
+        self.assertIn("Internal error", self.app.message)
 
 
 # --------------------------------------------------------------------------- handle_key
@@ -618,6 +800,24 @@ class RunJson(AppCase):
         self.assertEqual(self.error_log_text().count("RuntimeError: boom"), 1)
         self.assertEqual(len(self.clock.sleeps), 4)  # warmup + 3 ticks (con sleep, sin bucle caliente)
 
+    def test_stream_con_un_lector_roto_sigue_emitiendo_lineas_validas(self):
+        self.app.sys.read.side_effect = OSError("getloadavg")
+        original = self.app.snapshot_json
+        calls = {"n": 0}
+
+        def snap():
+            calls["n"] += 1
+            if calls["n"] == 4:
+                raise KeyboardInterrupt
+            return original()
+
+        out = self.run_stream(snap)
+        lines = [json.loads(line) for line in out.splitlines()]
+        self.assertEqual(len(lines), 3)
+        self.assertTrue(all(d["schema"] == 1 and d["sys"]["load"] is None for d in lines))
+        self.assertTrue(all(d["cpu"]["avg"] == 55.0 for d in lines))
+        self.assertEqual(self.error_log_text().count("[lector sys]"), 1)
+
     def test_broken_pipe_al_escribir_termina_limpio(self):
         snap = mock.Mock(return_value="{}")
         self.run_stream(snap, stdout=StdoutBroken())
@@ -817,6 +1017,13 @@ class RunTui(AppCase):
         self.assertTrue(self.app._resized)
         with self.assertRaises(KeyboardInterrupt):
             self.signals[real_signal.SIGTERM](real_signal.SIGTERM, None)
+
+    def test_run_arranca_aunque_un_lector_este_caido(self):
+        self.app.sys.read.side_effect = OSError("getloadavg")
+        self.keys("q")
+        self.assertEqual(self.run_app(), "Saliendo…\n")
+        self.assertEqual(self.build.call_args_list[0].args[0]["sys"]["load"], None)
+
 
 if __name__ == "__main__":
     unittest.main()
