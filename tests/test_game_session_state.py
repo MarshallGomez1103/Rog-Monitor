@@ -422,6 +422,15 @@ class Summary(unittest.TestCase):
                    {"t": 3, "game": None}]
         self.assertEqual(gs.summarize(samples)["_game"], "b")
 
+    def test_game_tie_is_deterministic_first_seen(self):
+        # Con empate debe ganar el primero visto, no depender del hash de str
+        # (PYTHONHASHSEED): estados reproducibles.
+        names = ["zeta", "alfa", "beta", "omega", "kappa", "delta"]
+        samples = [{"t": i, "game": {"name": n}} for i, n in enumerate(names)]
+        self.assertEqual(gs.summarize(samples)["_game"], "zeta")
+        rev = [{"t": i, "game": {"name": n}} for i, n in enumerate(reversed(names))]
+        self.assertEqual(gs.summarize(rev)["_game"], "delta")
+
     def test_trapezoid_energy(self):
         samples = [{"t": 0, "cpu_watts": 10.0, "gpu_watts": 100.0},
                    {"t": 10, "cpu_watts": 30.0, "gpu_watts": 100.0},

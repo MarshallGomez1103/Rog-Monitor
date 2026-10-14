@@ -215,7 +215,9 @@ def summarize(samples: list[dict]) -> dict:
     # juego más visto durante la sesión (modo simple: primer detectado no vacío
     # que más se repite por nombre)
     names = [s["game"]["name"] for s in samples if s.get("game")]
-    game_name = max(set(names), key=names.count) if names else None
+    # dict.fromkeys conserva el orden de aparición: en empate gana el primero
+    # visto (con set() dependía del hash aleatorio de str entre ejecuciones).
+    game_name = max(dict.fromkeys(names), key=names.count) if names else None
     out["_game"] = game_name
     out["_duration_s"] = round(samples[-1]["t"], 1) if samples else 0.0
     out["_sample_count"] = len(samples)
