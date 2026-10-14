@@ -824,6 +824,15 @@ class RunJson(AppCase):
         self.assertEqual(snap.call_count, 1)
         self.assertEqual(self.clock.sleeps, [0.5])
 
+    def test_broken_pipe_dentro_de_snapshot_termina_limpio(self):
+        # RED hoy: el `except Exception` interno lo trata como fallo puntual y vuelve a
+        # girar el bucle (aquí lo corta max_sleeps) en vez de terminar.
+        snap = mock.Mock(side_effect=BrokenPipeError(32, "Broken pipe"))
+        self.run_stream(snap)
+        self.assertEqual(snap.call_count, 1)
+        self.assertEqual(self.clock.sleeps, [0.5])
+        self.assertEqual(self.error_log_text(), "")
+
     def test_stopiteration_en_snapshot_es_un_fallo_puntual_con_sleep(self):
         calls = {"n": 0}
 

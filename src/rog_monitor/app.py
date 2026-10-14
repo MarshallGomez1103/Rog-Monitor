@@ -333,6 +333,8 @@ class App:
             while True:
                 try:
                     line = self.snapshot_json()
+                except BrokenPipeError:
+                    raise  # el lector de la tubería se fue: terminar limpio, no reintentar
                 except Exception:
                     # Un fallo puntual no debe matar al productor NDJSON: se
                     # registra y se sigue (con sleep, sin bucle caliente).
