@@ -236,6 +236,15 @@ def _safe_clamp(value: int, lo, hi) -> int:
 _CLOCK_FALLBACK_BOUNDS = {"base_clock_offset": (-200, 200), "mem_clock_offset": (-500, 1000)}
 
 
+def _entry_controls(entry: dict | None) -> list[dict]:
+    """Controles bien formados (dict con 'key') de un perfil; device.json lo edita
+    el usuario, así que lo que no encaje se descarta en vez de romper la lectura."""
+    controls = (entry or {}).get("controls")
+    if not isinstance(controls, list):
+        return []
+    return [c for c in controls if isinstance(c, dict) and c.get("key")]
+
+
 def _validation_bounds(entry: dict | None) -> dict[str, tuple]:
     """Min/max seguro por clave, de la MISMA fuente que usa la UI.
 
@@ -245,7 +254,7 @@ def _validation_bounds(entry: dict | None) -> dict[str, tuple]:
     rango vivo del firmware) sigue siendo la autoridad final.
     """
     bounds: dict[str, tuple] = {}
-    for ctrl in (entry or {}).get("controls", []):
+    for ctrl in _entry_controls(entry):
         key = ctrl.get("key")
         attr = ctrl.get("attr")
         lo = _read_int_attr(attr, "min_value") if attr else None
@@ -391,7 +400,7 @@ def _controls_from_profile(entry: dict, wayland: bool,
     controls are now writable:True regardless of session type.
     """
     controls = []
-    for ctrl in entry.get("controls", []):
+    for ctrl in _entry_controls(entry):
         key = ctrl["key"]
         attr = ctrl.get("attr")
 

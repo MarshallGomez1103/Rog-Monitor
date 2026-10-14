@@ -677,6 +677,26 @@ class CustomProfileRobustness(PcCase):
         res = pc.PowerControl().apply({"pl1": 90})
         self.assertTrue(res["ok"], res)
 
+    def test_controls_without_key_or_not_dicts_are_skipped(self):
+        self.put_custom(json.dumps({"controls": [
+            "basura", 7, {"attr": "ppt_pl1_spl"},
+            {"key": "pl1", "attr": "ppt_pl1_spl", "writable": True}]}))
+        st = pc.PowerControl().state()
+        self.assertEqual(list(st["controls"]), ["pl1"])
+
+    def test_controls_not_a_list_gives_no_controls(self):
+        self.put_custom(json.dumps({"controls": {"pl1": 1}}))
+        st = pc.PowerControl().state()
+        self.assertEqual(st["controls"], {})
+        self.assertFalse(st["available"])
+
+    def test_apply_with_malformed_controls_still_validates_against_live_range(self):
+        self.put_custom(json.dumps({"controls": ["basura", {"attr": "x"}, None]}))
+        res = pc.PowerControl().apply({"pl1": 90})
+        self.assertTrue(res["ok"], res)
+        res = pc.PowerControl().apply({"pl1": 90, "base_clock_offset": 999})
+        self.assertIn("fuera del rango", res["err"])  # respaldo -200..200 de los relojes
+
 
 class ProfilePowerFlows(PcCase):
     ENTRY_BASE = {"controls": [{"key": "pl1", "attr": "ppt_pl1_spl", "min": 28, "max": 140}]}
