@@ -1,0 +1,11 @@
+not ok 25 - cableado: stats => ok + data-reason vacío; GPU Integrated => data-state unsupported (CSS propio, ya sin compat empty)
+not ok 33 - cableado: unsupported se pinta como unsupported (CSS propio) y empty parcial marca data-partial
+not ok 34 - cableado: acción "por qué" (data-why) solo si hay algo que diagnosticar; no para hardware explicado
+not ok 35 - cableado: el botón "por qué" abre el diagnóstico existente (delegado en el documento)
+not ok 36 - cableado: vacío transitorio no parpadea (ok -> vacío exige 2 muestras); loading/stale/error/unsupported son inmediatos
+not ok 38 - autoarranque en el navegador: expone la instancia (window.RogWidgetStates.wiring) para pruebas CDP
+# Error: Cannot find module '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a6e17efcaec20e805/desktop/renderer/widget-status-view.js'
+not ok 2 - desktop/test/widget-status-view.test.js
+# tests 39
+# pass 32
+# fail 7

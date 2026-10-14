@@ -280,14 +280,16 @@ test('cableado: arranca en loading, suscribe stats/backend-down y un tick de 1 s
   assert.strictEqual(f.intervals[0][1], 1000);
 });
 
-test('cableado: stats => ok + data-reason vacío; GPU Integrated => data-state empty (compat CSS) + data-model-state unsupported', () => {
+test('cableado: stats => ok + data-reason vacío; GPU Integrated => data-state unsupported (CSS propio, ya sin compat empty)', () => {
   const f = fakeEnv();
   WS.createWiring(f.env).start();
   f.handlers.stats(S());
   assert.deepStrictEqual(Object.values(stateOf(f.els)), ['ok', 'ok', 'ok', 'ok', 'ok']);
   assert.strictEqual(f.els['cpu-block'].dataset.reason, undefined);
   f.handlers.stats(S({ gpu: { mode: 'Integrated', active: null }, fans: [], procs: [] }));
-  assert.strictEqual(f.els['gpu-block'].dataset.state, 'empty');
+  f.handlers.stats(S({ gpu: { mode: 'Integrated', active: null }, fans: [], procs: [] }));   // 2.ª muestra: confirma los vacíos
+  assert.strictEqual(WS.UNSUPPORTED_AS_EMPTY, false);
+  assert.strictEqual(f.els['gpu-block'].dataset.state, 'unsupported');
   assert.strictEqual(f.els['gpu-block'].dataset.modelState, 'unsupported');
   assert.strictEqual(f.els['gpu-block'].dataset.reason, 'gpu_off');
   assert.strictEqual(f.els['gpu-block'].dataset.gpuIdle, 'off');
@@ -397,4 +399,87 @@ test('cableado: tolera entorno mínimo (sin window.rog, sin i18n, sin bloques, t
   const w = WS.createWiring({ document: { hidden: false, getElementById: () => null }, rog: { onStats() {} },
     now: () => NOW, t: () => { throw new Error('x'); } });
   assert.doesNotThrow(() => { w.start(); w.onStats(S({ fans: [{ rpm: 0 }], gpu: { mode: 'Integrated', active: null } })); w.onBackendDown(); w.tick(); });
+});
+
+
+/* N-A4-03/04 (S03-2): cableado de estados -------------------------------- */
+test('cableado: unsupported se pinta como unsupported (CSS propio) y empty parcial marca data-partial', () => {
+  const f = fakeEnv();
+  WS.createWiring(f.env).start();
+  f.handlers.stats(S({ gpu: { mode: 'Hybrid', active: null }, cpu: { avg: null, usage: 5 } }));
+  assert.strictEqual(f.els['gpu-block'].dataset.state, 'unsupported');
+  assert.strictEqual(f.els['cpu-block'].dataset.state, 'empty');
+  assert.strictEqual(f.els['cpu-block'].dataset.reason, 'no_temp');
+  assert.strictEqual(f.els['cpu-block'].dataset.partial, '1', 'sin temperatura pero con uso: no se tapan los demás datos');
+  f.handlers.stats(S());
+  assert.strictEqual(f.els['cpu-block'].dataset.partial, undefined);
+});
+
+test('cableado: acción "por qué" (data-why) solo si hay algo que diagnosticar; no para hardware explicado', () => {
+  const f = fakeEnv();
+  WS.createWiring(f.env).start();
+  f.handlers.stats(S({ cpu: { avg: null, usage: null, cores: [] }, gpu: { mode: 'Integrated', active: null } }));
+  assert.strictEqual(f.els['cpu-block'].dataset.why, 'diag', 'lector caído => enlaza al diagnóstico');
+  assert.strictEqual(f.els['cpu-block'].dataset.action, 'explain');
+  assert.strictEqual(f.els['gpu-block'].dataset.why, undefined, 'dGPU apagada por modo ya se explica sola');
+  f.handlers.stats(S());
+  assert.strictEqual(f.els['cpu-block'].dataset.why, undefined);
+  assert.strictEqual(f.els['cpu-block'].dataset.action, undefined);
+});
+
+test('cableado: el botón "por qué" abre el diagnóstico existente (delegado en el documento)', () => {
+  const f = fakeEnv();
+  let opened = 0;
+  f.env.openDiag = () => { opened++; };
+  WS.createWiring(f.env).start();
+  const click = f.handlers.click;
+  assert.strictEqual(typeof click, 'function');
+  click({ target: { closest: (s) => (s === '.widget-why' ? {} : null) } });
+  click({ target: { closest: () => null } });
+  assert.strictEqual(opened, 1);
+  const g = fakeEnv();
+  WS.createWiring(g.env).start();   // sin openDiag: no lanza
+  g.handlers.click({ target: { closest: () => ({}) } });
+});
+
+test('cableado: vacío transitorio no parpadea (ok -> vacío exige 2 muestras); loading/stale/error/unsupported son inmediatos', () => {
+  const f = fakeEnv();
+  WS.createWiring(f.env).start();
+  f.handlers.stats(S());
+  f.handlers.stats(S({ procs: [] }));
+  assert.strictEqual(f.els['procs-block'].dataset.state, 'ok', 'una muestra vacía suelta se retiene');
+  f.handlers.stats(S());
+  f.handlers.stats(S({ procs: [] }));
+  f.handlers.stats(S({ procs: [] }));
+  assert.strictEqual(f.els['procs-block'].dataset.state, 'empty');
+  f.handlers.stats(S());
+  assert.strictEqual(f.els['procs-block'].dataset.state, 'ok', 'recuperar es inmediato');
+  f.handlers.stats(S({ gpu: { mode: 'Integrated', active: null } }));
+  assert.strictEqual(f.els['gpu-block'].dataset.state, 'unsupported', 'cambio de modo real: inmediato');
+  f.handlers.down();
+  assert.strictEqual(f.els['cpu-block'].dataset.state, 'error');
+});
+
+test('cableado: stale -> ok al reconectar no pasa por loading/empty/error (secuencia exacta)', () => {
+  const f = fakeEnv();
+  const seq = [];
+  const orig = f.els['cpu-block'];
+  let cur;
+  Object.defineProperty(orig.dataset, 'state', { get: () => cur, set: (v) => { cur = v; seq.push(v); }, enumerable: true, configurable: true });
+  WS.createWiring(f.env).start();
+  f.handlers.stats(S());
+  f.clock.t = NOW + 7000;
+  f.intervals[0][0]();                 // tick: envejeció > 6 s
+  f.handlers.stats(S({ ts: (NOW + 7000) / 1000 }));
+  assert.deepStrictEqual(seq, ['loading', 'ok', 'stale', 'ok']);
+});
+
+test('autoarranque en el navegador: expone la instancia (window.RogWidgetStates.wiring) para pruebas CDP', () => {
+  const handlers = {};
+  const doc = { hidden: false, getElementById: () => null, createElement: () => ({}), addEventListener: (e, f) => { handlers[e] = f; } };
+  const win = { rog: { onStats: () => {}, onBackendDown: () => {} }, setInterval: () => {}, t: (k) => k, i18n: { apply() {} } };
+  win.window = win;
+  vm.runInNewContext(fs.readFileSync(file, 'utf8'), { window: win, document: doc, Date, module: undefined });
+  assert.strictEqual(typeof win.RogWidgetStates.wiring.onStats, 'function');
+  assert.strictEqual(typeof win.RogWidgetStates.wiring.onBackendDown, 'function');
 });

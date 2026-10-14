@@ -26,6 +26,9 @@
 
    Se registra como suscriptor INDEPENDIENTE de window.rog.onStats y
    window.rog.onBackendDown; NO modifica ni llama a app.js/update().
+   Datasets que pone sobre cada bloque: data-state, data-reason, data-model-state, data-action
+   (explain|retry|install), data-partial (hay datos válidos: el aviso va en línea) y data-why="diag"
+   (muestra el botón «¿Por qué?» que abre el diagnóstico existente).
    Los ventiladores a 0 RPM reciben .fan-is-stopped (el CSS muestra PARADO).
 */
 (function (root) {
@@ -39,10 +42,16 @@
   const BLOCKS = Object.freeze({
     cpu: 'cpu-block', gpu: 'gpu-block', fans: 'fans-block', system: 'system-block', procs: 'procs-block',
   });
-  /* El CSS vigente (onboarding.css) solo conoce loading|ok|empty|error|stale. Mientras no
-     exista [data-state="unsupported"], el bloque se pinta como "empty" y el estado real viaja
-     en data-model-state. Poner a false cuando el CSS lo soporte (cableador S03-2). */
-  const UNSUPPORTED_AS_EMPTY = true;
+  /* onboarding.css ya tiene [data-state="unsupported"] (S03-2): el estado se pinta tal cual.
+     La constante queda como interruptor de rollback (true = pintarlo como "empty"). */
+  const UNSUPPORTED_AS_EMPTY = false;
+  /* Un vacío que aparece justo después de «ok» necesita 2 muestras seguidas para mostrarse:
+     un lector que falla un solo tick no enciende y apaga el panel (N-A4-04, sin destellos). */
+  const EMPTY_CONFIRM_TICKS = 2;
+  /* Motivos con lector dudoso: ofrecen «por qué» -> diagnóstico existente (nada privilegiado) */
+  const WHY_REASONS = Object.freeze(['reader_unavailable', 'unknown', 'no_data', 'no_reading']);
+  /* Hay datos parciales válidos en el bloque: el aviso va en línea, no tapa el resto */
+  const PARTIAL_REASONS = Object.freeze(['no_temp', 'no_reading']);
 
   /* ------------------------------------------------------------------ */
   /*  Modelo puro                                                        */
@@ -258,6 +267,8 @@
     let resumedAt = 0;        // epoch ms en que la ventana volvió a ser visible
     let backendDown = false;
     const shown = {};         // blockId -> firma "estado|motivo" ya pintada
+    const lastOk = {};        // blockId -> true si lo último PINTADO fue «ok»
+    const emptyRun = {};      // blockId -> muestras vacías seguidas tras un «ok»
     const origKeys = {};      // blockId -> data-i18n originales del overlay "empty"
 
     const ctx = () => ({
@@ -269,7 +280,8 @@
        sin registrar deja el texto original. */
     function showReason(panel, el, result) {
       const keys = reasonKeys(panel, result);
-      const spans = el.querySelectorAll ? Array.from(el.querySelectorAll('.widget-empty-msg [data-i18n]')) : [];
+      const spans = el.querySelectorAll
+        ? Array.from(el.querySelectorAll('.widget-empty-msg [data-i18n]:not(.widget-why)')) : [];
       if (!origKeys[el.id || panel]) origKeys[el.id || panel] = spans.map((s) => s.dataset.i18n);
       const orig = origKeys[el.id || panel];
       spans.forEach((span, i) => {
@@ -285,14 +297,39 @@
       if (env.i18n && env.i18n.apply) env.i18n.apply(el);
     }
 
-    function apply(panel, result) {
+    /* Anti-destello: ok -> vacío exige EMPTY_CONFIRM_TICKS muestras seguidas */
+    function settle(id, result) {
+      if (result.state === 'empty' && lastOk[id]) {
+        emptyRun[id] = (emptyRun[id] || 0) + 1;
+        if (emptyRun[id] < EMPTY_CONFIRM_TICKS) return null;     // se retiene lo pintado
+      } else {
+        emptyRun[id] = 0;
+      }
+      lastOk[id] = result.state === 'ok';
+      return result;
+    }
+
+    function apply(panel, raw) {
       const id = BLOCKS[panel];
       const el = doc.getElementById(id);
       if (!el) return;
+      const result = settle(id, raw);
+      if (!result) return;
       const domState = (UNSUPPORTED_AS_EMPTY && result.state === 'unsupported') ? 'empty' : result.state;
       if (el.dataset.state !== domState) el.dataset.state = domState;
       el.dataset.modelState = result.state;
       if (result.reason) el.dataset.reason = result.reason; else delete el.dataset.reason;
+      if (result.action) el.dataset.action = result.action; else delete el.dataset.action;
+      if (result.state === 'empty' && PARTIAL_REASONS.includes(result.reason)) el.dataset.partial = '1';
+      else delete el.dataset.partial;
+      if (result.action === 'explain' && WHY_REASONS.includes(result.reason)) el.dataset.why = 'diag';
+      else delete el.dataset.why;
+      if (el.setAttribute) el.setAttribute('aria-busy', result.state === 'loading' ? 'true' : 'false');
+      // el aviso de «vacío» es contenido útil (no vive en una región viva): visible a lectores de pantalla
+      const msg = el.querySelector && el.querySelector('.widget-empty-msg');
+      if (msg && msg.setAttribute) {
+        msg.setAttribute('aria-hidden', (result.state === 'empty' || result.state === 'unsupported') ? 'false' : 'true');
+      }
       const sig = result.state + '|' + result.reason;
       if (shown[id] === sig) return;
       shown[id] = sig;
@@ -346,9 +383,18 @@
       if (!doc.hidden) resumedAt = now();
     }
 
+    /* «¿Por qué?» -> diagnóstico existente. Delegado: un solo oyente para todos los bloques. */
+    function onClick(e) {
+      const hit = e && e.target && e.target.closest && e.target.closest('.widget-why');
+      if (hit && env.openDiag) env.openDiag();
+    }
+
     function start() {
       render();   // todo en loading hasta la primera muestra
-      if (doc.addEventListener) doc.addEventListener('visibilitychange', onVisibility);
+      if (doc.addEventListener) {
+        doc.addEventListener('visibilitychange', onVisibility);
+        doc.addEventListener('click', onClick);
+      }
       const rog = env.rog;
       if (!rog) return;
       if (rog.onStats) rog.onStats(onStats);
@@ -360,7 +406,7 @@
   }
 
   const api = {
-    STALE_MS, STATES, PANELS, BLOCKS, UNSUPPORTED_AS_EMPTY,
+    STALE_MS, STATES, PANELS, BLOCKS, UNSUPPORTED_AS_EMPTY, EMPTY_CONFIRM_TICKS,
     has, sampleAgeMs, isStale, evaluate, evaluateAll,
     evaluateCpu, evaluateGpu, evaluateFans, evaluateSystem, evaluateProcs,
     evaluateHistory, evaluateBattery, evaluateEvents, reasonKeys, createWiring,
@@ -371,13 +417,16 @@
 
   /* ---- punto de entrada: solo en el navegador ---- */
   if (root && typeof document !== 'undefined' && document) {
-    createWiring({
+    // api.wiring: instancia viva (la usan las pruebas CDP para inyectar muestras de forma síncrona)
+    api.wiring = createWiring({
       document,
       rog: root.rog,
+      openDiag: () => { if (typeof root.openDiag === 'function') root.openDiag(); },
       i18n: { apply: (el) => { if (root.i18n && root.i18n.apply) root.i18n.apply(el); } },
       t: (k) => (typeof root.t === 'function' ? root.t(k) : k),
       now: Date.now,
       setInterval: (fn, ms) => root.setInterval(fn, ms),
-    }).start();
+    });
+    api.wiring.start();
   }
 })(typeof window !== 'undefined' ? window : null);
