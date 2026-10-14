@@ -181,6 +181,45 @@ class Summarize(unittest.TestCase):
 
 
 
+class InvalidMetrics(unittest.TestCase):
+    """NaN/inf no son mediciones: no deben contaminar máximos ni estadística ni el JSON."""
+
+    NAN, INF = float("nan"), float("inf")
+
+    def setUp(self):
+        p = mock.patch.object(bm, "load_caps", lambda profile=None: {})
+        p.start()
+        self.addCleanup(p.stop)
+
+    def test_summarize_maxima_ignore_non_finite_regardless_of_order(self):
+        for series in ([self.NAN, 80.0, 70.0], [80.0, self.NAN, 70.0], [80.0, 70.0, self.NAN],
+                       [self.INF, 80.0, 70.0]):
+            with self.subTest(series=series):
+                out = bm._summarize([{"cpu_temp": v, "fans": {}} for v in series])
+                self.assertEqual(out["cpu_temp_max"], 80.0)
+
+    def test_describe_ignores_non_finite_values(self):
+        stats = bm.describe([self.NAN, 10.0, self.INF, 20.0, -self.INF])
+        self.assertEqual((stats["n"], stats["mean"], stats["min"], stats["max"]), (2, 15.0, 10.0, 20.0))
+        self.assertIsNone(bm.describe([self.NAN, self.INF]))
+
+    def test_cv_percent_ignores_non_finite(self):
+        self.assertEqual(bm.cv_percent([10, self.NAN, 12]), 12.856)
+        self.assertIsNone(bm.cv_percent([self.NAN, 5.0]))
+
+    def test_throughput_ignores_non_finite_points(self):
+        pts = [{"t": 0.0, "work": 0}, {"t": 1.0, "work": self.NAN}, {"t": 2.0, "work": 2000},
+               {"t": self.NAN, "work": 5}]
+        self.assertEqual(bm.throughput(pts), 1000.0)
+
+    def test_stats_are_json_serialisable_with_a_nan_sample(self):
+        samples = [{"t": 0.0, "cpu_temp": 60.0, "cpu_watts": self.NAN},
+                   {"t": 1.0, "cpu_temp": 62.0, "cpu_watts": 30.0}]
+        stats = bm.sample_stats(samples)
+        self.assertEqual(stats["cpu_watts"]["n"], 1)
+        json.dumps(stats, allow_nan=False)  # NaN rompería JSON.parse en el renderer
+
+
 class CollectSample(unittest.TestCase):
     def _readers(self, cpu_state, gpu_state, fans=()):
         cpu = mock.Mock()
@@ -218,6 +257,18 @@ class CollectSample(unittest.TestCase):
         for key in ("cpu_temp", "cpu_package", "cpu_util", "gpu_temp", "gpu_watts", "gpu_util", "gpu_clock_mhz"):
             self.assertIsNone(s[key], key)
         self.assertEqual(s["fans"], {})
+
+    def test_non_finite_readings_are_stored_as_none(self):
+        clock = Clock(10.0)
+        nan = float("nan")
+        cpu, gpu, fan, rapl = self._readers({"avg": nan, "package": float("inf"), "usage": 50},
+                                            {"active": {"temp": nan, "power": 5.0}})
+        rapl.read_watts.return_value = nan
+        with mock.patch.object(bm.time, "monotonic", clock.monotonic):
+            s = bm._collect_sample(cpu, gpu, fan, rapl, 10.0)
+        self.assertEqual((s["cpu_temp"], s["cpu_package"], s["cpu_watts"], s["gpu_temp"]), (None,) * 4)
+        self.assertEqual((s["cpu_util"], s["gpu_watts"]), (50, 5.0))
+        json.dumps(s, allow_nan=False)
 
 
 # --------------------------------------------------------- _run_repetitions

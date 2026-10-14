@@ -70,6 +70,13 @@ CPU_BURN = (
 # ---------------------------------------------------------------- estadística
 # Funciones puras (sin hardware): testeadas con series fijas en tests/test_benchmarks.py.
 
+def _finite(value):
+    """None o no finito (NaN/inf) = no es una medición: JSON.parse rechaza NaN en el renderer."""
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
+
+
 def percentile(values: list[float], q: float) -> float | None:
     """Percentil q (0-100) por interpolación lineal inclusive (tipo 7):
     posición h = (n-1)*q/100 sobre la serie ordenada. None si no hay datos."""
@@ -84,7 +91,7 @@ def percentile(values: list[float], q: float) -> float | None:
 
 def describe(values: list[float]) -> dict | None:
     """n, mean, min, max, stdev (muestral, n-1; None si n<2) y p50/p95/p99."""
-    vals = [v for v in values if v is not None]
+    vals = [v for v in map(_finite, values) if v is not None]
     if not vals:
         return None
     return {
@@ -101,7 +108,7 @@ def describe(values: list[float]) -> dict | None:
 
 def cv_percent(values: list[float]) -> float | None:
     """Coeficiente de variación = stdev muestral / media * 100. None si n<2 o media 0."""
-    vals = [v for v in values if v is not None]
+    vals = [v for v in map(_finite, values) if v is not None]
     if len(vals) < 2:
         return None
     mean = statistics.fmean(vals)
@@ -140,7 +147,8 @@ def build_stats(reps: list[list[dict]], keys=STAT_KEYS) -> dict:
 
 def throughput(samples: list[dict]) -> float | None:
     """Iteraciones/s totales = Δwork / Δt entre la primera y la última muestra medida."""
-    pts = [(s["t"], s["work"]) for s in samples if s.get("work") is not None]
+    pts = [(s["t"], s["work"]) for s in samples
+           if _finite(s.get("work")) is not None and _finite(s.get("t")) is not None]
     if len(pts) < 2 or pts[-1][0] <= pts[0][0]:
         return None
     return round((pts[-1][1] - pts[0][1]) / (pts[-1][0] - pts[0][0]), 1)
@@ -151,26 +159,27 @@ def _collect_sample(cpu: CpuReader, gpu: GpuReader, fans: FanReader, rapl: RaplR
     cpu_state = cpu.read()
     gpu_state = gpu.read()
     fan_state = fans.read(profile)
+    active = gpu_state.get("active") or {}
     return {
         "t": round(time.monotonic() - started, 3),
-        "cpu_temp": cpu_state.get("avg"),
-        "cpu_package": cpu_state.get("package"),
-        "cpu_watts": rapl.read_watts(),
-        "cpu_freq_ghz": cpu_state.get("freq_ghz"),
-        "cpu_util": cpu_state.get("usage"),
+        "cpu_temp": _finite(cpu_state.get("avg")),
+        "cpu_package": _finite(cpu_state.get("package")),
+        "cpu_watts": _finite(rapl.read_watts()),
+        "cpu_freq_ghz": _finite(cpu_state.get("freq_ghz")),
+        "cpu_util": _finite(cpu_state.get("usage")),
         "cpu_throttle_count": cpu_state.get("throttle_count"),
         "cpu_throttle_ms": cpu_state.get("throttle_ms"),
-        "gpu_temp": (gpu_state.get("active") or {}).get("temp"),
-        "gpu_watts": (gpu_state.get("active") or {}).get("power"),
-        "gpu_util": (gpu_state.get("active") or {}).get("util"),
-        "gpu_clock_mhz": (gpu_state.get("active") or {}).get("clock_mhz"),
+        "gpu_temp": _finite(active.get("temp")),
+        "gpu_watts": _finite(active.get("power")),
+        "gpu_util": _finite(active.get("util")),
+        "gpu_clock_mhz": _finite(active.get("clock_mhz")),
         "fans": {fan["label"]: fan["rpm"] for fan in fan_state},
     }
 
 
 def _summarize(samples: list[dict], profile: str | None = None) -> dict:
     def max_of(key: str):
-        values = [sample.get(key) for sample in samples if sample.get(key) is not None]
+        values = [v for v in (_finite(sample.get(key)) for sample in samples) if v is not None]
         return max(values) if values else None
 
     first = samples[0] if samples else {}
