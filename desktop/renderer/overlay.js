@@ -26,14 +26,14 @@ function tempColor(value, stops) {
 
 /* ---- i18n mínimo para el overlay (sin cargar el i18n.js completo) ---- */
 const OVERLAY_STRINGS = {
-  es: { cpu: 'CPU', gpu: 'GPU', fps: 'FPS', fans: 'Fans', avg: 'AVG', na: '—', profile: '' },
-  en: { cpu: 'CPU', gpu: 'GPU', fps: 'FPS', fans: 'Fans', avg: 'AVG', na: '—', profile: '' },
-  fr: { cpu: 'CPU', gpu: 'GPU', fps: 'FPS', fans: 'Vents', avg: 'MOY', na: '—', profile: '' },
-  it: { cpu: 'CPU', gpu: 'GPU', fps: 'FPS', fans: 'Vent.', avg: 'MED', na: '—', profile: '' },
-  pt: { cpu: 'CPU', gpu: 'GPU', fps: 'FPS', fans: 'Fans', avg: 'MÉD', na: '—', profile: '' },
-  zh: { cpu: 'CPU', gpu: 'GPU', fps: 'FPS', fans: '风扇', avg: '均', na: '—', profile: '' },
-  ja: { cpu: 'CPU', gpu: 'GPU', fps: 'FPS', fans: 'ファン', avg: '平均', na: '—', profile: '' },
-  ko: { cpu: 'CPU', gpu: 'GPU', fps: 'FPS', fans: '팬', avg: '평균', na: '—', profile: '' },
+  es: { cpu: 'CPU', gpu: 'GPU', fps: 'FPS', fans: 'Fans', avg: 'AVG', na: '—', nodata: 'SIN DATOS', nd: 'N/D', profile: '' },
+  en: { cpu: 'CPU', gpu: 'GPU', fps: 'FPS', fans: 'Fans', avg: 'AVG', na: '—', nodata: 'NO DATA', nd: 'N/A', profile: '' },
+  fr: { cpu: 'CPU', gpu: 'GPU', fps: 'FPS', fans: 'Vents', avg: 'MOY', na: '—', nodata: 'PAS DE DONNÉES', nd: 'N/D', profile: '' },
+  it: { cpu: 'CPU', gpu: 'GPU', fps: 'FPS', fans: 'Vent.', avg: 'MED', na: '—', nodata: 'NESSUN DATO', nd: 'N/D', profile: '' },
+  pt: { cpu: 'CPU', gpu: 'GPU', fps: 'FPS', fans: 'Fans', avg: 'MÉD', na: '—', nodata: 'SEM DADOS', nd: 'N/D', profile: '' },
+  zh: { cpu: 'CPU', gpu: 'GPU', fps: 'FPS', fans: '风扇', avg: '均', na: '—', nodata: '无数据', nd: 'N/A', profile: '' },
+  ja: { cpu: 'CPU', gpu: 'GPU', fps: 'FPS', fans: 'ファン', avg: '平均', na: '—', nodata: 'データなし', nd: 'N/A', profile: '' },
+  ko: { cpu: 'CPU', gpu: 'GPU', fps: 'FPS', fans: '팬', avg: '평균', na: '—', nodata: '데이터 없음', nd: 'N/A', profile: '' },
 };
 
 function getLang() {
@@ -57,6 +57,9 @@ function applyLabels() {
 }
 
 /* ---- estado ---- */
+// fps: NO está en el default a propósito. La fila FPS es opcional (solo MangoHud): se muestra
+// cuando hay dato y se oculta si no lo hay (no prometer FPS sin MangoHud, F6-04). Solo
+// show.fps === true la fuerza visible con "N/D"; show.fps === false la oculta siempre.
 let show = { cpu: true, gpu: true, fans: true };
 let lastStats = null;
 let lastFansSig = null;
@@ -75,9 +78,64 @@ function applyShow() {
   if (fansSection) fansSection.style.display = show.fans === false ? 'none' : '';
 }
 
+/* ---- datos viejos (N-A4-02) ----
+   Mismo umbral que widget-states.js / app.js (F2-08). overlay.html no carga ese módulo,
+   así que la regla se repite aquí: >6 s sin muestras => tarjeta atenuada + marca
+   "SIN DATOS · N s". Se prefiere stats.ts (hora de la muestra); ventana oculta = backend
+   pausado a propósito, no cuenta; volver a ser visible reinicia el reloj. */
+const STALE_MS = 6000;
+let lastRxAt = 0;       // 0 = aún no llegó ninguna muestra (no es stale)
+let resumedAt = 0;
+let backendDown = false;
+let staleShown = false;
+
+function sampleAgeMs() {
+  if (!lastStats) return null;
+  const ts = Number(lastStats.ts);
+  let ref = Number.isFinite(ts) && ts > 0 ? ts * 1000 : lastRxAt;
+  if (resumedAt > ref) ref = resumedAt;
+  return Math.max(0, Date.now() - ref);
+}
+
+function findStaleMark(card) {
+  return card && card.children ? Array.prototype.find.call(card.children, (c) => c.id === 'stale-mark') : null;
+}
+
+function setStale(on, ageMs) {
+  const card = document.querySelector('.card');
+  if (!card) { staleShown = on; return; }
+  card.style.opacity = on ? '0.4' : '';
+  let mark = findStaleMark(card);
+  if (on) {
+    if (!mark) {
+      mark = document.createElement('span');
+      mark.id = 'stale-mark';
+      mark.style.color = 'var(--warn)';
+      mark.style.fontSize = '9px';
+      mark.style.fontWeight = '700';
+      mark.style.letterSpacing = '1px';
+      mark.style.whiteSpace = 'nowrap';
+      card.appendChild(mark);
+    }
+    mark.textContent = s('nodata') + (ageMs != null ? ' · ' + Math.round(ageMs / 1000) + ' s' : '');
+  } else if (mark) {
+    mark.remove();
+  }
+  staleShown = on;
+}
+
+function checkStale() {
+  if (!lastStats || document.hidden) return;
+  const age = sampleAgeMs();
+  if (backendDown || (age != null && age > STALE_MS)) setStale(true, age);
+}
+
 /* ---- renderizado principal ---- */
 function render(stats) {
   lastStats = stats;
+  lastRxAt = Date.now();
+  backendDown = false;
+  if (staleShown) setStale(false);
   // Prioridad: umbrales del config (main.js, idénticos al dashboard) > los que
   // pudiera traer el stream > defaults estáticos. Degrada con gracia.
   const colors = tempLimits || stats.limits || stats.temp_colors || { cpu: [70, 85, 92], gpu: [60, 75, 83] };
@@ -106,9 +164,15 @@ function render(stats) {
   const fpsRow = $('fps-row');
   const fpsV = $('fps-v');
   if (fpsRow && fpsV) {
-    if (stats.fps != null) {
+    if (show.fps === false) {
+      fpsRow.style.display = 'none';
+    } else if (stats.fps != null) {
       fpsRow.style.display = '';
       fpsV.textContent = fmt(stats.fps, 0);
+    } else if (show.fps === true) {
+      // el usuario la eligió: sin MangoHud/dato se dice "N/D", no se esconde la fila
+      fpsRow.style.display = '';
+      fpsV.textContent = s('nd');
     } else {
       fpsRow.style.display = 'none';
     }
@@ -189,6 +253,12 @@ if (window.rog && window.rog.onStats) {
 } else {
   console.warn('[overlay] window.rog.onStats not available — no live data');
 }
+
+if (window.rog && window.rog.onBackendDown) {
+  window.rog.onBackendDown(() => { backendDown = true; checkStale(); });
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) resumedAt = Date.now(); });
+setInterval(checkStale, 1000);
 
 if (window.rog && window.rog.onOverlayConfig) {
   window.rog.onOverlayConfig((cfg) => {
