@@ -661,6 +661,23 @@ class BaselineFile(PcCase):
         self.assertFalse(self.baseline_file().exists())
 
 
+class CustomProfileRobustness(PcCase):
+    def put_custom(self, text):
+        (self.cfg / "rog-monitor").mkdir(exist_ok=True)
+        (self.cfg / "rog-monitor" / "device.json").write_text(text)
+
+    def test_non_object_json_is_ignored(self):
+        for text in ("[1, 2]", '"x"', "42", "true"):
+            self.put_custom(text)
+            self.assertIsNone(pc._load_custom_profile(), text)
+            self.assertEqual(pc.PowerControl().state()["device"]["source"], "db", text)
+
+    def test_apply_with_non_object_custom_file_still_validates(self):
+        self.put_custom("[1, 2]")
+        res = pc.PowerControl().apply({"pl1": 90})
+        self.assertTrue(res["ok"], res)
+
+
 class ProfilePowerFlows(PcCase):
     ENTRY_BASE = {"controls": [{"key": "pl1", "attr": "ppt_pl1_spl", "min": 28, "max": 140}]}
 

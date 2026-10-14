@@ -194,9 +194,11 @@ def _load_custom_profile() -> dict | None:
     custom = config_dir / "device.json"
     try:
         with open(custom) as fh:
-            return json.load(fh)
+            data = json.load(fh)
     except (OSError, json.JSONDecodeError):
         return None
+    # Solo un objeto es un perfil; una lista/número/texto hacía fallar `.get` aguas abajo.
+    return data if isinstance(data, dict) else None
 
 
 def _canonical_profile(profile: str | None) -> str | None:
