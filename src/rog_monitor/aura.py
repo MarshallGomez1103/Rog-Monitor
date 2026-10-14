@@ -17,6 +17,9 @@ from .config import CONFIG_DIR, backup_corrupt, write_atomic
 
 AURA_FILE = CONFIG_DIR / "aura.json"
 HEX_RE = re.compile(r"^[0-9a-fA-F]{6}$")
+# Zona de asusctl (--zone): alfanumérica, sin espacios ni «-» inicial para que
+# nunca se interprete como otra opción del CLI.
+ZONE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$")
 BRIGHTNESS_LEVELS = ["off", "low", "med", "high"]
 SPEED_LEVELS = ["low", "med", "high"]
 DIRECTIONS = ["up", "down", "left", "right"]
@@ -255,33 +258,48 @@ def _save_store(data: dict) -> bool:
         return False
 
 
+def _text_field(raw: dict, key: str, default: str, label: str) -> str:
+    """Campo de texto del payload; un valor que no sea str es un ValueError, no un AttributeError."""
+    value = raw.get(key) or default
+    if not isinstance(value, str):
+        raise ValueError(f"{label}: {value!r}")
+    return value.strip()
+
+
 def _normalize_colour(value: str | None, fallback: str = "ff5500") -> str:
-    text = (value or fallback).strip().lstrip("#").lower()
+    value = value or fallback
+    if not isinstance(value, str):
+        raise ValueError(f"invalid color: {value!r}")
+    text = value.strip().lstrip("#").lower()
     if not HEX_RE.fullmatch(text):
         raise ValueError(f"invalid color: {value!r}")
     return text
 
 
 def _normalize_state(raw: dict) -> dict:
-    effect = (raw.get("effect") or "static").strip()
+    if not isinstance(raw, dict):
+        raise ValueError(f"state must be an object, got {type(raw).__name__}")
+    effect = _text_field(raw, "effect", "static", "unsupported effect")
     if effect not in EFFECT_META:
         raise ValueError(f"unsupported effect: {effect}")
 
     meta = EFFECT_META[effect]
-    brightness = (raw.get("brightness") or "high").strip().lower()
+    brightness = _text_field(raw, "brightness", "high", "invalid brightness").lower()
     if brightness not in BRIGHTNESS_LEVELS:
         raise ValueError(f"invalid brightness: {brightness}")
 
     state = {
-        "driver": (raw.get("driver") or "asus").strip().lower(),
+        "driver": _text_field(raw, "driver", "asus", "unsupported driver").lower(),
         "effect": effect,
         "brightness": brightness,
         "colour": _normalize_colour(raw.get("colour")),
         "colour2": _normalize_colour(raw.get("colour2"), "000000"),
-        "speed": (raw.get("speed") or "med").strip().lower(),
-        "direction": (raw.get("direction") or "right").strip().lower(),
-        "zone": (raw.get("zone") or "").strip() or None,
+        "speed": _text_field(raw, "speed", "med", "invalid speed").lower(),
+        "direction": _text_field(raw, "direction", "right", "invalid direction").lower(),
+        "zone": _text_field(raw, "zone", "", "invalid zone") or None,
     }
+    if state["zone"] is not None and not ZONE_RE.fullmatch(state["zone"]):
+        raise ValueError(f"invalid zone: {state['zone']!r}")
 
     if state["driver"] not in ("asus", "openrgb"):
         raise ValueError(f"unsupported driver: {state['driver']}")

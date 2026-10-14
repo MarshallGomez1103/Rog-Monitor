@@ -197,6 +197,38 @@ class NormalizeState(unittest.TestCase):
 
 
 
+class NormalizeStateDefects(unittest.TestCase):
+    """Defectos reales: la validación explícita debe fallar siempre con ValueError
+    y la zona no puede colar opciones ni metacaracteres en el argv de asusctl."""
+
+    def setUp(self):
+        p = mock.patch.dict(aura._CAPS_CACHE, {}, clear=True)
+        p.start()
+        self.addCleanup(p.stop)
+
+    def test_non_string_fields_raise_value_error_not_attribute_error(self):
+        bad = [{"brightness": 5}, {"colour": 123456}, {"colour2": ["ff0000"]}, {"effect": ["static"]},
+               {"driver": 1}, {"effect": "rainbow-wave", "speed": 3},
+               {"effect": "rainbow-wave", "direction": {"x": 1}}, {"zone": 7}]
+        for raw in bad:
+            with self.subTest(raw=raw), self.assertRaises(ValueError):
+                aura._normalize_state(raw)
+
+    def test_non_dict_payload_raises_value_error(self):
+        for raw in ([], "static", 3, None):
+            with self.subTest(raw=raw), self.assertRaises(ValueError):
+                aura._normalize_state(raw)
+
+    def test_zone_cannot_smuggle_options_or_metacharacters(self):
+        for zone in ("--help", "-x", "key1 --colour ff0000", "a;b", "key1\nkey2", "../../x", "$(id)", "a" * 65):
+            with self.subTest(zone=zone), self.assertRaises(ValueError):
+                aura._normalize_state({"zone": zone})
+
+    def test_plain_zone_names_still_valid(self):
+        for zone in ("Key1", "logo", "lightbar-left", "zone_2"):
+            self.assertEqual(aura._normalize_state({"zone": zone})["zone"], zone)
+
+
 # --------------------------------------------------------- helpers puros / _run
 
 class ParseCaps(unittest.TestCase):
