@@ -253,13 +253,10 @@
     <section class="col col-right">
       <article class="block charts" id="history-block" data-block="history">
         <h2><i class="dash-num"></i> <span data-i18n="block.history">Historial</span> <small data-i18n="block.history_sub">pasa el cursor por una gráfica para ver cada punto</small>
-          <button id="hist-mode" class="ghost hist-toggle" type="button" data-i18n="chart.mode_usage">Uso CPU/RAM</button></h2>
-        <div class="chart-row grid2">
-          <div class="chart"><label data-i18n="chart.cpu_temp">CPU · Temperature °C</label><canvas id="chart-cpu"></canvas></div>
-          <div class="chart"><label data-i18n="chart.cpu_power">CPU · Power W</label><canvas id="chart-power"></canvas></div>
-          <div class="chart"><label data-i18n="chart.gpu_temp">GPU · Temperature °C</label><canvas id="chart-gpu"></canvas></div>
-          <div class="chart"><label data-i18n="chart.gpu_power">GPU · Power W</label><canvas id="chart-gpu-power"></canvas></div>
-        </div>
+          <button id="hist-mode" class="ghost hist-toggle" type="button" data-i18n="chart.mode_usage">Uso CPU/RAM</button>
+          <button id="hist-edit" class="ghost hist-toggle" type="button" aria-expanded="false" aria-controls="hist-editor" data-i18n="chart.edit" data-i18n-attr="title:chart.edit_title" title="Elegir qué gráficas ver y en qué orden">Gráficas</button></h2>
+        <div id="hist-editor" class="hist-editor hidden" role="group" data-i18n-attr="aria-label:chart.edit_title" aria-label="Elegir qué gráficas ver y en qué orden"></div>
+        <div class="chart-row grid2"></div>
       </article>
 
       <article class="block" id="bench-block" data-block="bench">

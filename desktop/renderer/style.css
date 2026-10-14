@@ -1546,3 +1546,13 @@ html[data-mode="dark"][data-theme="neon-nights"] .block::before {
 
 /* Celdas de texto de las tarjetas (EPP, modo…): nunca invaden la celda vecina */
 .statgrid b.small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Editor de gráficas del historial (F4-05/06) */
+.hist-editor { margin: 6px 0 12px; padding: 10px 12px; border: 1px solid var(--hair); display: grid; gap: 4px; }
+.hist-editor .note { margin: 0 0 4px; }
+.hist-edit-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.hist-edit-row.off label { color: var(--dim); }
+.hist-edit-row label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; }
+.hist-edit-btns button { min-width: 30px; padding: 2px 8px; }
+.hist-edit-btns button:disabled { opacity: .3; cursor: default; }
+.hist-edit-presets { display: flex; gap: 8px; margin-top: 6px; }

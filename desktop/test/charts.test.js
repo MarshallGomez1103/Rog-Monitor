@@ -18,12 +18,14 @@ const code = [
   grab(/^function chartTail\(values, n\) \{[\s\S]*?^\}/m, 'chartTail'),
   grab(/^function chartRange\(data, fromZero, ceil\) \{[\s\S]*?^\}/m, 'chartRange'),
   grab(/^function chartRuns\(data\) \{[\s\S]*?^\}/m, 'chartRuns'),
-  grab(/^const HIST_MODES = \{[\s\S]*?^\};/m, 'HIST_MODES'),
-  grab(/^function histSlots\(mode\) \{[\s\S]*?^\}/m, 'histSlots'),
+  grab(/^const CHART_CATALOG = \{[\s\S]*?^\};/m, 'CHART_CATALOG'),
+  grab(/^const HIST_PRESETS = \{[\s\S]*?^\};/m, 'HIST_PRESETS'),
+  grab(/^function histCharts\(saved\) \{[\s\S]*?^\}/m, 'histCharts'),
+  grab(/^function moveChart\(list, key, dir\) \{[\s\S]*?^\}/m, 'moveChart'),
   grab(/^function clampPct\(v\) \{[\s\S]*?^\}/m, 'clampPct'),
 ].join('\n');
-const { CHART_MAX_POINTS, chartTail, chartRange, chartRuns, clampPct, HIST_MODES, histSlots } =
-  new Function(`${code}; return { CHART_MAX_POINTS, chartTail, chartRange, chartRuns, clampPct, HIST_MODES, histSlots };`)();
+const { CHART_MAX_POINTS, chartTail, chartRange, chartRuns, clampPct, CHART_CATALOG, HIST_PRESETS, histCharts, moveChart } =
+  new Function(`${code}; return { CHART_MAX_POINTS, chartTail, chartRange, chartRuns, clampPct, CHART_CATALOG, HIST_PRESETS, histCharts, moveChart };`)();
 
 test('chartRange salta null/NaN y no los trata como 0', () => {
   assert.deepStrictEqual(chartRange([null, 62, null, 71], false), { lo: 60, hi: 75 });
@@ -60,23 +62,31 @@ test('clampPct deja todo en 0-100 y null/NaN en 0', () => {
   assert.strictEqual(clampPct(42.5), 42.5);
 });
 
-test('histSlots: modo desconocido cae a temp; ambos modos usan los mismos 4 canvas', () => {
-  assert.strictEqual(histSlots('usage'), HIST_MODES.usage);
-  assert.strictEqual(histSlots('basura'), HIST_MODES.temp);
-  assert.strictEqual(histSlots(null), HIST_MODES.temp);
-  const ids = (m) => HIST_MODES[m].map((r) => r[0]);
-  assert.deepStrictEqual(ids('usage'), ids('temp'));
-  assert.strictEqual(new Set(ids('temp')).size, 4);
+test('histCharts: valida lo guardado (JSON corrupto, claves desconocidas, repetidas, vacío)', () => {
+  assert.deepStrictEqual(histCharts(null), HIST_PRESETS.temp);
+  assert.deepStrictEqual(histCharts('{basura'), HIST_PRESETS.temp);
+  assert.deepStrictEqual(histCharts('[]'), HIST_PRESETS.temp);
+  assert.deepStrictEqual(histCharts('["ram_gb","nope","ram_gb","cpu_temp"]'), ['ram_gb', 'cpu_temp']);
+  assert.deepStrictEqual(histCharts(['gpu_util']), ['gpu_util']);
 });
 
-test('histSlots: modo uso = CPU % (0-100), RAM/swap en GiB (0..total), GPU %', () => {
-  const rows = HIST_MODES.usage;
-  assert.deepStrictEqual(rows.map((r) => r[1]), ['cpu_usage', 'ram_gb', 'swap_gb', 'gpu_util']);
-  assert.deepStrictEqual(rows.map((r) => r[3].unit), ['%', 'GiB', 'GiB', '%']);
-  assert.strictEqual(rows[0][3].max, 100);
-  assert.strictEqual(rows[3][3].max, 100);
-  assert.strictEqual(rows[1][3].maxKey, 'ram_total_gb');
-  assert.strictEqual(rows[2][3].maxKey, 'swap_total_gb');
+test('moveChart sube/baja una posición y no se sale de los bordes', () => {
+  const l = ['a', 'b', 'c'];
+  assert.deepStrictEqual(moveChart(l, 'b', -1), ['b', 'a', 'c']);
+  assert.deepStrictEqual(moveChart(l, 'b', 1), ['a', 'c', 'b']);
+  assert.deepStrictEqual(moveChart(l, 'a', -1), l);
+  assert.deepStrictEqual(moveChart(l, 'c', 1), l);
+  assert.deepStrictEqual(l, ['a', 'b', 'c']);   // no muta
+});
+
+test('catálogo: preset uso = CPU % (0-100), RAM/swap GiB (0..total), GPU %', () => {
+  assert.deepStrictEqual(HIST_PRESETS.usage, ['cpu_usage', 'ram_gb', 'swap_gb', 'gpu_util']);
+  assert.deepStrictEqual(HIST_PRESETS.usage.map((k) => CHART_CATALOG[k][1].unit), ['%', 'GiB', 'GiB', '%']);
+  assert.strictEqual(CHART_CATALOG.cpu_usage[1].max, 100);
+  assert.strictEqual(CHART_CATALOG.gpu_util[1].max, 100);
+  assert.strictEqual(CHART_CATALOG.ram_gb[1].maxKey, 'ram_total_gb');
+  assert.strictEqual(CHART_CATALOG.swap_gb[1].maxKey, 'swap_total_gb');
+  [...HIST_PRESETS.temp, ...HIST_PRESETS.usage].forEach((k) => assert.ok(CHART_CATALOG[k], k));
 });
 
 test('chartRange con techo fijo: % siempre 0-100, GiB 0..total (no autoescala)', () => {
