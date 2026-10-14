@@ -5,10 +5,12 @@ log viejo) el resultado es None; nunca se inventa un FPS. Todo vive en
 directorios temporales; HOME, la ruta de MangoHud.conf y el reloj se inyectan.
 """
 
+import gc
 import os
 import shutil
 import tempfile
 import unittest
+import warnings
 from pathlib import Path
 from unittest import mock
 
@@ -84,6 +86,68 @@ class LastFps(FpsBase):
 
     def test_only_garbage_after_header_is_none(self):
         p = self.write_csv("g.csv", HEADER + "abc,1,2,3\n???\n\n")
+        self.assertIsNone(fps._last_fps(p))
+
+    def test_non_utf8_bytes_do_not_crash(self):
+        path = self.logs / "bin.csv"
+        path.write_bytes(HEADER.encode() + b"\xff\xfe\xfa,1,2,3\n88,5,1,1\n")
+        os.utime(path, (NOW, NOW))
+        self.assertEqual(fps._last_fps(path), 88.0)
+
+    def test_non_utf8_in_header_zone_is_none_or_value_never_raises(self):
+        path = self.logs / "bin2.csv"
+        path.write_bytes(b"\xff\xfe\xfd\n\xff,\xff\n")
+        os.utime(path, (NOW, NOW))
+        self.assertIsNone(fps._last_fps(path))
+
+    def test_file_is_opened_once_and_closed(self):
+        p = self.write_csv("c.csv", PREAMBLE + HEADER + "60,16,1,1\n")
+        real_open = open
+        opened = []
+
+        def spy(*a, **kw):
+            fh = real_open(*a, **kw)
+            opened.append(fh)
+            return fh
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            with mock.patch("builtins.open", side_effect=spy):
+                self.assertEqual(fps._last_fps(p), 60.0)
+            gc.collect()
+        self.assertEqual(len(opened), 1)
+        self.assertTrue(opened[0].closed)
+        self.assertEqual([w for w in caught if issubclass(w.category, ResourceWarning)], [])
+
+    def test_nan_inf_and_negative_are_never_reported(self):
+        for bad in ("nan", "NaN", "inf", "-inf", "-5", "-0.1"):
+            with self.subTest(bad=bad):
+                p = self.write_csv("b.csv", HEADER + f"{bad},1,1,1\n")
+                self.assertIsNone(fps._last_fps(p))
+
+    def test_invalid_last_value_falls_back_to_previous_valid_row(self):
+        p = self.write_csv("b.csv", HEADER + "72,1,1,1\nnan,1,1,1\n-3,1,1,1\ninf,1,1,1\n")
+        self.assertEqual(fps._last_fps(p), 72.0)
+
+    def test_zero_fps_is_a_valid_value(self):
+        p = self.write_csv("z.csv", HEADER + "0,1,1,1\n")
+        self.assertEqual(fps._last_fps(p), 0.0)
+
+    def test_last_line_without_newline_is_discarded_as_truncated(self):
+        # "6" podría ser "60.5" cortado: no se puede saber, se usa la fila anterior
+        p = self.write_csv("t.csv", HEADER + "75,13,1,1\n6")
+        self.assertEqual(fps._last_fps(p), 75.0)
+
+    def test_only_truncated_row_is_none(self):
+        p = self.write_csv("t.csv", HEADER + "6")
+        self.assertIsNone(fps._last_fps(p))
+
+    def test_partial_first_line_of_tail_is_not_trusted(self):
+        # el tail (últimos 4096 B) arranca 2 bytes dentro de la fila: "5.5,..."
+        # sería el resto de "145.5" -> no se puede usar
+        row = "145.5," + "p" * 4091 + "\n"
+        self.assertEqual(len(row), fps._TAIL_BYTES + 2)
+        p = self.write_csv("big.csv", HEADER + "70,1,1,1\n" + row)
         self.assertIsNone(fps._last_fps(p))
 
     def test_only_tail_of_big_file_is_read(self):

@@ -9,6 +9,7 @@ the overlay hides the row.
 
 from __future__ import annotations
 
+import math
 import os
 import time
 from pathlib import Path
@@ -51,14 +52,21 @@ def _freshest_csv(folder: Path) -> Path | None:
 
 def _last_fps(path: Path) -> float | None:
     """fps from the last data row; MangoHud puts the column header (`fps,
-    frametime,...`) some lines into the file, after a system-info preamble."""
+    frametime,...`) some lines into the file, after a system-info preamble.
+
+    One binary read of head and tail. A tail that starts mid-row or a last row
+    without its trailing newline may be cut inside a number ("6" of "60.5"),
+    so those partial lines are dropped; nan/inf/negative values are never
+    reported.
+    """
     try:
         with open(path, "rb") as fh:
+            head = fh.read(2048).decode("utf-8", "replace")
             fh.seek(0, os.SEEK_END)
             size = fh.tell()
-            fh.seek(max(0, size - _TAIL_BYTES))
+            start = max(0, size - _TAIL_BYTES)
+            fh.seek(start)
             tail = fh.read().decode("utf-8", "replace")
-        head = path.open().read(2048)
     except OSError:
         return None
 
@@ -71,14 +79,23 @@ def _last_fps(path: Path) -> float | None:
     if fps_col is None:
         return None
 
-    for line in reversed(tail.strip().splitlines()):
+    lines = tail.split("\n")
+    if not tail.endswith("\n"):
+        lines.pop()  # last row is still being written / truncated
+    if start > 0 and lines:
+        lines.pop(0)  # tail begins mid-row
+
+    for line in reversed(lines):
         cells = line.split(",")
         if len(cells) <= fps_col:
             continue
         try:
-            return round(float(cells[fps_col]), 1)
+            value = float(cells[fps_col])
         except ValueError:
             continue  # header or partial row
+        if not math.isfinite(value) or value < 0:
+            continue
+        return round(value, 1)
     return None
 
 
