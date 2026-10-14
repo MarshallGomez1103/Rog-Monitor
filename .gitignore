@@ -32,3 +32,4 @@ docs/agent-work/*
 ROG_MONITOR_PLAN_MAESTRO_IA.md
 # Logs pesados/privados de agentes (plan v22 §3)
 .ai/
+.coverage
