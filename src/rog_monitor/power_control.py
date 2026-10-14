@@ -311,10 +311,10 @@ def profile_power_for(profile: str | None,
     if not isinstance(pset, dict):
         return None
 
-    # Build a lookup of safe min/max per control key from the entry's controls.
-    bounds: dict[str, tuple] = {}
-    for ctrl in entry.get("controls", []):
-        bounds[ctrl.get("key")] = (ctrl.get("min"), ctrl.get("max"))
+    # Rango VIVO del firmware (cambia por perfil: en quiet nv_dynamic_boost es [0, 0])
+    # con caída al declarado; recortar solo al declarado hacía que validate_changes
+    # rechazara el set entero y quiet nunca recibía sus PL1/PL2.
+    bounds = _validation_bounds(entry)
 
     out: dict[str, int] = {}
     for key in _ATTR_KEYS:

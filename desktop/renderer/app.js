@@ -2898,13 +2898,13 @@ const FAN_PROFILE_RECOMMENDED_CAP = {
   performance: 6500,
 };
 const FAN_GRAPH = {
-  tempMin: 30,
+  tempMin: 40,
   tempMax: 105,
   x0: 42,
   x1: 520,
   yTop: 36,
   yBottom: 204,
-  ticks: [30, 45, 60, 75, 90, 105],
+  ticks: [40, 50, 60, 70, 80, 90, 100],
 };
 
 localStorage.removeItem('fanMax'); // legado: vivía aquí y nunca era real

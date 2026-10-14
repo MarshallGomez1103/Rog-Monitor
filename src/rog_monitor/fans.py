@@ -42,25 +42,19 @@ GUARDIAN_STATE_MAX_AGE = 30.0
 CAP_KEY = {"cpu_fan": "cpu", "gpu_fan": "gpu", "mid_fan": "mid"}
 
 # ------------------------------------------------------------------
-# Curvas por defecto v13 — coherentes con profile_power (device_profiles.json).
+# Curvas por defecto v22 — idénticas a default_curve_for() de
+# scripts/rog-profile-sync.sh (el test test_fan_defaults lo exige).
 #
 # Formato por perfil y zona: {"temps": [t1..t8], "pwms": [p1..p8]}
 # (8 puntos, temps estrictamente crecientes, pwms no decrecientes).
 #
-# La curva sólo define el mapeo temperatura→PWM; la HISTÉRESIS (anti-rebote)
-# la aplica rog-thermal-guardian.sh en el otro repo y NO se toca aquí.
-#
-# Coherencia con el objetivo térmico de cada perfil (profile_power):
-#   - quiet     → thermal_target 75 °C: el ventilador llega a su tope ANTES de
-#                 ~75 °C (defiende activamente el techo más bajo) y arranca
-#                 APAGADO (pwm 0) por debajo de ~42 °C = silencio real. Como
-#                 el poder ya está bajo, rara vez necesita ese tope.
-#   - balanced  → thermal_target 82 °C: tope alrededor de ~82-84 °C.
-#   - performance → thermal_target 87 °C: tope alrededor de ~87-90 °C, deja
-#                 que el equipo trabaje caliente pero seguro hasta el techo de
-#                 fábrica.
-# Los cap_rpm bajan en quiet (más silencio) y suben en performance.
-# Los tres perfiles quedan claramente distintos en cap y curva.
+# Arrancan en 50 °C (este equipo nunca baja de ~50 en uso; por debajo el EC
+# mantiene el punto 1) y reparten los 8 puntos en el rango que sí se usa.
+# Mismo reparto de temperaturas en los tres perfiles; solo cambia la altura:
+#   75 °C (CPU) → performance 50 % · balanced 42 % · quiet 32 %
+#   96 °C (CPU) → performance 100 % · balanced 88 % · quiet 72 %
+# La GPU usa 50..87 °C (su techo de fábrica es 87). El cap_rpm por perfil
+# se aplica encima, al escribir al hardware.
 # ------------------------------------------------------------------
 DEFAULT_FAN_CURVES: dict = {
     "version": FAN_CURVES_SCHEMA_VERSION,
@@ -73,46 +67,46 @@ DEFAULT_FAN_CURVES: dict = {
         "performance": {
             "cap_rpm": {"cpu": 6500, "gpu": 6500, "mid": 6500},
             "gpu": {
-                "temps": [35, 45, 55, 62, 70, 78, 84, 88],
-                "pwms":  [30, 46, 70, 100, 150, 200, 240, 255],
+                "temps": [50, 58, 64, 70, 75, 79, 83, 87],
+                "pwms":  [46, 66, 97, 127, 168, 209, 242, 255],
             },
             "mid": {
-                "temps": [35, 45, 55, 65, 75, 83, 89, 95],
-                "pwms":  [30, 50, 80, 115, 158, 205, 240, 255],
+                "temps": [50, 60, 68, 75, 82, 88, 92, 96],
+                "pwms":  [46, 66, 97, 127, 168, 209, 242, 255],
             },
             "cpu": {
-                "temps": [35, 45, 55, 65, 75, 83, 89, 95],
-                "pwms":  [35, 55, 85, 120, 160, 205, 240, 255],
+                "temps": [50, 60, 68, 75, 82, 88, 92, 96],
+                "pwms":  [46, 66, 97, 127, 168, 209, 242, 255],
             },
         },
         "balanced": {
             "cap_rpm": {"cpu": 5500, "gpu": 5500, "mid": 5500},
             "gpu": {
-                "temps": [36, 46, 56, 63, 70, 76, 81, 84],
-                "pwms":  [15, 28, 50, 82, 122, 165, 200, 215],
+                "temps": [50, 58, 64, 70, 75, 79, 83, 87],
+                "pwms":  [33, 51, 76, 107, 143, 178, 209, 224],
             },
             "mid": {
-                "temps": [36, 46, 56, 66, 74, 80, 85, 90],
-                "pwms":  [16, 32, 56, 92, 132, 172, 205, 220],
+                "temps": [50, 60, 68, 75, 82, 88, 92, 96],
+                "pwms":  [33, 51, 76, 107, 143, 178, 209, 224],
             },
             "cpu": {
-                "temps": [36, 46, 56, 66, 74, 80, 85, 90],
-                "pwms":  [18, 35, 60, 95, 138, 178, 210, 225],
+                "temps": [50, 60, 68, 75, 82, 88, 92, 96],
+                "pwms":  [33, 51, 76, 107, 143, 178, 209, 224],
             },
         },
         "quiet": {
             "cap_rpm": {"cpu": 4500, "gpu": 4500, "mid": 4500},
             "gpu": {
-                "temps": [42, 52, 60, 66, 70, 73, 75, 78],
-                "pwms":  [0, 18, 38, 68, 100, 130, 155, 170],
+                "temps": [50, 58, 64, 70, 75, 79, 83, 87],
+                "pwms":  [20, 36, 56, 82, 112, 143, 168, 184],
             },
             "mid": {
-                "temps": [42, 52, 60, 67, 72, 75, 78, 82],
-                "pwms":  [0, 22, 44, 76, 110, 140, 165, 180],
+                "temps": [50, 60, 68, 75, 82, 88, 92, 96],
+                "pwms":  [20, 36, 56, 82, 112, 143, 168, 184],
             },
             "cpu": {
-                "temps": [42, 52, 60, 67, 72, 75, 78, 82],
-                "pwms":  [0, 20, 42, 74, 108, 140, 165, 180],
+                "temps": [50, 60, 68, 75, 82, 88, 92, 96],
+                "pwms":  [20, 36, 56, 82, 112, 143, 168, 184],
             },
         },
     },

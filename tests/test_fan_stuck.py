@@ -127,6 +127,45 @@ class FanStuck(unittest.TestCase):
             out, n = run(Path(d), curve, [0, 61, 91, 122, 152])            # sigue pegado: no re-aplica cada minuto
             self.assertEqual(n, 1, out)
 
+    def test_stuck_below_4500_is_caught(self):
+        # quiet/balanced (cap 4500/5500): antes solo se miraba ≥4500 rpm y nunca saltaba
+        with tempfile.TemporaryDirectory() as d:
+            curve = tree(Path(d), 4300, 55)
+            out, n = run(Path(d), curve, [0, 30, 61])
+            self.assertEqual(n, 1, out)
+
+    def test_reports_whether_the_fix_worked(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            curve = tree(root, 6000, 60)
+            out, _ = run(root, curve, [0, 30, 61, 91])
+            self.assertIn("still high right after re-apply", out)
+            drop = " ".join(f'echo 2500 > "{root}/sys/class/hwmon/hwmon6/fan{f}_input";' for f in (1, 2, 3))
+            r = subprocess.run(["bash", "-c", f'''
+source "{SCRIPT}"; CURVE_HWMON="{curve}"; STUCK_TOGGLE_S=0; STUCK_LAST_FIX=-100000
+find_curves_json() {{ echo "{root}/fan-curves.json"; }}
+apply_curves() {{ :; }}
+for t in 0 30 61; do STUCK_NOW=$t check_stuck_fans performance; done
+{drop}
+STUCK_NOW=91 check_stuck_fans performance'''], capture_output=True, text=True,
+                               env={**os.environ, "ROG_SYSFS_ROOT": str(root)}, stdin=subprocess.DEVNULL)
+            self.assertIn("Fans back on their curve", r.stderr)
+
+
+class SetCurveRetry(unittest.TestCase):
+    def test_enable_is_retried_once(self):
+        # EINVAL del primer enable (asusd escribiendo a la vez): un reintento y sigue
+        with tempfile.TemporaryDirectory() as d:
+            hw = Path(d)
+            r = subprocess.run(["bash", "-c", f'''
+source "{SCRIPT}"; CURVE_RETRY_S=0; n=0
+printf() {{ if [[ "$1" == '1\\n' && $((n++)) -eq 0 ]]; then return 1; fi; builtin printf "$@"; }}
+set_curve "{hw}" 1 "50 60 68 75 82 88 92 96" "20 36 56 82 112 143 168 184" && echo OK n=$n'''],
+                               capture_output=True, text=True, stdin=subprocess.DEVNULL)
+            self.assertIn("OK n=2", r.stdout, r.stderr)
+            self.assertEqual((hw / "pwm1_enable").read_text(), "1\n")
+            self.assertEqual((hw / "pwm1_auto_point8_pwm").read_text(), "184\n")
+
 
 class PowerLimitRetry(unittest.TestCase):
     """Límites de potencia: EBUSY tras cambiar de perfil -> reintentar en las vueltas siguientes."""
@@ -155,3 +194,20 @@ class PowerLimitRetry(unittest.TestCase):
         self.assertEqual(tries, 5)
         self.assertIn("Giving up", err)
         self.assertEqual(last[-1], "last=performance")
+
+
+class CurvesMatch(unittest.TestCase):
+    def check(self, temps, pwms):
+        with tempfile.TemporaryDirectory() as d:
+            curve = tree(Path(d), 3000, 60)
+            r = subprocess.run(["bash", "-c", f'source "{SCRIPT}"; curves_match "{curve}" 1 '
+                                f'"{" ".join(map(str, temps))}" "{" ".join(map(str, pwms))}" && echo SAME'],
+                               capture_output=True, text=True, stdin=subprocess.DEVNULL)
+            return "SAME" in r.stdout
+
+    def test_all_points_are_compared(self):
+        t, p = PERF
+        self.assertTrue(self.check(t, p))
+        self.assertTrue(self.check(t, [v + 1 for v in p]))           # redondeo del driver
+        self.assertFalse(self.check([50] + t[1:], p))                 # cambia solo el punto 1
+        self.assertFalse(self.check(t, [p[0] + 20] + p[1:]))
