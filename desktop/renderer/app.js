@@ -1865,54 +1865,31 @@ function fitProcsRows() {
 }
 window.addEventListener('resize', () => { procsFit = 5; lastProcsSig = ''; });
 
-const PROC_COL_CLASS = { pid: 'pid', name: 'pname', cpu: 'cpu', cpu_core: 'cpu-core', mem_mb: 'mem' };
+/* Orden de las 3 tablas de procesos (#procs, #ram-procs, #allprocs): el modelo
+   (estado, orden, aria-sort, formato) vive en procs-table.js; aquí solo se pinta. */
+const { createSortState, toggleSort, sortRows, colClass, headerState, formatMem } = window.RogProcsTable;
 
-function sortProcRows(rows, sortKey, sortDir) {
-  const dir = sortDir === 'asc' ? 1 : -1;
-  return rows.slice().sort((a, b) => {
-    let av = a[sortKey], bv = b[sortKey];
-    if (sortKey === 'name') return String(av).localeCompare(String(bv)) * dir;
-    av = av == null ? -Infinity : av;
-    bv = bv == null ? -Infinity : bv;
-    if (av === bv) return (b.cpu || 0) - (a.cpu || 0);
-    return (av - bv) * dir;
+/* th.sortable de `table`: clase sort-active, data-dir y aria-sort según el estado */
+function applySortIndicators(table, state) {
+  table.querySelectorAll('th.sortable').forEach((th) => {
+    const h = headerState(state, th.dataset.sort);
+    th.classList.toggle('sort-active', h.active);
+    th.dataset.dir = h.dir;
+    th.setAttribute('aria-sort', h.ariaSort);
   });
 }
 
-/* estado de orden de la tabla #procs (top-5 del dashboard) */
-let procsSortKey = 'cpu';
-let procsSortDir = 'desc';
-
-function updateProcsSortIndicators() {
-  document.querySelectorAll('#procs th.sortable').forEach((th) => {
-    const active = th.dataset.sort === procsSortKey;
-    th.classList.toggle('sort-active', active);
-    th.dataset.dir = active ? procsSortDir : '';
-  });
-}
-
-/* v17-D: estado de orden de la tabla RAM modal (reusa sortProcRows) */
-let ramSortKey = 'mem_mb';
-let ramSortDir = 'desc';
-
-function updateRamSortIndicators() {
-  document.querySelectorAll('#ram-procs th.sortable').forEach((th) => {
-    const active = th.dataset.sort === ramSortKey;
-    th.classList.toggle('sort-active', active);
-    th.dataset.dir = active ? ramSortDir : '';
-  });
-}
+let procsSort = createSortState('cpu', 'desc');   // #procs (top-5 del dashboard)
+let ramSort = createSortState('mem_mb', 'desc');  // #ram-procs (modal RAM)
 
 function renderRamProcs(procs) {
-  const sorted = sortProcRows(procs, ramSortKey, ramSortDir);
+  const sorted = sortRows(procs, ramSort);
   $('ram-procs-body').innerHTML = sorted.map((p) => `
     <tr data-pid="${escapeHtml(p.pid)}" data-name="${escapeHtml(p.name)}" title="${escapeHtml(t('procs.kill', { name: p.name }))}">
       <td class="pid">${escapeHtml(p.pid)}</td><td class="pname">${escapeHtml(p.name)}</td>
-      <td class="mem r">${(p.mem_mb / 1024).toFixed(2)} GiB</td></tr>`).join('');
-  // El neón sigue a la columna seleccionada: mapear la clave de orden a la clase
-  // de columna (pid/pname/mem) que usa el CSS — antes se ponía 'mem_mb' y no casaba.
-  $('ram-procs').dataset.sortCol = ({ pid: 'pid', name: 'pname', mem_mb: 'mem' })[ramSortKey] || '';
-  updateRamSortIndicators();
+      <td class="mem r">${formatMem(p.mem_mb, 'GiB')}</td></tr>`).join('');
+  $('ram-procs').dataset.sortCol = colClass(ramSort.key);
+  applySortIndicators($('ram-procs'), ramSort);
 }
 
 /* Firmas baratas de lo último pintado en bloques grandes: si la firma no cambia
@@ -2129,20 +2106,20 @@ function update(stats) {
      % NÚCLEO (uso de un solo núcleo, estilo `top`). Antes iban pegados. */
   const procsTable = $('procs');
   const procRows = stats.procs || [];
-  const procsSig = `${procsSortKey}|${procsSortDir}|${window.i18n ? window.i18n.get() : ''}|`
+  const procsSig = `${procsSort.key}|${procsSort.dir}|${window.i18n ? window.i18n.get() : ''}|`
     + procRows.map((p) => `${p.pid}:${p.name}:${p.cpu}:${p.cpu_core}:${p.mem_mb}`).join(',');
   if (visible && procsSig !== lastProcsSig) {
   lastProcsSig = procsSig;
-  if (procsTable) procsTable.dataset.sortCol = PROC_COL_CLASS[procsSortKey] || '';
-  $('procs-body').innerHTML = sortProcRows(procRows, procsSortKey, procsSortDir).slice(0, procsFit).map((p) => {
+  if (procsTable) procsTable.dataset.sortCol = colClass(procsSort.key);
+  $('procs-body').innerHTML = sortRows(procRows, procsSort).slice(0, procsFit).map((p) => {
     const core = procCoresHtml(p);
     return `<tr data-pid="${escapeHtml(p.pid)}" data-name="${escapeHtml(p.name)}" title="${escapeHtml(t('procs.kill', { name: p.name }))}">
         <td class="pid">${escapeHtml(p.pid)}</td><td class="pname">${escapeHtml(p.name)}</td>
         <td class="cpu r">${p.cpu.toFixed(1)}%</td>
         <td class="cpu-core r">${core}</td>
-        <td class="mem r">${p.mem_mb} MiB</td></tr>`;
+        <td class="mem r">${formatMem(p.mem_mb, 'MiB')}</td></tr>`;
   }).join('');
-  updateProcsSortIndicators();
+  applySortIndicators(procsTable, procsSort);
   fitProcsRows();
   }
 
@@ -3970,37 +3947,15 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
   }
 })();
 
-/* ---------- ordenar la tabla #procs (top-5) al clic en su cabecera ---------- */
-(function wireProcsSort() {
-  document.querySelectorAll('#procs th.sortable').forEach((th) => {
-    th.addEventListener('click', () => {
-      const key = th.dataset.sort;
-      if (procsSortKey === key) {
-        procsSortDir = procsSortDir === 'desc' ? 'asc' : 'desc';
-      } else {
-        procsSortKey = key;
-        procsSortDir = key === 'name' ? 'asc' : 'desc';
-      }
-      if (lastStats) update(lastStats);
-    });
-  });
-})();
-
-/* v17-D: ordenar la tabla #ram-procs al clic en su cabecera (reusa sortProcRows) */
-(function wireRamSort() {
-  document.querySelectorAll('#ram-procs th.sortable').forEach((th) => {
-    th.addEventListener('click', () => {
-      const key = th.dataset.sort;
-      if (ramSortKey === key) {
-        ramSortDir = ramSortDir === 'desc' ? 'asc' : 'desc';
-      } else {
-        ramSortKey = key;
-        ramSortDir = key === 'name' ? 'asc' : 'desc';
-      }
-      renderRamProcs(lastStats?.procs_mem || []);
-    });
-  });
-})();
+/* ---------- ordenar #procs (top-5) y #ram-procs al clic en su cabecera ---------- */
+document.querySelectorAll('#procs th.sortable').forEach((th) => th.addEventListener('click', () => {
+  procsSort = toggleSort(procsSort, th.dataset.sort);
+  if (lastStats) update(lastStats);
+}));
+document.querySelectorAll('#ram-procs th.sortable').forEach((th) => th.addEventListener('click', () => {
+  ramSort = toggleSort(ramSort, th.dataset.sort);
+  renderRamProcs(lastStats?.procs_mem || []);
+}));
 
 /* ---------- VER TODOS los procesos (modal ampliado) ---------- */
 (function wireAllProcs() {
@@ -4011,16 +3966,7 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
   const countEl = $('allprocs-count');
   let allRows = [];
   let timer = null;
-  let sortKey = 'cpu';   // por defecto: mayor uso de CPU primero
-  let sortDir = 'desc';
-
-  function updateSortIndicators() {
-    modal.querySelectorAll('#allprocs th.sortable').forEach((th) => {
-      const active = th.dataset.sort === sortKey;
-      th.classList.toggle('sort-active', active);
-      th.dataset.dir = active ? sortDir : '';
-    });
-  }
+  let sort = createSortState('cpu', 'desc');   // por defecto: mayor uso de CPU primero
 
   function rowHtml(p) {
     const core = procCoresHtml(p);
@@ -4028,7 +3974,7 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
         <td class="pid">${escapeHtml(p.pid)}</td><td class="pname">${escapeHtml(p.name)}</td>
         <td class="cpu r">${p.cpu.toFixed(1)}%</td>
         <td class="cpu-core r">${core}</td>
-        <td class="mem r">${p.mem_mb} MiB</td></tr>`;
+        <td class="mem r">${formatMem(p.mem_mb, 'MiB')}</td></tr>`;
   }
 
   function render() {
@@ -4036,14 +3982,14 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
     let rows = q
       ? allRows.filter((p) => p.name.toLowerCase().includes(q) || String(p.pid).includes(q))
       : allRows;
-    rows = sortProcRows(rows, sortKey, sortDir);
+    rows = sortRows(rows, sort);
     const table = $('allprocs');
-    if (table) table.dataset.sortCol = PROC_COL_CLASS[sortKey] || '';
+    if (table) table.dataset.sortCol = colClass(sort.key);
     body.innerHTML = rows.length
       ? rows.map(rowHtml).join('')
       : `<tr><td colspan="5" class="dim">${t('procs.all_none')}</td></tr>`;
     countEl.textContent = t('procs.all_count', { shown: rows.length, total: allRows.length });
-    updateSortIndicators();
+    if (table) applySortIndicators(table, sort);
   }
 
   async function refresh() {
@@ -4083,20 +4029,11 @@ document.querySelectorAll('#size-seg button').forEach((btn) => {
   });
   filterEl.addEventListener('input', render);
 
-  // Ordenar al hacer clic en la cabecera: 1er clic = mayor→menor (texto: A→Z),
-  // 2º clic en la misma columna invierte el sentido.
-  modal.querySelectorAll('#allprocs th.sortable').forEach((th) => {
-    th.addEventListener('click', () => {
-      const key = th.dataset.sort;
-      if (sortKey === key) {
-        sortDir = sortDir === 'desc' ? 'asc' : 'desc';
-      } else {
-        sortKey = key;
-        sortDir = key === 'name' ? 'asc' : 'desc';
-      }
-      render();
-    });
-  });
+  // Ordenar al hacer clic en la cabecera (1er clic mayor→menor, texto A→Z; 2º invierte)
+  modal.querySelectorAll('#allprocs th.sortable').forEach((th) => th.addEventListener('click', () => {
+    sort = toggleSort(sort, th.dataset.sort);
+    render();
+  }));
 
   body.addEventListener('click', async (e) => {
     const row = e.target.closest('tr[data-pid]');

@@ -67,6 +67,7 @@ function run(file) {
 
 // i18n.js primero (define window.i18n); su fallo es fatal.
 run('i18n.js');
+run('procs-table.js');   // app.js la desestructura al cargar (N-A2-01); no registra claves
 
 // El resto de archivos que registran claves.
 const others = readdirSync(RENDERER)

@@ -38,6 +38,8 @@ export default async ({ ev, shot, sleep }) => {
     const tok = (v) => { const p = document.createElement('i'); p.style.color = 'var(' + v + ')'; t.appendChild(p); const c = getComputedStyle(p).color; p.remove(); return c; };
     out.tok = { ink: tok('--ink'), dim: tok('--dim'), accent: tok('--accent') };
     out.rows = t.querySelectorAll('tbody tr[data-pid]').length;
+    // aria-sort (N-A2-01): la th activa dice ascending/descending acorde a data-dir; las demás 'none'
+    out.aria = [...t.querySelectorAll('th.sortable')].map((e) => ({ key: e.dataset.sort, active: e.classList.contains('sort-active'), dir: e.dataset.dir || '', aria: e.getAttribute('aria-sort') }));
     return out;
   })()`;
 
@@ -50,6 +52,17 @@ export default async ({ ev, shot, sleep }) => {
     return ev(measure(sel, key));
   };
 
+  // segundo clic en la misma columna invierte el sentido; columna nueva = desc (texto: asc); aria-sort acompaña
+  const toggleCheck = async (sel, col = 'cpu_core') => {
+    const get = (key) => `(() => { const e = document.querySelector('${sel} th[data-sort="${key}"]'); return [e.dataset.dir || '', e.getAttribute('aria-sort')]; })()`;
+    const click = async (key) => { await ev(`document.querySelector('${sel} th[data-sort="${key}"]').click(); 0`); await sleep(250); return ev(get(key)); };
+    const issues = [];
+    const a = await click(col); const b = await click(col); const c = await click('name');
+    if (a.join() !== 'desc,descending') issues.push(col + ' 1er clic ' + a);
+    if (b.join() !== 'asc,ascending') issues.push(col + ' 2º clic ' + b);
+    if (c.join() !== 'asc,ascending') issues.push('name 1er clic ' + c);
+    return issues.map((m) => `   EXPECT ${sel}: toggle ${m}`);
+  };
   const themes = [['neon', 'dark'], ['magma', 'dark'], ['magma', 'light']];
   const sorts = ['cpu', 'cpu_core', 'mem_mb', 'name'];
   const tables = ['#procs', '#allprocs', '#ram-procs'];
@@ -62,12 +75,14 @@ export default async ({ ev, shot, sleep }) => {
     const res = {}; for (const s of sorts) res[s] = {};
 
     for (const s of sorts) { res[s]['#procs'] = await run('#procs', s); }
+    for (const l of await toggleCheck('#procs')) { diffCount++; console.log(l); }
     await shot(`${OUT}/tables-procs-${theme}-${mode}.png`);
 
     // modal "VER TODOS"
     await ev(`document.getElementById('procs-all-btn').click(); 0`);
     for (let i = 0; i < 20; i++) { if (await ev(`document.querySelectorAll('#allprocs-body tr[data-pid]').length`) > 0) break; await sleep(400); }
     for (const s of sorts) { res[s]['#allprocs'] = await run('#allprocs', s); }
+    for (const l of await toggleCheck('#allprocs')) { diffCount++; console.log(l); }
     await ev(`document.querySelector('#allprocs th[data-sort="cpu_core"]').click(); 0`); await sleep(300);
     await shot(`${OUT}/tables-allprocs-${theme}-${mode}.png`);
     await ev(`document.getElementById('allprocs-close').click(); 0`); await sleep(200);
@@ -75,6 +90,7 @@ export default async ({ ev, shot, sleep }) => {
     // modal RAM
     await ev(`document.getElementById('ram-meter').click(); 0`); await sleep(500);
     for (const s of sorts) { res[s]['#ram-procs'] = await run('#ram-procs', s); }
+    for (const l of await toggleCheck('#ram-procs', 'mem_mb')) { diffCount++; console.log(l); }
     await shot(`${OUT}/tables-ram-${theme}-${mode}.png`);
     await ev(`document.getElementById('ram-close').click(); 0`); await sleep(200);
 
@@ -113,6 +129,11 @@ export default async ({ ev, shot, sleep }) => {
           if (c !== col && d.textShadow !== 'none') bad(`td.${c} no activa con text-shadow ${d.textShadow}`);
           if (d.coreSpan) { const [sc, sz, sh] = d.coreSpan.split(' | '); if (sc !== d.color || sz !== d.fontSize || sh !== d.textShadow) bad(`span.procs-core no hereda de su celda: ${d.coreSpan} vs ${d.color}/${d.fontSize}`); }
         }
+        for (const h of x.aria || []) {
+          const want = h.active ? (h.dir === 'asc' ? 'ascending' : 'descending') : 'none';
+          if (h.aria !== want) bad(`th[${h.key}] aria-sort=${h.aria} != ${want}`);
+        }
+        if (!(x.aria || []).some((h) => h.active)) bad('ninguna th activa tras ordenar');
         const ta = x.th.active; if (!ta || ta.color !== x.tok.accent) bad('th activa sin acento ' + (ta && ta.color));
       }
       console.log(`   (expectativas absolutas incluidas; total ${n})`);
