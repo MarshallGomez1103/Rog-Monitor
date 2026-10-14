@@ -20,6 +20,21 @@ Conciliación de estados (prevalece ficha + git sobre filas antiguas):
 | F1-08, F1-09, F1-10, F6-01, F7-10 | BLOCKED_OWNER (VM / root / Wayland / guardián real) | – |
 Defectos nuevos: N-DEF-01..05 (ver S00-BASE.md). Siguiente: **S01** (N-A1-01).
 
+## Tanda 2 (2026-10-14) — S01 cerrado + S04/S05/S06 (prioridad B) · HEAD b5343a3
+Cobertura py **94,90 %** (4173 stmts, 213 miss; 951 tests, 1 skip opt-in GPU). **Piso CI 50 → 80** (22171b7; CI remoto 868 tests / 90 % en py3.12, verde). node 84/84; i18n 1029×8; e2e 31/31; CDP S01 check-bench/check-tables PASS sobre HEAD integrado.
+| CP | Estado | Commits |
+|---|---|---|
+| S01 N-A2-01 cableado + N-A1-02 JS (EXPAND botón, aria-label, Deshacer 6 s, aria-sort) | TESTED (CDP RED→GREEN); validación visual 12 temas = OWNER-02 | ver S01-WIRING.md |
+| N-B-05/N-B-10/N-B-15 piso CI 80 | ACCEPTED (95 falla rc 2, 80 pasa; CI remoto verde) | 22171b7 |
+| N-B-11 app.py 28→99,6 % | TESTED | ver git log |
+| N-B-12 aura 24→98,7 % (+ zona validada antes del argv de asusctl) | TESTED | ver git log |
+| N-B-13 power_control 45→99 %, actions →100 % | TESTED | ver git log |
+| N-B-14 benchmarks 57→99,3 % (NaN/inf ya no rompe el JSON) | TESTED | 3eb4868 |
+| N-DEF-03 un lector caído ya no tumba el tick; BrokenPipe sin bucle | FIXED | a4562ee y anterior |
+| N-DEF-11 TUI tolera None; getloadavg aislado | FIXED | b5343a3 |
+| N-A3-01 modelo chart-editor-model.js (+ claves heredadas rechazadas: localStorage `["constructor"]` tumbaba app.js) | TESTED (módulo); cableado S02 en curso | 2d22a2c |
+Huecos registrados (no corregidos, requieren decisión): `scripts/apply-power-control.sh` sin rollback ni reintento EBUSY (root → S18 con permiso); defectos de fans.py (N-DEF-10, permiso del propietario).
+
 ## Tanda 1 (2026-10-14) — S01 CSS + adelanto S04/S05 · HEAD 1f9f53d
 Cobertura py 52,28 → **74,23 %** (504 tests, 1 skip opt-in GPU); node 63/63; i18n 1026×8; e2e 31/31.
 | CP | Estado | Commits |
