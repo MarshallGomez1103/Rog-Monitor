@@ -1,0 +1,210 @@
+   EXPECT #procs: toggle cpu_core 1er clic desc,
+   EXPECT #procs: toggle cpu_core 2º clic asc,
+   EXPECT #procs: toggle name 1er clic asc,
+   EXPECT #allprocs: toggle cpu_core 1er clic desc,
+   EXPECT #allprocs: toggle cpu_core 2º clic asc,
+   EXPECT #allprocs: toggle name 1er clic asc,
+   EXPECT #ram-procs: toggle mem_mb 1er clic desc,
+   EXPECT #ram-procs: toggle mem_mb 2º clic asc,
+   EXPECT #ram-procs: toggle name 1er clic asc,
+
+==== neon/dark ====
+-- orden cpu: sortCol=#procs:cpu #allprocs:cpu #ram-procs:n/a  tableFont=13.5px/13.5px/-  filas=5/608/-
+   -> 0 diferencias
+   EXPECT #procs: th[pid] aria-sort=null != none
+   EXPECT #procs: th[name] aria-sort=null != none
+   EXPECT #procs: th[cpu] aria-sort=null != ascending
+   EXPECT #procs: th[cpu_core] aria-sort=null != none
+   EXPECT #procs: th[mem_mb] aria-sort=null != none
+   EXPECT #allprocs: th[pid] aria-sort=null != none
+   EXPECT #allprocs: th[name] aria-sort=null != none
+   EXPECT #allprocs: th[cpu] aria-sort=null != ascending
+   EXPECT #allprocs: th[cpu_core] aria-sort=null != none
+   EXPECT #allprocs: th[mem_mb] aria-sort=null != none
+   (expectativas absolutas incluidas; total 10)
+-- orden cpu_core: sortCol=#procs:cpu-core #allprocs:cpu-core #ram-procs:n/a  tableFont=13.5px/13.5px/-  filas=5/608/-
+   -> 0 diferencias
+   EXPECT #procs: th[pid] aria-sort=null != none
+   EXPECT #procs: th[name] aria-sort=null != none
+   EXPECT #procs: th[cpu] aria-sort=null != none
+   EXPECT #procs: th[cpu_core] aria-sort=null != descending
+   EXPECT #procs: th[mem_mb] aria-sort=null != none
+   EXPECT #allprocs: th[pid] aria-sort=null != none
+   EXPECT #allprocs: th[name] aria-sort=null != none
+   EXPECT #allprocs: th[cpu] aria-sort=null != none
+   EXPECT #allprocs: th[cpu_core] aria-sort=null != descending
+   EXPECT #allprocs: th[mem_mb] aria-sort=null != none
+   (expectativas absolutas incluidas; total 10)
+-- orden mem_mb: sortCol=#procs:mem #allprocs:mem #ram-procs:mem  tableFont=13.5px/13.5px/13.5px  filas=5/608/8
+   -> 0 diferencias
+   EXPECT #procs: th[pid] aria-sort=null != none
+   EXPECT #procs: th[name] aria-sort=null != none
+   EXPECT #procs: th[cpu] aria-sort=null != none
+   EXPECT #procs: th[cpu_core] aria-sort=null != none
+   EXPECT #procs: th[mem_mb] aria-sort=null != descending
+   EXPECT #allprocs: th[pid] aria-sort=null != none
+   EXPECT #allprocs: th[name] aria-sort=null != none
+   EXPECT #allprocs: th[cpu] aria-sort=null != none
+   EXPECT #allprocs: th[cpu_core] aria-sort=null != none
+   EXPECT #allprocs: th[mem_mb] aria-sort=null != descending
+   EXPECT #ram-procs: th[pid] aria-sort=null != none
+   EXPECT #ram-procs: th[name] aria-sort=null != none
+   EXPECT #ram-procs: th[mem_mb] aria-sort=null != ascending
+   (expectativas absolutas incluidas; total 13)
+-- orden name: sortCol=#procs:pname #allprocs:pname #ram-procs:pname  tableFont=13.5px/13.5px/13.5px  filas=5/608/8
+   -> 0 diferencias
+   EXPECT #procs: th[pid] aria-sort=null != none
+   EXPECT #procs: th[name] aria-sort=null != ascending
+   EXPECT #procs: th[cpu] aria-sort=null != none
+   EXPECT #procs: th[cpu_core] aria-sort=null != none
+   EXPECT #procs: th[mem_mb] aria-sort=null != none
+   EXPECT #allprocs: th[pid] aria-sort=null != none
+   EXPECT #allprocs: th[name] aria-sort=null != ascending
+   EXPECT #allprocs: th[cpu] aria-sort=null != none
+   EXPECT #allprocs: th[cpu_core] aria-sort=null != none
+   EXPECT #allprocs: th[mem_mb] aria-sort=null != none
+   EXPECT #ram-procs: th[pid] aria-sort=null != none
+   EXPECT #ram-procs: th[name] aria-sort=null != ascending
+   EXPECT #ram-procs: th[mem_mb] aria-sort=null != none
+   (expectativas absolutas incluidas; total 13)
+   EXPECT #procs: toggle cpu_core 1er clic desc,
+   EXPECT #procs: toggle cpu_core 2º clic asc,
+   EXPECT #procs: toggle name 1er clic asc,
+   EXPECT #allprocs: toggle cpu_core 1er clic desc,
+   EXPECT #allprocs: toggle cpu_core 2º clic asc,
+   EXPECT #allprocs: toggle name 1er clic asc,
+   EXPECT #ram-procs: toggle mem_mb 1er clic desc,
+   EXPECT #ram-procs: toggle mem_mb 2º clic asc,
+   EXPECT #ram-procs: toggle name 1er clic asc,
+
+==== magma/dark ====
+-- orden cpu: sortCol=#procs:cpu #allprocs:cpu #ram-procs:n/a  tableFont=13.5px/13.5px/-  filas=5/608/-
+   -> 0 diferencias
+   EXPECT #procs: th[pid] aria-sort=null != none
+   EXPECT #procs: th[name] aria-sort=null != none
+   EXPECT #procs: th[cpu] aria-sort=null != descending
+   EXPECT #procs: th[cpu_core] aria-sort=null != none
+   EXPECT #procs: th[mem_mb] aria-sort=null != none
+   EXPECT #allprocs: th[pid] aria-sort=null != none
+   EXPECT #allprocs: th[name] aria-sort=null != none
+   EXPECT #allprocs: th[cpu] aria-sort=null != descending
+   EXPECT #allprocs: th[cpu_core] aria-sort=null != none
+   EXPECT #allprocs: th[mem_mb] aria-sort=null != none
+   (expectativas absolutas incluidas; total 10)
+-- orden cpu_core: sortCol=#procs:cpu-core #allprocs:cpu-core #ram-procs:n/a  tableFont=13.5px/13.5px/-  filas=5/608/-
+   -> 0 diferencias
+   EXPECT #procs: th[pid] aria-sort=null != none
+   EXPECT #procs: th[name] aria-sort=null != none
+   EXPECT #procs: th[cpu] aria-sort=null != none
+   EXPECT #procs: th[cpu_core] aria-sort=null != descending
+   EXPECT #procs: th[mem_mb] aria-sort=null != none
+   EXPECT #allprocs: th[pid] aria-sort=null != none
+   EXPECT #allprocs: th[name] aria-sort=null != none
+   EXPECT #allprocs: th[cpu] aria-sort=null != none
+   EXPECT #allprocs: th[cpu_core] aria-sort=null != descending
+   EXPECT #allprocs: th[mem_mb] aria-sort=null != none
+   (expectativas absolutas incluidas; total 10)
+-- orden mem_mb: sortCol=#procs:mem #allprocs:mem #ram-procs:mem  tableFont=13.5px/13.5px/13.5px  filas=5/608/8
+   -> 0 diferencias
+   EXPECT #procs: th[pid] aria-sort=null != none
+   EXPECT #procs: th[name] aria-sort=null != none
+   EXPECT #procs: th[cpu] aria-sort=null != none
+   EXPECT #procs: th[cpu_core] aria-sort=null != none
+   EXPECT #procs: th[mem_mb] aria-sort=null != descending
+   EXPECT #allprocs: th[pid] aria-sort=null != none
+   EXPECT #allprocs: th[name] aria-sort=null != none
+   EXPECT #allprocs: th[cpu] aria-sort=null != none
+   EXPECT #allprocs: th[cpu_core] aria-sort=null != none
+   EXPECT #allprocs: th[mem_mb] aria-sort=null != descending
+   EXPECT #ram-procs: th[pid] aria-sort=null != none
+   EXPECT #ram-procs: th[name] aria-sort=null != none
+   EXPECT #ram-procs: th[mem_mb] aria-sort=null != descending
+   (expectativas absolutas incluidas; total 13)
+-- orden name: sortCol=#procs:pname #allprocs:pname #ram-procs:pname  tableFont=13.5px/13.5px/13.5px  filas=5/608/8
+   -> 0 diferencias
+   EXPECT #procs: th[pid] aria-sort=null != none
+   EXPECT #procs: th[name] aria-sort=null != ascending
+   EXPECT #procs: th[cpu] aria-sort=null != none
+   EXPECT #procs: th[cpu_core] aria-sort=null != none
+   EXPECT #procs: th[mem_mb] aria-sort=null != none
+   EXPECT #allprocs: th[pid] aria-sort=null != none
+   EXPECT #allprocs: th[name] aria-sort=null != ascending
+   EXPECT #allprocs: th[cpu] aria-sort=null != none
+   EXPECT #allprocs: th[cpu_core] aria-sort=null != none
+   EXPECT #allprocs: th[mem_mb] aria-sort=null != none
+   EXPECT #ram-procs: th[pid] aria-sort=null != none
+   EXPECT #ram-procs: th[name] aria-sort=null != ascending
+   EXPECT #ram-procs: th[mem_mb] aria-sort=null != none
+   (expectativas absolutas incluidas; total 13)
+   EXPECT #procs: toggle cpu_core 1er clic desc,
+   EXPECT #procs: toggle cpu_core 2º clic asc,
+   EXPECT #procs: toggle name 1er clic asc,
+   EXPECT #allprocs: toggle cpu_core 1er clic desc,
+   EXPECT #allprocs: toggle cpu_core 2º clic asc,
+   EXPECT #allprocs: toggle name 1er clic asc,
+   EXPECT #ram-procs: toggle mem_mb 1er clic desc,
+   EXPECT #ram-procs: toggle mem_mb 2º clic asc,
+   EXPECT #ram-procs: toggle name 1er clic asc,
+
+==== magma/light ====
+-- orden cpu: sortCol=#procs:cpu #allprocs:cpu #ram-procs:n/a  tableFont=13.5px/13.5px/-  filas=5/602/-
+   -> 0 diferencias
+   EXPECT #procs: th[pid] aria-sort=null != none
+   EXPECT #procs: th[name] aria-sort=null != none
+   EXPECT #procs: th[cpu] aria-sort=null != descending
+   EXPECT #procs: th[cpu_core] aria-sort=null != none
+   EXPECT #procs: th[mem_mb] aria-sort=null != none
+   EXPECT #allprocs: th[pid] aria-sort=null != none
+   EXPECT #allprocs: th[name] aria-sort=null != none
+   EXPECT #allprocs: th[cpu] aria-sort=null != descending
+   EXPECT #allprocs: th[cpu_core] aria-sort=null != none
+   EXPECT #allprocs: th[mem_mb] aria-sort=null != none
+   (expectativas absolutas incluidas; total 10)
+-- orden cpu_core: sortCol=#procs:cpu-core #allprocs:cpu-core #ram-procs:n/a  tableFont=13.5px/13.5px/-  filas=5/602/-
+   -> 0 diferencias
+   EXPECT #procs: th[pid] aria-sort=null != none
+   EXPECT #procs: th[name] aria-sort=null != none
+   EXPECT #procs: th[cpu] aria-sort=null != none
+   EXPECT #procs: th[cpu_core] aria-sort=null != descending
+   EXPECT #procs: th[mem_mb] aria-sort=null != none
+   EXPECT #allprocs: th[pid] aria-sort=null != none
+   EXPECT #allprocs: th[name] aria-sort=null != none
+   EXPECT #allprocs: th[cpu] aria-sort=null != none
+   EXPECT #allprocs: th[cpu_core] aria-sort=null != descending
+   EXPECT #allprocs: th[mem_mb] aria-sort=null != none
+   (expectativas absolutas incluidas; total 10)
+-- orden mem_mb: sortCol=#procs:mem #allprocs:mem #ram-procs:mem  tableFont=13.5px/13.5px/13.5px  filas=5/602/8
+   -> 0 diferencias
+   EXPECT #procs: th[pid] aria-sort=null != none
+   EXPECT #procs: th[name] aria-sort=null != none
+   EXPECT #procs: th[cpu] aria-sort=null != none
+   EXPECT #procs: th[cpu_core] aria-sort=null != none
+   EXPECT #procs: th[mem_mb] aria-sort=null != descending
+   EXPECT #allprocs: th[pid] aria-sort=null != none
+   EXPECT #allprocs: th[name] aria-sort=null != none
+   EXPECT #allprocs: th[cpu] aria-sort=null != none
+   EXPECT #allprocs: th[cpu_core] aria-sort=null != none
+   EXPECT #allprocs: th[mem_mb] aria-sort=null != descending
+   EXPECT #ram-procs: th[pid] aria-sort=null != none
+   EXPECT #ram-procs: th[name] aria-sort=null != none
+   EXPECT #ram-procs: th[mem_mb] aria-sort=null != descending
+   (expectativas absolutas incluidas; total 13)
+-- orden name: sortCol=#procs:pname #allprocs:pname #ram-procs:pname  tableFont=13.5px/13.5px/13.5px  filas=5/602/8
+   -> 0 diferencias
+   EXPECT #procs: th[pid] aria-sort=null != none
+   EXPECT #procs: th[name] aria-sort=null != ascending
+   EXPECT #procs: th[cpu] aria-sort=null != none
+   EXPECT #procs: th[cpu_core] aria-sort=null != none
+   EXPECT #procs: th[mem_mb] aria-sort=null != none
+   EXPECT #allprocs: th[pid] aria-sort=null != none
+   EXPECT #allprocs: th[name] aria-sort=null != ascending
+   EXPECT #allprocs: th[cpu] aria-sort=null != none
+   EXPECT #allprocs: th[cpu_core] aria-sort=null != none
+   EXPECT #allprocs: th[mem_mb] aria-sort=null != none
+   EXPECT #ram-procs: th[pid] aria-sort=null != none
+   EXPECT #ram-procs: th[name] aria-sort=null != ascending
+   EXPECT #ram-procs: th[mem_mb] aria-sort=null != none
+   (expectativas absolutas incluidas; total 13)
+
+TOTAL diferencias entre tablas: 165
+RESULT: FAIL (165)

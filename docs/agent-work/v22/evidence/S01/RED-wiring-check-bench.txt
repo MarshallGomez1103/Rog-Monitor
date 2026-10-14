@@ -1,0 +1,82 @@
+
+== neon/dark ==
+ list: {"clientHeight":340,"scrollHeight":1074,"scrolls":true,"overflowY":"auto"}
+ cards: 126px 126px 126px 126px 126px 126px 126px 126px
+ expand: {"opacity":0.9,"fontPx":11.52,"fontRem":0.72,"color":"color(srgb 0.424902 0.891765 0.910196)","contrast":10.05,"w":62.2,"h":17}
+ delete: {"opacity":1,"fontPx":14.4,"fontRem":0.9,"color":"rgb(139, 148, 161)","contrast":6.09,"w":28,"h":28}
+ when: {"opacity":0.7,"fontPx":11.84,"fontRem":0.74,"color":"rgb(226, 230, 236)","contrast":7.68,"w":100,"h":16}
+ kind: {"opacity":1,"fontPx":11.52,"fontRem":0.72,"color":"rgb(45, 226, 230)","contrast":11.67,"w":43.3,"h":21.1}
+  ok   ninguna tarjeta recortada
+  ok   .bench-history scrollea
+  ok   expand opacity >= .8
+  ok   expand font >= .72rem
+  ok   expand contraste 10.05
+  ok   delete contraste 6.09
+  ok   delete hit target 28x28
+  ok   when contraste 7.68
+ foco delete: {"fv":true,"outline":"solid 2px","offset":"-2px"}
+  ok   foco visible en delete
+
+== magma/dark ==
+ list: {"clientHeight":340,"scrollHeight":1074,"scrolls":true,"overflowY":"auto"}
+ cards: 126px 126px 126px 126px 126px 126px 126px 126px
+ expand: {"opacity":0.9,"fontPx":11.52,"fontRem":0.72,"color":"color(srgb 0.927059 0.550196 0.479412)","contrast":6.3,"w":62.2,"h":17}
+ delete: {"opacity":1,"fontPx":14.4,"fontRem":0.9,"color":"rgb(139, 148, 161)","contrast":5.99,"w":28,"h":28}
+ when: {"opacity":0.7,"fontPx":11.84,"fontRem":0.74,"color":"rgb(226, 230, 236)","contrast":7.61,"w":100,"h":16}
+ kind: {"opacity":1,"fontPx":11.52,"fontRem":0.72,"color":"rgb(242, 92, 61)","contrast":5.57,"w":43.3,"h":21.1}
+  ok   ninguna tarjeta recortada
+  ok   .bench-history scrollea
+  ok   expand opacity >= .8
+  ok   expand font >= .72rem
+  ok   expand contraste 6.3
+  ok   delete contraste 5.99
+  ok   delete hit target 28x28
+  ok   when contraste 7.61
+ foco delete: {"fv":true,"outline":"solid 2px","offset":"-2px"}
+  ok   foco visible en delete
+
+== magma/light ==
+ list: {"clientHeight":340,"scrollHeight":1074,"scrolls":true,"overflowY":"auto"}
+ cards: 126px 126px 126px 126px 126px 126px 126px 126px
+ expand: {"opacity":0.9,"fontPx":11.52,"fontRem":0.72,"color":"color(srgb 0.443922 0.122157 0.0478431)","contrast":8.58,"w":62.2,"h":17}
+ delete: {"opacity":1,"fontPx":14.4,"fontRem":0.9,"color":"rgb(110, 58, 42)","contrast":9.12,"w":28,"h":28}
+ when: {"opacity":0.7,"fontPx":11.84,"fontRem":0.74,"color":"rgb(30, 11, 7)","contrast":7.22,"w":100,"h":16}
+ kind: {"opacity":1,"fontPx":11.52,"fontRem":0.72,"color":"rgb(158, 42, 15)","contrast":7.52,"w":43.3,"h":21.1}
+  ok   ninguna tarjeta recortada
+  ok   .bench-history scrollea
+  ok   expand opacity >= .8
+  ok   expand font >= .72rem
+  ok   expand contraste 8.58
+  ok   delete contraste 9.12
+  ok   delete hit target 28x28
+  ok   when contraste 7.22
+ foco delete: {"fv":true,"outline":"solid 2px","offset":"-2px"}
+  ok   foco visible en delete
+
+== semántica / deshacer / teclado ==
+ semántica: {"tag":"SPAN","type":null,"xLabel":"","xText":"expand ▸","dLabel":"","dTitle":"Delete this benchmark","bg":"rgba(0, 0, 0, 0)","border":"0px","fam":true,"fs":"11.52px","op":"0.9","labels":1}
+  FAIL EXPAND es SPAN type=null
+  FAIL EXPAND sin aria-label
+  FAIL aria-label "" no contiene "expand ▸"
+  ok   EXPAND conserva el look (sin fondo/borde, fuente heredada, opacity .9)
+  FAIL delete sin aria-label
+  FAIL aria-label de borrar repetido: 1 distintos
+ tras borrar: {"cards":7,"has":false,"toastShown":true,"action":"","actionTag":"","stored":7}
+  ok   borrar quita la tarjeta
+  FAIL toast sin acción deshacer {"cards":7,"has":false,"toastShown":true,"action":"","actionTag":"","stored":7}
+ tras deshacer: {"order":"fx-0,fx-1,fx-2,fx-4,fx-5,fx-6,fx-7","dom":"fx-0,fx-1,fx-2,fx-4,fx-5,fx-6,fx-7","toastHidden":false,"stored":"fx-0,fx-1,fx-2,fx-4,fx-5,fx-6,fx-7"}
+  FAIL orden tras deshacer fx-0,fx-1,fx-2,fx-4,fx-5,fx-6,fx-7 != fx-0,fx-1,fx-2,fx-3,fx-4,fx-5,fx-6,fx-7
+  FAIL almacenamiento tras deshacer fx-0,fx-1,fx-2,fx-4,fx-5,fx-6,fx-7
+  FAIL el toast sigue visible
+  FAIL Deshacer caducó antes de 6 s
+  FAIL estado tras caducar el toast incorrecto
+  FAIL Enter sobre EXPAND no abrió el detalle
+  FAIL Espacio sobre EXPAND no abrió el detalle
+  FAIL botones por tarjeta ["bench-card-delete","bench-card-delete"]
+
+== contraste mínimo (12 temas x 2 modos) == {"expand":[5.68,"neon-nights/dark"],"del":[5.08,"alba/dark"],"when":[6.64,"oceano/light"]}
+  ok   expand mín 5.68 (neon-nights/dark)
+  ok   del mín 5.08 (alba/dark)
+  ok   when mín 6.64 (oceano/light)
+
+RESULT: FAIL (14)

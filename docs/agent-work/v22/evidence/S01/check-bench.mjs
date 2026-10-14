@@ -82,6 +82,85 @@ export default async ({ ev, shot, sleep, call }) => {
     await shot(`${OUT}/bench-${theme}-${mode}.png`);
   }
 
+  // ---- N-A1-02 (JS/i18n): semántica, borrar con deshacer y teclado ----
+  console.log('\n== semántica / deshacer / teclado ==');
+  await ev(`localStorage.setItem('theme','neon'); localStorage.setItem('mode','dark'); applyAppearance(); renderBenchmarkHistory(); 0`);
+  await sleep(400);
+  const key = async (k, code, vk, text) => {
+    await call('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code, windowsVirtualKeyCode: vk, text });
+    await call('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code, windowsVirtualKeyCode: vk });
+  };
+  const sem = await ev(`(() => {
+    const c = document.querySelector('.bench-card'); const x = c.querySelector('.bench-card-expand'); const d = c.querySelector('.bench-card-delete');
+    const xs = getComputedStyle(x), cs = getComputedStyle(c);
+    return { tag: x.tagName, type: x.getAttribute('type'), xLabel: x.getAttribute('aria-label') || '', xText: x.textContent.trim(),
+      dLabel: d.getAttribute('aria-label') || '', dTitle: d.getAttribute('title') || '',
+      bg: xs.backgroundColor, border: xs.borderTopWidth, fam: xs.fontFamily === cs.fontFamily, fs: xs.fontSize, op: xs.opacity,
+      labels: new Set([...document.querySelectorAll('.bench-card-delete')].map((b) => b.getAttribute('aria-label'))).size };
+  })()`);
+  console.log(' semántica:', JSON.stringify(sem));
+  sem.tag === 'BUTTON' && sem.type === 'button' ? ok('EXPAND es <button type=button>') : fail('EXPAND es ' + sem.tag + ' type=' + sem.type);
+  sem.xLabel ? ok('EXPAND aria-label: ' + sem.xLabel) : fail('EXPAND sin aria-label');
+  sem.xLabel.toLowerCase().includes(sem.xText.replace(/[^\p{L}\p{N}]+/gu, '').toLowerCase()) ? ok('aria-label contiene el texto visible (label-in-name)') : fail('aria-label "' + sem.xLabel + '" no contiene "' + sem.xText + '"');
+  sem.bg === 'rgba(0, 0, 0, 0)' && sem.border === '0px' && sem.fam && sem.op === '0.9' ? ok('EXPAND conserva el look (sin fondo/borde, fuente heredada, opacity .9)') : fail('EXPAND look distinto ' + JSON.stringify({ bg: sem.bg, border: sem.border, fam: sem.fam, op: sem.op }));
+  sem.dLabel ? ok('delete aria-label: ' + sem.dLabel) : fail('delete sin aria-label');
+  sem.labels === 8 ? ok('aria-label de borrar distinto por tarjeta (8)') : fail('aria-label de borrar repetido: ' + sem.labels + ' distintos');
+
+  // borrar la tarjeta del medio -> toast con Deshacer -> vuelve en su sitio
+  const order0 = await ev(`benchmarkHistory.map((i) => i.id).join(',')`);
+  await ev(`document.querySelectorAll('.bench-card-delete')[3].click(); 0`);
+  await sleep(300);
+  const del = await ev(`(() => ({ cards: document.querySelectorAll('.bench-card').length, has: !!document.querySelector('.bench-card[data-bid="fx-3"]'),
+    toastShown: !document.getElementById('toast').classList.contains('hidden'), action: document.querySelector('#toast .toast-action')?.textContent || '',
+    actionTag: document.querySelector('#toast .toast-action')?.tagName || '', stored: JSON.parse(localStorage.getItem('benchmarkHistoryV2') || '[]').length }))()`);
+  console.log(' tras borrar:', JSON.stringify(del));
+  del.cards === 7 && !del.has ? ok('borrar quita la tarjeta') : fail('borrar no quitó la tarjeta ' + JSON.stringify(del));
+  del.toastShown && del.actionTag === 'BUTTON' && del.action ? ok('toast con botón Deshacer: "' + del.action + '"') : fail('toast sin acción deshacer ' + JSON.stringify(del));
+  await ev(`document.querySelector('#toast .toast-action')?.click(); 0`);
+  await sleep(300);
+  const undo = await ev(`(() => ({ order: benchmarkHistory.map((i) => i.id).join(','), dom: [...document.querySelectorAll('.bench-card')].map((c) => c.dataset.bid).join(','),
+    toastHidden: document.getElementById('toast').classList.contains('hidden'), stored: JSON.parse(localStorage.getItem('benchmarkHistoryV2') || '[]').map((i) => i.id).join(',') }))()`);
+  console.log(' tras deshacer:', JSON.stringify(undo));
+  undo.order === order0 && undo.dom === order0.split(',').slice(0, 8).join(',') ? ok('deshacer restaura la tarjeta en su posición') : fail('orden tras deshacer ' + undo.dom + ' != ' + order0);
+  undo.stored === order0 ? ok('deshacer restaura también el almacenamiento') : fail('almacenamiento tras deshacer ' + undo.stored);
+  undo.toastHidden ? ok('el toast se oculta al deshacer') : fail('el toast sigue visible');
+  // sin deshacer, el borrado persiste y el toast caduca (~6 s)
+  await ev(`document.querySelectorAll('.bench-card-delete')[0].click(); 0`);
+  await sleep(4500);
+  const still = await ev(`!document.getElementById('toast').classList.contains('hidden') && !!document.querySelector('#toast .toast-action')`);
+  still ? ok('el Deshacer sigue disponible a los 4,5 s (ventana ~6 s)') : fail('Deshacer caducó antes de 6 s');
+  await sleep(2500);
+  const gone = await ev(`document.getElementById('toast').classList.contains('hidden') && benchmarkHistory.length === 7`);
+  gone ? ok('pasada la ventana el borrado es definitivo') : fail('estado tras caducar el toast incorrecto');
+  // restaurar fixture
+  await ev(`renderBenchmarkHistory(); 0`);
+
+  // por teclado: Enter sobre borrar -> el foco pasa a Deshacer -> Enter restaura
+  const orderK = await ev(`benchmarkHistory.map((i) => i.id).join(',')`);
+  await ev(`document.querySelectorAll('.bench-card-delete')[2].focus(); 0`);
+  await key('Enter', 'Enter', 13, '\r');
+  await sleep(300);
+  const fk = await ev(`(() => ({ onUndo: document.activeElement?.classList.contains('toast-action'), cards: document.querySelectorAll('.bench-card').length }))()`);
+  fk.onUndo && fk.cards === 6 ? ok('borrar con teclado mueve el foco al botón Deshacer') : fail('foco tras borrar con teclado ' + JSON.stringify(fk));
+  await shot(`${OUT}/bench-toast-undo.png`);
+  await key('Enter', 'Enter', 13, '\r');
+  await sleep(300);
+  (await ev(`benchmarkHistory.map((i) => i.id).join(',')`)) === orderK ? ok('Enter en Deshacer restaura la tarjeta') : fail('Deshacer con teclado no restauró');
+
+  // teclado: Enter y Espacio sobre EXPAND abren el detalle (clics sintéticos no valen: teclas reales)
+  for (const [name, k, code, vk, text] of [['Enter', 'Enter', 'Enter', 13, '\r'], ['Espacio', ' ', 'Space', 32, ' ']]) {
+    await ev(`document.activeElement.blur && document.activeElement.blur(); document.querySelectorAll('.bench-card-expand')[1].focus(); 0`);
+    await key(k, code, vk, text);
+    await sleep(500);
+    const opened = await ev(`(() => { const m = document.getElementById('bench-detail-modal'); return !!m && !m.classList.contains('hidden'); })()`);
+    opened ? ok(name + ' sobre EXPAND abre el detalle') : fail(name + ' sobre EXPAND no abrió el detalle');
+    await ev(`window.RogBenchDetail.close(); 0`);
+    await sleep(150);
+  }
+  // Tab desde el borde de la lista llega a EXPAND y luego a borrar (orden lógico, un solo punto de entrada por tarjeta)
+  const tabs = await ev(`[...document.querySelectorAll('.bench-card')].slice(0, 2).map((c) => [...c.querySelectorAll('button')].map((b) => b.className).join('+'))`);
+  tabs.every((x) => x === 'bench-card-expand+bench-card-delete') ? ok('cada tarjeta expone EXPAND y borrar como botones en ese orden') : fail('botones por tarjeta ' + JSON.stringify(tabs));
+
   // Contraste mínimo en los 12 temas x 2 modos (expand en reposo, delete, when)
   const names = await ev(`THEMES.map(t => t[0])`);
   const worst = { expand: [99, ''], del: [99, ''], when: [99, ''] };

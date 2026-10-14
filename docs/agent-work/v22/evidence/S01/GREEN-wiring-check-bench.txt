@@ -1,0 +1,84 @@
+
+== neon/dark ==
+ list: {"clientHeight":340,"scrollHeight":1074,"scrolls":true,"overflowY":"auto"}
+ cards: 126px 126px 126px 126px 126px 126px 126px 126px
+ expand: {"opacity":0.9,"fontPx":11.52,"fontRem":0.72,"color":"color(srgb 0.424902 0.891765 0.910196)","contrast":10.05,"w":62.2,"h":17.5}
+ delete: {"opacity":1,"fontPx":14.4,"fontRem":0.9,"color":"rgb(139, 148, 161)","contrast":6.09,"w":28,"h":28}
+ when: {"opacity":0.7,"fontPx":11.84,"fontRem":0.74,"color":"rgb(226, 230, 236)","contrast":7.68,"w":100,"h":15.8}
+ kind: {"opacity":1,"fontPx":11.52,"fontRem":0.72,"color":"rgb(45, 226, 230)","contrast":11.67,"w":43,"h":21.6}
+  ok   ninguna tarjeta recortada
+  ok   .bench-history scrollea
+  ok   expand opacity >= .8
+  ok   expand font >= .72rem
+  ok   expand contraste 10.05
+  ok   delete contraste 6.09
+  ok   delete hit target 28x28
+  ok   when contraste 7.68
+ foco delete: {"fv":true,"outline":"solid 1.66667px","offset":"-1.66667px"}
+  ok   foco visible en delete
+
+== magma/dark ==
+ list: {"clientHeight":340,"scrollHeight":1074,"scrolls":true,"overflowY":"auto"}
+ cards: 126px 126px 126px 126px 126px 126px 126px 126px
+ expand: {"opacity":0.9,"fontPx":11.52,"fontRem":0.72,"color":"color(srgb 0.927059 0.550196 0.479412)","contrast":6.3,"w":62.2,"h":17.5}
+ delete: {"opacity":1,"fontPx":14.4,"fontRem":0.9,"color":"rgb(139, 148, 161)","contrast":5.99,"w":28,"h":28}
+ when: {"opacity":0.7,"fontPx":11.84,"fontRem":0.74,"color":"rgb(226, 230, 236)","contrast":7.61,"w":100,"h":15.8}
+ kind: {"opacity":1,"fontPx":11.52,"fontRem":0.72,"color":"rgb(242, 92, 61)","contrast":5.57,"w":43,"h":21.6}
+  ok   ninguna tarjeta recortada
+  ok   .bench-history scrollea
+  ok   expand opacity >= .8
+  ok   expand font >= .72rem
+  ok   expand contraste 6.3
+  ok   delete contraste 5.99
+  ok   delete hit target 28x28
+  ok   when contraste 7.61
+ foco delete: {"fv":true,"outline":"solid 1.66667px","offset":"-1.66667px"}
+  ok   foco visible en delete
+
+== magma/light ==
+ list: {"clientHeight":340,"scrollHeight":1074,"scrolls":true,"overflowY":"auto"}
+ cards: 126px 126px 126px 126px 126px 126px 126px 126px
+ expand: {"opacity":0.9,"fontPx":11.52,"fontRem":0.72,"color":"color(srgb 0.443922 0.122157 0.0478431)","contrast":8.58,"w":62.2,"h":17.5}
+ delete: {"opacity":1,"fontPx":14.4,"fontRem":0.9,"color":"rgb(110, 58, 42)","contrast":9.12,"w":28,"h":28}
+ when: {"opacity":0.7,"fontPx":11.84,"fontRem":0.74,"color":"rgb(30, 11, 7)","contrast":7.22,"w":100,"h":15.8}
+ kind: {"opacity":1,"fontPx":11.52,"fontRem":0.72,"color":"rgb(158, 42, 15)","contrast":7.52,"w":43,"h":21.6}
+  ok   ninguna tarjeta recortada
+  ok   .bench-history scrollea
+  ok   expand opacity >= .8
+  ok   expand font >= .72rem
+  ok   expand contraste 8.58
+  ok   delete contraste 9.12
+  ok   delete hit target 28x28
+  ok   when contraste 7.22
+ foco delete: {"fv":true,"outline":"solid 1.66667px","offset":"-1.66667px"}
+  ok   foco visible en delete
+
+== semántica / deshacer / teclado ==
+ semántica: {"tag":"BUTTON","type":"button","xLabel":"Expand CPU benchmark from 14/10/2026 10:00","xText":"expand ▸","dLabel":"Delete CPU benchmark from 14/10/2026 10:00","dTitle":"Delete this benchmark","bg":"rgba(0, 0, 0, 0)","border":"0px","fam":true,"fs":"11.52px","op":"0.9","labels":8}
+  ok   EXPAND es <button type=button>
+  ok   EXPAND aria-label: Expand CPU benchmark from 14/10/2026 10:00
+  ok   aria-label contiene el texto visible (label-in-name)
+  ok   EXPAND conserva el look (sin fondo/borde, fuente heredada, opacity .9)
+  ok   delete aria-label: Delete CPU benchmark from 14/10/2026 10:00
+  ok   aria-label de borrar distinto por tarjeta (8)
+ tras borrar: {"cards":7,"has":false,"toastShown":true,"action":"Undo","actionTag":"BUTTON","stored":7}
+  ok   borrar quita la tarjeta
+  ok   toast con botón Deshacer: "Undo"
+ tras deshacer: {"order":"fx-0,fx-1,fx-2,fx-3,fx-4,fx-5,fx-6,fx-7","dom":"fx-0,fx-1,fx-2,fx-3,fx-4,fx-5,fx-6,fx-7","toastHidden":true,"stored":"fx-0,fx-1,fx-2,fx-3,fx-4,fx-5,fx-6,fx-7"}
+  ok   deshacer restaura la tarjeta en su posición
+  ok   deshacer restaura también el almacenamiento
+  ok   el toast se oculta al deshacer
+  ok   el Deshacer sigue disponible a los 4,5 s (ventana ~6 s)
+  ok   pasada la ventana el borrado es definitivo
+  ok   borrar con teclado mueve el foco al botón Deshacer
+  ok   Enter en Deshacer restaura la tarjeta
+  ok   Enter sobre EXPAND abre el detalle
+  ok   Espacio sobre EXPAND abre el detalle
+  ok   cada tarjeta expone EXPAND y borrar como botones en ese orden
+
+== contraste mínimo (12 temas x 2 modos) == {"expand":[5.68,"neon-nights/dark"],"del":[5.08,"alba/dark"],"when":[6.64,"oceano/light"]}
+  ok   expand mín 5.68 (neon-nights/dark)
+  ok   del mín 5.08 (alba/dark)
+  ok   when mín 6.64 (oceano/light)
+
+RESULT: PASS
