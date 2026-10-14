@@ -4,3 +4,5 @@
 - V22-D3: informes post-90 sanitizados versionados en `docs/audits/post90/` (plan §11); ZIP original fuera del repo con su sha256.
 - V22-D4: ADR-0006 reglas de host (sin acciones privilegiadas sin permiso por acción; tests sin /sys ni pkexec real; guardián solo simulación).
 - V22-D5: el fix del CI e2e (D-01) se hará en su checkpoint (F9-02) salvo que el propietario pida adelantarlo.
+- V22-D6 (2026-10-14, propietario por cuestionario): push normal (sin --force) a `feat/v22` tras cada tanda con suite local verde; master solo por PR con CI verde y aprobación. Excepción explícita a AGENTS.md/CLAUDE.md "nunca push" limitada a feat/v22. Avanzar S01→S06 sin aprobación por etapa; parar en gates de propietario.
+- V22-D7 (2026-10-14, propietario): los planes viven juntos y versionados en `docs/agent-work/v22/`: `PLAN_MAESTRO_ROG_MONITOR.md` (histórico, movido desde la raíz), `PLAN-SIGUIENTE.md` (vigente) e `INSUMO-PROPIETARIO-2026-10-14.md` (copia del pedido; el original sigue en el Escritorio). Las fichas F0-0x conservan la ruta antigua como registro histórico.

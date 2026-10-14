@@ -1,7 +1,7 @@
 # ADR-0006: Host safety rules for v22 work
 
 - Status: accepted
-- Applies to: all v22 work (`PLAN_MAESTRO_ROG_MONITOR.md`), tests, CI, agents
+- Applies to: all v22 work (`docs/agent-work/v22/PLAN_MAESTRO_ROG_MONITOR.md`), tests, CI, agents
 
 ## Context
 

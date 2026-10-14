@@ -12,3 +12,5 @@ Todas por `sprintf-js@1.1.3` (GHSA-hp3w-g68c-fv3c, DoS con especificadores de pr
 electron-builder → app-builder-lib → @electron/get → global-agent → roarr. No hay versión parcheada (1.1.3 es la última);
 el `npm audit fix` sugerido BAJA electron-builder 26.17 → 26.5. Solo corre al empaquetar (descarga de Electron) con
 cadenas de log propias: no llega a la app ni a datos de terceros. Revisar cuando roarr/global-agent cambien de dependencia.
+| R6 | CI corre Python 3.12 y local 3.14.8: un test podría pasar en uno y fallar en otro | baja | bajo | Mirar CI remoto tras cada push; si diverge, matriz 3.12/3.14 |
+| R7 | Cobertura 52.28 → 80 % exige ~1117 sentencias nuevas cubiertas; tentación de tests triviales | media | medio | Revisión Opus por tanda: cada test afirma resultado; nunca bajar piso ni excluir |

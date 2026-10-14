@@ -1,4 +1,14 @@
 # HANDOFF v22
+Actualizado: 2026-10-14 (S00 cerrada).
+- Plan vigente: `docs/agent-work/v22/PLAN-SIGUIENTE.md` (S00–S18). Plan maestro histórico movido a esta carpeta (V22-D7).
+- Rama `feat/v22`; origin/master = 45cb9dc (PR #9). Push normal a feat/v22 autorizado (V22-D6).
+- S00 ACCEPTED: baseline py 206 OK / 52.28 %, node 50/50, i18n 1026×8, e2e 31/31. Fichas: checkpoints/S00-BASE.md, F2-01.md.
+- Archivos calientes: todos libres.
+- Bloqueos humanos: sudo install-system.sh (ventiladores), F1-08/09 VM, F6-01 Wayland, F7-10.
+- Siguiente primer test: S01 N-A1-01 — CDP con ≥5 tarjetas de benchmark, detectar recorte (scrollHeight/clientHeight).
+  `cd ~/MyFiles/Dev/Rog-Monitor && git status --short --branch && sed -n 1,40p docs/agent-work/v22/STATUS.md`
+
+## Historial
 Actualizado: 2026-10-11 (sesión de F0).
 - Rama: `feat/v22` (base master 7d49333 = origin/master), pusheada a origin/feat/v22 el 2026-10-12 con permiso; CI verde.
 - Último CP completado: F0-10. F0 cerrada con excepciones D-01 (CI e2e) y D-02 (app visible 25–52 % CPU).

@@ -1,7 +1,24 @@
 # STATUS v22 — leer PRIMERO
-Plan: `PLAN_MAESTRO_ROG_MONITOR.md` (raíz). Los 90 CP anteriores ya se ejecutaron: no repetir.
+Plan: `docs/agent-work/v22/PLAN_MAESTRO_ROG_MONITOR.md` (histórico) y `PLAN-SIGUIENTE.md` (vigente). Los 90 CP anteriores ya se ejecutaron: no repetir.
 Rama de trabajo: `feat/v22` (pusheada; se publica a master por PR con CI verde, con permiso del propietario). 2026-10-14: PR #7/#8 fusionados, 5 PR de Dependabot fusionados (checkout/setup-node/setup-python/upload-artifact v7, Electron 44.7.0 probado local e2e 31/31), PR #9 = arreglo ventiladores.
 Respaldo: `~/MyFiles/Backups/rog-monitor/2026-10-11-pre-v22/` (bundle + ignorados + ZIP, SHA256SUMS).
+
+## PLAN VIGENTE: `PLAN-SIGUIENTE.md` (etapas S00–S18). Permisos 2026-10-14: push normal a feat/v22, avanzar S01→S06 (V22-D6).
+
+## S00 — ACCEPTED (2026-10-14, base 10f37eb) · ficha `checkpoints/S00-BASE.md`, contrato `checkpoints/F2-01.md`
+Baseline: py 206 OK, cobertura **52.28 %** (2107/4030); node 50/50 (líneas 99.48 %); i18n 1026×8; e2e 31/31; CI feat/v22 y master verdes.
+Conciliación de estados (prevalece ficha + git sobre filas antiguas):
+| CP | Estado real | Commit |
+|---|---|---|
+| F2-01 mapa de contrato | TESTED (documental) | este commit |
+| F2-08 ts/stale + SIN DATOS | TESTED | 22aed9a |
+| F3-06 VRAM por proceso en segundo plano | TESTED | e41b5c4 |
+| F4-04/05 editor de gráficas | TESTED | 2227049 |
+| F4-06 reordenar | PARTIAL (↑↓ sí, drag no; se amplía en S02) | 2227049 |
+| D-01 CI e2e | RESUELTO (CI verde desde 2026-10-12); F9-02 sigue abierto | c878859 |
+| BUG-fans-reactive | TESTED con fakes + lectura real; **BLOCKED_OWNER** despliegue sudo | 2b6d9d6, 8e8f523 |
+| F1-08, F1-09, F1-10, F6-01, F7-10 | BLOCKED_OWNER (VM / root / Wayland / guardián real) | – |
+Defectos nuevos: N-DEF-01..05 (ver S00-BASE.md). Siguiente: **S01** (N-A1-01).
 
 ## Fase actual: F0 cerrada; el propietario autorizó seguir arreglando (2026-10-11). En curso: F1/F2/F3/F5/F8 por prioridad visible
 | CP | Estado | Nota |
@@ -24,7 +41,7 @@ Gate F0: F0-08 queda TESTED con excepción D-01 registrada (no se corrige en F0)
 |---|---|---|
 | D-01 CI e2e (Node 22 + binario electron) + índice node tests | TESTED (CI remoto se verá al publicar la rama) | ver git log |
 | F2-02 uso % en tarjeta CPU | TESTED | 563cf4c |
-| F2-03..05 RAM/swap GiB, ejes fijos, GPU % | TESTED (modo % alternativo en F4-07) | 563cf4c |
+| F2-03..05 RAM/swap GiB, ejes fijos, GPU % | F2-05 TESTED; F2-03/04 PARTIAL (modo % en F4-07) | 563cf4c |
 | F2-06 IOPS/ocupado en discos | TESTED | 00d00a5 |
 | F2-07 red ≥ 0 | TESTED | 5b0052f |
 | F8-02 TUI sin TTY | TESTED | 5b0052f |
@@ -32,7 +49,7 @@ Gate F0: F0-08 queda TESTED con excepción D-01 registrada (no se corrige en F0)
 | F1-06/07 escritura atómica + timeouts | TESTED | 6b89e8d |
 | F1-04/05 RECOVERY + uninstall copia root | TESTED | 335aa55 |
 | F1-02 verificación VERSION/dueño en Python | TESTED | c0ca804 |
-| F1-03 profile-sync opt-in | BLOCKED (decisión propietario) | – |
+| F1-03 profile-sync | ACCEPTED (propietario 2026-10-12: sigue activo por defecto; ver ficha) | – |
 | F3-05 SIGCONT antes de matar backend | TESTED | 58cee5e |
 | F3-07 cadencia monotónica (1128→1002 ms) | TESTED | a8f68cd |
 | D-02 animaciones a saltos (app visible 30-60 % → 11-19 %) | TESTED | 77885ea |
