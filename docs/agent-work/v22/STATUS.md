@@ -20,6 +20,31 @@ Conciliación de estados (prevalece ficha + git sobre filas antiguas):
 | F1-08, F1-09, F1-10, F6-01, F7-10 | BLOCKED_OWNER (VM / root / Wayland / guardián real) | – |
 Defectos nuevos: N-DEF-01..05 (ver S00-BASE.md). Siguiente: **S01** (N-A1-01).
 
+## Tanda 1 (2026-10-14) — S01 CSS + adelanto S04/S05 · HEAD 1f9f53d
+Cobertura py 52,28 → **74,23 %** (504 tests, 1 skip opt-in GPU); node 63/63; i18n 1026×8; e2e 31/31.
+| CP | Estado | Commits |
+|---|---|---|
+| N-A1-01 tarjetas sin recorte + scroll | TESTED (CDP RED→GREEN, 3 temas) | a76b699 |
+| N-A1-02 EXPAND/borrar (CSS) | TESTED; JS/i18n en tanda S01-2 | a50bc5b |
+| N-A2-01 modelo procs-table.js | TESTED (módulo); cableado en S01-2 | 49ef464 |
+| N-A2-02 regla única .proc-table | TESTED (CDP 0 diferencias, 3 temas × 4 órdenes) | d7944ae |
+| N-B-01 cli/__main__ 0→100 % | TESTED | 751919e |
+| N-B-02 procs 21→90 % | TESTED | 1d2da1d |
+| N-B-03 fps 20→99 % | TESTED | 0dc62f8 |
+| N-B-04 settings 30→99 % | TESTED | 8fc146f |
+| N-B-06 power 27→90 % | TESTED | d2bad06 |
+| N-B-07 gpu/gpu_clocks →100/99 % | TESTED (guard anti-NVML real) | 4903554 |
+| N-B-08 fans 52→99 % (solo tests) | TESTED | ver git log |
+| N-B-09 game_session 36→99 % | TESTED | ver git log |
+| N-DEF-01 batería charge_* mostrada como Wh | FIXED | 37356f0 |
+| N-DEF-06/07/08 fps, config, settings | FIXED | b94771e, dae1295, 4a54ad5 |
+| N-DEF-09 PID reutilizado → CPU negativa | FIXED | 405d1f3 |
+| game_session: desempate y JSON ajeno | FIXED | ver git log |
+| test_live_shape tocaba NVML real | opt-in ROG_LIVE_GPU=1 | e89e1f6 |
+Piso CI sigue en 50: se sube en N-B-05/N-B-10/N-B-15 (CI serial) cuando cierre S06.
+Defectos de fans.py SOLO registrados (regla del propietario, sin tocar): N-DEF-10 `updated` futuro en guardian_status/_gaming_cap (fans.py:324, 253) da guardián "vivo"; `fan_max_rpm` no-dict (fans.py:359); `True` aceptado como cap (fans.py:207, 225); docstring de load_schema_version (fans.py:303).
+Pendiente S01: cableado app.js + aria/deshacer + i18n (Sonnet-Wiring, en curso). S06 en curso: aura/benchmarks, power_control/actions.
+
 ## Fase actual: F0 cerrada; el propietario autorizó seguir arreglando (2026-10-11). En curso: F1/F2/F3/F5/F8 por prioridad visible
 | CP | Estado | Nota |
 |---|---|---|

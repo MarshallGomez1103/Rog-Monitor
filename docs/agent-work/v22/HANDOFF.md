@@ -1,11 +1,11 @@
 # HANDOFF v22
-Actualizado: 2026-10-14 (S00 cerrada).
+Actualizado: 2026-10-14 (S00 cerrada; tanda 1 integrada, HEAD 1f9f53d, py 74,23 %).
 - Plan vigente: `docs/agent-work/v22/PLAN-SIGUIENTE.md` (S00–S18). Plan maestro histórico movido a esta carpeta (V22-D7).
 - Rama `feat/v22`; origin/master = 45cb9dc (PR #9). Push normal a feat/v22 autorizado (V22-D6).
 - S00 ACCEPTED: baseline py 206 OK / 52.28 %, node 50/50, i18n 1026×8, e2e 31/31. Fichas: checkpoints/S00-BASE.md, F2-01.md.
 - Archivos calientes: todos libres.
 - Bloqueos humanos: sudo install-system.sh (ventiladores), F1-08/09 VM, F6-01 Wayland, F7-10.
-- Siguiente primer test: S01 N-A1-01 — CDP con ≥5 tarjetas de benchmark, detectar recorte (scrollHeight/clientHeight).
+- En curso: S01-2 cableado app.js+i18n (dueño único app.js/i18n.js/index.html); S06 aura/benchmarks y power_control/actions. Siguiente: N-B-11 app.py (Sonnet-AppPython único) y CI piso 60→70→80.
   `cd ~/MyFiles/Dev/Rog-Monitor && git status --short --branch && sed -n 1,40p docs/agent-work/v22/STATUS.md`
 
 ## Historial

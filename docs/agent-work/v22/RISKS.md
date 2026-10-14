@@ -14,3 +14,5 @@ el `npm audit fix` sugerido BAJA electron-builder 26.17 → 26.5. Solo corre al 
 cadenas de log propias: no llega a la app ni a datos de terceros. Revisar cuando roarr/global-agent cambien de dependencia.
 | R6 | CI corre Python 3.12 y local 3.14.8: un test podría pasar en uno y fallar en otro | baja | bajo | Mirar CI remoto tras cada push; si diverge, matriz 3.12/3.14 |
 | R7 | Cobertura 52.28 → 80 % exige ~1117 sentencias nuevas cubiertas; tentación de tests triviales | media | medio | Revisión Opus por tanda: cada test afirma resultado; nunca bajar piso ni excluir |
+| R8 | `.ai/private/rog-v22/tools/check-stale.mjs` usa `pgrep -n` no aislado: puede mandar SIGSTOP al backend real | media | medio | Prohibido a agentes; aislar por PID del proceso hijo antes de reutilizar |
+| R9 | Un test de un agente leyó NVML real una vez (dGPU ya activa, solo lectura) | ocurrió | bajo | Guard de módulo en test_gpu_sleep.py; test_live_shape a opt-in ROG_LIVE_GPU=1 |
