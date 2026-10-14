@@ -116,6 +116,21 @@ class Memory(unittest.TestCase):
         self.assertEqual(r["rx_mbps"], 0)
         self.assertEqual(r["tx_mbps"], 0)
 
+    def test_getloadavg_oserror_only_load_is_none(self):
+        """N-DEF-11: getloadavg roto deja solo `load` en None; el resto de `sys` sigue."""
+        rd = self.make(FX / "t0")
+        with mock.patch.object(sysinfo.os, "getloadavg", side_effect=OSError("x")):
+            r = self.read(rd)
+        self.assertIsNone(r["load"])
+        self.assertAlmostEqual(r["ram_total_gb"], 16_000_000 / (1024 * 1024))
+        self.assertIn("uptime_s", r)
+
+    def test_getloadavg_ok_keeps_three_values(self):
+        rd = self.make(FX / "t0")
+        with mock.patch.object(sysinfo.os, "getloadavg", return_value=(0.1, 0.2, 0.3)):
+            r = self.read(rd)
+        self.assertEqual(tuple(r["load"]), (0.1, 0.2, 0.3))
+
     def test_used_is_total_minus_available(self):
         r = self.read(self.make(FX / "t0"))
         gb = 1024 * 1024

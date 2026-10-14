@@ -457,6 +457,11 @@ class SysReader:
         except (OSError, ValueError):
             uptime = 0.0
 
+        try:
+            load = os.getloadavg()
+        except OSError:  # N-DEF-11: solo `load` queda sin dato, no cae todo `sys`
+            load = None
+
         return {
             "ram_total_gb": total / 1024 / 1024,
             "ram_used_gb": (total - avail) / 1024 / 1024,
@@ -475,7 +480,7 @@ class SysReader:
             "disk_io": disk_io,
             "nvme_temps": nvme_temps,
             "smart_block_devices": _smart_block_devices(self.sys),
-            "load": os.getloadavg(),
+            "load": load,
             "uptime_s": uptime,
             "uptime_h": uptime / 3600,
             "dmi": get_dmi(),
