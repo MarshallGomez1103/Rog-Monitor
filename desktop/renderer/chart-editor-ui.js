@@ -67,7 +67,7 @@
   function setOpen(open) {
     box.classList.toggle('hidden', !open);
     editBtn.setAttribute('aria-expanded', String(open));
-    if (open) render();
+    if (open) { render(); box.querySelector('input,button')?.focus(); } else editBtn.focus();
   }
 
   function announce(key) {
@@ -189,6 +189,10 @@
     if (e.key === 'Tab' && !modal.classList.contains('hidden')) { e.preventDefault(); bigClose.focus(); return; }
     if (e.key !== 'Escape' || e.defaultPrevented) return;
     if (!modal.classList.contains('hidden')) { e.preventDefault(); e.stopPropagation(); closeModal(); return; }
+    if (box.classList.contains('hidden') || !(box.contains(e.target) || e.target === editBtn)) return;
+    if (document.querySelector('.modal:not(.hidden)')) return;   // otro diálogo manda
+    e.preventDefault();
+    setOpen(false);
   }, true);
 
   /* ---------- enlace con app.js ---------- */
