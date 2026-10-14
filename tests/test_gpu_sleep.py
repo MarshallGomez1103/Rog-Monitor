@@ -202,6 +202,7 @@ class SleepingDgpuNeverWakes(FakePciCase):
         self.assertEqual(out["procs"], [])
         self.assertEqual(out["vendor"], "nvidia")
         self.assertIn("no está activa", out["reason"])
+        self.assertEqual(out["reason_code"], "dgpu_asleep")
         # y tampoco con active=None
         self.assertFalse(self.reader.vram_processes()["available"])
 
@@ -585,6 +586,7 @@ class VramProcessTests(unittest.TestCase):
         out = make_reader().vram_processes()
         self.assertEqual(out, {"available": False,
                                "reason": "nvidia-smi no está disponible",
+                               "reason_code": "no_nvidia",
                                "vendor": None, "procs": []})
 
     def test_otra_gpu_activa_no_consulta(self):
@@ -592,6 +594,15 @@ class VramProcessTests(unittest.TestCase):
         out = r.vram_processes({"vendor": "amd"})
         self.assertFalse(out["available"])
         self.assertEqual(out["reason"], "la dGPU NVIDIA no está activa")
+        # N-DEF-02: no es «dormida» sino «otra GPU activa» (la dGPU no se tocó)
+        self.assertEqual(out["reason_code"], "dgpu_inactive")
+
+    def test_codigos_y_textos_estan_en_sincronia(self):
+        """Cada código tiene su texto en español (compatibilidad) y el set es el documentado."""
+        self.assertEqual(set(gpu.VRAM_REASONS),
+                         {"warming_up", "no_nvidia", "dgpu_asleep", "dgpu_inactive",
+                          "nvml_error", "smi_error", "no_nvidia_tools"})
+        self.assertTrue(all(isinstance(v, str) and v for v in gpu.VRAM_REASONS.values()))
 
     def test_top_recorta_la_lista(self):
         r = make_reader(which=("nvidia-smi",))
@@ -605,11 +616,14 @@ class VramProcessTests(unittest.TestCase):
     def test_valor_inicial_y_luego_datos_de_nvml(self):
         r = make_reader(which=("nvidia-smi",))
         self.assertEqual(r._vram.value["reason"], "sin datos todavía")
+        self.assertEqual(r._vram.value["reason_code"], "warming_up")
         self.assertFalse(r._vram.value["available"])
         rows = [{"pid": 7, "vram_mb": 512, "type": "G"}]
         with mock.patch.object(gpu_clocks, "read_vram_processes", return_value=rows):
             out = r.vram_processes({"vendor": "nvidia"})  # refresco (hilo síncrono falso)
         self.assertTrue(out["available"])
+        self.assertIsNone(out["reason_code"])  # disponible: sin razón (reason sigue en "")
+        self.assertEqual(out["reason"], "")
         self.assertEqual(out["procs"],
                          [{"pid": 7, "name": "7", "vram_mb": 512, "type": "G"}])
 
@@ -646,6 +660,15 @@ class VramProcessTests(unittest.TestCase):
         self.assertTrue(r._nvml_ok)
         self.assertFalse(out["available"])
         self.assertEqual(out["reason"], "el driver NVIDIA no expuso la lista de procesos")
+        self.assertEqual(out["reason_code"], "nvml_error")  # NVML falló y smi no respondió
+
+    def test_smi_sin_respuesta_y_sin_nvml_es_smi_error(self):
+        r = make_reader(which=("nvidia-smi",))
+        r._nvml_ok = False
+        with mock.patch.object(gpu, "_run", lambda cmd, timeout=4.0: None):
+            out = r._read_vram_procs()
+        self.assertEqual(out["reason_code"], "smi_error")
+        self.assertIn("reason", out)
 
     def test_sin_nvml_ni_smi_no_expuso_lista(self):
         r = make_reader()
@@ -653,6 +676,7 @@ class VramProcessTests(unittest.TestCase):
         out = r._read_vram_procs()
         self.assertFalse(out["available"])
         self.assertEqual(out["procs"], [])
+        self.assertEqual(out["reason_code"], "no_nvidia_tools")
 
     def test_consulta_prueba_segundo_nombre_de_campo(self):
         r = make_reader(which=("nvidia-smi",))

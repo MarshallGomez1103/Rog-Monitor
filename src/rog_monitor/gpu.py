@@ -21,6 +21,26 @@ NVIDIA_QUERY = (
 NVIDIA_QUERY_AVG = NVIDIA_QUERY + ",power.draw.average"
 
 
+# Razones de «sin lista de procesos de VRAM» (`procs_vram`), N-DEF-02: el código es
+# estable y lo traduce el renderer; `reason` (texto en español) se conserva por
+# compatibilidad y sale de esta misma tabla. `reader_unavailable` lo añade app.py
+# cuando el lector entero lanza. Disponible => reason "" y reason_code None.
+VRAM_REASONS = {
+    "warming_up": "sin datos todavía",              # 1.er tick: el hilo aún no leyó
+    "no_nvidia": "nvidia-smi no está disponible",   # sin nvidia-smi ni dGPU NVIDIA en PCI
+    "dgpu_asleep": "la dGPU NVIDIA no está activa",  # runtime-suspend: no se despierta
+    "dgpu_inactive": "la dGPU NVIDIA no está activa",  # hay otra GPU activa (iGPU/AMD)
+    "nvml_error": "el driver NVIDIA no expuso la lista de procesos",  # NVML falló (y smi tampoco)
+    "smi_error": "el driver NVIDIA no expuso la lista de procesos",   # nvidia-smi sin respuesta
+    "no_nvidia_tools": "el driver NVIDIA no expuso la lista de procesos",  # PCI sí, NVML y smi no
+}
+
+
+def _vram_off(code: str, vendor: str | None) -> dict:
+    return {"available": False, "reason": VRAM_REASONS[code], "reason_code": code,
+            "vendor": vendor, "procs": []}
+
+
 def _run(cmd: list[str], timeout: float = 4.0) -> str | None:
     try:
         return subprocess.run(
@@ -61,12 +81,8 @@ class GpuReader:
         self._nvidia_dead_until = 0.0
         # NVML o, sin él, hasta 3 llamadas a nvidia-smi (≤6.5 s): siempre en segundo
         # plano; el tick devuelve la última lista (F3-06).
-        self._vram = Cached(self._read_vram_procs, ttl=5.0, sync_first=False, initial={
-            "available": False,
-            "reason": "sin datos todavía",
-            "vendor": "nvidia" if self.has_nvidia_smi or self._nvidia_pci else None,
-            "procs": [],
-        })
+        self._vram = Cached(self._read_vram_procs, ttl=5.0, sync_first=False, initial=_vram_off(
+            "warming_up", "nvidia" if self.has_nvidia_smi or self._nvidia_pci else None))
         self.supported: list[str] = self._supported_modes()
         # supergfxctl tarda hasta 4 s por llamada: TTL 10 s en segundo plano y
         # backoff exponencial (hasta 120 s) si falla; el tick lee el último valor.
@@ -252,24 +268,17 @@ class GpuReader:
 
     def vram_processes(self, active: dict | None = None, top: int = 12) -> dict:
         if not self.has_nvidia_smi and not self._nvidia_pci:
-            return {
-                "available": False,
-                "reason": "nvidia-smi no está disponible",
-                "vendor": None,
-                "procs": [],
-            }
-        if self._dgpu_asleep() or (active is not None and active.get("vendor") != "nvidia"):
-            return {
-                "available": False,
-                "reason": "la dGPU NVIDIA no está activa",
-                "vendor": "nvidia",
-                "procs": [],
-            }
+            return _vram_off("no_nvidia", None)
+        if self._dgpu_asleep():
+            return _vram_off("dgpu_asleep", "nvidia")
+        if active is not None and active.get("vendor") != "nvidia":
+            return _vram_off("dgpu_inactive", "nvidia")
         procs = self._vram.get()
         return {**procs, "procs": procs["procs"][:top]}
 
     def _read_vram_procs(self) -> dict:
         query_rows = table_rows = None
+        nvml_failed = False
         if self._nvml_ok:
             try:
                 query_rows = [
@@ -278,20 +287,18 @@ class GpuReader:
                 ]
             except (OSError, AttributeError):
                 self._nvml_ok = False
+                nvml_failed = True
             except gpu_clocks.NvmlError:
-                pass
+                nvml_failed = True
         if query_rows is None and self.has_nvidia_smi:
             query_rows = self._read_nvidia_vram_query()
             table_rows = self._read_nvidia_vram_table()
         if query_rows is None and table_rows is None:
-            return {
-                "available": False,
-                "reason": "el driver NVIDIA no expuso la lista de procesos",
-                "vendor": "nvidia",
-                "procs": [],
-            }
+            code = ("nvml_error" if nvml_failed
+                    else "smi_error" if self.has_nvidia_smi else "no_nvidia_tools")
+            return _vram_off(code, "nvidia")
         rows = (query_rows or []) + (table_rows or [])
-        return {"available": True, "reason": "", "vendor": "nvidia",
+        return {"available": True, "reason": "", "reason_code": None, "vendor": "nvidia",
                 "procs": self._merge_vram_rows(rows)}
 
     def _read_amd(self) -> dict | None:

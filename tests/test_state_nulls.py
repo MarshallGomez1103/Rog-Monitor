@@ -260,5 +260,18 @@ class SysUnknownTests(unittest.TestCase):
         self.assertAlmostEqual(rd.read()["rx_mbps"], 2_000_000 * 8 / 1e6 / 4)
 
 
+class ReasonCodeTests(unittest.TestCase):
+    def test_lector_de_vram_caido_tiene_codigo_estable(self):
+        u = app._vram_unavailable()
+        self.assertEqual(u["reason_code"], "reader_unavailable")
+        self.assertEqual(u["reason"], "lector no disponible")   # compatibilidad
+        self.assertFalse(u["available"])
+
+    def test_contrato_procs_vram_es_aditivo(self):
+        """schema 1: `reason` se conserva; `reason_code` es una clave nueva (str|null)."""
+        u = app._vram_unavailable()
+        self.assertEqual(set(u), {"available", "reason", "reason_code", "vendor", "procs"})
+
+
 if __name__ == "__main__":
     unittest.main()

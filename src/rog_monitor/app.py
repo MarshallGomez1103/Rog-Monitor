@@ -84,7 +84,7 @@ def _fan_meta_unavailable() -> dict:
 
 def _vram_unavailable() -> dict:
     return {"available": False, "reason": "lector no disponible",
-            "vendor": None, "procs": []}
+            "reason_code": "reader_unavailable", "vendor": None, "procs": []}
 
 
 class App:
