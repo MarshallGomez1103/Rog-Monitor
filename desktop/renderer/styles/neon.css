@@ -448,13 +448,8 @@ html[data-mode="light"] #topbar {
   box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
-/* ---- bench-history item activo (borde izquierdo acento) ---- */
-html[data-mode="dark"] .bench-history li {
-  box-shadow: -2px 0 8px color-mix(in srgb, var(--accent) 40%, transparent);
-}
-html[data-mode="light"] .bench-history li {
-  box-shadow: -2px 0 6px color-mix(in srgb, var(--accent) 35%, transparent);
-}
+/* (el glow de las tarjetas de historial vive en extras.css `.bench-card`; la regla
+   `.bench-history li` que había aquí pisaba el glow de hover) */
 
 /* ---- .aura-actions .aura-primary (botón APLICAR Aura) ---- */
 html[data-mode="dark"] .aura-actions .aura-primary {

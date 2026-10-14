@@ -1107,32 +1107,9 @@ html.fan-eco .fan-blades { animation-timing-function: steps(10); }
   flex-wrap: wrap;
   margin-bottom: 10px;
 }
-.bench-history {
-  list-style: none;
-  display: grid;
-  gap: 8px;
-  max-height: 180px;
-  overflow-y: auto;
-}
-.bench-history li {
-  border: 1px solid var(--hair);
-  border-radius: var(--radius);
-  border-left: 3px solid var(--accent);
-  padding: 9px 10px;
-  background: var(--chip);
-  font-size: 12.5px;
-}
-.bench-history li b {
-  display: block;
-  font-family: var(--mono);
-  margin-bottom: 3px;
-}
-.bench-history li span {
-  color: var(--dim);
-}
-.bench-history li.dim {
-  color: var(--dim);
-}
+/* La lista de historial (.bench-history) y sus tarjetas (.bench-card*) se definen
+   SOLO en styles/extras.css. Antes había aquí reglas `.bench-history li/b/span`
+   que pisaban a las tarjetas (color, tamaño, borde, glow); se eliminaron. */
 .bench-note {
   color: var(--dim);
   white-space: pre-wrap;
