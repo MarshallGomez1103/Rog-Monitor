@@ -109,10 +109,14 @@ class Memory(unittest.TestCase):
 
     def test_net_rate_never_negative_on_counter_reset(self):
         rd = self.make(FX / "t0")                       # contador inicial (0, 0)
-        with mock.patch.object(sysinfo.SysReader, "_net_bytes", return_value=(5_000_000, 9_000_000)):
-            rd.read()
-        with mock.patch.object(sysinfo.SysReader, "_net_bytes", return_value=(1_000, 2_000)):
-            r = rd.read()                               # interfaz recreada: el contador baja
+        clock = iter([rd._net_ts + 1.0, rd._net_ts + 100.0, rd._net_ts + 101.0,
+                      rd._net_ts + 102.0, rd._net_ts + 103.0, rd._net_ts + 104.0])
+        with mock.patch.object(sysinfo.time, "monotonic", lambda: next(clock)):
+            with mock.patch.object(sysinfo.SysReader, "_net_bytes",
+                                   return_value=(5_000_000, 9_000_000)):
+                rd.read()
+            with mock.patch.object(sysinfo.SysReader, "_net_bytes", return_value=(1_000, 2_000)):
+                r = rd.read()                           # interfaz recreada: el contador baja
         self.assertEqual(r["rx_mbps"], 0)
         self.assertEqual(r["tx_mbps"], 0)
 
@@ -158,8 +162,10 @@ class Memory(unittest.TestCase):
 
     def test_unreadable_meminfo_does_not_crash(self):
         r = self.read(self.make("/nonexistent"))
-        self.assertEqual((r["ram_total_gb"], r["ram_percent"]), (0, 0))
+        # N-DEF-02: fuente ilegible = null, no 0 GiB / 0 %
+        self.assertEqual((r["ram_total_gb"], r["ram_percent"]), (None, None))
         self.assertIsNone(r["swap_percent"])
+        self.assertIsNone(r["swap_total_gb"])
 
 
 class IoRates(unittest.TestCase):

@@ -110,5 +110,155 @@ class CpuUnknownTests(unittest.TestCase):
         self.assertEqual((u["throttle_delta"], u["throttle_ms_delta"]), (0, 0))
 
 
+NET_DEV = """Inter-|   Receive                            |  Transmit
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+    lo: 9999999 10 0 0 0 0 0 0 9999999 10 0 0 0 0 0 0
+  eth0: {rx} 10 0 0 0 0 0 0 {tx} 10 0 0 0 0 0 0
+"""
+
+
+class SysUnknownTests(unittest.TestCase):
+    """sys.ram_*, uptime_*, rx/tx_mbps: null si la fuente /proc no se pudo leer."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.proc = Path(self._tmp.name) / "proc"
+        self.proc.mkdir()
+        self.clock = [100.0]
+        patcher = mock.patch.object(sysinfo.time, "monotonic", lambda: self.clock[0])
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        # sin SMART real, DMI real ni loadavg real
+        for obj, target, value in ((sysinfo, "_read_smart_file", {}), (sysinfo, "get_dmi", {}),
+                                   (sysinfo.os, "getloadavg", (0.0, 0.0, 0.0))):
+            p = mock.patch.object(obj, target, return_value=value)
+            p.start()
+            self.addCleanup(p.stop)
+
+    def reader(self):
+        return sysinfo.SysReader({}, proc_root=str(self.proc), sys_root=str(self.proc / "sys"))
+
+    def write(self, name, text):
+        put(self.proc, name, text)
+
+    def meminfo(self, total=16_000_000, avail=8_000_000, swap_total=4_000_000, swap_free=3_000_000):
+        self.write("meminfo",
+                   f"MemTotal: {total} kB\nMemFree: 1000 kB\nMemAvailable: {avail} kB\n"
+                   f"Buffers: 100 kB\nCached: 200 kB\nSwapTotal: {swap_total} kB\n"
+                   f"SwapFree: {swap_free} kB\n")
+
+    def test_meminfo_ilegible_ram_y_swap_son_null(self):
+        r = self.reader().read()
+        for key in ("ram_total_gb", "ram_used_gb", "ram_percent", "ram_available_gb",
+                    "ram_buffers_gb", "ram_cached_gb", "swap_used_gb", "swap_total_gb",
+                    "swap_percent"):
+            self.assertIsNone(r[key], key)
+
+    def test_meminfo_basura_es_null(self):
+        self.write("meminfo", "MemTotal: nada kB\n")
+        r = self.reader().read()
+        self.assertIsNone(r["ram_total_gb"])
+        self.assertIsNone(r["ram_percent"])
+
+    def test_meminfo_legible_conserva_valores(self):
+        self.meminfo()
+        r = self.reader().read()
+        self.assertEqual(r["ram_percent"], 50)
+        self.assertAlmostEqual(r["ram_total_gb"], 16_000_000 / 1048576)
+        self.assertEqual(r["swap_percent"], 25)
+
+    def test_sin_swap_es_cero_real_no_null(self):
+        self.meminfo(swap_total=0, swap_free=0)
+        r = self.reader().read()
+        self.assertEqual(r["swap_total_gb"], 0)
+        self.assertEqual(r["swap_used_gb"], 0)
+        self.assertIsNone(r["swap_percent"])
+
+    def test_uptime_ilegible_es_null(self):
+        r = self.reader().read()
+        self.assertIsNone(r["uptime_s"])
+        self.assertIsNone(r["uptime_h"])
+        self.write("uptime", "basura\n")
+        r = self.reader().read()
+        self.assertIsNone(r["uptime_s"])
+        self.assertIsNone(r["uptime_h"])
+
+    def test_uptime_legible_y_cero_es_cero(self):
+        self.write("uptime", "7200.5 100.0\n")
+        r = self.reader().read()
+        self.assertEqual(r["uptime_s"], 7200.5)
+        self.assertAlmostEqual(r["uptime_h"], 7200.5 / 3600)
+        self.write("uptime", "0.0 0.0\n")
+        self.assertEqual(self.reader().read()["uptime_s"], 0.0)
+
+    def test_red_sin_proc_net_dev_es_null(self):
+        rd = self.reader()
+        self.clock[0] += 2
+        r = rd.read()
+        self.assertIsNone(r["rx_mbps"])
+        self.assertIsNone(r["tx_mbps"])
+
+    def test_red_con_delta_real(self):
+        self.write("net/dev", NET_DEV.format(rx=1_000_000, tx=0))
+        rd = self.reader()
+        self.write("net/dev", NET_DEV.format(rx=3_500_000, tx=250_000))
+        self.clock[0] += 2
+        r = rd.read()
+        self.assertAlmostEqual(r["rx_mbps"], 2_500_000 * 8 / 1e6 / 2)
+        self.assertAlmostEqual(r["tx_mbps"], 250_000 * 8 / 1e6 / 2)
+
+    def test_red_quieta_es_cero_real(self):
+        self.write("net/dev", NET_DEV.format(rx=500, tx=500))
+        rd = self.reader()
+        self.clock[0] += 2
+        r = rd.read()
+        self.assertEqual((r["rx_mbps"], r["tx_mbps"]), (0.0, 0.0))
+
+    def test_red_primera_muestra_sin_dt_util_es_null_y_no_avanza_la_base(self):
+        """Lectura casi inmediata al construir (TUI): un delta en ~ms daría picos
+        absurdos; null y la base se conserva para el siguiente tick."""
+        self.write("net/dev", NET_DEV.format(rx=0, tx=0))
+        rd = self.reader()
+        self.write("net/dev", NET_DEV.format(rx=4_000_000, tx=0))
+        self.clock[0] += 0.001
+        r = rd.read()
+        self.assertIsNone(r["rx_mbps"])
+        self.assertIsNone(r["tx_mbps"])
+        self.clock[0] += 1.999
+        r = rd.read()
+        self.assertAlmostEqual(r["rx_mbps"], 4_000_000 * 8 / 1e6 / 2)
+
+    def test_red_sin_base_inicial_arranca_en_la_segunda_lectura(self):
+        rd = self.reader()                       # /proc/net/dev ilegible al construir
+        self.write("net/dev", NET_DEV.format(rx=1_000_000, tx=1_000_000))
+        self.clock[0] += 2
+        r = rd.read()                            # hay lectura pero no base: sin delta
+        self.assertIsNone(r["rx_mbps"])
+        self.write("net/dev", NET_DEV.format(rx=2_000_000, tx=1_000_000))
+        self.clock[0] += 1
+        r = rd.read()
+        self.assertAlmostEqual(r["rx_mbps"], 8.0)
+        self.assertEqual(r["tx_mbps"], 0.0)
+
+    def test_red_contador_que_baja_es_cero_no_negativo(self):
+        self.write("net/dev", NET_DEV.format(rx=5_000_000, tx=5_000_000))
+        rd = self.reader()
+        self.write("net/dev", NET_DEV.format(rx=10, tx=10))
+        self.clock[0] += 2
+        r = rd.read()
+        self.assertEqual((r["rx_mbps"], r["tx_mbps"]), (0.0, 0.0))
+
+    def test_red_se_cae_a_mitad_es_null_y_recupera(self):
+        self.write("net/dev", NET_DEV.format(rx=1_000_000, tx=0))
+        rd = self.reader()
+        (self.proc / "net" / "dev").unlink()
+        self.clock[0] += 2
+        self.assertIsNone(rd.read()["rx_mbps"])
+        self.write("net/dev", NET_DEV.format(rx=3_000_000, tx=0))
+        self.clock[0] += 2
+        self.assertAlmostEqual(rd.read()["rx_mbps"], 2_000_000 * 8 / 1e6 / 4)
+
+
 if __name__ == "__main__":
     unittest.main()

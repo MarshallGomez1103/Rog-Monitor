@@ -270,7 +270,8 @@ class SysReader:
         # proc_root/sys_root se inyectan en los tests (tests/fixtures/proc/...)
         self.proc, self.sys = proc_root, sys_root
         self.nvme_devs = chips.get("nvme", [])
-        self._net_last = self._net_bytes()
+        # None = /proc/net/dev ilegible: sin base no hay tasa (N-DEF-02)
+        self._net_last = self._net_bytes(f"{self.proc}/net/dev")
         self._net_ts = time.monotonic()
         # I/O rate tracking: {block_dev: (reads, sectors_r, writes, sectors_w, io_ticks)}
         self._io_last = _diskstats(self.proc)
@@ -399,11 +400,18 @@ class SysReader:
             })
         return out
 
+    # Intervalo mínimo para una tasa de red fiable (igual que _io_tick): una lectura
+    # casi inmediata a la anterior (1.er tick de la TUI tras construir) daría picos
+    # absurdos al dividir por ~ms.
+    NET_MIN_DT = 0.05
+
     @staticmethod
-    def _net_bytes() -> tuple[int, int]:
+    def _net_bytes(path: str = "/proc/net/dev") -> tuple[int, int] | None:
+        """(rx, tx) en bytes sumando las interfaces salvo `lo`, o None si no se pudo
+        leer/parsear (N-DEF-02: ilegible no es «0 bytes»)."""
         rx = tx = 0
         try:
-            with open("/proc/net/dev") as fh:
+            with open(path) as fh:
                 for line in fh.readlines()[2:]:
                     iface, _, data = line.partition(":")
                     if iface.strip() == "lo":
@@ -412,28 +420,62 @@ class SysReader:
                     rx += int(fields[0])
                     tx += int(fields[8])
         except (OSError, ValueError, IndexError):
-            pass
+            return None
         return rx, tx
+
+    def _net_rates(self) -> tuple[float | None, float | None]:
+        """(rx, tx) en bytes/s, o (None, None) sin dato fiable: /proc/net/dev ilegible
+        (se conserva la base: al volver se mide sobre el intervalo completo), sin base
+        todavía (la lectura actual pasa a ser la base) o intervalo < NET_MIN_DT (la
+        base no avanza). Un contador que baja (interfaz recreada) da 0, nunca negativo."""
+        now = time.monotonic()
+        cur = self._net_bytes(f"{self.proc}/net/dev")
+        if cur is None:
+            return None, None
+        if self._net_last is None:
+            self._net_last, self._net_ts = cur, now
+            return None, None
+        dt = now - self._net_ts
+        if dt < self.NET_MIN_DT:
+            return None, None
+        rates = (max(0, cur[0] - self._net_last[0]) / dt,
+                 max(0, cur[1] - self._net_last[1]) / dt)
+        self._net_last, self._net_ts = cur, now
+        return rates
 
     def read(self) -> dict:
         mem = _meminfo(self.proc)
-        total = mem.get("MemTotal", 0)
-        buffers = mem.get("Buffers", 0)
-        # igual que `free`: caché = Cached + SReclaimable (Buffers aparte)
-        cached = mem.get("Cached", 0) + mem.get("SReclaimable", 0)
-        # usado = total - DISPONIBLE (no total - libre: la caché es recuperable);
-        # kernels sin MemAvailable: estimación libre+buffers+caché
-        avail = mem.get("MemAvailable", mem.get("MemFree", 0) + buffers + cached)
-        swap_total = mem.get("SwapTotal", 0)
-        swap_free = mem.get("SwapFree", 0)
+        gib = 1024 * 1024  # kB -> GiB
+        total = mem.get("MemTotal")
+        ram = dict.fromkeys(("ram_total_gb", "ram_used_gb", "ram_percent",
+                             "ram_available_gb", "ram_buffers_gb", "ram_cached_gb"))
+        if total:  # sin MemTotal (meminfo ilegible) la RAM es null, no 0 (N-DEF-02)
+            buffers = mem.get("Buffers", 0)
+            # igual que `free`: caché = Cached + SReclaimable (Buffers aparte)
+            cached = mem.get("Cached", 0) + mem.get("SReclaimable", 0)
+            # usado = total - DISPONIBLE (no total - libre: la caché es recuperable);
+            # kernels sin MemAvailable: estimación libre+buffers+caché
+            avail = mem.get("MemAvailable", mem.get("MemFree", 0) + buffers + cached)
+            ram = {
+                "ram_total_gb": total / gib,
+                "ram_used_gb": (total - avail) / gib,
+                "ram_percent": round((total - avail) * 100 / total),
+                "ram_available_gb": avail / gib,
+                "ram_buffers_gb": buffers / gib,
+                "ram_cached_gb": cached / gib,
+            }
+        swap = dict.fromkeys(("swap_used_gb", "swap_total_gb", "swap_percent"))
+        if "SwapTotal" in mem:  # 0 es un valor real (sin swap); ausente = ilegible
+            swap_total = mem["SwapTotal"]
+            swap_used = swap_total - mem.get("SwapFree", 0)
+            swap = {
+                "swap_used_gb": swap_used / gib,
+                "swap_total_gb": swap_total / gib,
+                # None sin swap (0/0 no es un 0 % real)
+                "swap_percent": round(swap_used * 100 / swap_total) if swap_total else None,
+            }
 
-        now = time.monotonic()
-        rx, tx = self._net_bytes()
-        dt = max(now - self._net_ts, 0.001)
-        # contador que baja (interfaz caída/recreada, wrap): 0, nunca una tasa negativa
-        rx_rate = max(0, rx - self._net_last[0]) / dt
-        tx_rate = max(0, tx - self._net_last[1]) / dt
-        self._net_last, self._net_ts = (rx, tx), now
+        rx_rate, tx_rate = self._net_rates()
 
         temps = self._nvme_temp_by_ctrl()
         io = self._io_tick()
@@ -455,7 +497,7 @@ class SysReader:
             with open(f"{self.proc}/uptime") as fh:
                 uptime = float(fh.read().split()[0])
         except (OSError, ValueError):
-            uptime = 0.0
+            uptime = None  # ilegible: null, no «recién arrancado» (N-DEF-02)
 
         try:
             load = os.getloadavg()
@@ -463,26 +505,18 @@ class SysReader:
             load = None
 
         return {
-            "ram_total_gb": total / 1024 / 1024,
-            "ram_used_gb": (total - avail) / 1024 / 1024,
-            "ram_percent": round((total - avail) * 100 / total) if total else 0,
-            "ram_available_gb": avail / 1024 / 1024,
-            "ram_buffers_gb": buffers / 1024 / 1024,
-            "ram_cached_gb": cached / 1024 / 1024,
-            "swap_used_gb": (swap_total - swap_free) / 1024 / 1024,
-            "swap_total_gb": swap_total / 1024 / 1024,
-            # None sin swap (0/0 no es un 0 % real)
-            "swap_percent": (round((swap_total - swap_free) * 100 / swap_total)
-                             if swap_total else None),
-            "rx_mbps": rx_rate * 8 / 1_000_000,
-            "tx_mbps": tx_rate * 8 / 1_000_000,
+            **ram,
+            **swap,
+            # Mbit/s; None sin tasa fiable (ver _net_rates)
+            "rx_mbps": None if rx_rate is None else rx_rate * 8 / 1_000_000,
+            "tx_mbps": None if tx_rate is None else tx_rate * 8 / 1_000_000,
             "disks": disks,
             "disk_io": disk_io,
             "nvme_temps": nvme_temps,
             "smart_block_devices": _smart_block_devices(self.sys),
             "load": load,
             "uptime_s": uptime,
-            "uptime_h": uptime / 3600,
+            "uptime_h": None if uptime is None else uptime / 3600,
             "dmi": get_dmi(),
         }
 
