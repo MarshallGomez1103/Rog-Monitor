@@ -77,6 +77,11 @@ def _fmt(value, suffix="", nd=1, na=""):
     return Text(f"{value}{suffix}")
 
 
+def _num(value, spec: str, suffix: str = "") -> str:
+    """`value` formateado, o "N/A" si falta (lector caído): nunca un 0 inventado."""
+    return "N/A" if value is None else f"{value:{spec}}{suffix}"
+
+
 def _temp_text(temp, limits, na="") -> Text:
     if temp is None:
         return _fmt(None, na=na)
@@ -184,7 +189,7 @@ def fans_panel(state, t, th) -> Panel:
         body = Text(f"N/A · {t('fans_none')}", style="grey58")
         return Panel(body, title=Text(f" {t('fans')} ", style=th["title"]), border_style=th["border"])
     for fan in state["fans"]:
-        label = fan["label"].replace("_fan", "").upper()
+        label = (fan.get("label") or "?").replace("_fan", "").upper()
         rpm_text = Text(f"{fan['rpm']} RPM")
         if fan["rpm"] is None:
             rpm_text = _fmt(None, na=t("na_sensor"))
@@ -337,12 +342,23 @@ def system_panel(state, t, th) -> Panel:
         table.add_column()
 
     ram = Text()
-    ram.append_text(bar(info["ram_percent"], 12, th["bar"]))
-    ram.append(f" {info['ram_used_gb']:.1f}/{info['ram_total_gb']:.0f}G")
+    if info["ram_total_gb"] is None or info["ram_used_gb"] is None:
+        ram.append("N/A", style="grey58")
+    else:
+        ram.append_text(bar(info["ram_percent"], 12, th["bar"]))
+        ram.append(f" {info['ram_used_gb']:.1f}/{info['ram_total_gb']:.0f}G")
 
-    net = Text(f"↓{info['rx_mbps']:.1f} ↑{info['tx_mbps']:.1f} Mb/s")
-    load = Text(f"{info['load'][0]:.2f} {info['load'][1]:.2f} {info['load'][2]:.2f}")
-    load.append(f"  ·  {t('uptime')} {info['uptime_h']:.1f}h", style="grey58")
+    if info["rx_mbps"] is None or info["tx_mbps"] is None:
+        net = Text("N/A", style="grey58")
+    else:
+        net = Text(f"↓{info['rx_mbps']:.1f} ↑{info['tx_mbps']:.1f} Mb/s")
+    avg = info["load"]
+    if avg and len(avg) >= 3:
+        load = Text(f"{avg[0]:.2f} {avg[1]:.2f} {avg[2]:.2f}")
+    else:
+        load = Text("N/A", style="grey58")
+    load.append(f"  ·  {t('uptime')} ", style="grey58")
+    load.append(_num(info["uptime_h"], ".1f", "h"), style="grey58")
 
     table.add_row(
         Text(f"{t('ram')} ", style="grey74") + ram,
@@ -356,25 +372,28 @@ def system_panel(state, t, th) -> Panel:
     disks.add_column()
     smart_rows = []
     for disk in info["disks"]:
-        usage = Text(f" {disk['used_gb']:.0f}/{disk['total_gb']:.0f}G ({disk['percent']}%)")
+        if disk.get("used_gb") is None or disk.get("total_gb") is None:
+            usage = Text(" N/A", style="grey58")
+        else:
+            usage = Text(f" {disk['used_gb']:.0f}/{disk['total_gb']:.0f}G ({_num(disk.get('percent'), '', '%')})")
         if info["nvme_temps"] and disk["mount"] in ("/", "/var/home", "/home"):
             usage.append(f" · NVMe {max(info['nvme_temps']):.0f}°C", style="grey58")
         # I/O rate (new in v18)
-        r_mbps = disk.get("read_mbps", 0.0)
-        w_mbps = disk.get("write_mbps", 0.0)
+        r_mbps = disk.get("read_mbps") or 0.0
+        w_mbps = disk.get("write_mbps") or 0.0
         if r_mbps > 0.05 or w_mbps > 0.05:
             usage.append(
                 f" ↓{r_mbps:.1f}↑{w_mbps:.1f}",
                 style="grey42",
             )
         disks.add_row(
-            Text(disk["label"], style="grey74"),
-            bar(disk["percent"], 18, th["bar"]),
+            Text(disk.get("label") or "?", style="grey74"),
+            bar(disk.get("percent"), 18, th["bar"]),
             usage,
         )
         smart = smart_line(disk, t)
         if smart is not None:  # fuera de la rejilla: el texto largo no desplaza las columnas
-            smart_rows.append(Text(f"{disk['label']:<12}", style="grey74", no_wrap=True,
+            smart_rows.append(Text(f"{disk.get('label') or '?':<12}", style="grey74", no_wrap=True,
                                    overflow="ellipsis") + smart)
 
     return Panel(Group(table, disks, *smart_rows), title=Text(f" {t('system')} ", style=th["title"]),
@@ -394,9 +413,9 @@ def processes_panel(state, t, th) -> Panel:
     for proc in state["procs"][:5]:
         table.add_row(
             Text(str(proc["pid"]), style="grey58"),
-            Text(proc["name"]),
-            Text(f"{proc['cpu']:.1f}%", style=th["accent"]),
-            Text(f"{proc['mem_mb']} MB", style="grey74"),
+            Text(proc.get("name") or "?"),
+            Text(_num(proc.get("cpu"), ".1f", "%"), style=th["accent"]),
+            Text(_num(proc.get("mem_mb"), "", " MB"), style="grey74"),
         )
     return Panel(table, title=Text(f" {t('processes')} ", style=th["title"]),
                  border_style=th["border"])
