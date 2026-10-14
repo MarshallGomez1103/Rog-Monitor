@@ -659,18 +659,24 @@ function histCharts(saved) { return CE.normalizeChartList(saved, CHART_KEYS, HIS
 
 let histList = histCharts(lsGet('histCharts') || (lsGet('histMode') === 'usage' ? HIST_PRESETS.usage : null));
 
+/* Dibuja la serie `key` en `canvas` (tarjeta del historial o modal ampliado, chart-editor-ui.js). */
+function drawHistChart(canvas, key, series, sys) {
+  const [color, opts] = CHART_CATALOG[key];
+  drawChart(canvas, series[key], cssVar(color), opts.maxKey ? { ...opts, max: sys[opts.maxKey] } : opts);
+}
+
 function setHistCharts(list) {
   histList = histCharts(list);
   lsSet('histCharts', JSON.stringify(histList));
   const row = document.querySelector('#history-block .chart-row');
   row.innerHTML = histList.map((k) =>
-    `<div class="chart"><label data-i18n="${CHART_CATALOG[k][2]}">${escapeHtml(t(CHART_CATALOG[k][2]))}</label><canvas id="chart-${k}"></canvas></div>`).join('');
+    `<div class="chart"><div class="chart-head"><label data-i18n="${CHART_CATALOG[k][2]}">${escapeHtml(t(CHART_CATALOG[k][2]))}</label><button type="button" class="chart-expand" data-act="expand" data-chart="${k}"></button></div><canvas id="chart-${k}"></canvas></div>`).join('');
   histList.forEach((k) => wireChartHover(`chart-${k}`, CHART_CATALOG[k][1].unit));
   // el botón rápido alterna entre los dos conjuntos predefinidos
   const btn = $('hist-mode');
   btn.dataset.i18n = CE.presetOf(histList, HIST_PRESETS) === 'usage' ? 'chart.mode_temp' : 'chart.mode_usage';
   btn.textContent = t(btn.dataset.i18n);
-  window.RogChartEditorUI?.sync();   // editor (chart-editor-ui.js)
+  window.RogChartEditorUI?.sync();   // editor + modal ampliado (chart-editor-ui.js)
   if (lastStats) update(lastStats);
 }
 
@@ -2017,17 +2023,16 @@ function update(stats) {
   if (visible) {
     const series = stats.series || {};
     histList.forEach((key) => {
-      const [color, opts] = CHART_CATALOG[key];
       const id = `chart-${key}`;
       if (!$(id)) return;
-      const o = opts.maxKey ? { ...opts, max: sys[opts.maxKey] } : opts;
-      drawChart($(id), series[key], cssVar(color), o);
+      drawHistChart($(id), key, series, sys);
       if (key === 'swap_gb') {           // sin swap: decirlo, no dibujar un 0 falso
         const lbl = $(id).parentElement.querySelector('label');
         const k = sys.swap_total_gb > 0 ? 'chart.swap_gib' : 'chart.no_swap';
         if (lbl.dataset.i18n !== k) { lbl.dataset.i18n = k; lbl.textContent = t(k); }
       }
     });
+    window.RogChartEditorUI?.draw(series, sys);   // canvas del modal ampliado
   }
 
   $('rapl-note').classList.toggle('hidden', !!stats.rapl_available);
