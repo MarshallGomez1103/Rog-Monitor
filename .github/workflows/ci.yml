@@ -25,7 +25,7 @@ jobs:
           PYTHONPATH: src
         run: |
           python -m coverage run --source=src/rog_monitor -m unittest discover -s tests -v
-          python -m coverage report --sort=cover --fail-under=50
+          python -m coverage report --sort=cover --fail-under=80
 
       - name: Validate device_profiles.json
         run: python -c "import json; json.load(open('src/rog_monitor/device_profiles.json')); print('device_profiles.json OK')"
