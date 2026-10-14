@@ -240,13 +240,33 @@ def _find_binary(candidates: list[str]) -> str | None:
 def _load_store() -> dict:
     try:
         with open(AURA_FILE) as fh:
-            return _merge(DEFAULTS, json.load(fh))
+            loaded = json.load(fh)
     except OSError:
         return copy.deepcopy(DEFAULTS)
     except ValueError:
         # JSON ilegible: respaldar antes de que un guardado lo pise con defaults
         backup_corrupt(AURA_FILE)
         return copy.deepcopy(DEFAULTS)
+    if not isinstance(loaded, dict):
+        # JSON válido pero de otra forma ([], null, 3...): igual que ilegible
+        backup_corrupt(AURA_FILE)
+        return copy.deepcopy(DEFAULTS)
+    store = _merge(DEFAULTS, loaded)
+    # aura.json se edita a mano: lo que no tenga la forma esperada se descarta
+    # para que perfiles/arranque no revienten iterando basura.
+    profiles = store.get("profiles")
+    store["profiles"] = [
+        p for p in profiles if isinstance(p, dict) and isinstance(p.get("name"), str)
+    ] if isinstance(profiles, list) else []
+    unsupported = store.get("unsupported_effects")
+    store["unsupported_effects"] = (
+        [e for e in unsupported if isinstance(e, str)] if isinstance(unsupported, list) else []
+    )
+    if not isinstance(store.get("startup_profile"), str):
+        store["startup_profile"] = None
+    if not isinstance(store.get("last_applied"), dict):
+        store["last_applied"] = {}
+    return store
 
 
 def _save_store(data: dict) -> bool:

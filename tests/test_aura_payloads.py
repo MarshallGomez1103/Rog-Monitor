@@ -343,6 +343,29 @@ class Store(AuraCase):
         with mock.patch.object(aura, "write_atomic", side_effect=OSError("ro")):
             self.assertFalse(aura._save_store({"a": 1}))
 
+    def test_valid_json_of_the_wrong_shape_falls_back_to_defaults(self):
+        # Defecto: `[]`/`null` o perfiles mal formados tumbaban todo con AttributeError/TypeError.
+        self.aura_file.parent.mkdir(parents=True)
+        for text in ("[]", "null", "3", '"x"'):
+            with self.subTest(text=text):
+                self.aura_file.write_text(text)
+                self.assertEqual(aura._load_store(), aura.DEFAULTS)
+
+    def test_malformed_profiles_and_unsupported_list_are_sanitised(self):
+        self.aura_file.parent.mkdir(parents=True)
+        self.aura_file.write_text(json.dumps({
+            "profiles": ["texto", 3, None, {"name": "ok", "state": {"effect": "static"}}, {"state": {}}],
+            "unsupported_effects": "stars",
+            "startup_profile": 5,
+        }))
+        st = aura._load_store()
+        self.assertEqual([p["name"] for p in st["profiles"]], ["ok"])
+        self.assertEqual(st["unsupported_effects"], [])
+        self.assertIsNone(st["startup_profile"])
+        # y los flujos que iteran perfiles no revientan
+        self.assertTrue(aura.save_profile("nuevo", {"effect": "static"})["ok"])
+        self.assertEqual(sorted(p["name"] for p in self.store()["profiles"]), ["nuevo", "ok"])
+
 
 # --------------------------------------------------------- descubrimiento/caché
 
