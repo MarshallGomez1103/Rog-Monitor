@@ -175,6 +175,7 @@ class App:
         payload["series"] = {name: serie.values() for name, serie in self.series.items()}
         payload["events"] = [list(e) for e in self.alerts.events]
         payload["version"] = __import__("rog_monitor").__version__
+        payload["ts"] = round(time.time(), 3)   # F2-08: hora de la muestra (exportes/latencia)
         # Envelope schema (integer, distinct from the app `version`). Bump ONLY on
         # breaking changes: a key removed/renamed or a unit changed. Adding keys
         # is not breaking. When bumping, update tests/test_contract.py (REQUIRED)
