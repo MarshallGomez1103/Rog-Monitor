@@ -58,7 +58,7 @@
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  padding: 0.5rem 0.7rem 0.4rem;
+  padding: 0.3rem 0.45rem 0.2rem 0.7rem;
   user-select: none;
 }
 
@@ -88,15 +88,19 @@
   letter-spacing: 0.02em;
 }
 
-/* pista "ampliar ▸" + botón borrar a la derecha */
+/* pista "ampliar ▸" + botón borrar a la derecha.
+   N-A1-02: la pista era .62rem a opacidad .45 (contraste ~2:1) y style.css la
+   pintaba en --dim. Ahora ≥.72rem, opacidad ≥.9 en reposo y el color mezcla
+   acento con --ink para llegar a AA (≥4.5:1) en los 12 temas, oscuro y claro. */
 .bench-card-expand {
   margin-left: auto;
   flex-shrink: 0;
-  font-size: 0.62rem;
+  font-size: 0.72rem;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--accent);
-  opacity: 0.45;
+  color: color-mix(in srgb, var(--accent) 65%, var(--ink));
+  opacity: 0.9;
   text-shadow: var(--neon-glow-soft, 0 0 5px currentColor);
   transition: opacity 0.15s;
   white-space: nowrap;
@@ -104,21 +108,30 @@
 .bench-card:hover .bench-card-expand,
 .bench-card:focus-within .bench-card-expand { opacity: 1; }
 
+/* Botón borrar: área de toque ≥28×28 px (antes ~20×18). El foco por teclado lo
+   dibuja el anillo global de a11y.css; aquí solo se refuerza el estado. */
 .bench-card-delete {
   flex-shrink: 0;
-  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
+  font-size: 0.9rem;
   line-height: 1;
-  padding: 0.15em 0.4em;
+  padding: 0;
   color: var(--dim);
   background: none;
   border: 1px solid transparent;
   border-radius: 3px;
   cursor: pointer;
-  transition: color 0.12s, border-color 0.12s;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
 }
-.bench-card-delete:hover {
-  color: #ff5a3c;
-  border-color: color-mix(in srgb, #ff5a3c 50%, transparent);
+.bench-card-delete:hover,
+.bench-card-delete:focus-visible {
+  color: var(--lvl-crit, #ff5a3c);
+  border-color: color-mix(in srgb, var(--lvl-crit, #ff5a3c) 55%, transparent);
+  background: color-mix(in srgb, var(--lvl-crit, #ff5a3c) 10%, transparent);
 }
 
 /* LÍNEA DE RESUMEN — siempre visible, legible, métrica principal grande */
