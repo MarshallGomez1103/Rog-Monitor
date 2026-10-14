@@ -1,0 +1,61 @@
+
+== neon/dark ==
+ list: {"clientHeight":340,"scrollHeight":340,"scrolls":false,"overflowY":"auto"}
+ cards: 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34)
+ expand: {"opacity":0.45,"fontPx":9.92,"fontRem":0.62,"color":"rgb(139, 148, 161)","contrast":2.16,"w":51.4,"h":16}
+ delete: {"opacity":1,"fontPx":12.8,"fontRem":0.8,"color":"rgb(139, 148, 161)","contrast":5.65,"w":19.9,"h":18.6}
+ when: {"opacity":0.7,"fontPx":11.84,"fontRem":0.74,"color":"rgb(139, 148, 161)","contrast":3.43,"w":100,"h":16}
+ kind: {"opacity":1,"fontPx":11.52,"fontRem":0.72,"color":"rgb(139, 148, 161)","contrast":5.65,"w":43.3,"h":21.1}
+  FAIL hay tarjetas recortadas
+  FAIL .bench-history no scrollea ({"clientHeight":340,"scrollHeight":340,"scrolls":false,"overflowY":"auto"})
+  FAIL expand opacity 0.45
+  FAIL expand font 0.62rem
+  FAIL expand contraste 2.16
+  ok   delete contraste 5.65
+  FAIL delete hit target 19.9x18.6
+  FAIL when contraste 3.43
+ foco delete: {"fv":true,"outline":"solid 2px","offset":"-2px"}
+  ok   foco visible en delete
+
+== magma/dark ==
+ list: {"clientHeight":340,"scrollHeight":340,"scrolls":false,"overflowY":"auto"}
+ cards: 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34)
+ expand: {"opacity":0.45,"fontPx":9.92,"fontRem":0.62,"color":"rgb(139, 148, 161)","contrast":2.14,"w":51.4,"h":16}
+ delete: {"opacity":1,"fontPx":12.8,"fontRem":0.8,"color":"rgb(139, 148, 161)","contrast":5.54,"w":19.9,"h":18.6}
+ when: {"opacity":0.7,"fontPx":11.84,"fontRem":0.74,"color":"rgb(139, 148, 161)","contrast":3.39,"w":100,"h":16}
+ kind: {"opacity":1,"fontPx":11.52,"fontRem":0.72,"color":"rgb(139, 148, 161)","contrast":5.54,"w":43.3,"h":21.1}
+  FAIL hay tarjetas recortadas
+  FAIL .bench-history no scrollea ({"clientHeight":340,"scrollHeight":340,"scrolls":false,"overflowY":"auto"})
+  FAIL expand opacity 0.45
+  FAIL expand font 0.62rem
+  FAIL expand contraste 2.14
+  ok   delete contraste 5.54
+  FAIL delete hit target 19.9x18.6
+  FAIL when contraste 3.39
+ foco delete: {"fv":true,"outline":"solid 2px","offset":"-2px"}
+  ok   foco visible en delete
+
+== magma/light ==
+ list: {"clientHeight":340,"scrollHeight":340,"scrolls":false,"overflowY":"auto"}
+ cards: 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34) 36px(CLIPPED 142>34)
+ expand: {"opacity":0.45,"fontPx":9.92,"fontRem":0.62,"color":"rgb(110, 58, 42)","contrast":2.18,"w":51.4,"h":16}
+ delete: {"opacity":1,"fontPx":12.8,"fontRem":0.8,"color":"rgb(110, 58, 42)","contrast":7.67,"w":19.9,"h":18.6}
+ when: {"opacity":0.7,"fontPx":11.84,"fontRem":0.74,"color":"rgb(110, 58, 42)","contrast":3.73,"w":100,"h":16}
+ kind: {"opacity":1,"fontPx":11.52,"fontRem":0.72,"color":"rgb(110, 58, 42)","contrast":7.67,"w":43.3,"h":21.1}
+  FAIL hay tarjetas recortadas
+  FAIL .bench-history no scrollea ({"clientHeight":340,"scrollHeight":340,"scrolls":false,"overflowY":"auto"})
+  FAIL expand opacity 0.45
+  FAIL expand font 0.62rem
+  FAIL expand contraste 2.18
+  ok   delete contraste 7.67
+  FAIL delete hit target 19.9x18.6
+  FAIL when contraste 3.73
+ foco delete: {"fv":true,"outline":"solid 2px","offset":"-2px"}
+  ok   foco visible en delete
+
+== contraste mínimo (12 temas x 2 modos) == {"expand":[1.91,"neon/light"],"del":[4.66,"alba/dark"],"when":[2.95,"neon/light"]}
+  FAIL expand mín 1.91 en neon/light
+  ok   del mín 4.66 (alba/dark)
+  FAIL when mín 2.95 en neon/light
+
+RESULT: FAIL (23)

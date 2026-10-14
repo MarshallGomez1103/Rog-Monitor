@@ -1,0 +1,345 @@
+
+==== neon/dark ====
+-- orden cpu: sortCol=#procs:cpu #allprocs:cpu #ram-procs:n/a  tableFont=13.5px/13px/-  filas=5/600/-
+   DIFF td.pid.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.pname.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.pname.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu-core.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu-core.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.mem.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.mem.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF th(active).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=·
+   DIFF th(active).fontWeight: #procs=600  #allprocs=700  #ram-procs=·
+   DIFF th(active).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=·
+   DIFF th(active).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=·
+   DIFF th(idle).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=·
+   DIFF th(idle).fontWeight: #procs=600  #allprocs=700  #ram-procs=·
+   DIFF th(idle).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=·
+   DIFF th(idle).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=·
+   -> 17 diferencias
+   EXPECT #procs: span.procs-core no hereda de su celda: rgb(139, 148, 161) | 10.88px | none | ml=3.264px vs rgb(226, 230, 236)/13.5px
+   EXPECT #procs: td.mem color rgb(139, 148, 161) != ink rgb(226, 230, 236)
+   EXPECT #allprocs: td.pname font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu-core font-size 13px != 13.5px
+   EXPECT #allprocs: span.procs-core no hereda de su celda: rgb(139, 148, 161) | 10.88px | none | ml=3.264px vs rgb(226, 230, 236)/13px
+   EXPECT #allprocs: td.mem color rgb(139, 148, 161) != ink rgb(226, 230, 236)
+   EXPECT #allprocs: td.mem font-size 13px != 13.5px
+   (expectativas absolutas incluidas; total 25)
+-- orden cpu_core: sortCol=#procs:cpu-core #allprocs:cpu-core #ram-procs:n/a  tableFont=13.5px/13px/-  filas=5/600/-
+   DIFF td.pid.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.pname.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.pname.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu-core.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu-core.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu-core.coreSpan: #procs=rgb(45, 226, 230) | 10.88px | rgba(45, 226, 230, 0.867) 0px 0px 5px, rgba(45, 226, 230, 0.4) 0px 0px 14px, rgba(246, 55, 236, 0.2) 0px 0px 28px | ml=3.264px  #allprocs=rgb(139, 148, 161) | 10.88px | rgba(45, 226, 230, 0.867) 0px 0px 5px, rgba(45, 226, 230, 0.4) 0px 0px 14px, rgba(246, 55, 236, 0.2) 0px 0px 28px | ml=3.264px  #ram-procs=·
+   DIFF td.mem.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.mem.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF th(active).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=·
+   DIFF th(active).fontWeight: #procs=600  #allprocs=700  #ram-procs=·
+   DIFF th(active).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=·
+   DIFF th(active).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=·
+   DIFF th(idle).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=·
+   DIFF th(idle).fontWeight: #procs=600  #allprocs=700  #ram-procs=·
+   DIFF th(idle).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=·
+   DIFF th(idle).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=·
+   -> 18 diferencias
+   EXPECT #procs: span.procs-core no hereda de su celda: rgb(45, 226, 230) | 10.88px | rgba(45, 226, 230, 0.867) 0px 0px 5px, rgba(45, 226, 230, 0.4) 0px 0px 14px, rgba(246, 55, 236, 0.2) 0px 0px 28px | ml=3.264px vs rgb(45, 226, 230)/13.5px
+   EXPECT #procs: td.mem color rgb(139, 148, 161) != ink rgb(226, 230, 236)
+   EXPECT #allprocs: td.pname font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu-core font-size 13px != 13.5px
+   EXPECT #allprocs: span.procs-core no hereda de su celda: rgb(139, 148, 161) | 10.88px | rgba(45, 226, 230, 0.867) 0px 0px 5px, rgba(45, 226, 230, 0.4) 0px 0px 14px, rgba(246, 55, 236, 0.2) 0px 0px 28px | ml=3.264px vs rgb(45, 226, 230)/13px
+   EXPECT #allprocs: td.mem color rgb(139, 148, 161) != ink rgb(226, 230, 236)
+   EXPECT #allprocs: td.mem font-size 13px != 13.5px
+   (expectativas absolutas incluidas; total 26)
+-- orden mem_mb: sortCol=#procs:mem #allprocs:mem #ram-procs:mem  tableFont=13.5px/13px/13.5px  filas=5/600/8
+   DIFF td.pid.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF td.pname.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=13.5px
+   DIFF td.pname.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF td.cpu.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu-core.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu-core.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.mem.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=13.5px
+   DIFF td.mem.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF th(active).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=10.5px
+   DIFF th(active).fontWeight: #procs=600  #allprocs=700  #ram-procs=700
+   DIFF th(active).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=1px
+   DIFF th(active).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=0px 6px 6px 6px
+   DIFF th(idle).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=10.5px
+   DIFF th(idle).fontWeight: #procs=600  #allprocs=700  #ram-procs=700
+   DIFF th(idle).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=1px
+   DIFF th(idle).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=0px 6px 6px 6px
+   -> 17 diferencias
+   EXPECT #procs: span.procs-core no hereda de su celda: rgb(139, 148, 161) | 10.88px | none | ml=3.264px vs rgb(226, 230, 236)/13.5px
+   EXPECT #allprocs: td.pname font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu-core font-size 13px != 13.5px
+   EXPECT #allprocs: span.procs-core no hereda de su celda: rgb(139, 148, 161) | 10.88px | none | ml=3.264px vs rgb(226, 230, 236)/13px
+   EXPECT #allprocs: td.mem font-size 13px != 13.5px
+   (expectativas absolutas incluidas; total 23)
+-- orden name: sortCol=#procs:pname #allprocs:pname #ram-procs:pname  tableFont=13.5px/13px/13.5px  filas=5/599/8
+   DIFF td.pid.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF td.pname.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=13.5px
+   DIFF td.pname.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF td.cpu.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu-core.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu-core.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.mem.color: #procs=rgb(139, 148, 161)  #allprocs=rgb(139, 148, 161)  #ram-procs=rgb(226, 230, 236)
+   DIFF td.mem.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=13.5px
+   DIFF td.mem.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF th(active).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=10.5px
+   DIFF th(active).fontWeight: #procs=600  #allprocs=700  #ram-procs=700
+   DIFF th(active).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=1px
+   DIFF th(active).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=0px 6px 6px 6px
+   DIFF th(idle).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=10.5px
+   DIFF th(idle).fontWeight: #procs=600  #allprocs=700  #ram-procs=700
+   DIFF th(idle).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=1px
+   DIFF th(idle).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=0px 6px 6px 6px
+   -> 18 diferencias
+   EXPECT #procs: span.procs-core no hereda de su celda: rgb(139, 148, 161) | 10.88px | none | ml=3.264px vs rgb(226, 230, 236)/13.5px
+   EXPECT #procs: td.mem color rgb(139, 148, 161) != ink rgb(226, 230, 236)
+   EXPECT #allprocs: td.pname font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu-core font-size 13px != 13.5px
+   EXPECT #allprocs: span.procs-core no hereda de su celda: rgb(139, 148, 161) | 10.88px | none | ml=3.264px vs rgb(226, 230, 236)/13px
+   EXPECT #allprocs: td.mem color rgb(139, 148, 161) != ink rgb(226, 230, 236)
+   EXPECT #allprocs: td.mem font-size 13px != 13.5px
+   (expectativas absolutas incluidas; total 26)
+
+==== magma/dark ====
+-- orden cpu: sortCol=#procs:cpu #allprocs:cpu #ram-procs:n/a  tableFont=13.5px/13px/-  filas=5/599/-
+   DIFF td.pid.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.pname.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.pname.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu-core.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu-core.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.mem.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.mem.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF th(active).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=·
+   DIFF th(active).fontWeight: #procs=600  #allprocs=700  #ram-procs=·
+   DIFF th(active).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=·
+   DIFF th(active).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=·
+   DIFF th(idle).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=·
+   DIFF th(idle).fontWeight: #procs=600  #allprocs=700  #ram-procs=·
+   DIFF th(idle).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=·
+   DIFF th(idle).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=·
+   -> 17 diferencias
+   EXPECT #procs: span.procs-core no hereda de su celda: rgb(139, 148, 161) | 10.88px | none | ml=3.264px vs rgb(226, 230, 236)/13.5px
+   EXPECT #procs: td.mem color rgb(139, 148, 161) != ink rgb(226, 230, 236)
+   EXPECT #allprocs: td.pname font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu-core font-size 13px != 13.5px
+   EXPECT #allprocs: span.procs-core no hereda de su celda: rgb(139, 148, 161) | 10.88px | none | ml=3.264px vs rgb(226, 230, 236)/13px
+   EXPECT #allprocs: td.mem color rgb(139, 148, 161) != ink rgb(226, 230, 236)
+   EXPECT #allprocs: td.mem font-size 13px != 13.5px
+   (expectativas absolutas incluidas; total 25)
+-- orden cpu_core: sortCol=#procs:cpu-core #allprocs:cpu-core #ram-procs:n/a  tableFont=13.5px/13px/-  filas=5/599/-
+   DIFF td.pid.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.pname.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.pname.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu-core.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu-core.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu-core.coreSpan: #procs=rgb(242, 92, 61) | 10.88px | rgba(242, 92, 61, 0.8) 0px 0px 5px, rgba(242, 92, 61, 0.467) 0px 0px 14px | ml=3.264px  #allprocs=rgb(139, 148, 161) | 10.88px | rgba(242, 92, 61, 0.8) 0px 0px 5px, rgba(242, 92, 61, 0.467) 0px 0px 14px | ml=3.264px  #ram-procs=·
+   DIFF td.mem.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.mem.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF th(active).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=·
+   DIFF th(active).fontWeight: #procs=600  #allprocs=700  #ram-procs=·
+   DIFF th(active).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=·
+   DIFF th(active).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=·
+   DIFF th(idle).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=·
+   DIFF th(idle).fontWeight: #procs=600  #allprocs=700  #ram-procs=·
+   DIFF th(idle).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=·
+   DIFF th(idle).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=·
+   -> 18 diferencias
+   EXPECT #procs: span.procs-core no hereda de su celda: rgb(242, 92, 61) | 10.88px | rgba(242, 92, 61, 0.8) 0px 0px 5px, rgba(242, 92, 61, 0.467) 0px 0px 14px | ml=3.264px vs rgb(242, 92, 61)/13.5px
+   EXPECT #procs: td.mem color rgb(139, 148, 161) != ink rgb(226, 230, 236)
+   EXPECT #allprocs: td.pname font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu-core font-size 13px != 13.5px
+   EXPECT #allprocs: span.procs-core no hereda de su celda: rgb(139, 148, 161) | 10.88px | rgba(242, 92, 61, 0.8) 0px 0px 5px, rgba(242, 92, 61, 0.467) 0px 0px 14px | ml=3.264px vs rgb(242, 92, 61)/13px
+   EXPECT #allprocs: td.mem color rgb(139, 148, 161) != ink rgb(226, 230, 236)
+   EXPECT #allprocs: td.mem font-size 13px != 13.5px
+   (expectativas absolutas incluidas; total 26)
+-- orden mem_mb: sortCol=#procs:mem #allprocs:mem #ram-procs:mem  tableFont=13.5px/13px/13.5px  filas=5/599/8
+   DIFF td.pid.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF td.pname.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=13.5px
+   DIFF td.pname.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF td.cpu.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu-core.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu-core.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.mem.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=13.5px
+   DIFF td.mem.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF th(active).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=10.5px
+   DIFF th(active).fontWeight: #procs=600  #allprocs=700  #ram-procs=700
+   DIFF th(active).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=1px
+   DIFF th(active).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=0px 6px 6px 6px
+   DIFF th(idle).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=10.5px
+   DIFF th(idle).fontWeight: #procs=600  #allprocs=700  #ram-procs=700
+   DIFF th(idle).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=1px
+   DIFF th(idle).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=0px 6px 6px 6px
+   -> 17 diferencias
+   EXPECT #procs: span.procs-core no hereda de su celda: rgb(139, 148, 161) | 10.88px | none | ml=3.264px vs rgb(226, 230, 236)/13.5px
+   EXPECT #allprocs: td.pname font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu-core font-size 13px != 13.5px
+   EXPECT #allprocs: span.procs-core no hereda de su celda: rgb(139, 148, 161) | 10.88px | none | ml=3.264px vs rgb(226, 230, 236)/13px
+   EXPECT #allprocs: td.mem font-size 13px != 13.5px
+   (expectativas absolutas incluidas; total 23)
+-- orden name: sortCol=#procs:pname #allprocs:pname #ram-procs:pname  tableFont=13.5px/13px/13.5px  filas=5/599/8
+   DIFF td.pid.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF td.pname.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=13.5px
+   DIFF td.pname.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF td.cpu.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu-core.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu-core.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.mem.color: #procs=rgb(139, 148, 161)  #allprocs=rgb(139, 148, 161)  #ram-procs=rgb(226, 230, 236)
+   DIFF td.mem.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=13.5px
+   DIFF td.mem.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF th(active).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=10.5px
+   DIFF th(active).fontWeight: #procs=600  #allprocs=700  #ram-procs=700
+   DIFF th(active).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=1px
+   DIFF th(active).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=0px 6px 6px 6px
+   DIFF th(idle).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=10.5px
+   DIFF th(idle).fontWeight: #procs=600  #allprocs=700  #ram-procs=700
+   DIFF th(idle).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=1px
+   DIFF th(idle).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=0px 6px 6px 6px
+   -> 18 diferencias
+   EXPECT #procs: span.procs-core no hereda de su celda: rgb(139, 148, 161) | 10.88px | none | ml=3.264px vs rgb(226, 230, 236)/13.5px
+   EXPECT #procs: td.mem color rgb(139, 148, 161) != ink rgb(226, 230, 236)
+   EXPECT #allprocs: td.pname font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu-core font-size 13px != 13.5px
+   EXPECT #allprocs: span.procs-core no hereda de su celda: rgb(139, 148, 161) | 10.88px | none | ml=3.264px vs rgb(226, 230, 236)/13px
+   EXPECT #allprocs: td.mem color rgb(139, 148, 161) != ink rgb(226, 230, 236)
+   EXPECT #allprocs: td.mem font-size 13px != 13.5px
+   (expectativas absolutas incluidas; total 26)
+
+==== magma/light ====
+-- orden cpu: sortCol=#procs:cpu #allprocs:cpu #ram-procs:n/a  tableFont=13.5px/13px/-  filas=5/600/-
+   DIFF td.pid.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.pname.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.pname.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu-core.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu-core.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.mem.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.mem.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF th(active).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=·
+   DIFF th(active).fontWeight: #procs=600  #allprocs=700  #ram-procs=·
+   DIFF th(active).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=·
+   DIFF th(active).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=·
+   DIFF th(idle).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=·
+   DIFF th(idle).fontWeight: #procs=600  #allprocs=700  #ram-procs=·
+   DIFF th(idle).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=·
+   DIFF th(idle).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=·
+   -> 17 diferencias
+   EXPECT #procs: span.procs-core no hereda de su celda: rgb(110, 58, 42) | 10.88px | none | ml=3.264px vs rgb(30, 11, 7)/13.5px
+   EXPECT #procs: td.mem color rgb(110, 58, 42) != ink rgb(30, 11, 7)
+   EXPECT #allprocs: td.pname font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu-core font-size 13px != 13.5px
+   EXPECT #allprocs: span.procs-core no hereda de su celda: rgb(110, 58, 42) | 10.88px | none | ml=3.264px vs rgb(30, 11, 7)/13px
+   EXPECT #allprocs: td.mem color rgb(110, 58, 42) != ink rgb(30, 11, 7)
+   EXPECT #allprocs: td.mem font-size 13px != 13.5px
+   (expectativas absolutas incluidas; total 25)
+-- orden cpu_core: sortCol=#procs:cpu-core #allprocs:cpu-core #ram-procs:n/a  tableFont=13.5px/13px/-  filas=7/600/-
+   DIFF td.pid.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.pname.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.pname.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu-core.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu-core.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu-core.coreSpan: #procs=rgb(158, 42, 15) | 10.88px | rgba(158, 42, 15, 0.667) 0px 0px 5px, rgba(158, 42, 15, 0.333) 0px 0px 12px | ml=3.264px  #allprocs=rgb(110, 58, 42) | 10.88px | rgba(158, 42, 15, 0.667) 0px 0px 5px, rgba(158, 42, 15, 0.333) 0px 0px 12px | ml=3.264px  #ram-procs=·
+   DIFF td.mem.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.mem.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF th(active).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=·
+   DIFF th(active).fontWeight: #procs=600  #allprocs=700  #ram-procs=·
+   DIFF th(active).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=·
+   DIFF th(active).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=·
+   DIFF th(idle).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=·
+   DIFF th(idle).fontWeight: #procs=600  #allprocs=700  #ram-procs=·
+   DIFF th(idle).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=·
+   DIFF th(idle).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=·
+   -> 18 diferencias
+   EXPECT #procs: span.procs-core no hereda de su celda: rgb(158, 42, 15) | 10.88px | rgba(158, 42, 15, 0.667) 0px 0px 5px, rgba(158, 42, 15, 0.333) 0px 0px 12px | ml=3.264px vs rgb(158, 42, 15)/13.5px
+   EXPECT #procs: td.mem color rgb(110, 58, 42) != ink rgb(30, 11, 7)
+   EXPECT #allprocs: td.pname font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu-core font-size 13px != 13.5px
+   EXPECT #allprocs: span.procs-core no hereda de su celda: rgb(110, 58, 42) | 10.88px | rgba(158, 42, 15, 0.667) 0px 0px 5px, rgba(158, 42, 15, 0.333) 0px 0px 12px | ml=3.264px vs rgb(158, 42, 15)/13px
+   EXPECT #allprocs: td.mem color rgb(110, 58, 42) != ink rgb(30, 11, 7)
+   EXPECT #allprocs: td.mem font-size 13px != 13.5px
+   (expectativas absolutas incluidas; total 26)
+-- orden mem_mb: sortCol=#procs:mem #allprocs:mem #ram-procs:mem  tableFont=13.5px/13px/13.5px  filas=7/600/8
+   DIFF td.pid.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF td.pname.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=13.5px
+   DIFF td.pname.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF td.cpu.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu-core.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu-core.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.mem.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=13.5px
+   DIFF td.mem.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF th(active).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=10.5px
+   DIFF th(active).fontWeight: #procs=600  #allprocs=700  #ram-procs=700
+   DIFF th(active).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=1px
+   DIFF th(active).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=0px 6px 6px 6px
+   DIFF th(idle).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=10.5px
+   DIFF th(idle).fontWeight: #procs=600  #allprocs=700  #ram-procs=700
+   DIFF th(idle).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=1px
+   DIFF th(idle).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=0px 6px 6px 6px
+   -> 17 diferencias
+   EXPECT #procs: span.procs-core no hereda de su celda: rgb(110, 58, 42) | 10.88px | none | ml=3.264px vs rgb(30, 11, 7)/13.5px
+   EXPECT #allprocs: td.pname font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu-core font-size 13px != 13.5px
+   EXPECT #allprocs: span.procs-core no hereda de su celda: rgb(110, 58, 42) | 10.88px | none | ml=3.264px vs rgb(30, 11, 7)/13px
+   EXPECT #allprocs: td.mem font-size 13px != 13.5px
+   (expectativas absolutas incluidas; total 23)
+-- orden name: sortCol=#procs:pname #allprocs:pname #ram-procs:pname  tableFont=13.5px/13px/13.5px  filas=7/601/8
+   DIFF td.pid.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF td.pname.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=13.5px
+   DIFF td.pname.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF td.cpu.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.cpu-core.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=·
+   DIFF td.cpu-core.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=·
+   DIFF td.mem.color: #procs=rgb(110, 58, 42)  #allprocs=rgb(110, 58, 42)  #ram-procs=rgb(30, 11, 7)
+   DIFF td.mem.fontSize: #procs=13.5px  #allprocs=13px  #ram-procs=13.5px
+   DIFF td.mem.padding: #procs=5px 6px 5px 6px  #allprocs=4px 6px 4px 6px  #ram-procs=5px 6px 5px 6px
+   DIFF th(active).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=10.5px
+   DIFF th(active).fontWeight: #procs=600  #allprocs=700  #ram-procs=700
+   DIFF th(active).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=1px
+   DIFF th(active).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=0px 6px 6px 6px
+   DIFF th(idle).fontSize: #procs=10.5px  #allprocs=10.56px  #ram-procs=10.5px
+   DIFF th(idle).fontWeight: #procs=600  #allprocs=700  #ram-procs=700
+   DIFF th(idle).letterSpacing: #procs=1px  #allprocs=0.8448px  #ram-procs=1px
+   DIFF th(idle).padding: #procs=0px 6px 6px 6px  #allprocs=8px 9.6px 8px 9.6px  #ram-procs=0px 6px 6px 6px
+   -> 18 diferencias
+   EXPECT #procs: span.procs-core no hereda de su celda: rgb(110, 58, 42) | 10.88px | none | ml=3.264px vs rgb(30, 11, 7)/13.5px
+   EXPECT #procs: td.mem color rgb(110, 58, 42) != ink rgb(30, 11, 7)
+   EXPECT #allprocs: td.pname font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu font-size 13px != 13.5px
+   EXPECT #allprocs: td.cpu-core font-size 13px != 13.5px
+   EXPECT #allprocs: span.procs-core no hereda de su celda: rgb(110, 58, 42) | 10.88px | none | ml=3.264px vs rgb(30, 11, 7)/13px
+   EXPECT #allprocs: td.mem color rgb(110, 58, 42) != ink rgb(30, 11, 7)
+   EXPECT #allprocs: td.mem font-size 13px != 13.5px
+   (expectativas absolutas incluidas; total 26)
+
+TOTAL diferencias entre tablas: 300
+RESULT: FAIL (300)

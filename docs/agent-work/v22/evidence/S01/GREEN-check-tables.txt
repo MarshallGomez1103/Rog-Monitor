@@ -1,0 +1,45 @@
+
+==== neon/dark ====
+-- orden cpu: sortCol=#procs:cpu #allprocs:cpu #ram-procs:n/a  tableFont=13.5px/13.5px/-  filas=5/610/-
+   -> 0 diferencias
+   (expectativas absolutas incluidas; total 0)
+-- orden cpu_core: sortCol=#procs:cpu-core #allprocs:cpu-core #ram-procs:n/a  tableFont=13.5px/13.5px/-  filas=5/610/-
+   -> 0 diferencias
+   (expectativas absolutas incluidas; total 0)
+-- orden mem_mb: sortCol=#procs:mem #allprocs:mem #ram-procs:mem  tableFont=13.5px/13.5px/13.5px  filas=5/610/8
+   -> 0 diferencias
+   (expectativas absolutas incluidas; total 0)
+-- orden name: sortCol=#procs:pname #allprocs:pname #ram-procs:pname  tableFont=13.5px/13.5px/13.5px  filas=5/609/8
+   -> 0 diferencias
+   (expectativas absolutas incluidas; total 0)
+
+==== magma/dark ====
+-- orden cpu: sortCol=#procs:cpu #allprocs:cpu #ram-procs:n/a  tableFont=13.5px/13.5px/-  filas=5/601/-
+   -> 0 diferencias
+   (expectativas absolutas incluidas; total 0)
+-- orden cpu_core: sortCol=#procs:cpu-core #allprocs:cpu-core #ram-procs:n/a  tableFont=13.5px/13.5px/-  filas=5/601/-
+   -> 0 diferencias
+   (expectativas absolutas incluidas; total 0)
+-- orden mem_mb: sortCol=#procs:mem #allprocs:mem #ram-procs:mem  tableFont=13.5px/13.5px/13.5px  filas=5/601/8
+   -> 0 diferencias
+   (expectativas absolutas incluidas; total 0)
+-- orden name: sortCol=#procs:pname #allprocs:pname #ram-procs:pname  tableFont=13.5px/13.5px/13.5px  filas=5/601/8
+   -> 0 diferencias
+   (expectativas absolutas incluidas; total 0)
+
+==== magma/light ====
+-- orden cpu: sortCol=#procs:cpu #allprocs:cpu #ram-procs:n/a  tableFont=13.5px/13.5px/-  filas=5/600/-
+   -> 0 diferencias
+   (expectativas absolutas incluidas; total 0)
+-- orden cpu_core: sortCol=#procs:cpu-core #allprocs:cpu-core #ram-procs:n/a  tableFont=13.5px/13.5px/-  filas=5/600/-
+   -> 0 diferencias
+   (expectativas absolutas incluidas; total 0)
+-- orden mem_mb: sortCol=#procs:mem #allprocs:mem #ram-procs:mem  tableFont=13.5px/13.5px/13.5px  filas=5/600/8
+   -> 0 diferencias
+   (expectativas absolutas incluidas; total 0)
+-- orden name: sortCol=#procs:pname #allprocs:pname #ram-procs:pname  tableFont=13.5px/13.5px/13.5px  filas=5/602/8
+   -> 0 diferencias
+   (expectativas absolutas incluidas; total 0)
+
+TOTAL diferencias entre tablas: 0
+RESULT: PASS
