@@ -100,6 +100,33 @@ test('moveChartTo: mueve a un índice, clamp fuera de rango, sin mutar', () => {
   assert.deepStrictEqual(list, ['a', 'b', 'c', 'd']);
 });
 
+test('dropChart: soltar sobre una fila activa deja la gráfica en la posición del destino', () => {
+  const list = deepFreeze(['a', 'b', 'c', 'd']);
+  assert.deepStrictEqual(M.dropChart(list, 'a', 'c'), ['b', 'c', 'a', 'd']);
+  assert.deepStrictEqual(M.dropChart(list, 'd', 'a'), ['d', 'a', 'b', 'c']);
+  assert.deepStrictEqual(M.dropChart(list, 'b', 'b'), ['a', 'b', 'c', 'd'], 'sobre sí misma: sin cambio');
+  assert.deepStrictEqual(list, ['a', 'b', 'c', 'd']);
+});
+
+test('dropChart: destino inactivo, ausente o heredado NO mueve (nunca al principio)', () => {
+  const list = deepFreeze(['a', 'b', 'c']);
+  for (const target of ['zz', 'constructor', '__proto__', undefined, null, 3]) {
+    assert.deepStrictEqual(M.dropChart(list, 'c', target), ['a', 'b', 'c'], String(target));
+  }
+  assert.deepStrictEqual(M.dropChart(list, 'zz', 'a'), ['a', 'b', 'c'], 'origen ausente');
+  assert.deepStrictEqual(M.dropChart(null, 'a', 'b'), []);
+});
+
+test('dropDirection: marca dónde caerá (above/below) o null si no hay movimiento', () => {
+  const list = deepFreeze(['a', 'b', 'c', 'd']);
+  assert.strictEqual(M.dropDirection(list, 'd', 'a'), 'above');
+  assert.strictEqual(M.dropDirection(list, 'a', 'd'), 'below');
+  assert.strictEqual(M.dropDirection(list, 'b', 'b'), null);
+  assert.strictEqual(M.dropDirection(list, 'b', 'zz'), null);
+  assert.strictEqual(M.dropDirection(list, 'zz', 'a'), null);
+  assert.strictEqual(M.dropDirection(null, 'a', 'b'), null);
+});
+
 test('canMoveChart: bordes, ausente, dir inválida', () => {
   const list = deepFreeze(['a', 'b', 'c']);
   assert.strictEqual(M.canMoveChart(list, 'a', -1), false);

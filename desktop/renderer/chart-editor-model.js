@@ -68,6 +68,22 @@
     return cur;
   }
 
+  /* Soltar `key` sobre la fila ACTIVA `targetKey`: queda en la posición del destino.
+     Destino ausente/inactivo => sin cambio (moveChartTo con -1 la mandaría al principio). */
+  function dropChart(list, key, targetKey) {
+    const cur = Array.from(list || []);
+    const to = cur.indexOf(targetKey);
+    return to < 0 ? cur : moveChartTo(cur, key, to);
+  }
+
+  /* Dónde caerá al soltar sobre `targetKey`: 'above' (sube) | 'below' (baja) | null. */
+  function dropDirection(list, key, targetKey) {
+    if (!Array.isArray(list)) return null;
+    const i = list.indexOf(key), j = list.indexOf(targetKey);
+    if (i < 0 || j < 0 || i === j) return null;
+    return j < i ? 'above' : 'below';
+  }
+
   /* Un paso: dir -1 (arriba) o +1 (abajo). Bordes, ausente o dir distinta => sin cambio. */
   function moveChart(list, key, dir) {
     const cur = Array.from(list || []);
@@ -163,7 +179,7 @@
   }
 
   const api = {
-    normalizeChartList, toggleChart, moveChart, moveChartTo, canMoveChart, editorRows,
+    normalizeChartList, toggleChart, moveChart, moveChartTo, dropChart, dropDirection, canMoveChart, editorRows,
     presetOf, nextPresetList, focusActAfterMove,
     createExpandState, toggleExpanded, collapseExpanded, isExpanded, reconcileExpanded,
   };

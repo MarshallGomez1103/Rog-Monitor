@@ -70,6 +70,7 @@ test('app.js usa el modelo (sin copias locales de histCharts/moveChart) y se car
   const html = fs.readFileSync(path.join(__dirname, '..', 'renderer', 'index.html'), 'utf8');
   const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1]);
   assert.ok(scripts.indexOf('chart-editor-model.js') >= 0 && scripts.indexOf('chart-editor-model.js') < scripts.indexOf('app.js'));
+  assert.ok(scripts.indexOf('chart-editor-ui.js') > scripts.indexOf('app.js'));
 });
 
 test('catálogo real + modelo: JSON corrupto/heredado vuelve a temperatura y lo válido conserva el orden', () => {

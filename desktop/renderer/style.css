@@ -1520,12 +1520,50 @@ html[data-mode="dark"][data-theme="neon-nights"] .block::before {
 /* Celdas de texto de las tarjetas (EPP, modo…): nunca invaden la celda vecina */
 .statgrid b.small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Editor de gráficas del historial (F4-05/06) */
-.hist-editor { margin: 6px 0 12px; padding: 10px 12px; border: 1px solid var(--hair); display: grid; gap: 4px; }
-.hist-editor .note { margin: 0 0 4px; }
-.hist-edit-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.hist-edit-row.off label { color: var(--dim); }
-.hist-edit-row label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; }
-.hist-edit-btns button { min-width: 30px; padding: 2px 8px; }
-.hist-edit-btns button:disabled { opacity: .3; cursor: default; }
-.hist-edit-presets { display: flex; gap: 8px; margin-top: 6px; }
+/* Editor de gráficas del historial (F4-05/06, S02 N-A3-01/02/03): filas con asa, flechas SVG de 30 px
+   (aria-disabled = se ve, solo cambia el trazo y el cursor), casilla cuadrada del tema, presets en segmento. */
+.hist-editor { margin: 6px 0 14px; padding: 10px 12px 12px; border: 1px solid var(--hair); background: color-mix(in srgb, var(--panel) 70%, var(--bg)); display: grid; gap: 0; }
+.hist-editor .note { margin: 0 0 8px; }
+.hist-edit-row { display: flex; align-items: center; gap: 4px; min-height: 38px; padding-right: 2px; border-bottom: 1px solid var(--hair); border-top: 2px solid transparent; transition: background .12s; }
+.hist-edit-row:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.hist-edit-row.dragging { opacity: .45; }
+.hist-edit-row.drop-above { border-top-color: var(--accent); }
+.hist-edit-row.drop-below { border-bottom-color: var(--accent); box-shadow: 0 1px 0 var(--accent); }
+.hist-edit-grip { flex: none; width: 24px; height: 30px; display: grid; place-items: center; color: var(--dim); cursor: grab; }
+.hist-edit-row.off .hist-edit-grip { cursor: default; opacity: .45; }
+.hist-edit-grip svg { width: 14px; height: 14px; }
+.hist-edit-check { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 36px; cursor: pointer; font-size: 13px; color: var(--ink); }
+.hist-edit-row.off .hist-edit-check { color: var(--dim); }
+.hist-edit-check input {
+  appearance: none; -webkit-appearance: none; flex: none; margin: 0; width: 18px; height: 18px;
+  display: grid; place-content: center; cursor: pointer;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 60%, var(--dim)); border-radius: 0; background: var(--chip);
+  transition: background .12s, border-color .12s;
+}
+.hist-edit-check input::after {
+  content: ""; width: 9px; height: 5px; margin-top: -2px;
+  border-left: 2px solid var(--bg); border-bottom: 2px solid var(--bg);
+  transform: rotate(-45deg) scale(0); transition: transform .1s;
+}
+.hist-edit-check input:checked { background: var(--accent); border-color: var(--accent); }
+.hist-edit-check input:checked::after { transform: rotate(-45deg) scale(1); }
+.hist-edit-check input:hover { border-color: var(--accent); }
+.hist-edit-btns { flex: none; display: inline-flex; gap: 4px; }
+.hist-btn {
+  width: 30px; height: 30px; padding: 0; display: grid; place-items: center; cursor: pointer;
+  color: var(--ink); background: var(--chip); border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--hair)); border-radius: var(--radius);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+  transition: color .12s, border-color .12s, box-shadow .12s;
+}
+.hist-btn svg { width: 16px; height: 16px; }
+.hist-btn:hover, .hist-btn:focus-visible { border-color: var(--accent); box-shadow: 0 0 9px color-mix(in srgb, var(--accent) 38%, transparent); }
+/* Sin recorrido: se ve igual de grande y legible (contraste AA), pero plano y con trazo discontinuo */
+.hist-btn[aria-disabled="true"] { color: color-mix(in srgb, var(--dim) 55%, var(--ink)); background: transparent; border-style: dashed; border-color: var(--hair); box-shadow: none; cursor: not-allowed; }
+.hist-edit-presets { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin-top: 10px; }
+.hist-edit-legend { font-size: 11.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--dim); }
+.hist-seg { display: inline-flex; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--hair)); }
+.hist-seg-btn { min-height: 30px; padding: 0 14px; border: 0; background: var(--chip); color: var(--ink); font: 600 12.5px var(--sans); cursor: pointer; }
+.hist-seg-btn + .hist-seg-btn { border-left: 1px solid color-mix(in srgb, var(--accent) 45%, var(--hair)); }
+.hist-seg-btn:hover { background: color-mix(in srgb, var(--accent) 16%, var(--chip)); }
+.hist-seg-btn[aria-pressed="true"] { background: var(--accent); color: var(--bg); }
+.hist-edit-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

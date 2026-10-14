@@ -651,7 +651,7 @@ const HIST_PRESETS = {
   usage: ['cpu_usage', 'ram_gb', 'swap_gb', 'gpu_util'],
 };
 
-const CE = window.RogChartEditor;   // lista/orden/toggle/presets: chart-editor-model.js (puro, con tests)
+const CE = window.RogChartEditor;   // lista/orden/toggle/presets/expandir: chart-editor-model.js (puro, con tests)
 const CHART_KEYS = Object.keys(CHART_CATALOG);
 
 /* Lista válida guardada: solo claves PROPIAS del catálogo, sin repetidas, ≥1; corrupta → temperatura. */
@@ -670,22 +670,8 @@ function setHistCharts(list) {
   const btn = $('hist-mode');
   btn.dataset.i18n = CE.presetOf(histList, HIST_PRESETS) === 'usage' ? 'chart.mode_temp' : 'chart.mode_usage';
   btn.textContent = t(btn.dataset.i18n);
-  renderHistEditor();
+  window.RogChartEditorUI?.sync();   // editor (chart-editor-ui.js)
   if (lastStats) update(lastStats);
-}
-
-function renderHistEditor() {
-  const box = $('hist-editor');
-  if (!box || box.classList.contains('hidden')) return;
-  box.innerHTML = `<p class="note">${escapeHtml(t('chart.editor_hint'))}</p>` + CE.editorRows(histList, CHART_KEYS).map((r) => {
-    const k = r.key;
-    return `<div class="hist-edit-row${r.on ? '' : ' off'}" data-key="${k}">
-      <label><input type="checkbox" ${r.on ? 'checked' : ''} data-act="toggle"> ${escapeHtml(t(CHART_CATALOG[k][2]))}</label>
-      <span class="hist-edit-btns">
-        <button class="ghost" data-act="up" ${!r.canUp ? 'disabled' : ''} aria-label="${escapeHtml(t('chart.move_up'))}">↑</button>
-        <button class="ghost" data-act="down" ${!r.canDown ? 'disabled' : ''} aria-label="${escapeHtml(t('chart.move_down'))}">↓</button>
-      </span></div>`;
-  }).join('') + `<div class="hist-edit-presets"><button class="ghost" data-act="preset" data-preset="temp">${escapeHtml(t('chart.mode_temp'))}</button><button class="ghost" data-act="preset" data-preset="usage">${escapeHtml(t('chart.mode_usage'))}</button></div>`;
 }
 
 /* Helpers puros de las gráficas (sin DOM; los prueba desktop/test/charts.test.js).
@@ -2321,28 +2307,6 @@ $('maint-uninstall')?.addEventListener('click', async () => {
 /* ---------- wiring ---------- */
 
 $('hist-mode').addEventListener('click', () => setHistCharts(CE.nextPresetList(histList, HIST_PRESETS)));
-$('hist-edit').addEventListener('click', () => {
-  const box = $('hist-editor');
-  box.classList.toggle('hidden');
-  $('hist-edit').setAttribute('aria-expanded', String(!box.classList.contains('hidden')));
-  renderHistEditor();
-});
-$('hist-editor').addEventListener('click', (e) => {
-  const el = e.target.closest('[data-act]');
-  if (!el || el.disabled) return;
-  const key = el.closest('[data-key]')?.dataset.key;
-  const act = el.dataset.act;
-  if (act === 'preset') return setHistCharts(HIST_PRESETS[el.dataset.preset]);
-  if (act === 'toggle') {
-    const next = CE.toggleChart(histList, key, CHART_KEYS);
-    if (next.length === histList.length && next.every((k, i) => k === histList[i])) { el.checked = true; return; }   // siempre al menos una
-    return setHistCharts(next);
-  }
-  const dir = act === 'up' ? -1 : 1;
-  const focusAct = CE.focusActAfterMove(histList, key, dir);   // el botón que seguirá habilitado (no se pierde en el borde)
-  setHistCharts(CE.moveChart(histList, key, dir));
-  $('hist-editor').querySelector(`[data-key="${key}"] [data-act="${focusAct}"]`)?.focus();
-});
 setHistCharts(histList);
 
 window.rog.onStats(update);
