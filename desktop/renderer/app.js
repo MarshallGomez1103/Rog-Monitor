@@ -603,8 +603,9 @@ function tempClass(temp, limits) {
 }
 
 let toastTimer = null;
-// kind: 'ok' (default) | 'warn' | 'err'
-function toast(message, kind) {
+// kind: 'ok' (default) | 'warn' | 'err'. action opcional {label, onClick}: botón
+// (p. ej. Deshacer) y el toast dura 6 s en vez de 5.
+function toast(message, kind, action) {
   const el = $('toast');
   const k = kind || 'ok';
   // rebuild inner HTML for icon + message slots
@@ -612,8 +613,16 @@ function toast(message, kind) {
   el.querySelector('.toast-msg').textContent = message;
   el.classList.remove('hidden', 'toast-ok', 'toast-warn', 'toast-err');
   el.classList.add('toast-' + k);
+  if (action) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'toast-action';
+    b.textContent = action.label;
+    b.addEventListener('click', () => { clearTimeout(toastTimer); el.classList.add('hidden'); action.onClick(); });
+    el.appendChild(b);
+  }
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.add('hidden'), 5000);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), action ? 6000 : 5000);
 }
 
 /* ---------- charts ---------- */
@@ -1534,12 +1543,13 @@ function _benchCardHtml(item) {
     ? `<div class="bench-detail-tool">${escapeHtml(t('bench.detail.tool_label'))}: ${escapeHtml(item.kind === 'gpu' ? t('bench.tool_gpu') : t('bench.tool_cpu'))}</div>`
     : '';
 
+  const who = { kind, when: item.when || '' };   // para los aria-label (distintos por tarjeta)
   return `
     <div class="bench-card-header">
       <span class="bench-card-kind kind-${escapeHtml((item.kind || 'cpu'))}">${escapeHtml(kind)}</span>
       <span class="bench-card-when">${escapeHtml(item.when || '')}</span>
-      <span class="bench-card-expand">${escapeHtml(t('bench.expand'))}</span>
-      <button type="button" class="bench-card-delete" data-bid-del="${escapeHtml(item.id || '')}" title="${escapeHtml(t('bench.delete_one'))}">&#10005;</button>
+      <button type="button" class="bench-card-expand" aria-label="${escapeHtml(t('bench.expand_aria', who))}">${escapeHtml(t('bench.expand'))}</button>
+      <button type="button" class="bench-card-delete" data-bid-del="${escapeHtml(item.id || '')}" title="${escapeHtml(t('bench.delete_one'))}" aria-label="${escapeHtml(t('bench.delete_aria', who))}">&#10005;</button>
     </div>
     <div class="bench-card-statline">${statLine}</div>
     <div class="bench-card-body">
@@ -1635,7 +1645,7 @@ function renderBenchmarkHistory() {
   host.querySelectorAll('.bench-card-delete').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      deleteBenchmarkItem(btn.dataset.bidDel);
+      deleteBenchmarkItem(btn.dataset.bidDel, e.detail === 0);   // detail 0 = teclado
     });
   });
 
@@ -1712,14 +1722,21 @@ function _saveBenchmarkHistory() {
   try { localStorage.setItem('benchmarkHistoryV2', JSON.stringify(benchmarkHistory)); } catch (_) { /* lleno o bloqueado */ }
 }
 
-function deleteBenchmarkItem(id) {
-  if (!id) return;
-  const before = benchmarkHistory.length;
-  benchmarkHistory = benchmarkHistory.filter((i) => i.id !== id);
-  if (benchmarkHistory.length === before) return;
+/* Borrar un resultado no es inmediato-definitivo: toast con Deshacer (6 s) que lo
+   devuelve a su posición. Por teclado el foco pasa al botón Deshacer. */
+function deleteBenchmarkItem(id, byKeyboard) {
+  const idx = id ? benchmarkHistory.findIndex((i) => i.id === id) : -1;
+  if (idx < 0) return;
+  const [item] = benchmarkHistory.splice(idx, 1);
   _saveBenchmarkHistory();
   renderBenchmarkHistory();
-  toast(t('toast.bench_cleared'));
+  toast(t('toast.bench_cleared'), 'ok', { label: t('toast.undo'), onClick: () => {
+    if (benchmarkHistory.some((i) => i.id === id)) return;
+    benchmarkHistory.splice(Math.min(idx, benchmarkHistory.length), 0, item);
+    _saveBenchmarkHistory();
+    renderBenchmarkHistory();
+  } });
+  if (byKeyboard) $('toast').querySelector('.toast-action')?.focus();
 }
 
 async function clearAllBenchmarkHistory() {

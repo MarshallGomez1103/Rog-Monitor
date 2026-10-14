@@ -104,6 +104,12 @@
   text-shadow: var(--neon-glow-soft, 0 0 5px currentColor);
   transition: opacity 0.15s;
   white-space: nowrap;
+  /* ahora es <button>: reset para conservar el aspecto de la pista de texto */
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
 }
 .bench-card:hover .bench-card-expand,
 .bench-card:focus-within .bench-card-expand { opacity: 1; }
@@ -133,6 +139,24 @@
   border-color: color-mix(in srgb, var(--lvl-crit, #ff5a3c) 55%, transparent);
   background: color-mix(in srgb, var(--lvl-crit, #ff5a3c) 10%, transparent);
 }
+
+/* Botón de acción del toast (Deshacer): cuadrado, acento, ≥28 px de alto */
+#toast .toast-action {
+  flex-shrink: 0;
+  min-height: 28px;
+  padding: 0 12px;
+  background: none;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 0;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+#toast .toast-action:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
 
 /* LÍNEA DE RESUMEN — siempre visible, legible, métrica principal grande */
 .bench-card-statline {
