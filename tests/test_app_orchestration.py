@@ -374,7 +374,7 @@ class SnapshotJson(AppCase):
 # (lector que falla, clave del estado, subconjunto esperado de ese campo)
 READER_FAILURES = [
     ("cpu.read", "cpu", {"avg": None, "usage": None, "package": None, "core_grid": [],
-                         "cores": [], "hot90": 0, "throttled_now": False}),
+                         "cores": [], "hot90": None, "throttled_now": False}),
     ("gpu.read", "gpu", {"active": None, "mode": None, "pending": None,
                          "pending_action": None}),
     ("fans.read", "fans", []),

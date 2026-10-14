@@ -54,9 +54,9 @@ def _cpu_unavailable() -> dict:
     return {
         "model": None, "cores": [], "core_grid": [],
         "usage": None, "iowait": None, "steal": None,
-        "avg": None, "max": None, "min": None, "package": None, "hot90": 0,
+        "avg": None, "max": None, "min": None, "package": None, "hot90": None,
         "freq_ghz": None, "governor": None, "driver": None, "epp": None,
-        "throttle_count": 0, "throttle_ms": 0, "throttle_delta": 0,
+        "throttle_count": None, "throttle_ms": None, "throttle_delta": 0,
         "throttle_ms_delta": 0, "throttled_now": False,
     }
 

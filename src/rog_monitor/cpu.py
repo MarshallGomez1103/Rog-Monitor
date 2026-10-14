@@ -122,21 +122,19 @@ class CpuReader:
             pass
         return "CPU"
 
-    def _throttle_count(self) -> int:
-        total = 0
-        for path in self._throttle_files:
-            value = hwmon.read_int(Path(path))
-            if value:
-                total += value
-        return total
+    @staticmethod
+    def _sum_files(paths: list[str]) -> int | None:
+        """Suma de enteros sysfs, o None si ningún archivo se pudo leer (N-DEF-02:
+        sin sysfs de throttle no hay dato; 0 solo cuando el kernel dice 0)."""
+        values = [hwmon.read_int(Path(p)) for p in paths]
+        values = [v for v in values if v is not None]
+        return sum(values) if values else None
 
-    def _throttle_ms(self) -> int:
-        total = 0
-        for path in self._throttle_ms_files:
-            value = hwmon.read_int(Path(path))
-            if value:
-                total += value
-        return total
+    def _throttle_count(self) -> int | None:
+        return self._sum_files(self._throttle_files)
+
+    def _throttle_ms(self) -> int | None:
+        return self._sum_files(self._throttle_ms_files)
 
     def read(self) -> dict:
         cores: list[float] = []
@@ -165,8 +163,13 @@ class CpuReader:
         policy0 = CPUFREQ / "policy0"
         throttle = self._throttle_count()
         throttle_ms = self._throttle_ms()
-        throttle_delta = throttle - self.last_throttle
-        throttle_ms_delta = throttle_ms - self.last_throttle_ms
+        # Deltas siempre numéricos (alerts.py): sin dato en alguna de las dos
+        # lecturas no hay evento que contar.
+        throttle_delta = (throttle - self.last_throttle
+                          if throttle is not None and self.last_throttle is not None else 0)
+        throttle_ms_delta = (throttle_ms - self.last_throttle_ms
+                             if throttle_ms is not None and self.last_throttle_ms is not None
+                             else 0)
         self.last_throttle = throttle
         self.last_throttle_ms = throttle_ms
 
@@ -203,7 +206,8 @@ class CpuReader:
             "max": round(max(cores), 1) if cores else None,
             "min": round(min(cores), 1) if cores else None,
             "package": package,
-            "hot90": sum(1 for c in cores if c >= 90),
+            # None sin sensores (N-DEF-02): 0 núcleos calientes solo si se midió
+            "hot90": sum(1 for c in cores if c >= 90) if cores else None,
             "freq_ghz": round(statistics.mean(freqs), 2) if freqs else None,
             "governor": hwmon.read_str(policy0 / "scaling_governor"),
             "driver": hwmon.read_str(policy0 / "scaling_driver"),
