@@ -84,7 +84,9 @@ class ProcReader:
                     continue
                 current[pid] = jiffies
                 prev = self._last.get(pid)
-                if prev is None or dt <= 0:
+                # jiffies < prev: PID reutilizado por otro proceso; se trata como
+                # nuevo (current[pid] ya guarda la base del próximo ciclo).
+                if prev is None or dt <= 0 or jiffies < prev:
                     continue
                 # % of the WHOLE CPU (all cores); cpu_core is the top-style
                 # per-core figure (100 = one full core)

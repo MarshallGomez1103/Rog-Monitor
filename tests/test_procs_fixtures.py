@@ -245,6 +245,26 @@ class VanishingAndHostileEntries(unittest.TestCase):
             rows = reader.read(include_idle=True)
         self.assertEqual([r["pid"] for r in rows], [1])
 
+    def test_reused_pid_never_reports_negative_cpu(self):
+        """N-DEF-09: PID reutilizado (jiffies actuales < previos) se trata como nuevo."""
+        for include_idle in (False, True):
+            with self.subTest(include_idle=include_idle), FakeProc() as fp:
+                fp.put(1, "stable", utime=0)
+                fp.put(2, "oldproc", utime=500)
+                reader = procs.ProcReader()
+                reader.read()
+                fp.put(1, "stable", utime=10)
+                fp.put(2, "newproc", utime=3)   # mismo PID, proceso distinto
+                fp.total = 1100
+                rows = reader.read(include_idle=include_idle)
+                self.assertTrue(all(r["cpu"] >= 0 and r["cpu_core"] >= 0 for r in rows), rows)
+                self.assertEqual([r["pid"] for r in rows], [1])
+                # el siguiente ciclo ya usa los jiffies nuevos como base
+                fp.put(2, "newproc", utime=13)
+                fp.total = 1200
+                rows = reader.read()
+                self.assertEqual({r["pid"]: r["cpu"] for r in rows}.get(2), 10.0)
+
     def test_pid_dir_without_stat_file_is_skipped(self):
         """El proceso muere entre iterdir() y read_text(): FileNotFoundError."""
         with FakeProc() as fp:
