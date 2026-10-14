@@ -1,6 +1,6 @@
 # STATUS v22 — leer PRIMERO
 Plan: `PLAN_MAESTRO_ROG_MONITOR.md` (raíz). Los 90 CP anteriores ya se ejecutaron: no repetir.
-Rama de trabajo: `feat/v22` (sin upstream, sin push). master = origin/master = 7d49333 (v21, pusheado por orden del propietario 2026-10-11).
+Rama de trabajo: `feat/v22` (pusheada; se publica a master por PR con CI verde, con permiso del propietario). 2026-10-14: PR #7/#8 fusionados, 5 PR de Dependabot fusionados (checkout/setup-node/setup-python/upload-artifact v7, Electron 44.7.0 probado local e2e 31/31), PR #9 = arreglo ventiladores.
 Respaldo: `~/MyFiles/Backups/rog-monitor/2026-10-11-pre-v22/` (bundle + ignorados + ZIP, SHA256SUMS).
 
 ## Fase actual: F0 cerrada; el propietario autorizó seguir arreglando (2026-10-11). En curso: F1/F2/F3/F5/F8 por prioridad visible
@@ -50,3 +50,5 @@ Siguientes candidatos: F2-08 (ts/stale), F2-09 schema 2 deltas, F3-06 timeout VR
 - 98f1883: roadmap v21/v22, P1 parciales honestos.
 - 2dd4f66: procesos que caben (hasta 25), ventiladores fluidos por defecto + modo ahorro.
 - **feat/v22 pusheado a origin (2026-10-12, orden del propietario "commit y push")**; CI remoto run 38300860771 VERDE completo (incl. e2e: D-01 resuelto). master sigue en v21 (7d49333). Siguiente: PR feat/v22 → master cuando el propietario lo pida.
+| BUG ventiladores no reactivos en quiet/balanced + curva no aplicada fuera del punto 8 + quiet sin PL1/PL2 | TESTED (196+8 py, prueba térmica real); requiere sudo install-system.sh | 2b6d9d6, 8e8f523 |
+| Cobertura en CI (py ≥50 %, node ≥90 % líneas) | TESTED | 2b6d9d6 |
