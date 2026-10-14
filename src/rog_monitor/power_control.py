@@ -346,10 +346,21 @@ def _load_baseline() -> dict:
     try:
         with open(_baseline_path()) as fh:
             data = json.load(fh)
-        vals = data.get("values", {}) if isinstance(data, dict) else {}
-        return {k: int(v) for k, v in vals.items() if isinstance(v, (int, float))}
     except (OSError, json.JSONDecodeError, ValueError):
         return {}
+    # Archivo editable a mano: "values" que no sea objeto, o un número infinito
+    # (1e999 -> inf), no deben tumbar el snapshot; se ignoran.
+    vals = data.get("values") if isinstance(data, dict) else None
+    if not isinstance(vals, dict):
+        return {}
+    out: dict[str, int] = {}
+    for k, v in vals.items():
+        if isinstance(v, (int, float)):
+            try:
+                out[k] = int(v)
+            except (ValueError, OverflowError):
+                pass
+    return out
 
 
 def _save_baseline(values: dict) -> None:

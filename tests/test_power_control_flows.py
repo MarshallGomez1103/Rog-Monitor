@@ -637,9 +637,24 @@ class BaselineFile(PcCase):
         self.assertEqual(pc._load_baseline(), {"pl1": 90, "dynamic_boost": 12})
 
     def test_invalid_json_and_wrong_top_level_are_empty(self):
-        for text in ("{roto", "[1, 2]", '"texto"', "null", "{}"):
+        for text in ("{roto", "[1, 2]", '"texto"', "null", "{}", '{"values": null}'):
             self.write(text)
             self.assertEqual(pc._load_baseline(), {}, text)
+
+    def test_values_that_are_not_a_dict_are_empty(self):
+        for text in ('{"values": [1, 2]}', '{"values": "x"}', '{"values": 5}'):
+            self.write(text)
+            self.assertEqual(pc._load_baseline(), {}, text)
+
+    def test_infinite_value_does_not_crash(self):
+        self.write('{"values": {"pl1": 1e999, "pl2": 125}}')
+        self.assertEqual(pc._load_baseline().get("pl2"), 125)
+
+    def test_snapshot_survives_a_hand_broken_baseline(self):
+        self.write('{"values": [1, 2]}')
+        st = pc.PowerControl().state()
+        self.assertTrue(st["ok"])
+        self.assertEqual(st["baseline"]["pl1"], 100)  # se recaptura de fábrica
 
     def test_save_baseline_empty_writes_nothing(self):
         pc._save_baseline({})
