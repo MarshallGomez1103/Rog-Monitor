@@ -161,16 +161,27 @@ def _samples_path(session_id: str) -> Path:
     return _session_path(session_id).with_suffix(".samples.ndjson")
 
 
-def _load_session(session_id: str, with_samples: bool = True) -> dict | None:
-    path = _session_path(session_id)
+def _read_json_object(path: Path) -> dict | None:
+    """JSON de `path` si es un objeto; None si falta, está corrupto o es otro
+    tipo JSON (null, lista...): un archivo ajeno en el directorio de sesiones
+    nunca debe tumbar `list`/`baseline`/`get` con un traceback."""
     try:
         with open(path) as fh:
-            session = json.load(fh)
+            data = json.load(fh)
     except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _load_session(session_id: str, with_samples: bool = True) -> dict | None:
+    session = _read_json_object(_session_path(session_id))
+    if session is None:
         return None
     # Sesión en curso: las muestras viven en el sidecar hasta `stop` (cada
     # `sample` es un proceso nuevo; reescribir todo el JSON era O(n²)).
     if with_samples and not session.get("ended_at"):
+        if not isinstance(session.get("samples"), list):
+            session["samples"] = []
         try:
             with open(_samples_path(session_id)) as fh:
                 for line in fh:
@@ -190,12 +201,8 @@ def _save_session(session: dict) -> None:
 
 def _has_baseline() -> bool:
     for path in SESSIONS_DIR.glob("*.json"):
-        try:
-            with open(path) as fh:
-                if (json.load(fh) or {}).get("baseline"):
-                    return True
-        except (OSError, ValueError):
-            continue
+        if (_read_json_object(path) or {}).get("baseline"):
+            return True
     return False
 
 
@@ -319,10 +326,8 @@ def cmd_stop(args) -> dict:
 def cmd_list(_args) -> dict:
     out = []
     for path in sorted(SESSIONS_DIR.glob("*.json"), reverse=True):
-        try:
-            with open(path) as fh:
-                data = json.load(fh)
-        except (OSError, ValueError):
+        data = _read_json_object(path)
+        if data is None:
             continue
         out.append({
             "id": data.get("id"),
@@ -345,12 +350,10 @@ def cmd_get(args) -> dict:
 
 def cmd_baseline(_args) -> dict:
     for path in sorted(SESSIONS_DIR.glob("*.json")):
-        try:
-            with open(path) as fh:
-                data = json.load(fh)
-        except (OSError, ValueError):
+        data = _read_json_object(path)
+        if data is None:
             continue
-        if data.get("baseline") and data.get("ended_at"):
+        if data.get("baseline") and data.get("ended_at") and data.get("id"):
             return {"ok": True, "session_id": data["id"]}
     return {"ok": True, "session_id": None}
 

@@ -530,6 +530,41 @@ class Compare(Base):
         self.assertEqual(res["a"]["id"], "a")
 
 
+class InvalidStates(Base):
+    """Archivos que son JSON válido pero no una sesión: ninguna orden debe
+    reventar con traceback (la app espera siempre UNA línea JSON)."""
+
+    def junk(self, name, text):
+        self.dir.mkdir(parents=True, exist_ok=True)
+        (self.dir / f"{name}.json").write_text(text)
+
+    def test_non_object_json_is_treated_as_missing_session(self):
+        for i, text in enumerate(("null", "[1, 2]", '"hola"', "42")):
+            self.junk(f"j{i}", text)
+            self.assertIsNone(gs._load_session(f"j{i}"), text)
+            self.assertFalse(gs.cmd_get(args(id=f"j{i}"))["ok"], text)
+            self.assertFalse(gs.cmd_stop(args(id=f"j{i}"))["ok"], text)
+            self.assertFalse(gs.cmd_note(args(id=f"j{i}", text="x"))["ok"], text)
+
+    def test_list_baseline_and_has_baseline_survive_non_object_json_files(self):
+        self.junk("0-null", "null")
+        self.junk("1-lista", "[1]")
+        self.save("2-ok", baseline=True, ended_at="x")
+        self.assertEqual([s["id"] for s in gs.cmd_list(args())["sessions"]], ["2-ok"])
+        self.assertEqual(gs.cmd_baseline(args())["session_id"], "2-ok")
+        self.assertTrue(gs._has_baseline())
+
+    def test_has_baseline_false_with_only_non_object_files(self):
+        self.junk("0-lista", "[1]")
+        self.junk("1-str", '"x"')
+        self.assertFalse(gs._has_baseline())
+
+    def test_open_session_without_samples_key_still_loads(self):
+        self.junk("s", json.dumps({"id": "s", "started_at": STARTED, "ended_at": None}))
+        gs._samples_path("s").write_text('{"t": 1.0}\n')
+        self.assertEqual(len(gs._load_session("s")["samples"]), 1)
+
+
 class Cli(Base):
     def run_main(self, argv):
         out, err = io.StringIO(), io.StringIO()
