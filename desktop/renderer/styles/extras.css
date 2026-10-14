@@ -1133,47 +1133,20 @@
   border-radius: 3px;
 }
 
-#allprocs { width: 100%; border-collapse: collapse; font-size: 13px; }
+/* #allprocs usa la regla compartida .proc-table (style.css); aquí solo lo propio:
+   cabecera pegajosa dentro del scroll y anchos de columna. */
 #allprocs th {
   position: sticky;
   top: 0;
   z-index: 1;
-  text-align: left;
-  padding: 0.5rem 0.6rem;
   background: var(--panel);
-  color: var(--dim);
-  font-size: 0.66rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--accent) 30%, transparent);
 }
-#allprocs th.r { text-align: right; }
-#allprocs th.sortable { cursor: pointer; user-select: none; transition: color 0.12s; }
-#allprocs th.sortable:hover { color: var(--ink); }
-#allprocs th.sortable.sort-active { color: var(--accent); text-shadow: var(--neon-glow-soft, 0 0 5px currentColor); }
-#allprocs th.sortable.sort-active[data-dir="desc"]::after { content: ' ▼'; font-size: 0.8em; }
-#allprocs th.sortable.sort-active[data-dir="asc"]::after  { content: ' ▲'; font-size: 0.8em; }
-#allprocs td {
-  padding: 4px 6px;
-  border-bottom: 1px dashed var(--hair);
-  font-family: var(--mono);
-}
-#allprocs td.pid { color: var(--dim); width: 11%; font-size: 12px; }
+#allprocs td.pid { width: 11%; }
 #allprocs td.pname { width: 45%; }
-#allprocs td.cpu { text-align: right; width: 14%; }
-#allprocs td.cpu-core { text-align: right; width: 14%; }
-#allprocs td.mem { color: var(--dim); text-align: right; width: 16%; }
-/* neón SOLO en la columna actualmente ordenada (data-sort-col lo fija el JS) */
-#allprocs[data-sort-col="pid"]      td.pid,
-#allprocs[data-sort-col="pname"]    td.pname,
-#allprocs[data-sort-col="cpu"]      td.cpu,
-#allprocs[data-sort-col="cpu-core"] td.cpu-core,
-#allprocs[data-sort-col="mem"]      td.mem {
-  color: var(--accent);
-  text-shadow: var(--neon-glow-soft, 0 0 5px currentColor);
-}
-#allprocs tbody tr { cursor: pointer; }
-#allprocs tbody tr:hover { background: var(--chip); }
+#allprocs td.cpu { width: 14%; }
+#allprocs td.cpu-core { width: 14%; }
+#allprocs td.mem { width: 16%; }
 
 /* =========================================================
    BENCHMARK CARDS — detalle expandible (el header/statline/cuerpo se

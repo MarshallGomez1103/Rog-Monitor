@@ -382,7 +382,7 @@
             <button id="procs-all-btn" class="ghost procs-tool-btn" data-i18n="procs.view_all" data-i18n-attr="title:tip.procs_all" title="Ver TODOS los procesos en una ventana ampliada">VER TODOS</button>
             <button id="procs-cores-btn" class="ghost procs-tool-btn" data-i18n="cores.btn" data-i18n-attr="title:tip.procs_cores" title="Ver uso por núcleo individual">NÚCLEOS</button>
           </div>
-          <table id="procs">
+          <table id="procs" class="proc-table">
             <thead>
               <tr><th class="sortable" data-sort="pid">PID</th>
                   <th class="sortable" data-sort="name" data-i18n="procs.col_name">proceso</th>
@@ -446,7 +446,7 @@
       <h3 data-i18n="modal.ram" id="ram-modal-title">¿Qué está usando la RAM?</h3>
       <p class="sub" data-i18n="modal.ram_sub">Memoria residente real por proceso (clic para cerrar uno).</p>
       <!-- v17-D: sortable headers (reuses CPU proc sort pattern) -->
-      <table id="ram-procs" data-sort-col="mem">
+      <table id="ram-procs" class="proc-table" data-sort-col="mem">
         <thead><tr>
           <th class="sortable pid" data-sort="pid" data-i18n="modal.ram_sort_pid">PID</th>
           <th class="sortable pname" data-sort="name" data-i18n="modal.ram_sort_name">proceso</th>
@@ -480,7 +480,7 @@
         <span class="allprocs-count" id="allprocs-count"></span>
       </div>
       <div class="allprocs-scroll">
-        <table id="allprocs">
+        <table id="allprocs" class="proc-table">
           <thead>
             <tr><th class="sortable" data-sort="pid">PID</th>
                 <th class="sortable" data-sort="name" data-i18n="procs.col_name">proceso</th>
