@@ -1,0 +1,254 @@
+
+==== neon/dark ====
+PASS  [neon/dark] tema aplicado de verdad (data-theme=neon, data-mode=dark)
+PASS  [neon/dark] arranque con preset de temperatura
+PASS  [neon/dark] editor abierto, aria-expanded=true
+FAIL  [neon/dark] al abrir, foco en el primer control (casilla de la 1ª fila)  -> |hist-edit
+PASS  [neon/dark] 8 filas en el editor (activas primero)
+FAIL  [neon/dark] hit target >=28x28 en TODOS los botones ↑/↓ (16)  -> n=16 pequeños=[["cpu_temp:up",30,23],["cpu_temp:down",30,23],["cpu_power:up",30,23]]
+FAIL  [neon/dark] botón expandir por gráfica (4) con hit target >=28x28  -> []
+FAIL  [neon/dark] fila/etiqueta de casilla clicable >=28px de alto  -> 18
+FAIL  [neon/dark] aria-label de ↑/↓ lleva el NOMBRE de la gráfica (todas las filas)  -> ["cpu_temp","Move up","Move down"]
+FAIL  [neon/dark] aria-label de expandir lleva el nombre
+FAIL  [neon/dark] ↑ de la 1ª fila: aria-disabled="true", NO disabled nativo, visible (no oculto)  -> {"ariaDisabled":null,"nativeDisabled":true,"w":30,"h":23,"op":"0.3","vis":"visible","disp":"inline-block"}
+FAIL  [neon/dark] contraste del icono ↑ aparentemente deshabilitado >= 4.5:1  -> 2.2167684100638954
+PASS  [neon/dark] contraste del icono ↓ habilitado >= 4.5:1
+PASS  [neon/dark] contraste del nombre de gráfica desactivada >= 4.5:1
+FAIL  [neon/dark] casilla temática: appearance:none, esquinas cuadradas (<=2px)  -> {"ap":"auto","br":0}
+FAIL  [neon/dark] casilla marcada rellena con el acento del tema  -> [[0,0,0,0],[45,226,230,255]]
+FAIL  [neon/dark] presets agrupados: grupo con título + segmento + aria-pressed (temp activo)  -> {"role":null,"title":"","n":2,"pressed":[null,null],"seg":false,"h":[33,33]}
+FAIL  [neon/dark] filas con asa de arrastre (aria-hidden, fuera del Tab) y draggable sólo las activas  -> {"k":"cpu_temp","g":false,"w":0,"d":false,"hid":null,"tab":null}
+PASS  [neon/dark] Enter en ↓ de cpu_temp: la mueve una posición
+PASS  [neon/dark] foco conservado en el mismo botón (cpu_temp ↓) tras re-render
+PASS  [neon/dark] cpu_temp llega al final (3 pulsaciones)
+FAIL  [neon/dark] en el borde el foco pasa al botón opuesto (cpu_temp ↑), no se pierde  -> |BODY
+FAIL  [neon/dark] Alt+↑ en la fila mueve gpu_power arriba  -> ["cpu_power","gpu_temp","gpu_power","cpu_temp"]
+PASS  [neon/dark] Alt+↑ conserva el foco en la casilla de esa fila
+PASS  [neon/dark] Alt+↓ la devuelve
+PASS  [neon/dark] Alt+↑ en la 1ª fila: sin cambio ni error
+PASS  [neon/dark] Enter en ↑ aparentemente deshabilitado (aria-disabled) no hace nada
+PASS  [neon/dark] Espacio en casilla de ram_gb la activa (al final)
+FAIL  [neon/dark] foco conservado en la casilla tras el toggle  -> |BODY
+FAIL  [neon/dark] Espacio otra vez la quita; foco sigue en su casilla  -> ["cpu_power","gpu_temp","gpu_power","cpu_temp","ram_gb"] |BODY
+PASS  [neon/dark] preset «uso» por teclado aplica el conjunto
+FAIL  [neon/dark] foco conservado en el botón de preset  -> |BODY
+FAIL  [neon/dark] aria-pressed del segmento sigue al conjunto activo
+PASS  [neon/dark] preset «temp» vuelve al conjunto de temperatura
+PASS  [neon/dark] la última gráfica activa no se puede quitar (casilla sigue marcada)
+FAIL  [neon/dark] arrastrar cpu_temp sobre gpu_power -> la deja en la última posición  -> ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+FAIL  [neon/dark] arrastrar gpu_power sobre cpu_power -> la deja primera  -> ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+FAIL  [neon/dark] soltar sobre una fila desactivada no cambia nada  -> ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+PASS  [neon/dark] el orden arrastrado queda en localStorage sin duplicados
+PASS  [neon/dark] localStorage guarda exactamente el orden activo
+PASS  [neon/dark] tras recargar, el orden es el mismo (gráficas dibujadas)
+PASS  [neon/dark] tras recargar, sin duplicados ni desapariciones
+FAIL  [neon/dark] [1280x720] clic/Enter en el botón abre el modal grande  -> null
+FAIL  [neon/dark] [1280x720] modal accesible (role=dialog, aria-modal)  -> null
+FAIL  [neon/dark] [1280x720] título del modal = nombre de la gráfica  -> null
+FAIL  [neon/dark] [1280x720] tarjeta del modal cabe en la ventana  -> null
+FAIL  [neon/dark] [1280x720] canvas propio grande (>= 704x240) y dibujado en el bucle  -> null
+FAIL  [neon/dark] [1280x720] foco dentro del modal al abrir  -> |BODY
+FAIL  [neon/dark] [1280x720] hover propio del canvas ampliado (crosshair + tip)  -> {"hov":null,"shown":false,"txt":""}
+FAIL  [neon/dark] [1280x720] Tab dentro del modal no escapa (foco atrapado)  -> |dash-btn
+FAIL  [neon/dark] [1280x720] Shift+Tab tampoco escapa  -> |BUTTON
+FAIL  [neon/dark] [resize] el canvas ampliado se redibuja al cambiar el tamaño de ventana  -> [0,{"cw":0,"sw":-1}]
+FAIL  [neon/dark] [1280x720] Escape cierra el modal  -> undefined
+FAIL  [neon/dark] [1280x720] Escape devuelve el foco al botón expandir de esa gráfica  -> |BUTTON
+FAIL  [neon/dark] [1920x1080] clic/Enter en el botón abre el modal grande  -> null
+FAIL  [neon/dark] [1920x1080] modal accesible (role=dialog, aria-modal)  -> null
+FAIL  [neon/dark] [1920x1080] título del modal = nombre de la gráfica  -> null
+FAIL  [neon/dark] [1920x1080] tarjeta del modal cabe en la ventana  -> null
+FAIL  [neon/dark] [1920x1080] canvas propio grande (>= 1056x400) y dibujado en el bucle  -> null
+FAIL  [neon/dark] [1920x1080] foco dentro del modal al abrir  -> |BUTTON
+FAIL  [neon/dark] [1920x1080] hover propio del canvas ampliado (crosshair + tip)  -> {"hov":null,"shown":false,"txt":""}
+FAIL  [neon/dark] [1920x1080] Tab dentro del modal no escapa (foco atrapado)  -> |dash-btn
+FAIL  [neon/dark] [1920x1080] Shift+Tab tampoco escapa  -> |BUTTON
+FAIL  [neon/dark] [1920x1080] Escape cierra el modal  -> undefined
+FAIL  [neon/dark] [1920x1080] Escape devuelve el foco al botón expandir de esa gráfica  -> |BUTTON
+FAIL  [neon/dark] clic de ratón en expandir abre el modal
+FAIL  [neon/dark] botón cerrar del modal lo cierra y devuelve el foco al expandir  -> |BUTTON
+FAIL  [neon/dark] clic en el fondo cierra el modal
+FAIL  [neon/dark] si la gráfica expandida se quita de la lista, el modal se cierra (reconcile)
+PASS  [neon/dark] …y no queda canvas ampliado en chartState
+FAIL  [neon/dark] abrir con Enter: editor visible y foco en su primer control  -> |hist-edit
+FAIL  [neon/dark] Escape cierra el editor
+FAIL  [neon/dark] Escape devuelve el foco a #hist-edit  -> cpu_power|down
+FAIL  [neon/dark] aria-expanded=false tras Escape
+PASS  [neon/dark] el editor no usa tabindex positivo
+FAIL  [neon/dark] Tab recorre los 16 controles en orden del DOM, sin saltos  -> esperado ["cpu_temp|toggle","cpu_temp|down","gpu_temp|toggle","gpu_temp|up","gpu_temp|down"]… obtenido ["cpu_power|down","gpu_power|toggle","gpu_power|up","cpu_usage|toggle","ram_gb|toggle"]…
+FAIL  [neon/dark] Shift+Tab recorre en sentido inverso  -> ["cpu_power|down","gpu_power|toggle","gpu_power|up","cpu_usage|toggle","ram_gb|toggle"]
+FAIL  [neon/dark] Shift+Tab desde el primer control sale del editor hacia #hist-edit  -> cpu_power|up
+FAIL  [neon/dark] envenenado ["constructor"]: la app arranca y usa ["cpu_temp","cpu_power","gpu_temp","gpu_power"]  -> {"list":[],"canv":[]}
+FAIL  [neon/dark] envenenado ["__proto__","toString"]: la app arranca y usa ["cpu_temp","cpu_power","gpu_temp","gpu_power"]  -> {"list":[],"canv":[]}
+FAIL  [neon/dark] envenenado ["constructor","ram_gb","hasOwnProperty"]: la app arranca y usa ["ram_gb"]  -> {"list":[],"canv":[]}
+PASS  [neon/dark] envenenado {"a":1}: la app arranca y usa ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+
+==== magma/dark ====
+PASS  [magma/dark] tema aplicado de verdad (data-theme=magma, data-mode=dark)
+PASS  [magma/dark] arranque con preset de temperatura
+PASS  [magma/dark] editor abierto, aria-expanded=true
+FAIL  [magma/dark] al abrir, foco en el primer control (casilla de la 1ª fila)  -> |hist-edit
+PASS  [magma/dark] 8 filas en el editor (activas primero)
+FAIL  [magma/dark] hit target >=28x28 en TODOS los botones ↑/↓ (16)  -> n=16 pequeños=[["cpu_temp:up",30,23],["cpu_temp:down",30,23],["cpu_power:up",30,23]]
+FAIL  [magma/dark] botón expandir por gráfica (4) con hit target >=28x28  -> []
+FAIL  [magma/dark] fila/etiqueta de casilla clicable >=28px de alto  -> 18
+FAIL  [magma/dark] aria-label de ↑/↓ lleva el NOMBRE de la gráfica (todas las filas)  -> ["cpu_temp","Move up","Move down"]
+FAIL  [magma/dark] aria-label de expandir lleva el nombre
+FAIL  [magma/dark] ↑ de la 1ª fila: aria-disabled="true", NO disabled nativo, visible (no oculto)  -> {"ariaDisabled":null,"nativeDisabled":true,"w":30,"h":23,"op":"0.3","vis":"visible","disp":"inline-block"}
+FAIL  [magma/dark] contraste del icono ↑ aparentemente deshabilitado >= 4.5:1  -> 2.214984736281309
+PASS  [magma/dark] contraste del icono ↓ habilitado >= 4.5:1
+PASS  [magma/dark] contraste del nombre de gráfica desactivada >= 4.5:1
+FAIL  [magma/dark] casilla temática: appearance:none, esquinas cuadradas (<=2px)  -> {"ap":"auto","br":0}
+FAIL  [magma/dark] casilla marcada rellena con el acento del tema  -> [[0,0,0,0],[242,92,61,255]]
+FAIL  [magma/dark] presets agrupados: grupo con título + segmento + aria-pressed (temp activo)  -> {"role":null,"title":"","n":2,"pressed":[null,null],"seg":false,"h":[33,33]}
+FAIL  [magma/dark] filas con asa de arrastre (aria-hidden, fuera del Tab) y draggable sólo las activas  -> {"k":"cpu_temp","g":false,"w":0,"d":false,"hid":null,"tab":null}
+PASS  [magma/dark] Enter en ↓ de cpu_temp: la mueve una posición
+PASS  [magma/dark] foco conservado en el mismo botón (cpu_temp ↓) tras re-render
+PASS  [magma/dark] cpu_temp llega al final (3 pulsaciones)
+FAIL  [magma/dark] en el borde el foco pasa al botón opuesto (cpu_temp ↑), no se pierde  -> |BODY
+FAIL  [magma/dark] Alt+↑ en la fila mueve gpu_power arriba  -> ["cpu_power","gpu_temp","gpu_power","cpu_temp"]
+PASS  [magma/dark] Alt+↑ conserva el foco en la casilla de esa fila
+PASS  [magma/dark] Alt+↓ la devuelve
+PASS  [magma/dark] Alt+↑ en la 1ª fila: sin cambio ni error
+PASS  [magma/dark] Enter en ↑ aparentemente deshabilitado (aria-disabled) no hace nada
+PASS  [magma/dark] Espacio en casilla de ram_gb la activa (al final)
+FAIL  [magma/dark] foco conservado en la casilla tras el toggle  -> |BODY
+FAIL  [magma/dark] Espacio otra vez la quita; foco sigue en su casilla  -> ["cpu_power","gpu_temp","gpu_power","cpu_temp","ram_gb"] |BODY
+PASS  [magma/dark] preset «uso» por teclado aplica el conjunto
+FAIL  [magma/dark] foco conservado en el botón de preset  -> |BODY
+FAIL  [magma/dark] aria-pressed del segmento sigue al conjunto activo
+PASS  [magma/dark] preset «temp» vuelve al conjunto de temperatura
+PASS  [magma/dark] la última gráfica activa no se puede quitar (casilla sigue marcada)
+FAIL  [magma/dark] arrastrar cpu_temp sobre gpu_power -> la deja en la última posición  -> ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+FAIL  [magma/dark] arrastrar gpu_power sobre cpu_power -> la deja primera  -> ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+FAIL  [magma/dark] soltar sobre una fila desactivada no cambia nada  -> ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+PASS  [magma/dark] el orden arrastrado queda en localStorage sin duplicados
+PASS  [magma/dark] localStorage guarda exactamente el orden activo
+PASS  [magma/dark] tras recargar, el orden es el mismo (gráficas dibujadas)
+PASS  [magma/dark] tras recargar, sin duplicados ni desapariciones
+FAIL  [magma/dark] [1280x720] clic/Enter en el botón abre el modal grande  -> null
+FAIL  [magma/dark] [1280x720] modal accesible (role=dialog, aria-modal)  -> null
+FAIL  [magma/dark] [1280x720] título del modal = nombre de la gráfica  -> null
+FAIL  [magma/dark] [1280x720] tarjeta del modal cabe en la ventana  -> null
+FAIL  [magma/dark] [1280x720] canvas propio grande (>= 704x240) y dibujado en el bucle  -> null
+FAIL  [magma/dark] [1280x720] foco dentro del modal al abrir  -> |BODY
+FAIL  [magma/dark] [1280x720] hover propio del canvas ampliado (crosshair + tip)  -> {"hov":null,"shown":false,"txt":""}
+FAIL  [magma/dark] [1280x720] Tab dentro del modal no escapa (foco atrapado)  -> |dash-btn
+FAIL  [magma/dark] [1280x720] Shift+Tab tampoco escapa  -> |BUTTON
+FAIL  [magma/dark] [resize] el canvas ampliado se redibuja al cambiar el tamaño de ventana  -> [0,{"cw":0,"sw":-1}]
+FAIL  [magma/dark] [1280x720] Escape cierra el modal  -> undefined
+FAIL  [magma/dark] [1280x720] Escape devuelve el foco al botón expandir de esa gráfica  -> |BUTTON
+FAIL  [magma/dark] [1920x1080] clic/Enter en el botón abre el modal grande  -> null
+FAIL  [magma/dark] [1920x1080] modal accesible (role=dialog, aria-modal)  -> null
+FAIL  [magma/dark] [1920x1080] título del modal = nombre de la gráfica  -> null
+FAIL  [magma/dark] [1920x1080] tarjeta del modal cabe en la ventana  -> null
+FAIL  [magma/dark] [1920x1080] canvas propio grande (>= 1056x400) y dibujado en el bucle  -> null
+FAIL  [magma/dark] [1920x1080] foco dentro del modal al abrir  -> |BUTTON
+FAIL  [magma/dark] [1920x1080] hover propio del canvas ampliado (crosshair + tip)  -> {"hov":null,"shown":false,"txt":""}
+FAIL  [magma/dark] [1920x1080] Tab dentro del modal no escapa (foco atrapado)  -> |dash-btn
+FAIL  [magma/dark] [1920x1080] Shift+Tab tampoco escapa  -> |BUTTON
+FAIL  [magma/dark] [1920x1080] Escape cierra el modal  -> undefined
+FAIL  [magma/dark] [1920x1080] Escape devuelve el foco al botón expandir de esa gráfica  -> |BUTTON
+FAIL  [magma/dark] clic de ratón en expandir abre el modal
+FAIL  [magma/dark] botón cerrar del modal lo cierra y devuelve el foco al expandir  -> |BUTTON
+FAIL  [magma/dark] clic en el fondo cierra el modal
+FAIL  [magma/dark] si la gráfica expandida se quita de la lista, el modal se cierra (reconcile)
+PASS  [magma/dark] …y no queda canvas ampliado en chartState
+FAIL  [magma/dark] abrir con Enter: editor visible y foco en su primer control  -> |hist-edit
+FAIL  [magma/dark] Escape cierra el editor
+FAIL  [magma/dark] Escape devuelve el foco a #hist-edit  -> cpu_power|down
+FAIL  [magma/dark] aria-expanded=false tras Escape
+PASS  [magma/dark] el editor no usa tabindex positivo
+FAIL  [magma/dark] Tab recorre los 16 controles en orden del DOM, sin saltos  -> esperado ["cpu_temp|toggle","cpu_temp|down","gpu_temp|toggle","gpu_temp|up","gpu_temp|down"]… obtenido ["cpu_power|down","gpu_power|toggle","gpu_power|up","cpu_usage|toggle","ram_gb|toggle"]…
+FAIL  [magma/dark] Shift+Tab recorre en sentido inverso  -> ["cpu_power|down","gpu_power|toggle","gpu_power|up","cpu_usage|toggle","ram_gb|toggle"]
+FAIL  [magma/dark] Shift+Tab desde el primer control sale del editor hacia #hist-edit  -> cpu_power|up
+FAIL  [magma/dark] envenenado ["constructor"]: la app arranca y usa ["cpu_temp","cpu_power","gpu_temp","gpu_power"]  -> {"list":[],"canv":[]}
+FAIL  [magma/dark] envenenado ["constructor","ram_gb"]: la app arranca y usa ["ram_gb"]  -> {"list":[],"canv":[]}
+
+==== magma/light ====
+PASS  [magma/light] tema aplicado de verdad (data-theme=magma, data-mode=light)
+PASS  [magma/light] arranque con preset de temperatura
+PASS  [magma/light] editor abierto, aria-expanded=true
+FAIL  [magma/light] al abrir, foco en el primer control (casilla de la 1ª fila)  -> |hist-edit
+PASS  [magma/light] 8 filas en el editor (activas primero)
+FAIL  [magma/light] hit target >=28x28 en TODOS los botones ↑/↓ (16)  -> n=16 pequeños=[["cpu_temp:up",30,23],["cpu_temp:down",30,23],["cpu_power:up",30,23]]
+FAIL  [magma/light] botón expandir por gráfica (4) con hit target >=28x28  -> []
+FAIL  [magma/light] fila/etiqueta de casilla clicable >=28px de alto  -> 18
+FAIL  [magma/light] aria-label de ↑/↓ lleva el NOMBRE de la gráfica (todas las filas)  -> ["cpu_temp","Move up","Move down"]
+FAIL  [magma/light] aria-label de expandir lleva el nombre
+FAIL  [magma/light] ↑ de la 1ª fila: aria-disabled="true", NO disabled nativo, visible (no oculto)  -> {"ariaDisabled":null,"nativeDisabled":true,"w":30,"h":23,"op":"0.3","vis":"visible","disp":"inline-block"}
+FAIL  [magma/light] contraste del icono ↑ aparentemente deshabilitado >= 4.5:1  -> 1.9006897980776414
+PASS  [magma/light] contraste del icono ↓ habilitado >= 4.5:1
+PASS  [magma/light] contraste del nombre de gráfica desactivada >= 4.5:1
+FAIL  [magma/light] casilla temática: appearance:none, esquinas cuadradas (<=2px)  -> {"ap":"auto","br":0}
+FAIL  [magma/light] casilla marcada rellena con el acento del tema  -> [[0,0,0,0],[158,42,15,255]]
+FAIL  [magma/light] presets agrupados: grupo con título + segmento + aria-pressed (temp activo)  -> {"role":null,"title":"","n":2,"pressed":[null,null],"seg":false,"h":[33,33]}
+FAIL  [magma/light] filas con asa de arrastre (aria-hidden, fuera del Tab) y draggable sólo las activas  -> {"k":"cpu_temp","g":false,"w":0,"d":false,"hid":null,"tab":null}
+PASS  [magma/light] Enter en ↓ de cpu_temp: la mueve una posición
+PASS  [magma/light] foco conservado en el mismo botón (cpu_temp ↓) tras re-render
+PASS  [magma/light] cpu_temp llega al final (3 pulsaciones)
+FAIL  [magma/light] en el borde el foco pasa al botón opuesto (cpu_temp ↑), no se pierde  -> |BODY
+FAIL  [magma/light] Alt+↑ en la fila mueve gpu_power arriba  -> ["cpu_power","gpu_temp","gpu_power","cpu_temp"]
+PASS  [magma/light] Alt+↑ conserva el foco en la casilla de esa fila
+PASS  [magma/light] Alt+↓ la devuelve
+PASS  [magma/light] Alt+↑ en la 1ª fila: sin cambio ni error
+PASS  [magma/light] Enter en ↑ aparentemente deshabilitado (aria-disabled) no hace nada
+PASS  [magma/light] Espacio en casilla de ram_gb la activa (al final)
+FAIL  [magma/light] foco conservado en la casilla tras el toggle  -> |BODY
+FAIL  [magma/light] Espacio otra vez la quita; foco sigue en su casilla  -> ["cpu_power","gpu_temp","gpu_power","cpu_temp","ram_gb"] |BODY
+PASS  [magma/light] preset «uso» por teclado aplica el conjunto
+FAIL  [magma/light] foco conservado en el botón de preset  -> |BODY
+FAIL  [magma/light] aria-pressed del segmento sigue al conjunto activo
+PASS  [magma/light] preset «temp» vuelve al conjunto de temperatura
+PASS  [magma/light] la última gráfica activa no se puede quitar (casilla sigue marcada)
+FAIL  [magma/light] arrastrar cpu_temp sobre gpu_power -> la deja en la última posición  -> ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+FAIL  [magma/light] arrastrar gpu_power sobre cpu_power -> la deja primera  -> ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+FAIL  [magma/light] soltar sobre una fila desactivada no cambia nada  -> ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+PASS  [magma/light] el orden arrastrado queda en localStorage sin duplicados
+PASS  [magma/light] localStorage guarda exactamente el orden activo
+PASS  [magma/light] tras recargar, el orden es el mismo (gráficas dibujadas)
+PASS  [magma/light] tras recargar, sin duplicados ni desapariciones
+FAIL  [magma/light] [1280x720] clic/Enter en el botón abre el modal grande  -> null
+FAIL  [magma/light] [1280x720] modal accesible (role=dialog, aria-modal)  -> null
+FAIL  [magma/light] [1280x720] título del modal = nombre de la gráfica  -> null
+FAIL  [magma/light] [1280x720] tarjeta del modal cabe en la ventana  -> null
+FAIL  [magma/light] [1280x720] canvas propio grande (>= 704x240) y dibujado en el bucle  -> null
+FAIL  [magma/light] [1280x720] foco dentro del modal al abrir  -> |BODY
+FAIL  [magma/light] [1280x720] hover propio del canvas ampliado (crosshair + tip)  -> {"hov":null,"shown":false,"txt":""}
+FAIL  [magma/light] [1280x720] Tab dentro del modal no escapa (foco atrapado)  -> |dash-btn
+FAIL  [magma/light] [1280x720] Shift+Tab tampoco escapa  -> |BUTTON
+FAIL  [magma/light] [resize] el canvas ampliado se redibuja al cambiar el tamaño de ventana  -> [0,{"cw":0,"sw":-1}]
+FAIL  [magma/light] [1280x720] Escape cierra el modal  -> undefined
+FAIL  [magma/light] [1280x720] Escape devuelve el foco al botón expandir de esa gráfica  -> |BUTTON
+FAIL  [magma/light] [1920x1080] clic/Enter en el botón abre el modal grande  -> null
+FAIL  [magma/light] [1920x1080] modal accesible (role=dialog, aria-modal)  -> null
+FAIL  [magma/light] [1920x1080] título del modal = nombre de la gráfica  -> null
+FAIL  [magma/light] [1920x1080] tarjeta del modal cabe en la ventana  -> null
+FAIL  [magma/light] [1920x1080] canvas propio grande (>= 1056x400) y dibujado en el bucle  -> null
+FAIL  [magma/light] [1920x1080] foco dentro del modal al abrir  -> |BUTTON
+FAIL  [magma/light] [1920x1080] hover propio del canvas ampliado (crosshair + tip)  -> {"hov":null,"shown":false,"txt":""}
+FAIL  [magma/light] [1920x1080] Tab dentro del modal no escapa (foco atrapado)  -> |dash-btn
+FAIL  [magma/light] [1920x1080] Shift+Tab tampoco escapa  -> |BUTTON
+FAIL  [magma/light] [1920x1080] Escape cierra el modal  -> undefined
+FAIL  [magma/light] [1920x1080] Escape devuelve el foco al botón expandir de esa gráfica  -> |BUTTON
+FAIL  [magma/light] clic de ratón en expandir abre el modal
+FAIL  [magma/light] botón cerrar del modal lo cierra y devuelve el foco al expandir  -> |BUTTON
+FAIL  [magma/light] clic en el fondo cierra el modal
+FAIL  [magma/light] si la gráfica expandida se quita de la lista, el modal se cierra (reconcile)
+PASS  [magma/light] …y no queda canvas ampliado en chartState
+FAIL  [magma/light] abrir con Enter: editor visible y foco en su primer control  -> |hist-edit
+FAIL  [magma/light] Escape cierra el editor
+FAIL  [magma/light] Escape devuelve el foco a #hist-edit  -> cpu_power|down
+FAIL  [magma/light] aria-expanded=false tras Escape
+PASS  [magma/light] el editor no usa tabindex positivo
+FAIL  [magma/light] Tab recorre los 16 controles en orden del DOM, sin saltos  -> esperado ["cpu_temp|toggle","cpu_temp|down","gpu_temp|toggle","gpu_temp|up","gpu_temp|down"]… obtenido ["cpu_power|down","gpu_power|toggle","gpu_power|up","cpu_usage|toggle","ram_gb|toggle"]…
+FAIL  [magma/light] Shift+Tab recorre en sentido inverso  -> ["cpu_power|down","gpu_power|toggle","gpu_power|up","cpu_usage|toggle","ram_gb|toggle"]
+FAIL  [magma/light] Shift+Tab desde el primer control sale del editor hacia #hist-edit  -> cpu_power|up
+FAIL  [magma/light] envenenado ["constructor"]: la app arranca y usa ["cpu_temp","cpu_power","gpu_temp","gpu_power"]  -> {"list":[],"canv":[]}
+FAIL  [magma/light] envenenado ["constructor","ram_gb"]: la app arranca y usa ["ram_gb"]  -> {"list":[],"canv":[]}
+
+==== todos los temas ====
+FAIL  [todos los temas] contraste >= 4.5:1 (flecha sin recorrido, flecha activa, nombre off/on) en 12 temas x 2 modos  -> magma/dark:disUp=0.00 | magma/dark:up=0.00 | magma/light:disUp=0.00 | magma/light:up=0.00 | nebula/dark:disUp=0.00 | nebula/dark:up=0.00 | nebula/light:disUp=0.00 | nebula/light:up=0.00
+
+70 PASS / 173 FAIL de 243 aserciones
+RESULT: FAIL
