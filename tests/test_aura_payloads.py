@@ -514,6 +514,23 @@ class ApplyState(AuraCase):
         cmds = [c for c in zip(self.cap.calls, self.cap.timeouts) if c[0] in self.cap.applied()]
         self.assertTrue(cmds and all(t == 6.0 for _, t in cmds))
 
+    def test_invalid_payloads_run_nothing_and_do_not_touch_the_store(self):
+        bad = [{"effect": "rm"}, {"brightness": "blinding"}, {"colour": "ff0000;reboot"},
+               {"colour": "--zone"}, {"zone": "--help"}, {"zone": "a b"}, {"colour": 255}, {"effect": ["static"]}]
+        for raw in bad:
+            with self.subTest(raw=raw):
+                res = aura.apply_state(raw)
+                self.assertFalse(res["ok"])
+                self.assertTrue(res["err"])
+        self.assertEqual(self.cap.applied(), [])
+        self.assertFalse(self.aura_file.exists())
+
+    def test_non_dict_payload_is_rejected(self):
+        for raw in ([], None, "static"):
+            with self.subTest(raw=raw):
+                self.assertFalse(aura.apply_state(raw)["ok"])
+        self.assertEqual(self.cap.applied(), [])
+
 
 # ----------------------------------------------------------------- perfiles
 
@@ -583,6 +600,23 @@ class Profiles(AuraCase):
     def test_set_startup_write_failure(self):
         with mock.patch.object(aura, "write_atomic", side_effect=OSError("ro")):
             self.assertFalse(aura.set_startup_profile(None, False)["ok"])
+
+    def test_invalid_state_does_not_save(self):
+        res = aura.save_profile("malo", {"effect": "static", "colour": "nope"})
+        self.assertFalse(res["ok"])
+        self.assertIn("color", res["err"])
+        self.assertFalse(self.aura_file.exists())
+
+    def test_profile_with_hostile_stored_state_is_not_applied(self):
+        # un aura.json editado a mano con un perfil de arranque envenenado
+        self.aura_file.parent.mkdir(parents=True)
+        self.aura_file.write_text(json.dumps({
+            "apply_on_startup": True, "startup_profile": "x",
+            "profiles": [{"name": "x", "state": {"effect": "static", "colour": "ff0000 --zone Key1"}}],
+        }))
+        res = aura.apply_startup_profile()
+        self.assertFalse(res["ok"])
+        self.assertEqual(self.cap.applied(), [])
 
 
 class StartupProfile(AuraCase):
@@ -777,6 +811,35 @@ class Cli(AuraCase):
                 with self.assertRaises(SystemExit) as ctx:
                     aura.main(argv)
                 self.assertEqual(ctx.exception.code, 2)
+
+    def test_apply_invalid_state_prints_json_error_instead_of_traceback(self):
+        rc, out = self.call(["apply", "--json", json.dumps({"effect": "static", "colour": "zz"})])
+        self.assertEqual(rc, 0)
+        self.assertFalse(out["ok"])
+        self.assertIn("color", out["err"])
+        self.assertEqual(self.cap.applied(), [])
+
+    def test_apply_malformed_or_non_object_json_prints_json_error(self):
+        for text in ("{no json", "[1, 2]", "null", '"x"'):
+            with self.subTest(text=text):
+                rc, out = self.call(["apply", "--json", text])
+                self.assertEqual(rc, 0)
+                self.assertFalse(out["ok"])
+        self.assertEqual(self.cap.applied(), [])
+
+    def test_profile_commands(self):
+        rc, out = self.call(["save-profile", "--name", "CLI", "--json", json.dumps({"effect": "static"})])
+        self.assertTrue(out["ok"])
+        rc, out = self.call(["save-profile", "--name", "mal", "--json", json.dumps({"effect": "x"})])
+        self.assertFalse(out["ok"])
+        rc, out = self.call(["set-startup", "--name", "CLI", "--enabled"])
+        self.assertEqual(out, {"ok": True, "apply_on_startup": True, "startup_profile": "CLI"})
+        rc, out = self.call(["apply-startup"])
+        self.assertEqual(out["source"], "startup_profile")
+        rc, out = self.call(["delete-profile", "--name", "CLI"])
+        self.assertTrue(out["ok"])
+        rc, out = self.call(["delete-profile", "--name", "CLI"])
+        self.assertFalse(out["ok"])
 
 
 if __name__ == "__main__":

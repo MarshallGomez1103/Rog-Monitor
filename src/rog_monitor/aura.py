@@ -602,8 +602,11 @@ class AuraManager:
 
 
 def apply_state(raw: dict) -> dict:
+    try:
+        state = _normalize_state(raw)
+    except ValueError as exc:
+        return {"ok": False, "err": str(exc)}
     mgr = AuraManager()
-    state = _normalize_state(raw)
     if state["driver"] != "asus":
         return {
             "ok": False,
@@ -687,7 +690,10 @@ def save_profile(name: str, raw_state: dict, apply_on_startup: bool | None = Non
     title = (name or "").strip()
     if not title:
         return {"ok": False, "err": "El perfil necesita un nombre."}
-    state = _normalize_state(raw_state)
+    try:
+        state = _normalize_state(raw_state)
+    except ValueError as exc:
+        return {"ok": False, "err": str(exc)}
     store = _load_store()
     profiles = [p for p in store.get("profiles", []) if p.get("name", "").lower() != title.lower()]
     profiles.append({"name": title, "state": state})
@@ -777,14 +783,22 @@ def main(argv=None) -> int:
     sub.add_parser("apply-startup")
 
     args = parser.parse_args(argv)
+    payload = None
+    if args.cmd in ("apply", "save-profile"):
+        try:
+            payload = json.loads(args.json)
+        except ValueError as exc:
+            # el renderer espera siempre JSON en stdout, nunca un traceback
+            print(json.dumps({"ok": False, "err": f"invalid JSON: {exc}"}))
+            return 0
     if args.cmd == "state":
         print(json.dumps(AuraManager().snapshot(force=True)))
         return 0
     if args.cmd == "apply":
-        print(json.dumps(apply_state(json.loads(args.json))))
+        print(json.dumps(apply_state(payload)))
         return 0
     if args.cmd == "save-profile":
-        print(json.dumps(save_profile(args.name, json.loads(args.json))))
+        print(json.dumps(save_profile(args.name, payload)))
         return 0
     if args.cmd == "delete-profile":
         print(json.dumps(delete_profile(args.name)))
