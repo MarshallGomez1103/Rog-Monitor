@@ -75,6 +75,28 @@ class TuiAllUnavailable(unittest.TestCase):
         self.assertIn(f"{state['sys']['ram_total_gb']:.0f}G", out)
         self.assertIn("N/A", out)
 
+    def test_primera_muestra_de_red_null_solo_apaga_la_red(self):
+        """N-DEF-02: rx/tx null (sin delta) -> N/A en red; RAM y uptime reales siguen."""
+        state = fixture_state()
+        state["sys"].update(rx_mbps=None, tx_mbps=None)
+        out = draw(ui.system_panel(state, Translator("es"), ui.THEMES["rog"]))
+        self.assertIn("N/A", out)
+        self.assertNotIn("↓0.0", out)
+        self.assertIn(f"{state['sys']['ram_total_gb']:.0f}G", out)
+        self.assertIn(f"{state['sys']['uptime_h']:.1f}h", out)
+
+    def test_ram_y_uptime_null_sin_ceros_falsos_en_todos_los_idiomas(self):
+        for lang in STRINGS:
+            with self.subTest(lang=lang):
+                state = fixture_state()
+                state["sys"].update(ram_total_gb=None, ram_used_gb=None, ram_percent=None,
+                                    uptime_s=None, uptime_h=None)
+                state["battery"] = {"capacity": 50, "status": None, "on_ac": None}
+                out = render(state, 160, lang=lang)
+                self.assertNotIn("None", out)
+                self.assertNotIn("0.0h", out)
+                self.assertNotIn("0.0/0G", out)
+
     def test_battery_on_ac_null_no_afirma_fuente(self):
         """N-DEF-02: on_ac null (sin adaptador ADP*/AC*) no se pinta como «en batería»."""
         state = fixture_state()
