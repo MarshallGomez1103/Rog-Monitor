@@ -107,7 +107,10 @@ class Config:
         self.data = dict(DEFAULTS)
         try:
             with open(CONFIG_FILE) as fh:
-                self.data = _merge(DEFAULTS, json.load(fh))
+                loaded = json.load(fh)
+            if not isinstance(loaded, dict):
+                raise ValueError("config.json no es un objeto JSON")
+            self.data = _merge(DEFAULTS, loaded)
         except OSError:
             pass
         except ValueError:

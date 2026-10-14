@@ -100,6 +100,24 @@ class CorruptConfig(SettingsBase):
         config.Config()
         self.assertEqual(len(list(self.cfg_dir.glob("config.json.corrupt-*.bak"))), 1)
 
+    def test_valid_json_that_is_not_an_object_is_treated_as_corrupt(self):
+        for text in ("[]", "[1, 2]", "null", "5", '"hola"', "true"):
+            with self.subTest(text=text):
+                for old in self.cfg_dir.glob("*.bak") if self.cfg_dir.exists() else []:
+                    old.unlink()
+                self.write(text)
+                out = settings.get_settings()
+                self.assertEqual(out["alerts"], config.DEFAULTS["alerts"])
+                backups = list(self.cfg_dir.glob("config.json.corrupt-*.bak"))
+                self.assertEqual([b.read_text() for b in backups], [text])
+
+    def test_update_over_non_object_config_writes_a_valid_object(self):
+        self.write("[]")
+        res = settings.update_settings({"lang": "es"})
+        self.assertTrue(res["ok"])
+        self.assertEqual(self.on_disk()["lang"], "es")
+        self.assertEqual([b.read_text() for b in self.cfg_dir.glob("*.bak")], ["[]"])
+
     def test_empty_file_is_treated_as_corrupt_json(self):
         self.write("")
         self.assertEqual(settings.get_settings()["lang"], "en")
