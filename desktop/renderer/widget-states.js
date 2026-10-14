@@ -374,8 +374,8 @@
     createWiring({
       document,
       rog: root.rog,
-      i18n: root.i18n,
-      t: root.t,
+      i18n: { apply: (el) => { if (root.i18n && root.i18n.apply) root.i18n.apply(el); } },
+      t: (k) => (typeof root.t === 'function' ? root.t(k) : k),
       now: Date.now,
       setInterval: (fn, ms) => root.setInterval(fn, ms),
     }).start();
