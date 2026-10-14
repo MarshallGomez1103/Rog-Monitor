@@ -143,3 +143,45 @@ class CachedTtl(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class VramNeverBlocksTick(unittest.TestCase):
+    """F3-06: sin NVML la lista de procesos VRAM puede tardar 6.5 s (3× nvidia-smi)."""
+
+    def test_slow_read_returns_cached_immediately(self):
+        r = _reader()
+        gate = threading.Event()
+        rows = {"available": True, "reason": "", "vendor": "nvidia",
+                "procs": [{"pid": i, "name": "x", "vram_mb": 10, "type": "G"} for i in range(20)]}
+
+        def slow():
+            gate.wait(5)
+            return rows
+        r._vram.fn = slow
+        with mock.patch.object(r, "_dgpu_asleep", return_value=False):
+            t0 = time.monotonic()
+            first = r.vram_processes()
+            self.assertLess(time.monotonic() - t0, 0.5)          # no espera a nvidia-smi
+            self.assertFalse(first["available"])                 # "sin datos todavía"
+            gate.set()
+            for _ in range(50):
+                if r._vram.value is rows:
+                    break
+                time.sleep(0.02)
+            got = r.vram_processes(top=12)
+        self.assertTrue(got["available"])
+        self.assertEqual(len(got["procs"]), 12)
+        self.assertEqual(len(rows["procs"]), 20)                 # el caché no se recorta
+
+
+class CachedAsyncFirst(unittest.TestCase):
+    def test_sync_first_false_returns_initial(self):
+        gate = threading.Event()
+        c = Cached(lambda: gate.wait(5) and 42, ttl=10, sync_first=False, initial=0)
+        self.assertEqual(c.get(), 0)
+        gate.set()
+        for _ in range(50):
+            if c.value == 42:
+                break
+            time.sleep(0.02)
+        self.assertEqual(c.get(), 42)

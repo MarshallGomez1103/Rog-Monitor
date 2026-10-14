@@ -59,13 +59,14 @@ class GpuReader:
         self.has_supergfx = shutil.which("supergfxctl") is not None
         self.amd = hwmon.find(chips, "amdgpu")
         self._nvidia_dead_until = 0.0
-        self._vram_proc_ts = 0.0
-        self._vram_proc_cache: dict = {
+        # NVML o, sin él, hasta 3 llamadas a nvidia-smi (≤6.5 s): siempre en segundo
+        # plano; el tick devuelve la última lista (F3-06).
+        self._vram = Cached(self._read_vram_procs, ttl=5.0, sync_first=False, initial={
             "available": False,
             "reason": "sin datos todavía",
             "vendor": "nvidia" if self.has_nvidia_smi or self._nvidia_pci else None,
             "procs": [],
-        }
+        })
         self.supported: list[str] = self._supported_modes()
         # supergfxctl tarda hasta 4 s por llamada: TTL 10 s en segundo plano y
         # backoff exponencial (hasta 120 s) si falla; el tick lee el último valor.
@@ -264,10 +265,10 @@ class GpuReader:
                 "vendor": "nvidia",
                 "procs": [],
             }
-        now = time.monotonic()
-        if now - self._vram_proc_ts < 5:
-            return self._vram_proc_cache
+        procs = self._vram.get()
+        return {**procs, "procs": procs["procs"][:top]}
 
+    def _read_vram_procs(self) -> dict:
         query_rows = table_rows = None
         if self._nvml_ok:
             try:
@@ -283,22 +284,15 @@ class GpuReader:
             query_rows = self._read_nvidia_vram_query()
             table_rows = self._read_nvidia_vram_table()
         if query_rows is None and table_rows is None:
-            self._vram_proc_cache = {
+            return {
                 "available": False,
                 "reason": "el driver NVIDIA no expuso la lista de procesos",
                 "vendor": "nvidia",
                 "procs": [],
             }
-        else:
-            rows = (query_rows or []) + (table_rows or [])
-            self._vram_proc_cache = {
-                "available": True,
-                "reason": "",
-                "vendor": "nvidia",
-                "procs": self._merge_vram_rows(rows)[:top],
-            }
-        self._vram_proc_ts = now
-        return self._vram_proc_cache
+        rows = (query_rows or []) + (table_rows or [])
+        return {"available": True, "reason": "", "vendor": "nvidia",
+                "procs": self._merge_vram_rows(rows)}
 
     def _read_amd(self) -> dict | None:
         if self.amd is None:

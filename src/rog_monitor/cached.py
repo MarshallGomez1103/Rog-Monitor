@@ -6,21 +6,24 @@ import time
 
 class Cached:
     """get() devuelve siempre el último valor bueno; si está vencido dispara el
-    refresco en segundo plano. La primera lectura es síncrona (arranque).
+    refresco en segundo plano. La primera lectura es síncrona (arranque) salvo
+    con sync_first=False: entonces también va en segundo plano y get() devuelve
+    `initial` mientras tanto (para lecturas que pueden tardar segundos).
 
     fn() devuelve None (o lanza) cuando falla: se conserva el valor anterior
     (stale-while-error) y el reintento se espacia ttl*2^fallos hasta backoff_max
     (0 = reintentar cada ttl).
     """
 
-    def __init__(self, fn, ttl: float, backoff_max: float = 0.0):
+    def __init__(self, fn, ttl: float, backoff_max: float = 0.0,
+                 sync_first: bool = True, initial=None):
         self.fn = fn
         self.ttl = ttl
         self.backoff_max = backoff_max
-        self.value = None
+        self.value = initial
         self._due = 0.0
         self._fails = 0
-        self._started = False
+        self._started = not sync_first
         self._busy = False
         self._lock = threading.Lock()
 
