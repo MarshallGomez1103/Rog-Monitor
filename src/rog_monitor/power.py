@@ -112,15 +112,27 @@ class BatteryReader:
         energy_full_design = hwmon.read_int(self.path / "energy_full_design")
         energy_now = hwmon.read_int(self.path / "energy_now")
 
-        # Some laptops use charge_* (µAh) instead of energy_* (µWh)
+        # Some laptops use charge_* (µAh) instead of energy_* (µWh). Wh = µAh·µV/1e12,
+        # con voltage_min_design (o voltage_now de respaldo); sin voltaje no hay Wh
+        # fiables y se devuelve None (la salud sigue siendo una proporción válida).
+        mul, div = 1, 1_000_000  # energy_*: µWh -> Wh
         if energy_full is None:
             energy_full = hwmon.read_int(self.path / "charge_full")
             energy_full_design = hwmon.read_int(self.path / "charge_full_design")
             energy_now = hwmon.read_int(self.path / "charge_now")
+            mul, div = 0, 1  # sin voltaje no hay Wh
+            for name in ("voltage_min_design", "voltage_now"):
+                volt = hwmon.read_int(self.path / name)
+                if volt:
+                    mul, div = volt, 1_000_000_000_000
+                    break
 
-        energy_full_wh = round(energy_full / 1_000_000, 2) if energy_full is not None else None
-        energy_full_design_wh = round(energy_full_design / 1_000_000, 2) if energy_full_design is not None else None
-        energy_now_wh = round(energy_now / 1_000_000, 2) if energy_now is not None else None
+        def to_wh(raw):
+            return round(raw * mul / div, 2) if raw is not None and mul else None
+
+        energy_full_wh = to_wh(energy_full)
+        energy_full_design_wh = to_wh(energy_full_design)
+        energy_now_wh = to_wh(energy_now)
 
         health_percent = None
         if energy_full is not None and energy_full_design:

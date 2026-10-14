@@ -263,6 +263,60 @@ class BatteryReaderTests(FakeSysfsCase):
         self.assertTrue(power.BatteryReader().read()["on_ac"])
 
 
+class BatteryChargeUnitsTests(FakeSysfsCase):
+    """N-DEF-01: charge_* viene en µAh; los campos *_wh deben ser Wh reales
+    (µAh * µV / 1e12), no Ah rotulados como Wh."""
+
+    BAT = "sys/class/power_supply/BAT0"
+
+    def bat(self, **attrs):
+        for name, value in attrs.items():
+            self.put(f"{self.BAT}/{name}", f"{value}\n")
+
+    CHARGE = dict(charge_full=5_000_000, charge_full_design=5_500_000,
+                  charge_now=2_500_000)
+
+    def test_charge_con_voltage_min_design_da_wh_reales(self):
+        self.bat(capacity=50, voltage_min_design=11_400_000, **self.CHARGE)
+        data = power.BatteryReader().read()
+        self.assertEqual(data["energy_full_wh"], 57.0)
+        self.assertEqual(data["energy_full_design_wh"], 62.7)
+        self.assertEqual(data["energy_now_wh"], 28.5)
+        self.assertEqual(data["health_percent"], 90.9)
+
+    def test_charge_sin_voltage_min_design_usa_voltage_now(self):
+        self.bat(capacity=50, voltage_now=12_000_000, **self.CHARGE)
+        data = power.BatteryReader().read()
+        self.assertEqual(data["energy_full_wh"], 60.0)
+        self.assertEqual(data["energy_full_design_wh"], 66.0)
+        self.assertEqual(data["energy_now_wh"], 30.0)
+
+    def test_voltage_min_design_tiene_prioridad_sobre_voltage_now(self):
+        self.bat(capacity=50, voltage_min_design=11_400_000,
+                 voltage_now=12_600_000, **self.CHARGE)
+        self.assertEqual(power.BatteryReader().read()["energy_full_wh"], 57.0)
+
+    def test_charge_sin_voltaje_wh_es_none_pero_salud_se_calcula(self):
+        self.bat(capacity=50, **self.CHARGE)
+        data = power.BatteryReader().read()
+        self.assertIsNone(data["energy_full_wh"])
+        self.assertIsNone(data["energy_full_design_wh"])
+        self.assertIsNone(data["energy_now_wh"])
+        self.assertEqual(data["health_percent"], 90.9)
+
+    def test_voltaje_cero_no_se_usa(self):
+        self.bat(capacity=50, voltage_min_design=0, **self.CHARGE)
+        data = power.BatteryReader().read()
+        self.assertIsNone(data["energy_full_wh"])
+
+    def test_energy_tiene_prioridad_sobre_charge(self):
+        self.bat(capacity=50, energy_full=79_898_000, energy_full_design=90_001_000,
+                 energy_now=60_725_000, voltage_min_design=11_400_000, **self.CHARGE)
+        data = power.BatteryReader().read()
+        self.assertEqual(data["energy_full_wh"], 79.9)
+        self.assertEqual(data["health_percent"], 88.8)
+
+
 class PpdProfileTests(unittest.TestCase):
     """busctl con runner parcheado; reloj y hilo de Cached falsos."""
 
