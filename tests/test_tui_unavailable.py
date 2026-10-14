@@ -75,6 +75,33 @@ class TuiAllUnavailable(unittest.TestCase):
         self.assertIn(f"{state['sys']['ram_total_gb']:.0f}G", out)
         self.assertIn("N/A", out)
 
+    def test_battery_on_ac_null_no_afirma_fuente(self):
+        """N-DEF-02: on_ac null (sin adaptador ADP*/AC*) no se pinta como «en batería»."""
+        state = fixture_state()
+        state["battery"] = {**(state["battery"] or {}), "capacity": 80, "status": "Unknown",
+                            "on_ac": None, "watts": None}
+        t = Translator("es")
+        out = draw(ui.profile_panel(state, t, ui.THEMES["rog"]))
+        self.assertIn("80%", out)
+        self.assertNotIn(t("on_battery"), out)
+        self.assertNotIn(t("on_ac"), out)
+        state["battery"]["on_ac"] = False
+        out = draw(ui.profile_panel(state, t, ui.THEMES["rog"]))
+        self.assertIn(t("on_battery"), out)
+
+    def test_cpu_hot90_throttle_null_son_na(self):
+        state = fixture_state()
+        state["cpu"].update(hot90=None, throttle_count=None)
+        t = Translator("es")
+        out = draw(ui.cpu_panel(state, t, ui.THEMES["rog"]))
+        self.assertNotIn(f"0 {t('cores_suffix')}", out)
+        self.assertNotIn(f"0 {t('events_suffix')}", out)
+        self.assertIn(t("na_sensor"), out)
+        state["cpu"].update(hot90=0, throttle_count=0)
+        out = draw(ui.cpu_panel(state, t, ui.THEMES["rog"]))
+        self.assertIn(f"0 {t('cores_suffix')}", out)
+        self.assertIn(f"0 {t('events_suffix')}", out)
+
     def test_disk_proc_and_fan_entries_with_none_fields(self):
         state = fixture_state()
         state["sys"]["disks"][0].update(used_gb=None, total_gb=None, percent=None)

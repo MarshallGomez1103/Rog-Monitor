@@ -250,11 +250,23 @@ class BatteryReaderTests(FakeSysfsCase):
         self.put("sys/class/power_supply/AC0/online", "1\n")
         self.assertTrue(power.BatteryReader().read()["on_ac"])
 
-    def test_sin_adaptador_ac_no_esta_en_corriente(self):
+    def test_sin_adaptador_ac_es_desconocido_no_bateria(self):
+        """N-DEF-02: sin ADP*/AC* no se sabe la fuente: null, no un «en batería» falso."""
         self.bat(capacity=90)
         reader = power.BatteryReader()
         self.assertEqual(reader.ac_paths, [])
-        self.assertFalse(reader.read()["on_ac"])
+        self.assertIsNone(reader.read()["on_ac"])
+
+    def test_adaptador_ilegible_es_desconocido(self):
+        self.bat(capacity=90)
+        self.put("sys/class/power_supply/ADP1/online", "basura\n")
+        self.assertIsNone(power.BatteryReader().read()["on_ac"])
+
+    def test_un_adaptador_legible_offline_basta_para_false(self):
+        self.bat(capacity=90)
+        self.put("sys/class/power_supply/ADP0/online", "basura\n")
+        self.put("sys/class/power_supply/AC0/online", "0\n")
+        self.assertIs(power.BatteryReader().read()["on_ac"], False)
 
     def test_dos_adaptadores_basta_uno_online(self):
         self.bat(capacity=90)

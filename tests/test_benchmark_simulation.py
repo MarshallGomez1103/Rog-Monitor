@@ -341,6 +341,12 @@ class RunRepetitionsSim(unittest.TestCase):
         self.assertEqual(c["ambient_start"], {"cpu_temp": 40.0, "gpu_temp": 50.0})
         self.assertEqual(c["guardian"], {"mode": "off", "thermal_state": "ok"})
 
+    def test_conditions_on_ac_unknown_is_not_battery(self):
+        """N-DEF-02: on_ac null (sin adaptador) -> power_source null, no «battery»."""
+        Sim(self)
+        bm.BatteryReader.return_value.read.return_value = {"on_ac": None}
+        self.assertIsNone(_run(ScriptLoad())["conditions"]["power_source"])
+
     def test_conditions_without_active_gpu(self):
         Sim(self, gpu={"active": None})
         c = _run(ScriptLoad())["conditions"]

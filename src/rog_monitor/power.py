@@ -96,6 +96,15 @@ class BatteryReader:
             + glob.glob("/sys/class/power_supply/AC*/online")
         ]
 
+    def _on_ac(self) -> bool | None:
+        """True/False según los adaptadores ADP*/AC* legibles; None si no hay ninguno
+        o ninguno se pudo leer (N-DEF-02: «sin adaptador» no equivale a «en batería»)."""
+        states = [hwmon.read_int(p) for p in self.ac_paths]
+        states = [v for v in states if v is not None]
+        if not states:
+            return None
+        return any(v == 1 for v in states)
+
     def read(self) -> dict | None:
         if self.path is None:
             return None
@@ -105,7 +114,7 @@ class BatteryReader:
             voltage = hwmon.read_int(self.path / "voltage_now")
             if current and voltage:
                 power_uw = current * voltage // 1_000_000
-        on_ac = any(hwmon.read_int(p) == 1 for p in self.ac_paths)
+        on_ac = self._on_ac()
 
         # Battery health fields — root-free, all in /sys/class/power_supply/BAT*
         energy_full = hwmon.read_int(self.path / "energy_full")

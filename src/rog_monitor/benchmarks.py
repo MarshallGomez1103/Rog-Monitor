@@ -295,7 +295,9 @@ def _conditions(cpu_state: dict, gpu_state: dict, params: dict) -> dict:
         "cpu_model": cpu_state.get("model"),
         "gpu_name": active.get("name"),
         "gpu_driver": _nvidia_driver(),
-        "power_source": None if bat is None else ("ac" if bat.get("on_ac") else "battery"),
+        # on_ac null (sin adaptador legible) = fuente desconocida, no «battery»
+        "power_source": (None if bat is None or bat.get("on_ac") is None
+                         else ("ac" if bat["on_ac"] else "battery")),
         "asus_profile": profile,
         "ppd_profile": ppd_profile(),
         "epp": cpu_state.get("epp"),

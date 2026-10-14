@@ -218,10 +218,12 @@ def profile_panel(state, t, th) -> Panel:
     battery = state["battery"]
     if battery and battery.get("capacity") is not None:
         text = Text()
-        if battery.get("on_ac"):
+        on_ac = battery.get("on_ac")
+        if on_ac:
             text.append(f"⚡ {t('on_ac')}  ", style="bold green")
-        else:
+        elif on_ac is False:
             text.append(f"🔋 {t('on_battery')}  ", style="bold yellow")
+        # on_ac None (sin adaptador legible, N-DEF-02): no se afirma la fuente
         text.append(f"{battery['capacity']}% ", style="bold")
         text.append(f"({battery.get('status') or '?'}", style="grey58")
         if battery.get("charge_limit"):
