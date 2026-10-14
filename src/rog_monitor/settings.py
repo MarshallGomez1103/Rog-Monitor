@@ -12,7 +12,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
+import sys
 
 from .config import CONFIG_FILE, Config
 
@@ -45,6 +47,17 @@ HEX_RE = re.compile(r"^[0-9a-fA-F]{6}$")
 
 def _clamp(value, low, high):
     return max(low, min(high, value))
+
+
+def _to_int(value) -> int:
+    """int(round(float(value))) that refuses nan/inf with ValueError."""
+    try:
+        number = float(value)
+    except OverflowError:  # int gigante
+        raise ValueError(f"valor fuera de rango: {str(value)[:20]}") from None
+    if not math.isfinite(number):
+        raise ValueError(f"valor no finito: {value!r}")
+    return int(round(number))
 
 
 def _valid_id(value) -> bool:
@@ -94,9 +107,12 @@ def _normalize_appearance(raw) -> dict | None:
         out["mode"] = mode
     if "zoom_level" in raw:
         try:
-            out["zoom_level"] = _clamp(float(raw["zoom_level"]), -3, 4)
+            zoom = float(raw["zoom_level"])
         except (TypeError, ValueError):
             return None
+        if not math.isfinite(zoom):
+            return None
+        out["zoom_level"] = _clamp(zoom, -3, 4)
     return out
 
 
@@ -134,26 +150,32 @@ def get_settings() -> dict:
 
 
 def update_settings(raw: dict) -> dict:
+    if not isinstance(raw, dict):
+        return {"ok": False, "err": "Los ajustes deben ser un objeto JSON."}
     cfg = Config()
     alerts = dict(cfg.get("alerts", {}))
     colors = dict(cfg.get("temp_colors", {}))
 
     in_alerts = raw.get("alerts") or {}
+    if not isinstance(in_alerts, dict):
+        return {"ok": False, "err": "alerts debe ser un objeto."}
     for key, (low, high) in ALERT_BOUNDS.items():
         if key in in_alerts and in_alerts[key] is not None:
             try:
-                alerts[key] = _clamp(int(round(float(in_alerts[key]))), low, high)
+                alerts[key] = _clamp(_to_int(in_alerts[key]), low, high)
             except (TypeError, ValueError):
                 return {"ok": False, "err": f"Valor inválido para {key}: {in_alerts[key]!r}"}
 
     in_colors = raw.get("temp_colors") or {}
+    if not isinstance(in_colors, dict):
+        return {"ok": False, "err": "temp_colors debe ser un objeto."}
     for key, (low, high) in COLOR_BOUNDS.items():
         if key in in_colors and in_colors[key] is not None:
             seq = in_colors[key]
             if not isinstance(seq, (list, tuple)) or len(seq) != 3:
                 return {"ok": False, "err": f"{key} debe ser una lista de 3 valores [verde, amarillo, naranja]."}
             try:
-                vals = [_clamp(int(round(float(v))), low, high) for v in seq]
+                vals = [_clamp(_to_int(v), low, high) for v in seq]
             except (TypeError, ValueError):
                 return {"ok": False, "err": f"Valores de color inválidos para {key}: {seq!r}"}
             if not (vals[0] < vals[1] < vals[2]):
@@ -215,7 +237,12 @@ def main(argv=None) -> int:
         print(json.dumps(get_settings()))
         return 0
     if args.cmd == "update":
-        print(json.dumps(update_settings(json.loads(args.json))))
+        try:
+            payload = json.loads(args.json)
+        except ValueError as exc:
+            print(f"JSON inválido en --json: {exc}", file=sys.stderr)
+            return 2
+        print(json.dumps(update_settings(payload)))
         return 0
     return 1
 

@@ -160,6 +160,40 @@ class AlertBounds(SettingsBase):
         res = settings.update_settings({"alerts": {"cpu_temp_warn": float("nan")}})
         self.assertFalse(res["ok"])
 
+    def test_infinity_is_rejected_not_crashed(self):
+        for bad in (float("inf"), float("-inf"), float("nan")):
+            with self.subTest(bad=bad):
+                res = settings.update_settings({"alerts": {"cpu_temp_warn": bad}})
+                self.assertFalse(res["ok"])
+                self.assertIn("cpu_temp_warn", res["err"])
+        self.assertFalse(self.cfg_file.exists())
+
+    def test_huge_integer_is_rejected_not_crashed(self):
+        res = settings.update_settings({"alerts": {"cpu_temp_warn": 10 ** 400}})
+        self.assertFalse(res["ok"])
+
+    def test_json_infinity_literal_payload_is_rejected(self):
+        raw = json.loads('{"alerts": {"cpu_temp_warn": Infinity}}')
+        self.assertFalse(settings.update_settings(raw)["ok"])
+
+    def test_alerts_that_is_not_a_dict_is_a_clean_error(self):
+        for bad in (["cpu_temp_warn"], "cpu_temp_warn", 7, True):
+            with self.subTest(bad=bad):
+                res = settings.update_settings({"alerts": bad})
+                self.assertEqual(res["ok"], False)
+                self.assertIn("alerts", res["err"])
+        self.assertFalse(self.cfg_file.exists())
+
+    def test_falsy_alerts_is_ignored(self):
+        for empty in (None, {}, [], "", 0):
+            with self.subTest(empty=empty):
+                self.assertTrue(settings.update_settings({"alerts": empty})["ok"])
+
+    def test_payload_that_is_not_a_dict_is_a_clean_error(self):
+        for bad in ([], "x", None, 3):
+            with self.subTest(bad=bad):
+                self.assertFalse(settings.update_settings(bad)["ok"])
+
     def test_unknown_alert_keys_are_not_added(self):
         res = settings.update_settings({"alerts": {"hysteresis_temp": 99, "inventada": 5}})
         self.assertTrue(res["ok"])
@@ -205,6 +239,20 @@ class TempColors(SettingsBase):
         res = settings.update_settings({"temp_colors": {"cpu": [70, "x", 90]}})
         self.assertFalse(res["ok"])
         self.assertIn("cpu", res["err"])
+
+    def test_infinity_in_colors_is_rejected_not_crashed(self):
+        for bad in (float("inf"), float("-inf"), float("nan")):
+            with self.subTest(bad=bad):
+                res = settings.update_settings({"temp_colors": {"cpu": [70, 85, bad]}})
+                self.assertFalse(res["ok"])
+        self.assertFalse(self.cfg_file.exists())
+
+    def test_temp_colors_that_is_not_a_dict_is_a_clean_error(self):
+        for bad in (["cpu"], "cpu", 7):
+            with self.subTest(bad=bad):
+                res = settings.update_settings({"temp_colors": bad})
+                self.assertFalse(res["ok"])
+                self.assertIn("temp_colors", res["err"])
 
     def test_non_increasing_rejected(self):
         for bad in ([80, 80, 90], [90, 80, 70], [70, 85, 85]):
@@ -275,6 +323,13 @@ class Appearance(SettingsBase):
             with self.subTest(bad=bad):
                 res = settings.update_settings({"appearance": {"zoom_level": bad}})
                 self.assertEqual(res, {"ok": False, "err": "Apariencia inválida."})
+
+    def test_nan_and_infinite_zoom_rejected_and_not_written(self):
+        for bad in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(bad=bad):
+                res = settings.update_settings({"appearance": {"zoom_level": bad}})
+                self.assertEqual(res, {"ok": False, "err": "Apariencia inválida."})
+        self.assertFalse(self.cfg_file.exists())
 
     def test_non_dict_appearance_rejected(self):
         for bad in ("oscuro", 3, None, ["magma"]):
@@ -454,6 +509,21 @@ class MainCli(SettingsBase):
         self.assertEqual(rc, 0)
         self.assertFalse(json.loads(out)["ok"])
         self.assertFalse(self.cfg_file.exists())
+
+    def test_invalid_json_argument_is_clean_message_and_nonzero_exit(self):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = settings.main(["update", "--json", "{no es json"])
+        self.assertEqual(rc, 2)
+        self.assertEqual(out.getvalue(), "")
+        self.assertIn("JSON inválido", err.getvalue())
+        self.assertNotIn("Traceback", err.getvalue())
+        self.assertFalse(self.cfg_file.exists())
+
+    def test_json_that_is_not_an_object_is_clean_error(self):
+        rc, out = self.run_main(["update", "--json", "[1, 2]"])
+        self.assertEqual(rc, 0)
+        self.assertFalse(json.loads(out)["ok"])
 
     def test_missing_subcommand_exits_with_usage_error(self):
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as cm:
