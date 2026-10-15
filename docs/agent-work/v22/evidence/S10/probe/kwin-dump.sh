@@ -9,7 +9,9 @@ NAME="rogprobe$$"
 JS="$(mktemp "${TMPDIR:-/tmp}/rogprobe-XXXXXX.js")"
 cat > "$JS" <<EOF
 var order = workspace.stackingOrder;
-console.warn("KWPROBE|ACTIVE=" + (workspace.activeWindow ? workspace.activeWindow.caption : "none"));
+var aw = workspace.activeWindow;
+// privacidad: solo se imprime el caption si es de la sonda o de vkcube; de otras ventanas, nada
+console.warn("KWPROBE|ACTIVE=" + (aw ? ((aw.caption.indexOf("ROG Overlay") >= 0 || aw.caption.toLowerCase().indexOf("kcube") >= 0) ? aw.caption : "(otra ventana)") : "none"));
 var list = workspace.windowList();
 for (var i = 0; i < list.length; i++) {
   var w = list[i];

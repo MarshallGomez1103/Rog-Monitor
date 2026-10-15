@@ -1,0 +1,2 @@
+MEASURE mode=wayland procesos=7 rss_total_MiB=692 cpu_segundos_acumulados=0
+MEASURE mode=x11 procesos=7 rss_total_MiB=625 cpu_segundos_acumulados=0

@@ -25,7 +25,12 @@ echo "=== MANGO position=$POS wsi=$WSI ==="
 MANGOHUD=1 MANGOHUD_CONFIGFILE="$CONF" setsid vkcube --wsi "$WSI" >/dev/null 2>&1 &
 PID=$!
 sleep 5
-"$HERE/kwin-dump.sh" vkcube
+# la app de prueba debe estar en primer plano (como un juego): reintenta la activacion
+for _ in 1 2 3 4 5; do
+  "$HERE/kwin-activate.sh" kcube
+  "$HERE/kwin-dump.sh" kcube | grep -q 'ACTIVE=[Vv]kcube' && break
+done
+"$HERE/kwin-dump.sh" kcube
 SHOT="${TMPDIR:-/tmp}/rogprobe-shot-$$.png"
 spectacle -b -n -f -o "$SHOT" >/dev/null 2>&1
 if [ -s "$SHOT" ]; then python3 -I "$HERE/shot-analyze.py" "$SHOT" | grep -E 'size|magenta'; else echo "SHOT no disponible"; fi

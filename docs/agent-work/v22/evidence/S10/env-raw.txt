@@ -1,0 +1,31 @@
+## sesion
+XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=KDE DISPLAY=:0 WAYLAND_DISPLAY=wayland-0
+## versiones
+electron: v44.7.0
+kwin_wayland: kwin 6.7.5
+mangohud: v0.8.4
+vkcube: /usr/bin/vkcube
+## kscreen-doctor (salidas)
+Output: 1 HDMI-A-3 0b6a7191-1a1b-4111-bea6-dd8d834bcf20
+	enabled
+	priority 1
+	Geometry: 1600,0 1920x1080
+	Scale: 1
+Output: 2 eDP-1 809d4b41-4a85-4f45-bdc7-ce2b4175c86d
+	enabled
+	priority 2
+	Geometry: 0,0 1600x1000
+	Scale: 1.2
+## xrandr --listmonitors (espacio de coordenadas de XWayland)
+Monitors: 2
+ 0: +*HDMI-A-3 2304/480x1296/270+1920+0  HDMI-A-3
+ 1: +eDP-1 1920/344x1200/215+0+0  eDP-1
+## protocolos Wayland relevantes (wayland-info)
+interface: 'wp_fractional_scale_manager_v1',             version:  1
+interface: 'org_kde_plasma_shell',                       version:  8
+interface: 'zxdg_output_manager_v1',                     version:  3
+interface: 'xdg_wm_base',                                version:  6
+interface: 'zwlr_layer_shell_v1',                        version:  5
+## LayerShellQt instalado
+libLayerShellQtInterface.so.6
+libLayerShellQtInterface.so.6.7.5

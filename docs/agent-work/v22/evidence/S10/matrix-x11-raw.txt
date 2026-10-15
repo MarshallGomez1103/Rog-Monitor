@@ -1,47 +1,47 @@
 === CASE mode=x11 display=0 anchor=top-left ===
-KW|ACTIVE=ChatGPT
+KW|ACTIVE=(otra ventana)
 XDOTOOL|69206020|WINDOW=69206020 X=19 Y=19 WIDTH=286 HEIGHT=187 SCREEN=0 
 XWININFO|  Absolute upper-left X:  19   Absolute upper-left Y:  19   Width: 286   Height: 187 
 ELECTRON|PROBE {"title":"ROG Overlay Probe","fullscreen":false,"corner":"top-left","dispIdx":0,"args":["--ozone-platform=x11","--monitor=0","--secs=7","--corner=top-left"],"requested":[16,16],"afterSet":{"x":15,"y":15,"width":239,"height":157},"afterSettle":{"x":15,"y":15,"width":239,"height":157},"displays":[{"id":33,"bounds":{"x":0,"y":0,"width":1596,"height":998},"workArea":{"x":0,"y":0,"width":1596,"height":998},"scaleFactor":1.203125,"internal":true},{"id":35,"bounds":{"x":1595,"y":0,"width":1916,"height":1078},"workArea":{"x":1595,"y":0,"width":1916,"height":952},"scaleFactor":1.203125,"internal":false}],"chosen":{"id":33,"bounds":{"x":0,"y":0,"width":1596,"height":998},"workArea":{"x":0,"y":0,"width":1596,"height":998},"scaleFactor":1.203125}}
 LOG|[30151:1015/130054.646630:ERROR:ui/gl/gl_surface_presentation_helper.cc:260] GetVSyncParametersIfAvailable() failed for 1 times!
 === CASE mode=x11 display=0 anchor=top-right ===
-KW|ACTIVE=ChatGPT
+KW|ACTIVE=(otra ventana)
 XDOTOOL|69206020|WINDOW=69206020 X=1621 Y=19 WIDTH=286 HEIGHT=187 SCREEN=0 
 XWININFO|  Absolute upper-left X:  1621   Absolute upper-left Y:  19   Width: 286   Height: 187 
 ELECTRON|PROBE {"title":"ROG Overlay Probe","fullscreen":false,"corner":"top-right","dispIdx":0,"args":["--ozone-platform=x11","--monitor=0","--secs=7","--corner=top-right"],"requested":[1348,16],"afterSet":{"x":1347,"y":15,"width":239,"height":157},"afterSettle":{"x":1347,"y":15,"width":239,"height":157},"displays":[{"id":33,"bounds":{"x":0,"y":0,"width":1596,"height":998},"workArea":{"x":0,"y":0,"width":1596,"height":998},"scaleFactor":1.203125,"internal":true},{"id":35,"bounds":{"x":1595,"y":0,"width":1916,"height":1078},"workArea":{"x":1595,"y":0,"width":1916,"height":952},"scaleFactor":1.203125,"internal":false}],"chosen":{"id":33,"bounds":{"x":0,"y":0,"width":1596,"height":998},"workArea":{"x":0,"y":0,"width":1596,"height":998},"scaleFactor":1.203125}}
 LOG|[30356:1015/130102.297443:ERROR:ui/gl/gl_surface_presentation_helper.cc:260] GetVSyncParametersIfAvailable() failed for 1 times!
 === CASE mode=x11 display=0 anchor=bottom-left ===
-KW|ACTIVE=ChatGPT
+KW|ACTIVE=(otra ventana)
 XDOTOOL|69206020|WINDOW=69206020 X=19 Y=1001 WIDTH=286 HEIGHT=187 SCREEN=0 
 XWININFO|  Absolute upper-left X:  19   Absolute upper-left Y:  1001   Width: 286   Height: 187 
 ELECTRON|PROBE {"title":"ROG Overlay Probe","fullscreen":false,"corner":"bottom-left","dispIdx":0,"args":["--ozone-platform=x11","--monitor=0","--secs=7","--corner=bottom-left"],"requested":[16,832],"afterSet":{"x":15,"y":832,"width":239,"height":156},"afterSettle":{"x":15,"y":832,"width":239,"height":156},"displays":[{"id":33,"bounds":{"x":0,"y":0,"width":1596,"height":998},"workArea":{"x":0,"y":0,"width":1596,"height":998},"scaleFactor":1.203125,"internal":true},{"id":35,"bounds":{"x":1595,"y":0,"width":1916,"height":1078},"workArea":{"x":1595,"y":0,"width":1916,"height":952},"scaleFactor":1.203125,"internal":false}],"chosen":{"id":33,"bounds":{"x":0,"y":0,"width":1596,"height":998},"workArea":{"x":0,"y":0,"width":1596,"height":998},"scaleFactor":1.203125}}
 LOG|[30487:1015/130109.949776:ERROR:ui/gl/gl_surface_presentation_helper.cc:260] GetVSyncParametersIfAvailable() failed for 1 times!
 === CASE mode=x11 display=0 anchor=bottom-right ===
-KW|ACTIVE=ChatGPT
+KW|ACTIVE=(otra ventana)
 XDOTOOL|69206020|WINDOW=69206020 X=1621 Y=1001 WIDTH=286 HEIGHT=187 SCREEN=0 
 XWININFO|  Absolute upper-left X:  1621   Absolute upper-left Y:  1001   Width: 286   Height: 187 
 ELECTRON|PROBE {"title":"ROG Overlay Probe","fullscreen":false,"corner":"bottom-right","dispIdx":0,"args":["--ozone-platform=x11","--monitor=0","--secs=7","--corner=bottom-right"],"requested":[1348,832],"afterSet":{"x":1347,"y":832,"width":239,"height":156},"afterSettle":{"x":1347,"y":832,"width":239,"height":156},"displays":[{"id":33,"bounds":{"x":0,"y":0,"width":1596,"height":998},"workArea":{"x":0,"y":0,"width":1596,"height":998},"scaleFactor":1.203125,"internal":true},{"id":35,"bounds":{"x":1595,"y":0,"width":1916,"height":1078},"workArea":{"x":1595,"y":0,"width":1916,"height":952},"scaleFactor":1.203125,"internal":false}],"chosen":{"id":33,"bounds":{"x":0,"y":0,"width":1596,"height":998},"workArea":{"x":0,"y":0,"width":1596,"height":998},"scaleFactor":1.203125}}
 LOG|[30619:1015/130117.606496:ERROR:ui/gl/gl_surface_presentation_helper.cc:260] GetVSyncParametersIfAvailable() failed for 1 times!
 === CASE mode=x11 display=1 anchor=top-left ===
-KW|ACTIVE=ChatGPT
+KW|ACTIVE=(otra ventana)
 XDOTOOL|69206020|WINDOW=69206020 X=1938 Y=19 WIDTH=286 HEIGHT=187 SCREEN=0 
 XWININFO|  Absolute upper-left X:  1938   Absolute upper-left Y:  19   Width: 286   Height: 187 
 ELECTRON|PROBE {"title":"ROG Overlay Probe","fullscreen":false,"corner":"top-left","dispIdx":1,"args":["--ozone-platform=x11","--monitor=1","--secs=7","--corner=top-left"],"requested":[1611,16],"afterSet":{"x":1610,"y":15,"width":239,"height":157},"afterSettle":{"x":1610,"y":15,"width":239,"height":157},"displays":[{"id":33,"bounds":{"x":0,"y":0,"width":1596,"height":998},"workArea":{"x":0,"y":0,"width":1596,"height":998},"scaleFactor":1.203125,"internal":true},{"id":35,"bounds":{"x":1595,"y":0,"width":1916,"height":1078},"workArea":{"x":1595,"y":0,"width":1916,"height":952},"scaleFactor":1.203125,"internal":false}],"chosen":{"id":35,"bounds":{"x":1595,"y":0,"width":1916,"height":1078},"workArea":{"x":1595,"y":0,"width":1916,"height":952},"scaleFactor":1.203125}}
 LOG|[30755:1015/130125.269577:ERROR:ui/gl/gl_surface_presentation_helper.cc:260] GetVSyncParametersIfAvailable() failed for 1 times!
 === CASE mode=x11 display=1 anchor=top-right ===
-KW|ACTIVE=ChatGPT
+KW|ACTIVE=(otra ventana)
 XDOTOOL|69206020|WINDOW=69206020 X=3925 Y=19 WIDTH=286 HEIGHT=187 SCREEN=0 
 XWININFO|  Absolute upper-left X:  3925   Absolute upper-left Y:  19   Width: 286   Height: 187 
 ELECTRON|PROBE {"title":"ROG Overlay Probe","fullscreen":false,"corner":"top-right","dispIdx":1,"args":["--ozone-platform=x11","--monitor=1","--secs=7","--corner=top-right"],"requested":[3263,16],"afterSet":{"x":3262,"y":15,"width":239,"height":157},"afterSettle":{"x":3262,"y":15,"width":239,"height":157},"displays":[{"id":33,"bounds":{"x":0,"y":0,"width":1596,"height":998},"workArea":{"x":0,"y":0,"width":1596,"height":998},"scaleFactor":1.203125,"internal":true},{"id":35,"bounds":{"x":1595,"y":0,"width":1916,"height":1078},"workArea":{"x":1595,"y":0,"width":1916,"height":952},"scaleFactor":1.203125,"internal":false}],"chosen":{"id":35,"bounds":{"x":1595,"y":0,"width":1916,"height":1078},"workArea":{"x":1595,"y":0,"width":1916,"height":952},"scaleFactor":1.203125}}
 LOG|[30929:1015/130132.935180:ERROR:ui/gl/gl_surface_presentation_helper.cc:260] GetVSyncParametersIfAvailable() failed for 1 times!
 === CASE mode=x11 display=1 anchor=bottom-left ===
-KW|ACTIVE=ChatGPT
+KW|ACTIVE=(otra ventana)
 XDOTOOL|69206020|WINDOW=69206020 X=1938 Y=1097 WIDTH=286 HEIGHT=187 SCREEN=0 
 XWININFO|  Absolute upper-left X:  1938   Absolute upper-left Y:  1097   Width: 286   Height: 187 
 ELECTRON|PROBE {"title":"ROG Overlay Probe","fullscreen":false,"corner":"bottom-left","dispIdx":1,"args":["--ozone-platform=x11","--monitor=1","--secs=7","--corner=bottom-left"],"requested":[1611,912],"afterSet":{"x":1610,"y":911,"width":239,"height":157},"afterSettle":{"x":1610,"y":911,"width":239,"height":157},"displays":[{"id":33,"bounds":{"x":0,"y":0,"width":1596,"height":998},"workArea":{"x":0,"y":0,"width":1596,"height":998},"scaleFactor":1.203125,"internal":true},{"id":35,"bounds":{"x":1595,"y":0,"width":1916,"height":1078},"workArea":{"x":1595,"y":0,"width":1916,"height":952},"scaleFactor":1.203125,"internal":false}],"chosen":{"id":35,"bounds":{"x":1595,"y":0,"width":1916,"height":1078},"workArea":{"x":1595,"y":0,"width":1916,"height":952},"scaleFactor":1.203125}}
 LOG|[31077:1015/130140.587368:ERROR:ui/gl/gl_surface_presentation_helper.cc:260] GetVSyncParametersIfAvailable() failed for 1 times!
 === CASE mode=x11 display=1 anchor=bottom-right ===
-KW|ACTIVE=ChatGPT
+KW|ACTIVE=(otra ventana)
 XDOTOOL|69206020|WINDOW=69206020 X=3925 Y=1097 WIDTH=286 HEIGHT=187 SCREEN=0 
 XWININFO|  Absolute upper-left X:  3925   Absolute upper-left Y:  1097   Width: 286   Height: 187 
 ELECTRON|PROBE {"title":"ROG Overlay Probe","fullscreen":false,"corner":"bottom-right","dispIdx":1,"args":["--ozone-platform=x11","--monitor=1","--secs=7","--corner=bottom-right"],"requested":[3263,912],"afterSet":{"x":3262,"y":911,"width":239,"height":157},"afterSettle":{"x":3262,"y":911,"width":239,"height":157},"displays":[{"id":33,"bounds":{"x":0,"y":0,"width":1596,"height":998},"workArea":{"x":0,"y":0,"width":1596,"height":998},"scaleFactor":1.203125,"internal":true},{"id":35,"bounds":{"x":1595,"y":0,"width":1916,"height":1078},"workArea":{"x":1595,"y":0,"width":1916,"height":952},"scaleFactor":1.203125,"internal":false}],"chosen":{"id":35,"bounds":{"x":1595,"y":0,"width":1916,"height":1078},"workArea":{"x":1595,"y":0,"width":1916,"height":952},"scaleFactor":1.203125}}
