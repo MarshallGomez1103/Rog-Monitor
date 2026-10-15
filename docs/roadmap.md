@@ -46,6 +46,8 @@ English-first public docs and an 8-language UI, with a guardian nobody else ship
   sectors) via a single `pkexec .../rog-ctl.sh smart-json` call (validated device, root-owned helper). *(v18)*
 * [x] **Hardware diagnostics hub**: one place with CPU/GPU/iGPU/battery/fans/motherboard
   info cards plus interactive **keyboard, speaker and display** tests. *(v18)*
+* [x] **Battery charge limit** in the UI (20-100 %, `rog-ctl.sh battery-limit`), persisted
+  across reboot and resume; shown next to the wear / health panel. *(shipped between v20 and v21)*
 * [x] **Clickable, categorized events** with a per-type explanation modal in all 8
   languages. *(v18)*
 * [x] Benchmark detail fully internationalized; benchmark / event exports now generated
@@ -75,17 +77,41 @@ English-first public docs and an 8-language UI, with a guardian nobody else ship
 
 ## In progress — v22 (branch `feat/v22`, not released yet)
 
+Everything below is merged on `feat/v22` and covered by tests. Items that touch the
+privileged side (fans / power) are tested with fakes and a real thermal run, but only take
+effect on a machine after reinstalling with `install-system.sh` (needs root, run by the owner).
+
 * [x] CPU card shows **usage %** next to the temperature; per-process load shown as **cores
   used** (2.35) instead of a confusing "235 %".
-* [x] History "usage" mode: CPU % and GPU % on a fixed 0–100 axis, **RAM and swap in GiB on a
+* [x] History "usage" mode: CPU % and GPU % on a fixed 0-100 axis, **RAM and swap in GiB on a
   0..total axis**, "no swap" label when there is none.
 * [x] **RAM, swap and disk-full alerts**: the RAM / Disk event filters finally have producers.
 * [x] Disk panel shows IOPS and % busy.
+* [x] **History chart editor**: reorder charts with SVG arrows, a drag handle or the keyboard,
+  hide / show each one, and **expand** any chart into a large modal; Escape closes it and gives
+  the focus back.
+* [x] **NO DATA states**: if the backend stops sending samples the app shows "NO DATA · N s"
+  after 6 s and dims the panels (the overlay too); a value that cannot be read shows N/A
+  instead of a fake 0.
+* [x] **Benchmarks history**: cards are no longer clipped and the list scrolls; EXPAND is
+  readable and deleting a run offers **Undo** in a toast.
+* [x] The three process tables (CPU, RAM, all processes) share one look and one sort model:
+  identical numerics whichever column is sorted, with `aria-sort` for screen readers.
+* [x] **Reactive fans in all three profiles** (quiet, balanced, performance): a firmware-bug
+  watchdog from 3000 rpm compares each fan with the curve for the hottest sensor, fan curves
+  start at 50 °C, and quiet now applies its PL1/PL2. *(needs `install-system.sh`)*
 * [x] **Fans that stay stuck high after the machine cools down** are detected and the profile
   curves are re-applied (each fan vs its own curve, calibrated RPM, 60 s hold).
 * [x] Per-profile power limits are retried when the firmware answers "busy" right after a
   profile switch (they almost never applied before).
-* [x] App with the window open: ~30–60 % → ~11–19 % CPU (animations stepped); exact 1.00 s
+* [x] **Robustness**: a failing reader no longer drops the whole tick; unreadable RAM, uptime,
+  network, throttle counters and AC state are `null` (shown as N/A) instead of a made-up 0;
+  a NaN reading no longer poisons benchmark results.
+* [x] **Battery energy**: `charge_*` values in µAh are no longer reported as Wh.
+* [x] **Coverage in CI**: Python must stay at or above 80 % (measured about 95 %) and Node
+  at or above 90 % of lines.
+* [x] Electron updated to **Electron 44** (e2e 31/31 on it).
+* [x] App with the window open: ~30-60 % → ~11-19 % CPU (animations stepped); exact 1.00 s
   sampling cadence; atomic config writes; TUI no longer spins without a terminal.
 
 ## P1 — DIFFERENTIATORS (what nobody else bundles)
@@ -106,13 +132,15 @@ The standout features that make ROG Monitor unique.
   Vulkan (BVH build on the CPU, graceful without RT cores — do **not** assume RTX), the CPU
   AVX / int / float split reported per P-core / E-core, and a clear verdict:
   stable / throttling / headroom.
-* [~] **Guardian 2.0** — *partial*. **Done (v21):** simulation mode (on by default the first
-  time), every decision logged with its reason, gradual and crash-safe power restore.
-  **Missing:** one owner per fan/power attribute (asusd also writes curves), a scheduled
-  "silent" mode and configurable response curves.
-* [~] **Single privileged helper** — *partial*. **Done (v21):** one root-owned entry point
-  (`rog-ctl.sh`) with validated arguments and an allowlist in the app. **Missing:** a real
-  polkit policy so each action does not need its own password prompt.
+* [ ] **Guardian 2.0** — *future (owner decision, not scheduled)*. **Done (v21):** simulation
+  mode (on by default the first time), every decision logged with its reason, gradual and
+  crash-safe power restore. **Future work:** one owner per fan/power attribute (asusd also
+  writes curves), local telemetry of what the guardian limited and when, a scheduled "silent"
+  mode and configurable response curves.
+* [ ] **Single privileged helper** — *future (owner decision, not scheduled)*. **Done (v21):**
+  one root-owned entry point (`rog-ctl.sh`) with validated arguments and an allowlist in the
+  app. **Future work:** a real polkit policy so each action does not need its own password
+  prompt, replacing the scattered `pkexec` prompts with one audited helper.
 
 ## P2 — REACH (more hardware, more depth)
 
@@ -121,7 +149,6 @@ The standout features that make ROG Monitor unique.
 * [ ] **Packaging — Flatpak**: optional package format. Needs real hardware testing
   because Flatpak's sandbox conflicts with direct `/sys`, udev, `pkexec`, and systemd
   workflows unless permissions/portals are designed carefully.
-* [ ] **Battery**: charge-limit control in the UI (asusctl exposes it). *(wear / health done in v18)*
 * [ ] **Disk depth**: SMART self-tests, predictive-failure alerts and per-disk temperature
   history (live read-only stats + on-demand SMART shipped in v18).
 * [ ] **System provenance / anti-scam report**: a new **My System Info** view that
