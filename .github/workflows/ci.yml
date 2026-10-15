@@ -65,6 +65,9 @@ jobs:
       - name: Validate i18n (base langs, no undefined data-i18n, command texts)
         run: node scripts/validate-i18n.mjs
 
+      - name: Docs consistency (README/CHANGELOG terms, private paths, relative links)
+        run: node scripts/check-docs.mjs
+
       - name: Electron package smoke (unpacked dir, no AppImage)
         working-directory: desktop
         run: npx electron-builder --linux dir --publish never
