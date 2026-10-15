@@ -2804,8 +2804,6 @@ $('procs-body').addEventListener('click', async (e) => {
 
 /* ---------- fan control center — con selector de perfil (Task 1 / C3) ---------- */
 
-const FAN_NAMES = { cpu: 'fan.name.cpu', gpu: 'fan.name.gpu', mid: 'fan.name.mid' };
-const FAN_MAX_DEFAULT = { cpu: 7000, gpu: 6900, mid: 7500 };
 // fanCfgByProfile: caché de los 3 perfiles cargados (carga bajo demanda)
 let fanCfg = null;          // perfil actualmente en el formulario
 let fanActiveProfile = '';  // perfil de energia activo (ppd_profile -> quiet/balanced/performance)
@@ -2819,16 +2817,6 @@ const FAN_PROFILE_RECOMMENDED_CAP = {
   balanced: 5500,
   performance: 6500,
 };
-const FAN_GRAPH = {
-  tempMin: 40,
-  tempMax: 105,
-  x0: 42,
-  x1: 520,
-  yTop: 36,
-  yBottom: 204,
-  ticks: [40, 50, 60, 70, 80, 90, 100],
-};
-
 localStorage.removeItem('fanMax'); // legado: vivía aquí y nunca era real
 
 function fanName(fan) {
@@ -2851,94 +2839,17 @@ function fanProfileLabel(profile) {
   return t(PROFILE_KEY[key] || 'profile.power_saver');
 }
 
-function fanKeys(cfg = fanCfg) {
-  return Object.keys(cfg?.curves || FAN_NAMES);
-}
-
-function fanCalibrated(fan) {
-  return (fanCfg?.calibration?.[fan] || []).length >= 2;
-}
-
-function fanMaxRpm(fan) {
-  return fanCfg?.max_rpm?.[fan] || FAN_MAX_DEFAULT[fan] || 6000;
-}
-
-// PWM límite para un cap en RPM: interpola la calibración medida (igual que
-// el servicio root); sin calibración, regla de tres con el máximo estimado.
-function capToPwm(cap, fan) {
-  const target = cap * 0.985;
-  const pts = (fanCfg?.calibration?.[fan] || [])
-    .filter(([p, r]) => r > 0).sort((a, b) => a[0] - b[0]);
-  if (pts.length >= 2) {
-    if (target >= pts[pts.length - 1][1]) return 255;
-    let prev = [0, 0];
-    for (const [p, r] of pts) {
-      if (r >= target) {
-        if (r === prev[1]) return p;
-        return Math.round(prev[0] + ((target - prev[1]) / (r - prev[1])) * (p - prev[0]));
-      }
-      prev = [p, r];
-    }
-  }
-  return Math.min(255, Math.round(target * 255 / fanMaxRpm(fan)));
-}
-
-function pwmToRpm(pwm, fan) {
-  const pts = (fanCfg?.calibration?.[fan] || [])
-    .filter(([p, r]) => r > 0).sort((a, b) => a[0] - b[0]);
-  if (pts.length >= 2) {
-    if (pwm <= pts[0][0]) return Math.round(pts[0][1] * (pwm / Math.max(1, pts[0][0])));
-    let prev = pts[0];
-    for (const point of pts.slice(1)) {
-      const [p, r] = point;
-      if (pwm <= p) {
-        const frac = (pwm - prev[0]) / Math.max(1, p - prev[0]);
-        return Math.round(prev[1] + frac * (r - prev[1]));
-      }
-      prev = point;
-    }
-    return pts[pts.length - 1][1];
-  }
-  return Math.round((pwm / 255) * fanMaxRpm(fan));
-}
-
-function estimateFanDba(fan, rpm) {
-  const max = Math.max(1, fanMaxRpm(fan));
-  const ratio = Math.max(0, Math.min(1, rpm / max));
-  return 24 + 24 * Math.pow(ratio, 2.15);
-}
-
-function combinedDba(values) {
-  const valid = values.filter((v) => Number.isFinite(v) && v > 0);
-  if (!valid.length) return null;
-  const power = valid.reduce((sum, db) => sum + Math.pow(10, db / 10), 0);
-  return 10 * Math.log10(power);
-}
-
-function capMapFromSource(caps, keys = fanKeys()) {
-  const out = {};
-  for (const fan of keys) {
-    const raw = caps?.[fan];
-    const cap = Math.round(+raw);
-    if (Number.isFinite(cap) && cap >= 2000) out[fan] = cap;
-  }
-  return out;
-}
-
-function capValues(caps = fanCapDraft) {
-  return Object.values(caps || {}).filter((v) => Number.isFinite(+v) && +v >= 2000).map((v) => Math.round(+v));
-}
-
-function fanCapDisplay(caps = fanCapDraft) {
-  const values = capValues(caps);
-  if (!values.length) return t('fan.no_cap');
-  const unique = [...new Set(values)];
-  if (unique.length === 1) return `${unique[0]} RPM`;
-  return Object.entries(caps)
-    .filter(([, v]) => Number.isFinite(+v) && +v >= 2000)
-    .map(([fan, v]) => `${fanName(fan)} ${Math.round(+v)}`)
-    .join(' · ');
-}
+const FM = window.RogFanCurveModel;   // matemática pura del editor de curvas (fan-curve-model.js, con tests)
+const { FAN_NAMES, FAN_GRAPH, combinedDba, tempToGraphX, pwmToGraphY, graphXToTemp, graphYToPercent } = FM;
+const fanKeys = (cfg = fanCfg) => FM.fanKeys(cfg);
+const fanCalibrated = (fan) => FM.fanCalibrated(fanCfg, fan);
+const fanMaxRpm = (fan) => FM.fanMaxRpm(fanCfg, fan);
+const capToPwm = (cap, fan) => FM.capToPwm(fanCfg, cap, fan);
+const pwmToRpm = (pwm, fan) => FM.pwmToRpm(fanCfg, pwm, fan);
+const estimateFanDba = (fan, rpm) => FM.estimateFanDba(fanCfg, fan, rpm);
+const capMapFromSource = (caps, keys = fanKeys()) => FM.capMapFromSource(caps, keys);
+const capValues = (caps = fanCapDraft) => FM.capValues(caps);
+const fanCapDisplay = (caps = fanCapDraft) => FM.fanCapDisplay(caps, fanName, t('fan.no_cap'));
 
 function syncFanCapInput() {
   const input = $('fan-cap');
@@ -3121,29 +3032,6 @@ function renderFanCurveSvg(fan, curve) {
       <g class="fan-curve-points">${pointEls}</g>
       <g class="fan-axis">${tempTicks}${speedTicks}<text x="533" y="232">°C</text><text x="8" y="25">%</text></g>
     </svg>`;
-}
-
-function tempToGraphX(temp) {
-  const t = Math.max(FAN_GRAPH.tempMin, Math.min(FAN_GRAPH.tempMax, Number(temp) || FAN_GRAPH.tempMin));
-  return FAN_GRAPH.x0 + ((t - FAN_GRAPH.tempMin) / (FAN_GRAPH.tempMax - FAN_GRAPH.tempMin)) * (FAN_GRAPH.x1 - FAN_GRAPH.x0);
-}
-
-function pwmToGraphY(pwm) {
-  const p = Math.max(0, Math.min(255, Number(pwm) || 0));
-  return FAN_GRAPH.yBottom - (p / 255) * (FAN_GRAPH.yBottom - FAN_GRAPH.yTop);
-}
-
-function graphXToTemp(x, pointIndex, tempInputs) {
-  const ratio = (x - FAN_GRAPH.x0) / (FAN_GRAPH.x1 - FAN_GRAPH.x0);
-  let temp = Math.round(FAN_GRAPH.tempMin + ratio * (FAN_GRAPH.tempMax - FAN_GRAPH.tempMin));
-  const prev = pointIndex > 0 ? Math.round(+tempInputs[pointIndex - 1].value) + 1 : FAN_GRAPH.tempMin;
-  const next = pointIndex < tempInputs.length - 1 ? Math.round(+tempInputs[pointIndex + 1].value) - 1 : FAN_GRAPH.tempMax;
-  return Math.max(prev, Math.min(next, temp));
-}
-
-function graphYToPercent(y) {
-  const ratio = (FAN_GRAPH.yBottom - y) / (FAN_GRAPH.yBottom - FAN_GRAPH.yTop);
-  return Math.max(0, Math.min(100, Math.round(ratio * 100)));
 }
 
 // Tooltip singleton para los puntos de las curvas (mismo gesto que el resto de
