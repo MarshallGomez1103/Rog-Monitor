@@ -1,13 +1,12 @@
 # Changelog
 
-## Unreleased (v22)
+## 22.0.0 — 2026-10-14
 
-After the post-90 audit (`docs/audits/post90/`). **Root-side scripts changed without a
-`VERSION` bump** (`rog-profile-sync.sh`, `rog-ctl.sh` paths and the fan watchdog), so the
-app cannot detect old installed copies: run `sudo bash scripts/install-system.sh` once
-after updating (`--dry-run` first). `VERSION` is still 21.0.0 on purpose; the release
-number is the owner's decision. Short SHAs below point at a representative commit; the
-full list is `git log 7d49333..HEAD`.
+After the post-90 audit (`docs/audits/post90/`). **Root-side scripts changed** in this
+release (`rog-profile-sync.sh`, `rog-ctl.sh` paths and the fan watchdog) and `VERSION` is
+now **22.0.0**, so the app detects the old installed copies and asks you to reinstall them:
+run `sudo bash scripts/install-system.sh` once after updating (`--dry-run` first). Short
+SHAs below point at a representative commit; the full list is the range `7d49333..HEAD`.
 
 ### Security
 - The Python path to `pkexec` now verifies `VERSION` and root ownership of the helper,
@@ -64,6 +63,12 @@ full list is `git log 7d49333..HEAD`.
   smoke runs green on GitHub (`c878859`).
 
 ### Changed
+- **One version source**: the `VERSION` file. `node scripts/bump-version.mjs X.Y.Z`
+  rewrites `desktop/package.json` and `package-lock.json` (both fields) and prints the manual
+  checklist; `--check` and the test suites fail if any copy diverges. The Python core and
+  the desktop app read only `VERSION` (the `ROG_MONITOR_VERSION` override is gone).
+- **The version is shown only in Help -> About** ("ROG Monitor 22.0.0 - core 22.0.0" and the
+  app folder); it no longer appears in the status bar or the roadmap pill.
 - **Electron 44.7.0** (from 42.11.12) and GitHub Actions bumped to `checkout` 7,
   `setup-python` 7, `setup-node` 7 and `upload-artifact` 7 (Dependabot, `9d1a483`,
   `d1733b1`).
@@ -126,7 +131,7 @@ full list is `git log 7d49333..HEAD`.
   animation ~11 % (`2dd4f66`, `77885ea`). Smooth is the default.
 
 ### Docs
-- Roadmap: v21 current, v22 in progress, overlay and benchmarks marked **partial** with
+- Roadmap: v22.0.0 current, overlay and benchmarks marked **partial** with
   what is done and what is missing; Guardian 2.0 and the single privileged helper stay
   future work. The unproven promise of an overlay over KDE/Wayland was removed (`98f1883`).
 - `docs/RECOVERY.md` uses the root-owned safe-mode and restores power through the

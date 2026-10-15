@@ -29,6 +29,16 @@ const ROADMAP_CURRENT = {
   // Lo que la app YA hace hoy:
   features: [
     {
+      es: 'Gráficas del historial editables (orden y visibilidad), estados claros por panel (cargando, sin datos, parcial, error) y ventiladores reactivos en los tres perfiles',
+      en: 'Editable history charts (order and visibility), clear per-panel states (loading, no data, partial, error) and reactive fans in all three profiles',
+      fr: "Graphiques d'historique modifiables (ordre et visibilité), états clairs par panneau (chargement, sans données, partiel, erreur) et ventilateurs réactifs dans les trois profils",
+      it: 'Grafici dello storico modificabili (ordine e visibilità), stati chiari per pannello (caricamento, nessun dato, parziale, errore) e ventole reattive nei tre profili',
+      pt: 'Gráficos do histórico editáveis (ordem e visibilidade), estados claros por painel (a carregar, sem dados, parcial, erro) e ventoinhas reativas nos três perfis',
+      zh: '可编辑的历史图表（顺序与显示）、每个面板清晰的状态（加载中、无数据、部分、错误），以及三种配置下都会响应的风扇',
+      ja: '編集できる履歴グラフ（順序と表示）、パネルごとの明確な状態（読み込み中・データなし・一部・エラー）、3 つのプロファイルすべてで反応するファン',
+      ko: '편집 가능한 기록 그래프(순서와 표시), 패널별 명확한 상태(로딩·데이터 없음·부분·오류), 세 프로파일 모두에서 반응하는 팬',
+    },
+    {
       es: 'Monitoreo en vivo (1 Hz): CPU/GPU temperatura, potencia, frecuencias, ventiladores (RPM), RAM, discos, red y batería',
       en: 'Live monitoring (1 Hz): CPU/GPU temperature, power, frequencies, fans (RPM), RAM, disks, network and battery',
       fr: 'Surveillance en direct (1 Hz) : température CPU/GPU, puissance, fréquences, ventilateurs (RPM), RAM, disques, réseau et batterie',
@@ -1733,16 +1743,16 @@ const ROADMAP_DONE = [
   },
   {
     date: '2026-10-14',
-    version: 'v22 (dev)',
+    version: 'v22.0.0',
     title: {
-      es: 'En desarrollo: gráficas editables, estados claros, ventiladores reactivos y robustez',
-      en: 'In development: editable charts, clear states, reactive fans and robustness',
-      fr: 'En développement : graphiques modifiables, états clairs, ventilateurs réactifs et robustesse',
-      it: 'In sviluppo: grafici modificabili, stati chiari, ventole reattive e robustezza',
-      pt: 'Em desenvolvimento: gráficos editáveis, estados claros, ventoinhas reativas e robustez',
-      zh: '开发中：可编辑图表、清晰状态、响应式风扇与稳健性',
-      ja: '開発中：編集できるグラフ、明確な状態表示、反応するファン、堅牢性',
-      ko: '개발 중: 편집 가능한 그래프, 명확한 상태, 반응형 팬, 견고성',
+      es: 'Gráficas editables, estados claros, ventiladores reactivos y robustez',
+      en: 'Editable charts, clear states, reactive fans and robustness',
+      fr: 'Graphiques modifiables, états clairs, ventilateurs réactifs et robustesse',
+      it: 'Grafici modificabili, stati chiari, ventole reattive e robustezza',
+      pt: 'Gráficos editáveis, estados claros, ventoinhas reativas e robustez',
+      zh: '可编辑图表、清晰状态、响应式风扇与稳健性',
+      ja: '編集できるグラフ、明確な状態表示、反応するファン、堅牢性',
+      ko: '편집 가능한 그래프, 명확한 상태, 반응형 팬, 견고성',
     },
     points: [
       {

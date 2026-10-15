@@ -23,7 +23,7 @@ separate:
 The differentiator is the **combination + safety + UX**: everything in one place,
 English-first public docs and an 8-language UI, with a guardian nobody else ships.
 
-## Current (done) — through v21
+## Current (done) — through v22
 
 * [x] Unified CPU/GPU smart guardian with separate thermal ceilings.
 * [x] Guardian modes: **Protection** and **Gaming** (fans-only, no throttling). *(v14)*
@@ -75,11 +75,12 @@ English-first public docs and an 8-language UI, with a guardian nobody else ship
   simulation mode + safe restore, reproducible benchmarks, SMART cache, CI with 160+ tests and
   an Electron E2E smoke. *(v21)*
 
-## In progress — v22 (branch `feat/v22`, not released yet)
+## Done — v22.0.0
 
-Everything below is merged on `feat/v22` and covered by tests. Items that touch the
-privileged side (fans / power) are tested with fakes and a real thermal run, but only take
-effect on a machine after reinstalling with `install-system.sh` (needs root, run by the owner).
+Released as 22.0.0. Everything below is covered by tests. Items that touch the privileged
+side (fans / power) are tested with fakes and a real thermal run, and only take effect on a
+machine after reinstalling with `install-system.sh` (needs root, run by the owner); the
+bump of `VERSION` makes the app ask for it.
 
 * [x] CPU card shows **usage %** next to the temperature; per-process load shown as **cores
   used** (2.35) instead of a confusing "235 %".

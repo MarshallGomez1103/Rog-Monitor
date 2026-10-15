@@ -13,6 +13,7 @@ const vm = require('node:vm');
 const ROOT = path.join(__dirname, '..', '..');
 const JS_SRC = fs.readFileSync(path.join(ROOT, 'desktop', 'renderer', 'roadmap.js'), 'utf8');
 const MD_SRC = fs.readFileSync(path.join(ROOT, 'docs', 'roadmap.md'), 'utf8');
+const VERSION = fs.readFileSync(path.join(ROOT, 'VERSION'), 'utf8').trim();
 const LANGS = ['es', 'en', 'fr', 'it', 'pt', 'zh', 'ja', 'ko'];
 
 // ---------- carga de roadmap.js ----------
@@ -155,11 +156,13 @@ test('_loc cae a es, luego a en, si el idioma activo no existe', () => {
 test('la cabecera y la versión actual no están viejas; v22 aparece en la app y en el .md', () => {
   assert.match(JS_SRC.split('\n')[0], /Roadmap \(v22\)/);
   assert.strictEqual(ROADMAP_CURRENT.version, undefined, 'el pill no lleva versión (solo Ayuda > Acerca de)');
-  assert.ok(ROADMAP_DONE.some((d) => /^v22/.test(d.version)), 'falta la entrada v22 en HECHO');
-  assert.match(MD_SRC, /^## In progress — v22/m);
-  assert.match(MD_SRC, /^## Current \(done\) — through v21/m);
+  assert.ok(ROADMAP_DONE.some((d) => /^v22\./.test(d.version)), 'falta la entrada v22 en HECHO');
+  assert.match(MD_SRC, /^## Done — v22\.0\.0/m);
+  assert.doesNotMatch(MD_SRC, /^## In progress/m, 'v22 ya está publicada');
+  const major = VERSION.split('.')[0];
+  assert.match(MD_SRC, new RegExp(`^## Current \\(done\\) — through v${major}\\b`, 'm'));
   // La entrada v22 es la última de HECHO y las fechas no retroceden.
-  assert.match(ROADMAP_DONE[ROADMAP_DONE.length - 1].version, /^v22/);
+  assert.strictEqual(ROADMAP_DONE[ROADMAP_DONE.length - 1].version, `v${VERSION}`, 'la última entrada del historial es la versión de VERSION');
   const dates = Array.from(ROADMAP_DONE, (d) => d.date);
   assert.deepStrictEqual([...dates].sort(), dates);
 });
@@ -198,7 +201,7 @@ function jsTodoState(item) {
 const TODO_ITEMS = ROADMAP_TODO.flatMap((ph) => ph.items.map((it) => ({ ...it, phaseEn: ph.phase.en })));
 const findTodo = (re) => TODO_ITEMS.filter((it) => re.test(it.title.en));
 
-const V22 = ROADMAP_DONE.find((d) => /^v22/.test(d.version));
+const V22 = ROADMAP_DONE.find((d) => /^v22\./.test(d.version));
 const doneTexts = (entry) => (entry ? entry.points.map((p) => p.en) : []);
 const ALL_DONE_EN = [
   ...ROADMAP_CURRENT.features.map((f) => f.en),
@@ -355,7 +358,7 @@ const V22_MAP = [
 
 for (const it of V22_MAP) {
   test(`v22 hecho «${it.id}» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas`, () => {
-    const mdHits = MD.filter((b) => /^In progress — v22/.test(b.section) && it.md.test(b.text));
+    const mdHits = MD.filter((b) => /^Done — v22/.test(b.section) && it.md.test(b.text));
     assert.ok(mdHits.length >= 1, '.md: falta en la sección v22');
     assert.ok(mdHits.every((b) => b.mark === 'x'), '.md: debe estar [x]');
     const jsHits = V22 ? V22.points.filter((p) => it.js.test(p.en)) : [];
@@ -371,6 +374,6 @@ for (const it of V22_MAP) {
 test('lo parcial/pendiente de v22 no se cuela como hecho: nada de Guardian real, helper, Path Tracing ni overlay completo en v22', () => {
   const v22en = doneTexts(V22).join(' ');
   assert.ok(!/Guardian 2\.0|polkit|Path Tracing|themes\/skins/i.test(v22en));
-  const mdV22 = MD.filter((b) => /^In progress — v22/.test(b.section)).map((b) => b.text).join(' ');
+  const mdV22 = MD.filter((b) => /^Done — v22/.test(b.section)).map((b) => b.text).join(' ');
   assert.ok(!/Guardian 2\.0|polkit|Path Tracing|themes\/skins/i.test(mdV22));
 });

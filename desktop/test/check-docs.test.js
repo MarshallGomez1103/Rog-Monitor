@@ -23,25 +23,38 @@ test('textos vacíos fallan casi todas las reglas y devuelven id + motivo', () =
   const fails = mod.checkDocs({ README: '', CHANGELOG: '' });
   assert.ok(fails.length >= mod.RULES.length - 10);
   assert.ok(ids(fails).includes('readme-electron44'));
-  assert.ok(ids(fails).includes('changelog-unreleased'));
+  assert.ok(ids(fails).includes('changelog-current'));
   assert.ok(fails.every((f) => f.id && f.why));
 });
 
 test('Electron 42 como versión actual, "Four widget states" y "1200 RPM" se rechazan', () => {
   const fails = mod.checkDocs({
     README: 'Electron 42 y Four widget states',
-    CHANGELOG: '## Unreleased (v22)\n\n### Fixed\n- Electron 42 si queda >1200 RPM\n\n## 21.0.0\n',
-  });
+    CHANGELOG: '## 22.0.0 — 2026-10-14\n\n### Fixed\n- Electron 42 si queda >1200 RPM\n\n## 21.0.0\n',
+  }, { version: '22.0.0' });
   assert.ok(ids(fails).includes('readme-no-electron42'));
   assert.ok(ids(fails).includes('readme-no-four-states'));
   assert.ok(ids(fails).includes('changelog-electron44'));
   assert.ok(ids(fails).includes('changelog-watchdog-criterion'));
 });
 
-test('Electron 42 en la historia (21.0.0) no cuenta contra Unreleased', () => {
-  const cl = '## Unreleased (v22)\n\nElectron 44\n\n## 21.0.0\n- Electron 42.11.12\n';
-  assert.equal(mod.unreleasedSection(cl).includes('Electron 42'), false);
-  assert.equal(mod.unreleasedSection('sin sección'), '');
+test('Electron 42 en la historia (21.0.0) no cuenta contra la versión actual', () => {
+  const cl = '## 22.0.0 — 2026-10-14\n\nElectron 44\n\n## 21.0.0\n- Electron 42.11.12\n';
+  assert.equal(mod.releaseSection(cl, '22.0.0').includes('Electron 42'), false);
+  assert.equal(mod.releaseSection(cl, '22.0.0').includes('Electron 44'), true);
+  assert.equal(mod.releaseSection('sin sección', '22.0.0'), '');
+  assert.equal(mod.releaseSection(cl, '22.0'), '', 'versión no semver => sin sección');
+  assert.equal(mod.releaseSection(cl, '2.0.0'), '', 'el punto no es comodín ni prefijo');
+});
+
+test('el encabezado del CHANGELOG debe coincidir con VERSION (no con "Unreleased (v22)")', () => {
+  const body = '\n\nElectron 44\n\n## 21.0.0\n';
+  const base = (h) => mod.checkDocs({ README: '', CHANGELOG: `${h}${body}` }, { version: '22.0.0' });
+  assert.equal(ids(base('## 22.0.0 — 2026-10-14')).includes('changelog-current'), false);
+  assert.equal(ids(base('## Unreleased (v22)')).includes('changelog-current'), true);
+  assert.equal(ids(base('## 22.0.1 — 2026-10-15')).includes('changelog-current'), true);
+  const f = base('## 21.5.0 — 2026-10-10').find((x) => x.id === 'changelog-current');
+  assert.match(f.why, /VERSION/);
 });
 
 test('rutas personales se detectan en cualquiera de los dos documentos', () => {
@@ -74,9 +87,9 @@ test('main devuelve 0 con documentos reales y 1 con documentos malos', () => {
 });
 
 test('la sección Known limits exige las cuatro limitaciones', () => {
-  const base = (lim) => `## Unreleased (v22)\n\n### Known limits / pending validation\n${lim}\n\n## 21.0.0\n`;
-  const ok = mod.checkDocs({ README: '', CHANGELOG: base('- Wayland overlay\n- installer VM\n- thermal test') });
-  const bad = mod.checkDocs({ README: '', CHANGELOG: base('- Wayland overlay') });
+  const base = (lim) => `## 22.0.0 — 2026-10-14\n\n### Known limits / pending validation\n${lim}\n\n## 21.0.0\n`;
+  const ok = mod.checkDocs({ README: '', CHANGELOG: base('- Wayland overlay\n- installer VM\n- thermal test') }, { version: '22.0.0' });
+  const bad = mod.checkDocs({ README: '', CHANGELOG: base('- Wayland overlay') }, { version: '22.0.0' });
   assert.equal(ids(ok).includes('changelog-known-limits'), false);
   assert.equal(ids(bad).includes('changelog-known-limits'), true);
 });

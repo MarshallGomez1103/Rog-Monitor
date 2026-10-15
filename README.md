@@ -292,8 +292,9 @@ privileged actions are refused, and the app offers **REINSTALL / REPAIR** under
 [docs/adr/0001-privilege-boundary.md](docs/adr/0001-privilege-boundary.md).
 
 **Updating to v22:** several root-side scripts changed in v22 (for example
-`rog-profile-sync.sh`, which holds the fan watchdog) without a `VERSION` bump,
-so the app cannot tell that your installed copies are old. After updating, run
+`rog-profile-sync.sh`, which holds the fan watchdog). During development they changed
+without a `VERSION` bump and the app could not tell your installed copies were old; v22.0.0
+bumps `VERSION`, so the app now asks you to reinstall them. After updating, run
 `sudo bash scripts/install-system.sh` once; otherwise the root service keeps the
 previous behavior.
 

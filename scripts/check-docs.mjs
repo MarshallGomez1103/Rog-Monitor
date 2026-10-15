@@ -5,20 +5,23 @@
 //   node scripts/check-docs.mjs
 //
 // Cada regla es {id, file, ok(texto, ctx) -> boolean, why}. "file" es README o CHANGELOG;
-// la sección "Unreleased (v22)" del CHANGELOG se extrae aparte para no condenar la
-// historia (21.0.0 sí usó Electron 42).
+// la sección del CHANGELOG cuyo encabezado es la versión actual (`## 22.0.0 — fecha`, la del
+// archivo VERSION) se extrae aparte para no condenar la historia (21.0.0 sí usó Electron 42).
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
+const readVersion = () => { try { return readFileSync(path.join(ROOT, 'VERSION'), 'utf8').trim(); } catch (_) { return ''; } };
+
 const has = (re) => (t) => re.test(t);
 const lacks = (re) => (t) => !re.test(t);
 
-/** Texto de la sección `## Unreleased (v22)` hasta el siguiente `## `; '' si no existe. */
-export function unreleasedSection(changelog) {
-  const m = /^## Unreleased \(v22\)\s*$/m.exec(changelog);
+/** Texto de la sección `## <version> — fecha` del CHANGELOG hasta el siguiente `## `; '' si no existe. */
+export function releaseSection(changelog, version) {
+  if (!/^\d+\.\d+\.\d+$/.test(String(version || ''))) return '';
+  const m = new RegExp(`^## ${version.replace(/\./g, '\\.')}(?:\\s.*)?$`, 'm').exec(changelog);
   if (!m) return '';
   const rest = changelog.slice(m.index + m[0].length);
   const next = /^## /m.exec(rest);
@@ -74,24 +77,24 @@ export const RULES = [
   { id: 'readme-no-powers-claim', file: 'README', ok: lacks(/the app does not change power or GPU mode\s+on its own/i), why: '"no cambia la potencia por sí misma" debe matizarse con el Guardián opt-in' },
   { id: 'readme-no-path-tracing', file: 'README', ok: lacks(/path.?tracing/i), why: 'Path Tracing no está verificado: no anunciarlo' },
   // ------------------------------------------------------------- CHANGELOG
-  { id: 'changelog-unreleased', file: 'CHANGELOG', ok: (t) => unreleasedSection(t) !== '', why: 'falta el encabezado exacto "## Unreleased (v22)"' },
-  { id: 'changelog-sections', file: 'CHANGELOG', ok: (t) => {
-      const u = unreleasedSection(t);
+  { id: 'changelog-current', file: 'CHANGELOG', ok: (t, c) => releaseSection(t, c.version) !== '', why: 'falta el encabezado "## <VERSION> — fecha" que coincide con el archivo VERSION' },
+  { id: 'changelog-sections', file: 'CHANGELOG', ok: (t, c) => {
+      const u = releaseSection(t, c.version);
       return ['Security', 'Fixed', 'Changed', 'Added', 'Tests & CI', 'Performance', 'Docs'].every((s) => subsection(u, s).trim() !== '');
-    }, why: 'Unreleased (v22) debe tener Security/Fixed/Changed/Added/Tests & CI/Performance/Docs con contenido' },
-  { id: 'changelog-electron44', file: 'CHANGELOG', ok: (t) => /Electron 44/.test(unreleasedSection(t)) && !/Electron 42/.test(unreleasedSection(t)),
-    why: 'Unreleased debe decir Electron 44 y no "Electron 42"' },
-  { id: 'changelog-watchdog-criterion', file: 'CHANGELOG', ok: (t) => { const u = unreleasedSection(t); return /3000 rpm/.test(u) && /25 ?%/.test(u) && !/1200 ?RPM/i.test(u); },
+    }, why: 'la sección de la versión actual debe tener Security/Fixed/Changed/Added/Tests & CI/Performance/Docs con contenido' },
+  { id: 'changelog-electron44', file: 'CHANGELOG', ok: (t, c) => /Electron 44/.test(releaseSection(t, c.version)) && !/Electron 42/.test(releaseSection(t, c.version)),
+    why: 'la versión actual debe decir Electron 44 y no "Electron 42"' },
+  { id: 'changelog-watchdog-criterion', file: 'CHANGELOG', ok: (t, c) => { const u = releaseSection(t, c.version); return /3000 rpm/.test(u) && /25 ?%/.test(u) && !/1200 ?RPM/i.test(u); },
     why: 'criterio del vigilante: ≥3000 rpm y margen max(900 rpm, 25 %), no ">1200 RPM"' },
-  { id: 'changelog-states-stale', file: 'CHANGELOG', ok: (t) => { const u = unreleasedSection(t); return /NO DATA/.test(u) && /stale/i.test(u); },
+  { id: 'changelog-states-stale', file: 'CHANGELOG', ok: (t, c) => { const u = releaseSection(t, c.version); return /NO DATA/.test(u) && /stale/i.test(u); },
     why: 'falta el aviso NO DATA / estado stale' },
-  { id: 'changelog-coverage', file: 'CHANGELOG', ok: (t) => { const u = unreleasedSection(t); return /80 ?%/.test(u) && /90 ?%/.test(u); }, why: 'falta la cobertura (80 % / 90 %)' },
-  { id: 'changelog-known-limits', file: 'CHANGELOG', ok: (t) => {
-      const u = subsection(unreleasedSection(t), 'Known limits / pending validation');
+  { id: 'changelog-coverage', file: 'CHANGELOG', ok: (t, c) => { const u = releaseSection(t, c.version); return /80 ?%/.test(u) && /90 ?%/.test(u); }, why: 'falta la cobertura (80 % / 90 %)' },
+  { id: 'changelog-known-limits', file: 'CHANGELOG', ok: (t, c) => {
+      const u = subsection(releaseSection(t, c.version), 'Known limits / pending validation');
       return /Wayland/.test(u) && /installer/i.test(u) && /(thermal|heat)/i.test(u);
     }, why: 'falta "Known limits / pending validation" (Wayland, VM instalador, prueba térmica)' },
   { id: 'changelog-no-path-tracing', file: 'CHANGELOG', ok: lacks(/path.?tracing/i), why: 'Path Tracing no está verificado: no anunciarlo' },
-  { id: 'changelog-partial-honest', file: 'CHANGELOG', ok: (t) => { const u = unreleasedSection(t); return /partial/i.test(u) && /future/i.test(u); },
+  { id: 'changelog-partial-honest', file: 'CHANGELOG', ok: (t, c) => { const u = releaseSection(t, c.version); return /partial/i.test(u) && /future/i.test(u); },
     why: 'debe nombrar overlay/benchmarks como parciales y Guardián 2.0/helper único como futuro' },
 ];
 
@@ -113,14 +116,15 @@ export function relativeLinks(text) {
 
 /**
  * @param {{README: string, CHANGELOG: string}} docs  textos
- * @param {{exists?: (relPath: string) => boolean}} [env]  inyectable para tests
+ * @param {{exists?: (relPath: string) => boolean, version?: string}} [env]  inyectables para tests (version: por defecto, el archivo VERSION)
  * @returns {{id: string, why: string}[]} fallos (vacío = verde)
  */
 export function checkDocs(docs, env = {}) {
   const exists = env.exists || ((p) => existsSync(path.join(ROOT, p)));
+  const ctx = { version: env.version !== undefined ? env.version : readVersion() };
   const failures = [];
   for (const r of RULES) {
-    if (!r.ok(docs[r.file])) failures.push({ id: r.id, why: r.why });
+    if (!r.ok(docs[r.file], ctx)) failures.push({ id: r.id, why: r.why });
   }
   for (const [name, text] of Object.entries(docs)) {
     for (const re of PRIVATE_PATHS) {
@@ -134,7 +138,7 @@ export function checkDocs(docs, env = {}) {
 }
 
 export function main(out = console, read = (f) => readFileSync(path.join(ROOT, f), 'utf8')) {
-  const failures = checkDocs({ README: read('README.md'), CHANGELOG: read('CHANGELOG.md') });
+  const failures = checkDocs({ README: read('README.md'), CHANGELOG: read('CHANGELOG.md') }, { version: read('VERSION').trim() });
   if (failures.length === 0) {
     out.log(`check-docs: OK (${RULES.length} reglas + rutas privadas + enlaces relativos)`);
     return 0;

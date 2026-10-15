@@ -131,6 +131,35 @@ test('bump respeta el indentado existente (4 espacios) y --dry-run no escribe na
   } finally { cleanup(dir); }
 });
 
+test('bump cambia solo la línea de versión: arrays en una línea y resto del formato intactos', () => {
+  const dir = fixture();
+  try {
+    const p = path.join(dir, 'desktop', 'package.json');
+    const pkgText = '{\n  "name": "rog-monitor",\n  "version": "1.2.3",\n  "build": {\n    "files": ["**/*", "!dist/**"],\n    "version": "no-tocar"\n  }\n}\n';
+    fs.writeFileSync(p, pkgText);
+    const lp = path.join(dir, 'desktop', 'package-lock.json');
+    const lockText = fs.readFileSync(lp, 'utf8');
+    assert.equal(mod.main(['1.2.4', '--root', dir], sink()), 0);
+    assert.equal(fs.readFileSync(p, 'utf8'), pkgText.replace('"version": "1.2.3"', '"version": "1.2.4"'));
+    const after = fs.readFileSync(lp, 'utf8');
+    assert.equal(after, lockText.replace(/"version": "1\.2\.3"/g, '"version": "1.2.4"'));
+    assert.equal((after.match(/1\.2\.4/g) || []).length, 2);
+  } finally { cleanup(dir); }
+});
+
+test('bump falla sin tocar nada si un package*.json no tiene clave "version" o falta', () => {
+  const dir = fixture();
+  try {
+    fs.writeFileSync(path.join(dir, 'desktop', 'package.json'), '{ "name": "rog-monitor" }\n');
+    const out = sink();
+    assert.equal(mod.main(['2.0.0', '--root', dir], out), 1);
+    assert.match(out.lines.join('\n'), /package\.json/);
+    assert.equal(fs.readFileSync(path.join(dir, 'VERSION'), 'utf8'), '1.2.3\n', 'no deja VERSION a medias');
+    fs.rmSync(path.join(dir, 'desktop', 'package-lock.json'));
+    assert.equal(mod.main(['2.0.0', '--root', dir], sink()), 1);
+  } finally { cleanup(dir); }
+});
+
 test('bump rechaza versiones que no son X.Y.Z y no modifica nada', () => {
   const dir = fixture();
   try {

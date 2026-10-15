@@ -20,16 +20,30 @@ const SEMVER = /^\d+\.\d+\.\d+$/;
 const readText = (root, rel) => readFileSync(path.join(root, rel), 'utf8');
 const has = (root, rel) => existsSync(path.join(root, rel));
 
-/** Indentado de un JSON ya formateado (2 por defecto) y si acaba en salto de línea. */
-function jsonFormat(text) {
-  const m = /^\{\r?\n([ \t]+)"/.exec(text);
-  return { indent: m ? m[1] : '  ', eol: text.endsWith('\n') ? '\n' : '' };
+/** Cambia solo el valor del primer "version" de `raw` que case con `re` (grupo 1 = prefijo). */
+function replaceVersion(raw, re, version) {
+  const m = re.exec(raw);
+  if (!m) throw new Error('no encuentro la clave "version"');
+  return raw.slice(0, m.index) + m[1] + `"${version}"` + raw.slice(m.index + m[0].length);
 }
 
-/** Lista de {rel, set(data, version)} de las copias JSON gestionadas por el script. */
+// Edición textual y no JSON.stringify: así no se reformatea nada (arrays en una línea, etc.) y
+// el diff de un bump son 1 línea en package.json y 2 en package-lock.json.
+const TOP_VERSION = /^([ \t]*"version"[ \t]*:[ \t]*)"[^"]*"/m;                       // 1.º del archivo: la raíz
+const LOCK_ROOT_PKG = /("packages"\s*:\s*\{\s*""\s*:\s*\{[^}]*?"version"\s*:\s*)"[^"]*"/;  // packages[""]
+
+/** Copias JSON gestionadas: apply(texto, versión) -> texto nuevo; verify(datos, versión) -> bool. */
 const JSON_COPIES = [
-  { rel: 'desktop/package.json', set: (d, v) => { d.version = v; } },
-  { rel: 'desktop/package-lock.json', set: (d, v) => { d.version = v; if (d.packages && d.packages['']) d.packages[''].version = v; } },
+  {
+    rel: 'desktop/package.json',
+    apply: (raw, v) => replaceVersion(raw, TOP_VERSION, v),
+    verify: (d, v) => d.version === v,
+  },
+  {
+    rel: 'desktop/package-lock.json',
+    apply: (raw, v) => replaceVersion(replaceVersion(raw, TOP_VERSION, v), LOCK_ROOT_PKG, v),
+    verify: (d, v) => d.version === v && d.packages && d.packages[''] && d.packages[''].version === v,
+  },
 ];
 
 /** Problemas de coherencia respecto a VERSION; [] = todo coincide. */
@@ -107,11 +121,12 @@ export function main(argv = process.argv.slice(2), out = console) {
   const writes = [{ rel: 'VERSION', text: `${version}\n` }];
   for (const c of JSON_COPIES) {
     if (!has(root, c.rel)) { out.error(`falta ${c.rel}`); return 1; }
-    const raw = readText(root, c.rel);
-    const { indent, eol } = jsonFormat(raw);
-    const data = JSON.parse(raw);
-    c.set(data, version);
-    writes.push({ rel: c.rel, text: JSON.stringify(data, null, indent) + eol });
+    let text;
+    try {
+      text = c.apply(readText(root, c.rel), version);
+      if (!c.verify(JSON.parse(text), version)) throw new Error('el resultado no tiene la versión esperada');
+    } catch (err) { out.error(`${c.rel}: ${err.message}`); return 1; }
+    writes.push({ rel: c.rel, text });
   }
   for (const w of writes) {
     if (!dry) writeFileSync(path.join(root, w.rel), w.text);
