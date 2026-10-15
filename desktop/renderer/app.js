@@ -621,22 +621,8 @@ const chartState = new Map();
 /* Historial configurable (F4-04..06): catálogo de gráficas y lista elegida por el
    usuario (cuáles y en qué orden), guardada en localStorage 'histCharts'. Cada entrada:
    key de la serie del snapshot -> [color CSS, opts de drawChart, clave i18n].
-   opts.max fija el techo del eje (% → 100); opts.maxKey lo toma de stats.sys
-   (RAM/swap en GiB → 0..total). Puro: lo prueba charts.test.js. */
-const CHART_CATALOG = {
-  cpu_temp: ['--cold', { unit: '°C' }, 'chart.cpu_temp'],
-  cpu_power: ['--accent', { fromZero: true, unit: 'W' }, 'chart.cpu_power'],
-  gpu_temp: ['--okstate', { unit: '°C' }, 'chart.gpu_temp'],
-  gpu_power: ['--hot', { fromZero: true, unit: 'W' }, 'chart.gpu_power'],
-  cpu_usage: ['--cold', { max: 100, unit: '%' }, 'chart.cpu_usage'],
-  ram_gb: ['--accent', { maxKey: 'ram_total_gb', unit: 'GiB' }, 'chart.ram_gib'],
-  swap_gb: ['--ink', { maxKey: 'swap_total_gb', unit: 'GiB' }, 'chart.swap_gib'],
-  gpu_util: ['--hot', { max: 100, unit: '%' }, 'chart.gpu_usage'],
-};
-const HIST_PRESETS = {
-  temp: ['cpu_temp', 'cpu_power', 'gpu_temp', 'gpu_power'],
-  usage: ['cpu_usage', 'ram_gb', 'swap_gb', 'gpu_util'],
-};
+   Catálogo y helpers puros: charts-catalog.js (con tests). */
+const { CHART_CATALOG, HIST_PRESETS, chartTail, chartRange, chartRuns, chartIndexAt, agoText } = window.RogChartsCatalog;
 
 const CE = window.RogChartEditor;   // lista/orden/toggle/presets: chart-editor-model.js (puro, con tests)
 const CHART_KEYS = Object.keys(CHART_CATALOG);
@@ -665,46 +651,6 @@ function setHistCharts(list) {
   btn.textContent = t(btn.dataset.i18n);
   window.RogChartEditorUI?.sync();   // repinta el editor (chart-editor-ui.js)
   if (lastStats) update(lastStats);
-}
-
-/* Helpers puros de las gráficas (sin DOM; los prueba desktop/test/charts.test.js).
-   La serie puede traer null = hueco (dGPU dormida): no es 0, no entra en
-   min/max y corta la línea. */
-const CHART_MAX_POINTS = 1200; // tope duro del búfer dibujado (el backend manda ≤900)
-
-function chartTail(values, n) {
-  return values.slice(-Math.min(CHART_MAX_POINTS, Math.max(2, n)));
-}
-
-function chartRange(data, fromZero, ceil) {
-  let min = Infinity, max = -Infinity;
-  for (const v of data) {
-    if (!Number.isFinite(v)) continue;
-    if (v < min) min = v;
-    if (v > max) max = v;
-  }
-  if (min === Infinity) return null;      // todo huecos: nada que escalar
-  // techo fijo (% → 100, GiB → total): la escala no salta con los datos
-  if (Number.isFinite(ceil) && ceil > 0) return { lo: 0, hi: ceil };
-  // snap the axis to steps of 5 so min/max don't jitter every second
-  // fromZero: los watts arrancan en 0 — si no, una bajada de 10→3 W llena
-  // toda la altura de la gráfica y parece un desplome dramático
-  const lo = fromZero ? 0 : Math.floor(min / 5) * 5;
-  let hi = Math.ceil(max / 5) * 5;
-  if (hi - lo < 10) hi = lo + 10;
-  return { lo, hi };
-}
-
-/* Tramos contiguos de datos válidos: [[i0, i1], ...] (inclusive). */
-function chartRuns(data) {
-  const runs = [];
-  let start = -1;
-  for (let i = 0; i <= data.length; i++) {
-    const ok = i < data.length && Number.isFinite(data[i]);
-    if (ok && start < 0) start = i;
-    else if (!ok && start >= 0) { runs.push([start, i - 1]); start = -1; }
-  }
-  return runs;
 }
 
 function drawChart(canvas, values, color, opts = {}) {
@@ -792,11 +738,6 @@ function drawChart(canvas, values, color, opts = {}) {
 
 const chartHover = { canvasId: null, px: 0 };
 
-function chartIndexAt(state, px) {
-  return Math.max(0, Math.min(state.data.length - 1,
-    Math.round((px / state.w) * (state.data.length - 1))));
-}
-
 function drawChartCrosshair(canvas) {
   const state = chartState.get(canvas.id);
   if (!state) return;
@@ -825,15 +766,6 @@ function drawChartCrosshair(canvas) {
   ctx.lineWidth = 1.5;
   ctx.stroke();
   ctx.restore();
-}
-
-function agoText(secondsAgo) {
-  if (secondsAgo < 1) return t('chart.now');
-  if (secondsAgo < 60) return t('chart.ago_seconds', { s: secondsAgo });
-  return t('chart.ago_minutes_seconds', {
-    m: Math.floor(secondsAgo / 60),
-    s: secondsAgo % 60,
-  });
 }
 
 function wireChartHover(canvasId, unit) {

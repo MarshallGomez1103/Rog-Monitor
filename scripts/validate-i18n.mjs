@@ -70,6 +70,7 @@ run('i18n.js');
 run('procs-table.js');   // app.js la desestructura al cargar (N-A2-01); no registra claves
 run('widget-status-view.js');   // app.js la desestructura al cargar (N-A4-03); no registra claves
 run('chart-editor-model.js');   // app.js usa window.RogChartEditor al cargar (N-A3-01); no registra claves
+run('charts-catalog.js');   // app.js la desestructura al cargar (F3-02); no registra claves
 
 // El resto de archivos que registran claves.
 const others = readdirSync(RENDERER)

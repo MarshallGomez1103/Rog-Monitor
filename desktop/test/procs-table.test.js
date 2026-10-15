@@ -132,7 +132,7 @@ test('sortRows: acepta el objeto de createSortState/toggleSort directamente', ()
   assert.deepStrictEqual(PT.sortRows(ROWS(), s).map((x) => x.name), ['bash', 'code', 'firefox', 'Xorg', 'zsh']);
 });
 
-test('colClass: mapa de columnas de app.js (PROC_COL_CLASS)', () => {
+test('colClass: mapa de clases de columna del CSS (COL_CLASS)', () => {
   assert.strictEqual(PT.colClass('pid'), 'pid');
   assert.strictEqual(PT.colClass('name'), 'pname');
   assert.strictEqual(PT.colClass('cpu'), 'cpu');
@@ -151,7 +151,7 @@ test('headerState: columna activa pinta flecha y aria-sort; el resto none', () =
   assert.deepStrictEqual(PT.headerState(asc, 'cpu'), { active: true, dir: 'asc', arrow: '▲', ariaSort: 'ascending' });
   assert.deepStrictEqual(PT.headerState(desc, 'name'), { active: false, dir: '', arrow: '', ariaSort: 'none' });
   assert.deepStrictEqual(PT.headerState(undefined, 'name'), { active: false, dir: '', arrow: '', ariaSort: 'none' });
-  // dir raro = desc, como `sortDir === 'asc' ? 1 : -1` en app.js
+  // dir raro = desc, como normDir en procs-table.js
   assert.strictEqual(PT.headerState({ key: 'pid', dir: 'x' }, 'pid').ariaSort, 'descending');
 });
 
