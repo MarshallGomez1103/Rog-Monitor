@@ -1,0 +1,21 @@
+PASS  arranca con el orden de temperatura
+FAIL  arrastrar con el ratón el asa de cpu_temp sobre gpu_power la deja última  -> ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+FAIL  arrastrar desde el nombre de gpu_power sobre cpu_power la deja primera  -> ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+PASS  …y arrastrar por el nombre no quita ninguna gráfica (4 activas)
+FAIL  durante el arrastre: fila de origen marcada y línea de destino en cpu_power (arriba)  -> {"above":[],"below":[],"dragging":["cpu_temp","gpu_power"],"cursor":"auto","gripCursor":"grab"}
+FAIL  durante el arrastre: cursor grabbing  -> ["auto","grab"]
+FAIL  Escape durante el arrastre cancela: el orden no cambia y se limpian los indicadores  -> [["cpu_temp","cpu_power","gpu_temp","gpu_power"],{"n":2,"open":true}]
+PASS  …y ese Escape sólo cancela el arrastre (el editor sigue abierto)
+FAIL  soltar sobre una fila desactivada no cambia nada  -> ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+FAIL  soltar fuera del editor no cambia nada  -> ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+FAIL  clic con 2 px de temblor en la casilla la alterna (gpu_temp se quita)  -> ["cpu_temp","cpu_power","gpu_power"]
+FAIL  …y otro clic la vuelve a activar (al final)  -> ["cpu_temp","cpu_power","gpu_power","gpu_temp"]
+FAIL  clic en ↓ de gpu_power sigue moviéndola una posición  -> ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+FAIL  ninguna fila usa draggable="true" (DnD nativo retirado)  -> 4
+PASS  cursor del asa = grab en filas activas
+FAIL  arrastrar gpu_temp sobre cpu_power la deja primera  -> ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+PASS  el orden arrastrado queda en localStorage sin duplicados
+PASS  tras recargar, el orden arrastrado persiste (lista y canvas)
+
+6 PASS / 12 FAIL de 18 aserciones
+RESULT: FAIL

@@ -1,0 +1,9 @@
+not ok 23 - createPointerDrag: no arranca hasta superar el umbral (4 px por defecto) y entonces fija el origen
+not ok 24 - createPointerDrag: umbral configurable, diagonal por distancia euclídea
+not ok 25 - createPointerDrag: up devuelve si hubo arrastre real (un clic no es arrastre) y deja el estado en reposo
+not ok 26 - createPointerDrag: cancel (Escape) vuelve a reposo; move sin down no hace nada; un segundo down reinicia
+not ok 27 - createPointerDrag: coordenadas no finitas se ignoran (no arrancan ni lanzan)
+not ok 28 - dropTargetAt: fila ACTIVA bajo la posición vertical; inactivas, huecos y fuera => null
+not ok 29 - arrastre de punta a punta: down -> move -> dropTargetAt -> dropChart (mismo resultado que el DnD anterior)
+# pass 22
+# fail 7

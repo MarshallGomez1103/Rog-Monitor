@@ -83,6 +83,45 @@
     return j < i ? 'above' : 'below';
   }
 
+  /* Fila ACTIVA bajo la posición vertical `y`. `rects` = [{key, top, bottom}] de las filas
+     pintadas (el borde superior pertenece a la fila; el inferior, a la siguiente).
+     Fila desactivada, hueco o fuera => null (soltar ahí no mueve nada). */
+  function dropTargetAt(list, rects, y) {
+    if (!Array.isArray(list) || !Array.isArray(rects) || !Number.isFinite(y)) return null;
+    for (const r of rects) {
+      if (!r || typeof r.key !== 'string' || !Number.isFinite(r.top) || !Number.isFinite(r.bottom)) continue;
+      if (y >= r.top && y < r.bottom && list.includes(r.key)) return r.key;
+    }
+    return null;
+  }
+
+  /* Arrastre con Pointer Events como máquina de estados (sin DOM): idle -> pending (pulsado)
+     -> dragging (superado el umbral en px). Un clic con temblor menor que el umbral nunca
+     arranca; cancel() (Escape) deja todo en reposo y el up posterior no suelta nada. */
+  function createPointerDrag(threshold = 4) {
+    let phase = 'idle', key = null, x0 = 0, y0 = 0;
+    const state = () => ({ phase, key });
+    const reset = () => { phase = 'idle'; key = null; };
+    return {
+      state,
+      down(k, x, y) {
+        if (typeof k !== 'string' || !k || !Number.isFinite(x) || !Number.isFinite(y)) { reset(); return state(); }
+        phase = 'pending'; key = k; x0 = x; y0 = y;
+        return state();
+      },
+      move(x, y) {
+        if (phase === 'pending' && Number.isFinite(x) && Number.isFinite(y) && Math.hypot(x - x0, y - y0) >= threshold) phase = 'dragging';
+        return state();
+      },
+      up() {
+        const out = { dragged: phase === 'dragging', key };
+        reset();
+        return out;
+      },
+      cancel() { reset(); return state(); },
+    };
+  }
+
   /* Un paso: dir -1 (arriba) o +1 (abajo). Bordes, ausente o dir distinta => sin cambio. */
   function moveChart(list, key, dir) {
     const cur = Array.from(list || []);
@@ -146,7 +185,7 @@
   }
 
   const api = {
-    normalizeChartList, toggleChart, moveChart, moveChartTo, dropChart, dropDirection, canMoveChart, editorRows,
+    normalizeChartList, toggleChart, moveChart, moveChartTo, dropChart, dropDirection, dropTargetAt, createPointerDrag, canMoveChart, editorRows,
     presetOf, nextPresetList, focusActAfterMove,
   };
 

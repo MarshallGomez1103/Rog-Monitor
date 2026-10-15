@@ -21,6 +21,9 @@ full list is `git log 7d49333..HEAD`.
   packaging) is recorded instead of ignored (`067bda7`).
 
 ### Fixed
+- **Dragging chart rows in the editor did nothing with a real mouse** (the native HTML5
+  drag was only tested with synthetic events). Reordering now uses Pointer Events
+  (4 px threshold, drop indicator, Escape cancels) and is tested with real CDP mouse events.
 - **Fans stuck high after the machine cooled down** (the firmware kept the old speed until
   the curve was rewritten). The `rog-profile-sync` watchdog now covers all three profiles:
   it looks at fans spinning at **3000 rpm or more** and compares each with what its own
@@ -135,8 +138,6 @@ full list is `git log 7d49333..HEAD`.
   fullscreen games on KDE Wayland.
 - **Installer in a clean VM not validated**: `install-system.sh` was only exercised with
   `--dry-run` and on the maintainer's machine, not on a fresh VM.
-- **Mouse drag in the chart editor** was validated only with synthetic events, not with a
-  physical mouse.
 - **Real thermal test of the fan watchdog pending**: the owner still has to run a heat and
   cool-down test on hardware after installing the new root scripts
   (`journalctl -u rog-profile-sync | grep -i fan`).

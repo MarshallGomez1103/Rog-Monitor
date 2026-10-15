@@ -213,3 +213,94 @@ test('script clásico: expone window.RogChartEditor en un contexto de navegador 
 test('el modelo ya no expone el estado de «expandir» (función retirada)', () => {
   for (const k of ['createExpandState', 'toggleExpanded', 'collapseExpanded', 'isExpanded', 'reconcileExpanded']) assert.strictEqual(M[k], undefined, k);
 });
+
+/* ---- arrastre con Pointer Events (UIFIX-01): máquina de estados pura y destino por posición ---- */
+test('createPointerDrag: no arranca hasta superar el umbral (4 px por defecto) y entonces fija el origen', () => {
+  const d = M.createPointerDrag();
+  assert.deepStrictEqual(d.state(), { phase: 'idle', key: null });
+  assert.deepStrictEqual(d.down('cpu_power', 10, 100), { phase: 'pending', key: 'cpu_power' });
+  assert.strictEqual(d.move(12, 102).phase, 'pending', '2,8 px < 4');
+  assert.strictEqual(d.move(10, 103).phase, 'pending', '3 px < 4');
+  assert.deepStrictEqual(d.move(10, 104), { phase: 'dragging', key: 'cpu_power' }, 'exactamente 4 px arranca');
+  assert.strictEqual(d.move(10, 100).phase, 'dragging', 'ya arrancado, volver al origen no lo anula');
+});
+
+test('createPointerDrag: umbral configurable, diagonal por distancia euclídea', () => {
+  const d = M.createPointerDrag(10);
+  d.down('a', 0, 0);
+  assert.strictEqual(d.move(7, 7).phase, 'pending', '9,9 px < 10');
+  assert.strictEqual(d.move(8, 7).phase, 'dragging');
+});
+
+test('createPointerDrag: up devuelve si hubo arrastre real (un clic no es arrastre) y deja el estado en reposo', () => {
+  const d = M.createPointerDrag();
+  d.down('a', 5, 5);
+  d.move(6, 6);
+  assert.deepStrictEqual(d.up(), { dragged: false, key: 'a' });
+  assert.deepStrictEqual(d.state(), { phase: 'idle', key: null });
+  d.down('b', 5, 5);
+  d.move(5, 50);
+  assert.deepStrictEqual(d.up(), { dragged: true, key: 'b' });
+  assert.deepStrictEqual(d.state(), { phase: 'idle', key: null });
+  assert.deepStrictEqual(d.up(), { dragged: false, key: null }, 'up sin down: nada');
+});
+
+test('createPointerDrag: cancel (Escape) vuelve a reposo; move sin down no hace nada; un segundo down reinicia', () => {
+  const d = M.createPointerDrag();
+  assert.deepStrictEqual(d.move(1, 100), { phase: 'idle', key: null });
+  d.down('a', 0, 0);
+  d.move(0, 40);
+  assert.strictEqual(d.state().phase, 'dragging');
+  assert.deepStrictEqual(d.cancel(), { phase: 'idle', key: null });
+  assert.deepStrictEqual(d.up(), { dragged: false, key: null }, 'tras cancelar, el up no suelta nada');
+  d.down('a', 0, 0);
+  d.down('b', 9, 9);
+  assert.deepStrictEqual(d.state(), { phase: 'pending', key: 'b' });
+  assert.deepStrictEqual(d.move(9, 9), { phase: 'pending', key: 'b' }, 'el umbral cuenta desde el último down');
+});
+
+test('createPointerDrag: coordenadas no finitas se ignoran (no arrancan ni lanzan)', () => {
+  const d = M.createPointerDrag();
+  d.down('a', 0, 0);
+  assert.strictEqual(d.move(NaN, 100).phase, 'pending');
+  assert.strictEqual(d.move(undefined, undefined).phase, 'pending');
+  const bad = M.createPointerDrag();
+  bad.down('a', NaN, 0);
+  assert.strictEqual(bad.state().phase, 'idle');
+  bad.down('', 0, 0);
+  assert.strictEqual(bad.state().phase, 'idle', 'clave vacía no es válida');
+});
+
+test('dropTargetAt: fila ACTIVA bajo la posición vertical; inactivas, huecos y fuera => null', () => {
+  const rects = deepFreeze([
+    { key: 'a', top: 0, bottom: 40 }, { key: 'b', top: 40, bottom: 80 }, { key: 'c', top: 80, bottom: 120 }, { key: 'x', top: 120, bottom: 160 },
+  ]);
+  const list = deepFreeze(['a', 'b', 'c']);
+  assert.strictEqual(M.dropTargetAt(list, rects, 0), 'a');
+  assert.strictEqual(M.dropTargetAt(list, rects, 39.9), 'a');
+  assert.strictEqual(M.dropTargetAt(list, rects, 40), 'b', 'el borde pertenece a la fila de abajo');
+  assert.strictEqual(M.dropTargetAt(list, rects, 119.9), 'c');
+  assert.strictEqual(M.dropTargetAt(list, rects, 130), null, 'x está desactivada');
+  assert.strictEqual(M.dropTargetAt(list, rects, -1), null);
+  assert.strictEqual(M.dropTargetAt(list, rects, 500), null);
+  assert.strictEqual(M.dropTargetAt(list, rects, NaN), null);
+  assert.strictEqual(M.dropTargetAt(list, null, 10), null);
+  assert.strictEqual(M.dropTargetAt(null, rects, 10), null);
+  assert.strictEqual(M.dropTargetAt(['constructor'], [{ key: 'constructor', top: 0, bottom: 10 }], 5), 'constructor', 'sólo cuenta si está en la lista dada');
+  assert.strictEqual(M.dropTargetAt(list, [{ key: 'a', top: 'x', bottom: 10 }, null, 3], 5), null, 'rects malformados se ignoran');
+});
+
+test('arrastre de punta a punta: down -> move -> dropTargetAt -> dropChart (mismo resultado que el DnD anterior)', () => {
+  const list = ['cpu_temp', 'cpu_power', 'gpu_temp', 'gpu_power'];
+  const rects = list.map((key, i) => ({ key, top: i * 40, bottom: i * 40 + 40 }));
+  const d = M.createPointerDrag();
+  d.down('cpu_temp', 20, 20);
+  d.move(20, 60);
+  d.move(20, 150);
+  const end = d.up();
+  assert.strictEqual(end.dragged, true);
+  const target = M.dropTargetAt(list, rects, 150);
+  assert.strictEqual(target, 'gpu_power');
+  assert.deepStrictEqual(M.dropChart(list, end.key, target), ['cpu_power', 'gpu_temp', 'gpu_power', 'cpu_temp']);
+  assert.strictEqual(M.dropDirection(list, 'cpu_temp', target), 'below');
+});

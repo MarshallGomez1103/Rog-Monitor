@@ -1546,7 +1546,10 @@ html[data-mode="dark"][data-theme="neon-nights"] .block::before {
 .hist-edit-row.dragging { opacity: .45; }
 .hist-edit-row.drop-above { border-top-color: var(--accent); }
 .hist-edit-row.drop-below { border-bottom-color: var(--accent); box-shadow: 0 1px 0 var(--accent); }
-.hist-edit-grip { flex: none; width: 24px; height: 30px; display: grid; place-items: center; color: var(--dim); cursor: grab; }
+.hist-edit-row:not(.off) { user-select: none; }
+.hist-edit-grip { flex: none; width: 24px; height: 30px; display: grid; place-items: center; color: var(--dim); cursor: grab; touch-action: none; }
+.hist-edit-row:not(.off):hover .hist-edit-grip { color: var(--accent); }
+body.hist-dragging, body.hist-dragging * { cursor: grabbing !important; user-select: none; }
 .hist-edit-row.off .hist-edit-grip { cursor: default; opacity: .45; }
 .hist-edit-grip svg { width: 14px; height: 14px; }
 .hist-edit-check { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 36px; cursor: pointer; font-size: 13px; color: var(--ink); }

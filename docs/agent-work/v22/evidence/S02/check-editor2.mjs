@@ -5,8 +5,8 @@ const NOANIM = `(()=>{if(!document.getElementById('cdp-noanim')){const s=documen
 //         node <repo>/.ai/private/rog-v22/tools/cdp.mjs <ruta-absoluta>/check-editor2.mjs
 // Necesita el backend (Python): en un worktree enlaza <worktree>/.venv -> <repo principal>/.venv.
 // Teclas REALES (Input.dispatchKeyEvent) y clics REALES de ratón (Input.dispatchMouseEvent).
-// El arrastre usa eventos DragEvent sintéticos (dragstart/dragenter/dragover/drop/dragend) con
-// DataTransfer: el arrastre nativo del SO no es automatizable de forma fiable por CDP.
+// El arrastre (sección C) usa el ratón REAL de CDP: mousePressed en el asa, mouseMoved en pasos y
+// mouseReleased sobre la fila destino (Pointer Events, UIFIX-01). Cobertura detallada: check-drag-mouse.mjs.
 // Cada aserción imprime PASS/FAIL; al final: RESULT: PASS|FAIL.
 // Contrato DOM que verifica (ver docs/agent-work/v22/checkpoints/S02-EDITOR.md):
 //   #hist-editor .hist-edit-row[data-key] { .hist-edit-grip, input[data-act=toggle], button[data-act=up|down] }
@@ -103,14 +103,20 @@ export default async ({ ev: evRaw, shot, sleep, call }) => {
     return true;
   };
   const focus = (sel) => ev(`(() => { const e = ${q(sel)}; if (e) e.focus(); return !!e; })()`);
-  const dnd = (from, to) => ev(`(() => {
-    const row = (k) => document.querySelector('#hist-editor .hist-edit-row[data-key="' + k + '"]');
-    const src = row(${J(from)}), dst = row(${J(to)}); if (!src || !dst) return false;
-    const dt = new DataTransfer();
-    const f = (el, type) => { const b = el.getBoundingClientRect();
-      el.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: dt, clientX: b.left + b.width / 2, clientY: b.top + b.height * 0.5 })); };
-    f(src.querySelector('.hist-edit-grip') || src, 'dragstart'); f(dst, 'dragenter'); f(dst, 'dragover'); f(dst, 'drop'); f(src, 'dragend');
-    return true; })()`);
+  // Arrastre con RATÓN REAL de CDP (UIFIX-01): pulsar en el asa, mover en pasos y soltar sobre la fila destino.
+  const dnd = async (from, to) => {
+    await ev(`document.getElementById('hist-editor').scrollIntoView({ block: 'center' }); 0`);
+    await sleep(150);
+    const a = await rect(`#hist-editor .hist-edit-row[data-key="${from}"] .hist-edit-grip`), b = await rect(`#hist-editor .hist-edit-row[data-key="${to}"]`);
+    if (!a || !b) return false;
+    const ax = a.x + a.w / 2, ay = a.y + a.h / 2, bx = b.x + b.w / 2, by = b.y + b.h / 2;
+    const mv = (type, x, y, buttons) => call('Input.dispatchMouseEvent', { type, x, y, button: type === 'mouseMoved' && !buttons ? 'none' : 'left', buttons, clickCount: type === 'mouseMoved' ? 0 : 1 });
+    await mv('mouseMoved', ax, ay, 0); await mv('mousePressed', ax, ay, 1);
+    const n = Math.max(3, Math.ceil(Math.hypot(bx - ax, by - ay) / 8));
+    for (let i = 1; i <= n; i++) { await mv('mouseMoved', ax + ((bx - ax) * i) / n, ay + ((by - ay) * i) / n, 1); await sleep(12); }
+    await sleep(60); await mv('mouseReleased', bx, by, 0);
+    return true;
+  };
   const eq = (a, b) => J(a) === J(b);
   const uniq = (a) => new Set(a).size === a.length;
   // Sólo se captura un recorte del elemento (nunca la ventana entera: mostraría rutas/hostname).
@@ -174,7 +180,7 @@ export default async ({ ev: evRaw, shot, sleep, call }) => {
       return { role: g.getAttribute('role'), title: title ? title.textContent.trim() : '', n: bs.length, pressed: bs.map((b) => b.getAttribute('aria-pressed')), seg: !!g.querySelector('.hist-seg'), h: bs.map((b) => Math.round(b.getBoundingClientRect().height)) }; })())`)) || 'null');
     check('presets agrupados: grupo con título + segmento + aria-pressed (temp activo)', pre && pre.role === 'group' && pre.title.length > 0 && pre.n === 2 && pre.seg && eq(pre.pressed, ['true', 'false']) && pre.h.every((h) => h >= 28), J(pre));
     const grip = JSON.parse((await ev(`JSON.stringify((() => { const rs = [...document.querySelectorAll('#hist-editor .hist-edit-row[data-key]')]; return rs.map((r) => { const g = r.querySelector('.hist-edit-grip'); return { k: r.dataset.key, g: !!g, w: g ? Math.round(g.getBoundingClientRect().width) : 0, d: r.draggable, hid: g ? g.getAttribute('aria-hidden') : null, tab: g ? g.getAttribute('tabindex') : null }; }); })())`)) || '[]');
-    check('filas con asa de arrastre (aria-hidden, fuera del Tab) y draggable sólo las activas', grip.length === 8 && grip.every((g) => g.g && g.w >= 20 && g.hid === 'true' && g.tab == null) && grip.slice(0, 4).every((g) => g.d === true) && grip.slice(4).every((g) => g.d === false), J(grip[0]));
+    check('filas con asa de arrastre (aria-hidden, fuera del Tab); sin DnD nativo (ninguna fila draggable)', grip.length === 8 && grip.every((g) => g.g && g.w >= 20 && g.hid === 'true' && g.tab == null && g.d === false), J(grip[0]));
     await shotOf(`${OUT}/${TAG}-editor-${theme}-${mode}.png`, '#history-block');
 
     // ---------- B. teclado: reordenar sin perder el foco ----------

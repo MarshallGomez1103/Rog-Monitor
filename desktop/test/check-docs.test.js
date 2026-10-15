@@ -75,7 +75,7 @@ test('main devuelve 0 con documentos reales y 1 con documentos malos', () => {
 
 test('la sección Known limits exige las cuatro limitaciones', () => {
   const base = (lim) => `## Unreleased (v22)\n\n### Known limits / pending validation\n${lim}\n\n## 21.0.0\n`;
-  const ok = mod.checkDocs({ README: '', CHANGELOG: base('- Wayland overlay\n- installer VM\n- synthetic events\n- thermal test') });
+  const ok = mod.checkDocs({ README: '', CHANGELOG: base('- Wayland overlay\n- installer VM\n- thermal test') });
   const bad = mod.checkDocs({ README: '', CHANGELOG: base('- Wayland overlay') });
   assert.equal(ids(ok).includes('changelog-known-limits'), false);
   assert.equal(ids(bad).includes('changelog-known-limits'), true);

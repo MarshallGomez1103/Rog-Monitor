@@ -1,0 +1,23 @@
+PASS  arranca con el orden de temperatura
+PASS  arrastrar con el ratón el asa de cpu_temp sobre gpu_power la deja última
+PASS  arrastrar desde el nombre de gpu_power sobre cpu_power la deja primera
+PASS  …y arrastrar por el nombre no quita ninguna gráfica (4 activas)
+PASS  durante el arrastre: fila de origen marcada y línea de destino en cpu_power (arriba)
+PASS  durante el arrastre: cursor grabbing
+PASS  Escape durante el arrastre cancela: el orden no cambia y se limpian los indicadores
+PASS  …y ese Escape sólo cancela el arrastre (el editor sigue abierto)
+PASS  soltar sobre una fila desactivada no cambia nada
+PASS  soltar fuera del editor no cambia nada
+PASS  clic con 2 px de temblor en la casilla la alterna (gpu_temp se quita)
+PASS  …y otro clic la vuelve a activar (al final)
+PASS  un clic simple sobre el NOMBRE de la fila (sin mover) también alterna la casilla (gpu_temp se quita)
+PASS  …y otro clic sobre el nombre la vuelve a activar
+PASS  clic en ↓ de gpu_power sigue moviéndola una posición
+PASS  ninguna fila usa draggable="true" (DnD nativo retirado)
+PASS  cursor del asa = grab en filas activas
+PASS  arrastrar gpu_temp sobre cpu_power la deja primera
+PASS  el orden arrastrado queda en localStorage sin duplicados
+PASS  tras recargar, el orden arrastrado persiste (lista y canvas)
+
+20 PASS / 0 FAIL de 20 aserciones
+RESULT: PASS

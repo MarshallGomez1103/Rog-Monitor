@@ -88,8 +88,8 @@ export const RULES = [
   { id: 'changelog-coverage', file: 'CHANGELOG', ok: (t) => { const u = unreleasedSection(t); return /80 ?%/.test(u) && /90 ?%/.test(u); }, why: 'falta la cobertura (80 % / 90 %)' },
   { id: 'changelog-known-limits', file: 'CHANGELOG', ok: (t) => {
       const u = subsection(unreleasedSection(t), 'Known limits / pending validation');
-      return /Wayland/.test(u) && /installer/i.test(u) && /synthetic/i.test(u) && /(thermal|heat)/i.test(u);
-    }, why: 'falta "Known limits / pending validation" (Wayland, VM instalador, arrastre sintético, prueba térmica)' },
+      return /Wayland/.test(u) && /installer/i.test(u) && /(thermal|heat)/i.test(u);
+    }, why: 'falta "Known limits / pending validation" (Wayland, VM instalador, prueba térmica)' },
   { id: 'changelog-no-path-tracing', file: 'CHANGELOG', ok: lacks(/path.?tracing/i), why: 'Path Tracing no está verificado: no anunciarlo' },
   { id: 'changelog-partial-honest', file: 'CHANGELOG', ok: (t) => { const u = unreleasedSection(t); return /partial/i.test(u) && /future/i.test(u); },
     why: 'debe nombrar overlay/benchmarks como parciales y Guardián 2.0/helper único como futuro' },

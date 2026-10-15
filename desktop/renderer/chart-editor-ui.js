@@ -1,5 +1,5 @@
 /* ROG Monitor — interfaz del editor de gráficas del historial (S02-2).
- * N-A3-01 aspecto · N-A3-02 reordenar con ratón (arrastrar) y teclado (↑/↓, Alt+↑/↓)
+ * N-A3-01 aspecto · N-A3-02 reordenar con ratón (arrastrar con Pointer Events) y teclado (↑/↓, Alt+↑/↓)
  * · F4-09 (corte editor): Escape, foco al abrir/cerrar y orden de Tab.
  * Script clásico cargado DESPUÉS de app.js: usa sus globales (histList, setHistCharts,
  * CHART_CATALOG, HIST_PRESETS, t, $, escapeHtml…).
@@ -21,7 +21,6 @@
     grip: svg([4.5, 8, 11.5].map((y) => `<circle cx="6" cy="${y}" r="1.25" fill="currentColor"/><circle cx="10" cy="${y}" r="1.25" fill="currentColor"/>`).join('')),
   };
 
-  let dragKey = null;
   let forceAct = null;          // botón que debe recibir el foco tras un movimiento (CE.focusActAfterMove)
 
   const nameOf = (k) => t(CHART_CATALOG[k][2]);
@@ -36,7 +35,7 @@
   function rowHtml(r) {
     const name = escapeHtml(nameOf(r.key));
     const mv = (act, can, lblKey) => `<button type="button" class="hist-btn" data-act="${act}" aria-disabled="${!can}" aria-label="${escapeHtml(t(lblKey, { chart: nameOf(r.key) }))}">${ICON[act]}</button>`;
-    return `<div class="hist-edit-row${r.on ? '' : ' off'}" data-key="${r.key}"${r.on ? ' draggable="true"' : ''}>
+    return `<div class="hist-edit-row${r.on ? '' : ' off'}" data-key="${r.key}">
       <span class="hist-edit-grip" aria-hidden="true" title="${escapeHtml(t('chart.drag_title'))}">${ICON.grip}</span>
       <label class="hist-edit-check"><input type="checkbox" data-act="toggle"${r.on ? ' checked' : ''}><span>${name}</span></label>
       <span class="hist-edit-btns">${mv('up', r.canUp, 'chart.move_up')}${mv('down', r.canDown, 'chart.move_down')}</span></div>`;
@@ -103,41 +102,83 @@
     if (CE.canMoveChart(histList, key, dir)) apply(CE.moveChart(histList, key, dir), key);
   });
 
-  /* ---------- arrastrar y soltar (HTML5 nativo) ---------- */
+  /* ---------- arrastrar con el puntero (Pointer Events) ----------
+     El DnD nativo de HTML5 no arrancaba con un ratón real en la app. Aquí: pointerdown en el
+     asa o en el nombre de una fila activa -> pointermove (umbral de 4 px en CE.createPointerDrag;
+     solo entonces se captura el puntero, así un clic normal en la etiqueta sigue alternando la
+     casilla) -> línea de destino -> pointerup mueve con CE.dropChart. Escape o pointercancel
+     cancelan. Botones y casillas no inician arrastre; con táctil solo el asa (el resto desplaza). */
+
+  const drag = CE.createPointerDrag(4);
+  let cap = null;                 // {el, id}: fila con el puntero capturado (solo durante el arrastre)
+  let swallowClick = false;       // el clic que sigue a un arrastre no debe activar nada
 
   const clearDrop = () => box.querySelectorAll('.dragging,.drop-above,.drop-below').forEach((r) => r.classList.remove('dragging', 'drop-above', 'drop-below'));
   const rowOf = (e) => e.target.closest?.('.hist-edit-row[data-key]');
-
-  box.addEventListener('dragstart', (e) => {
-    const r = rowOf(e);
-    if (!r || !histList.includes(r.dataset.key)) return e.preventDefault();
-    dragKey = r.dataset.key;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', dragKey);
-    r.classList.add('dragging');
-  });
-  box.addEventListener('dragover', (e) => {
-    const r = rowOf(e);
-    if (!dragKey || !r || !histList.includes(r.dataset.key)) return;
-    e.preventDefault();                                        // fila activa = destino válido
-    e.dataTransfer.dropEffect = 'move';
-    box.querySelectorAll('.drop-above,.drop-below').forEach((x) => x.classList.remove('drop-above', 'drop-below'));
-    const dir = CE.dropDirection(histList, dragKey, r.dataset.key);
-    if (dir) r.classList.add('drop-' + dir);
-  });
-  box.addEventListener('drop', (e) => {
-    const r = rowOf(e);
-    if (!dragKey || !r) return;
-    e.preventDefault();
-    const key = dragKey;
+  const rowRects = () => [...box.querySelectorAll('.hist-edit-row[data-key]')].map((r) => { const b = r.getBoundingClientRect(); return { key: r.dataset.key, top: b.top, bottom: b.bottom }; });
+  /* Fila activa bajo el puntero; fuera del editor (en horizontal) no hay destino. */
+  function targetAt(e) {
+    const b = box.getBoundingClientRect();
+    return e.clientX >= b.left && e.clientX <= b.right ? CE.dropTargetAt(histList, rowRects(), e.clientY) : null;
+  }
+  function endDrag() {
+    if (cap) { try { cap.el.releasePointerCapture(cap.id); } catch (_) { /* ya liberado */ } }
+    cap = null;
+    drag.cancel();
     clearDrop();
-    apply(CE.dropChart(histList, key, r.dataset.key), key);
-  });
-  box.addEventListener('dragend', () => { dragKey = null; clearDrop(); });
+    document.body.classList.remove('hist-dragging');
+  }
 
-  /* Escape cierra el editor (solo si el foco está en él o en su botón y no hay otro diálogo). */
+  box.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || !e.isPrimary) return;
+    const r = rowOf(e);
+    if (!r || !histList.includes(r.dataset.key) || e.target.closest('button, input')) return;
+    if (e.pointerType !== 'mouse' && !e.target.closest('.hist-edit-grip')) return;
+    drag.down(r.dataset.key, e.clientX, e.clientY);
+  });
+
+  box.addEventListener('pointermove', (e) => {
+    if (!e.isPrimary || drag.state().phase === 'idle') return;
+    const st = drag.move(e.clientX, e.clientY);
+    if (st.phase !== 'dragging') return;
+    const src = box.querySelector(`.hist-edit-row[data-key="${st.key}"]`);
+    if (!src) return endDrag();
+    if (!cap) {                                              // primer movimiento tras el umbral
+      cap = { el: src, id: e.pointerId };
+      try { src.setPointerCapture(e.pointerId); } catch (_) { /* puntero ya inactivo */ }
+      src.classList.add('dragging');
+      document.body.classList.add('hist-dragging');
+    }
+    box.querySelectorAll('.drop-above,.drop-below').forEach((x) => x.classList.remove('drop-above', 'drop-below'));
+    const target = targetAt(e);
+    const dir = target && CE.dropDirection(histList, st.key, target);
+    if (dir) box.querySelector(`.hist-edit-row[data-key="${target}"]`)?.classList.add('drop-' + dir);
+  });
+
+  box.addEventListener('pointerup', (e) => {
+    if (!e.isPrimary) return;
+    const target = targetAt(e);
+    const end = drag.up();
+    const was = cap;
+    endDrag();
+    if (!end.dragged || !was) return;
+    swallowClick = true;
+    setTimeout(() => { swallowClick = false; }, 30);
+    const next = target ? CE.dropChart(histList, end.key, target) : null;
+    if (next && next.some((k, i) => k !== histList[i])) apply(next, end.key);
+  });
+
+  box.addEventListener('pointercancel', endDrag);
+  box.addEventListener('lostpointercapture', () => { if (cap) endDrag(); });   // fila reconstruida o puntero perdido
+  box.addEventListener('click', (e) => {                       // el soltar no cuenta como clic
+    if (swallowClick) { swallowClick = false; e.stopPropagation(); e.preventDefault(); }
+  }, true);
+  box.addEventListener('selectstart', (e) => { if (drag.state().phase !== 'idle') e.preventDefault(); });
+
+  /* Escape cancela un arrastre en curso o, si no, cierra el editor (solo si el foco está en él o en su botón y no hay otro diálogo). */
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape' || e.defaultPrevented) return;
+    if (drag.state().phase !== 'idle') { e.preventDefault(); e.stopPropagation(); endDrag(); return; }   // cancela el arrastre, no cierra el editor
     if (box.classList.contains('hidden') || !(box.contains(e.target) || e.target === editBtn)) return;
     if (document.querySelector('.modal:not(.hidden)')) return;   // otro diálogo manda
     e.preventDefault();
