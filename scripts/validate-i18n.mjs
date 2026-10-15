@@ -68,6 +68,7 @@ function run(file) {
 // i18n.js primero (define window.i18n); su fallo es fatal.
 run('i18n.js');
 run('procs-table.js');   // app.js la desestructura al cargar (N-A2-01); no registra claves
+run('widget-status-view.js');   // app.js la desestructura al cargar (N-A4-03); no registra claves
 run('chart-editor-model.js');   // app.js usa window.RogChartEditor al cargar (N-A3-01); no registra claves
 
 // El resto de archivos que registran claves.
@@ -123,6 +124,16 @@ for (const c of (sandbox.window.RogCommands || [])) {
   if (!dict[c.why]) cmdMissing.push(c.why);
 }
 
+// 4) Claves literales de los módulos puros de estados (widget.* / status.* / vram.*): sin ellas el
+//    panel mostraría la clave cruda. Las de VRAM se arman como `<clave>_hint`, se comprueban a mano.
+const stateKeyMissing = [];
+for (const f of ['widget-states.js', 'widget-status-view.js']) {
+  const src = readFileSync(path.join(RENDERER, f), 'utf8');
+  const keys = new Set([...src.matchAll(/'((?:widget|status|vram)\.[a-z_]+)'/g)].map((m) => m[1]));
+  if (f === 'widget-status-view.js') [...keys].filter((k) => k.startsWith('vram.')).forEach((k) => keys.add(`${k}_hint`));
+  for (const k of keys) if (!dict[k]) stateKeyMissing.push(`${f}: ${k}`);
+}
+
 let failed = false;
 if (loadWarnings.length) {
   console.warn('⚠ módulos que lanzaron al cargar (revisa si registran antes del throw):');
@@ -147,6 +158,10 @@ if (undefinedRefs.length) {
   failed = true;
   console.error(`\n✗ ${undefinedRefs.length} data-i18n de index.html sin definir:`);
   undefinedRefs.forEach((k) => console.error('   ' + k));
+}
+if (stateKeyMissing.length) {
+  failed = true;
+  console.error(`\n✗ claves de estados sin definir: ${stateKeyMissing.join(', ')}`);
 }
 if (cmdMissing.length) {
   failed = true;
