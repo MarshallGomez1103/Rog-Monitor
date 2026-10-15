@@ -1,0 +1,7 @@
+{
+  "name": "rog-overlay-probe",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Sonda aislada S10 (F6-01/F6-02): mide posicion y apilado de una ventana estilo overlay. No es codigo de producto.",
+  "main": "main.js"
+}
