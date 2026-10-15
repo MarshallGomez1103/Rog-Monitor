@@ -103,5 +103,29 @@ class FutureTimestamp(Base):
         self.assertIsNone(fans._gaming_cap())
 
 
+class SchemaVersionContract(Base):
+    """Archivo ausente/corrupto = esquema vigente (v2: lo que se creará al
+    primer guardado); v1 solo si el archivo existe sin "version" válida."""
+
+    def test_missing_file_is_current_schema(self):
+        self.assertEqual(fans.load_schema_version(), fans.FAN_CURVES_SCHEMA_VERSION)
+
+    def test_corrupt_file_is_current_schema(self):
+        self.curves.write_text("{{{")
+        self.assertEqual(fans.load_schema_version(), fans.FAN_CURVES_SCHEMA_VERSION)
+
+    def test_existing_file_without_version_is_v1(self):
+        self.put_curves({"cap_rpm": {"cpu": 5000}})
+        self.assertEqual(fans.load_schema_version(), 1)
+
+    def test_bool_or_nan_version_is_v1_and_never_raises(self):
+        for raw in ('{"version": true}', '{"version": NaN}', '{"version": Infinity}'):
+            self.curves.write_text(raw)
+            self.assertEqual(fans.load_schema_version(), 1, raw)
+
+    def test_docstring_matches_behaviour(self):
+        self.assertNotIn("1 si falta", fans.load_schema_version.__doc__)
+
+
 if __name__ == "__main__":
     unittest.main()

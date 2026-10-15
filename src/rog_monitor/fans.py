@@ -16,6 +16,7 @@ v12 (A-FANS):
 from __future__ import annotations
 
 import json
+import math
 import sys
 import time
 
@@ -310,14 +311,22 @@ def load_measured_max() -> dict:
 
 
 def load_schema_version() -> int:
-    """Versión del esquema del fan-curves.json del usuario (1 si falta)."""
+    """Versión del esquema del fan-curves.json del usuario.
+
+    Archivo ausente o ilegible/corrupto → FAN_CURVES_SCHEMA_VERSION (2): no
+    hay nada legado que migrar y el primer guardado crea un v2 (así lo
+    espera `meta()` / el stream NDJSON). Archivo válido sin "version"
+    numérica finita (faltante, texto, bool, NaN/inf) → 1 (legado v1)."""
     try:
         with open(FAN_CURVES_FILE) as fh:
             data = json.load(fh) or {}
     except (OSError, ValueError):
         return FAN_CURVES_SCHEMA_VERSION
     version = data.get("version")
-    return int(version) if isinstance(version, (int, float)) else 1
+    if (isinstance(version, bool) or not isinstance(version, (int, float))
+            or not math.isfinite(version)):
+        return 1
+    return int(version)
 
 
 def guardian_status() -> dict:
