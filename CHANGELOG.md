@@ -78,9 +78,8 @@ full list is `git log 7d49333..HEAD`.
 
 ### Added
 - **Chart editor** (History -> Charts): choose which charts show, reorder them with the
-  arrow buttons, Up/Down or Alt+Up/Down, or drag by the handle; quick presets; **expand any
-  chart into a large modal** with its own canvas; Escape closes the editor and returns
-  focus to its button (`2227049`, `521b6b4`, `3a47326`, `9cae37e`).
+  arrow buttons, Up/Down or Alt+Up/Down, or drag by the handle; quick presets; Escape
+  closes the editor and returns focus to its button (`2227049`, `521b6b4`, `9cae37e`).
 - **`NO DATA · N s` notice** and dimmed panels when the backend stops sending samples
   (threshold 6 s, visible window only); every snapshot carries `ts` (`22aed9a`). The gaming
   overlay dims too, and shows FPS as N/A when it was requested (`8a30bc4`).

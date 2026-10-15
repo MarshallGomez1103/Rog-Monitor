@@ -1,5 +1,5 @@
 'use strict';
-// N-A3-01: modelo puro del editor de gráficas (orden, toggle, arrastre, presets, expandir).
+// N-A3-01: modelo puro del editor de gráficas (orden, toggle, arrastre, presets).
 // chart-editor-model.js es un script clásico (window.RogChartEditor) con export CommonJS.
 const test = require('node:test');
 const assert = require('node:assert');
@@ -186,40 +186,6 @@ test('focusActAfterMove: sigue al botón; en el borde pasa al contrario; sin opc
   assert.strictEqual(M.focusActAfterMove(list, 'a', 0), null);
 });
 
-test('expandir: estado inicial, alternar, cambiar y colapsar', () => {
-  const s0 = M.createExpandState();
-  assert.deepStrictEqual(s0, { chartId: null });
-  assert.ok(Object.isFrozen(s0));
-  const s1 = M.toggleExpanded(s0, 'cpu_temp', KEYS);
-  assert.deepStrictEqual(s1, { chartId: 'cpu_temp' });
-  assert.deepStrictEqual(s0, { chartId: null }, 'no muta');
-  assert.strictEqual(M.isExpanded(s1, 'cpu_temp'), true);
-  assert.strictEqual(M.isExpanded(s1, 'ram_gb'), false);
-  assert.deepStrictEqual(M.toggleExpanded(s1, 'ram_gb', KEYS), { chartId: 'ram_gb' });
-  assert.deepStrictEqual(M.toggleExpanded(s1, 'cpu_temp', KEYS), { chartId: null });
-  assert.deepStrictEqual(M.collapseExpanded(s1), { chartId: null });
-});
-
-test('expandir: id inválido o heredado deja el estado como está', () => {
-  const s1 = M.toggleExpanded(M.createExpandState(), 'cpu_temp', KEYS);
-  for (const bad of ['constructor', '__proto__', 'toString', 'nope', '', null, undefined, 3]) {
-    assert.deepStrictEqual(M.toggleExpanded(s1, bad, KEYS), { chartId: 'cpu_temp' }, String(bad));
-    assert.deepStrictEqual(M.toggleExpanded(M.createExpandState(), bad, KEYS), { chartId: null }, String(bad));
-  }
-  assert.deepStrictEqual(M.toggleExpanded(null, 'cpu_temp', KEYS), { chartId: 'cpu_temp' });
-  assert.deepStrictEqual(M.toggleExpanded(s1, 'ram_gb', null), { chartId: 'cpu_temp' }, 'sin catálogo no se valida: se rechaza');
-  assert.strictEqual(M.isExpanded(null, 'cpu_temp'), false);
-  assert.deepStrictEqual(M.collapseExpanded(null), { chartId: null });
-});
-
-test('reconcileExpanded: colapsa si la gráfica expandida ya no está visible', () => {
-  const s = M.toggleExpanded(M.createExpandState(), 'cpu_temp', KEYS);
-  assert.deepStrictEqual(M.reconcileExpanded(s, ['cpu_temp', 'ram_gb']), { chartId: 'cpu_temp' });
-  assert.deepStrictEqual(M.reconcileExpanded(s, ['ram_gb']), { chartId: null });
-  assert.deepStrictEqual(M.reconcileExpanded(s, null), { chartId: null });
-  assert.deepStrictEqual(M.reconcileExpanded(null, ['ram_gb']), { chartId: null });
-});
-
 test('entradas congeladas: ninguna función lanza ni muta', () => {
   const list = deepFreeze(['cpu_temp', 'ram_gb', 'gpu_util']);
   const cat = deepFreeze([...KEYS]);
@@ -242,4 +208,8 @@ test('script clásico: expone window.RogChartEditor en un contexto de navegador 
   assert.strictEqual(typeof win.RogChartEditor.normalizeChartList, 'function');
   assert.deepStrictEqual(Object.keys(win.RogChartEditor).sort(), Object.keys(M).sort());
   assert.ok(!/\b(document|localStorage|querySelector)\b/.test(src.replace(/\/\*[\s\S]*?\*\//g, '')));
+});
+
+test('el modelo ya no expone el estado de «expandir» (función retirada)', () => {
+  for (const k of ['createExpandState', 'toggleExpanded', 'collapseExpanded', 'isExpanded', 'reconcileExpanded']) assert.strictEqual(M[k], undefined, k);
 });

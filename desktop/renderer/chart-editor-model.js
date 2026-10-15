@@ -1,8 +1,7 @@
 /* ROG Monitor — Modelo puro del editor de gráficas del histórico (N-A3-01).
  * Lista activa y ordenada de gráficas: validación, activar/desactivar, mover
- * (botones y arrastrar y soltar), filas del editor, presets, foco tras mover y
- * estado de «expandir una gráfica». Sin DOM ni localStorage y sin mutar las
- * entradas: app.js guarda la lista y pinta; este módulo solo calcula.
+ * (botones y arrastrar con el puntero), filas del editor, presets y foco tras
+ * mover. Sin DOM ni localStorage y sin mutar las entradas: app.js guarda la lista y pinta; este módulo solo calcula.
  * Las claves se validan contra una lista/objeto de claves PROPIAS del catálogo
  * (Set), así «constructor», «__proto__» o «toString» nunca cuentan como gráfica.
  * Script clásico: expone window.RogChartEditor y, bajo Node, module.exports. */
@@ -146,42 +145,9 @@
     return null;
   }
 
-  /* ---- expandir una gráfica (N-A3-03): estado inmutable {chartId|null} ---- */
-
-  const COLLAPSED = Object.freeze({ chartId: null });
-
-  function createExpandState() {
-    return COLLAPSED;
-  }
-
-  function collapseExpanded() {
-    return COLLAPSED;
-  }
-
-  function isExpanded(state, chartId) {
-    return !!state && typeof chartId === 'string' && state.chartId === chartId;
-  }
-
-  /* Alterna la gráfica expandida: la misma la contrae, otra pasa a ser la
-     expandida. Un id fuera del catálogo (o sin catálogo) deja el estado como está. */
-  function toggleExpanded(state, chartId, catalogKeys) {
-    const cur = state && typeof state.chartId === 'string' ? state.chartId : null;
-    if (typeof chartId !== 'string' || !keySet(catalogKeys).has(chartId)) {
-      return cur === null ? COLLAPSED : Object.freeze({ chartId: cur });
-    }
-    return cur === chartId ? COLLAPSED : Object.freeze({ chartId });
-  }
-
-  /* Si la gráfica expandida ya no está en la lista visible, se contrae. */
-  function reconcileExpanded(state, list) {
-    const cur = state && typeof state.chartId === 'string' ? state.chartId : null;
-    return cur !== null && Array.isArray(list) && list.includes(cur) ? Object.freeze({ chartId: cur }) : COLLAPSED;
-  }
-
   const api = {
     normalizeChartList, toggleChart, moveChart, moveChartTo, dropChart, dropDirection, canMoveChart, editorRows,
     presetOf, nextPresetList, focusActAfterMove,
-    createExpandState, toggleExpanded, collapseExpanded, isExpanded, reconcileExpanded,
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

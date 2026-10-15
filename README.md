@@ -135,8 +135,8 @@ Threat model and reporting process: [SECURITY.md](SECURITY.md).
   seconds ago it was recorded.
 - **Chart editor** (the **Charts** button in the History block): choose which charts
   are shown, reorder them with the arrow buttons, **Up/Down** or
-  **Alt+Up/Down**, or drag a row by its handle, apply quick presets, and expand
-  any chart into a large modal. The selection is saved by the app. Drag with a real mouse
+  **Alt+Up/Down**, or drag a row by its handle, and apply quick presets.
+  The selection is saved by the app. Drag with a real mouse
   has so far been validated only with synthetic events (see the changelog).
 - **Gaming overlay** (opt-in, **partial**): transparent, frameless, always-on-top,
   click-through window; pick the monitor, one of 7 positions and which metrics to

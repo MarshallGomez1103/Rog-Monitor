@@ -1,0 +1,173 @@
+
+==== neon/dark ====
+PASS  [neon/dark] tema aplicado de verdad (data-theme=neon, data-mode=dark)
+PASS  [neon/dark] arranque con preset de temperatura
+PASS  [neon/dark] editor abierto, aria-expanded=true
+PASS  [neon/dark] al abrir, foco en el primer control (casilla de la 1ª fila)
+PASS  [neon/dark] 8 filas en el editor (activas primero)
+PASS  [neon/dark] hit target >=28x28 en TODOS los botones ↑/↓ (16)
+PASS  [neon/dark] fila/etiqueta de casilla clicable >=28px de alto
+PASS  [neon/dark] aria-label de ↑/↓ lleva el NOMBRE de la gráfica (todas las filas)
+PASS  [neon/dark] no existen las claves i18n chart.expand / chart.collapse
+PASS  [neon/dark] ↑ de la 1ª fila: aria-disabled="true", NO disabled nativo, visible (no oculto)
+PASS  [neon/dark] contraste del icono ↑ aparentemente deshabilitado >= 4.5:1
+PASS  [neon/dark] contraste del icono ↓ habilitado >= 4.5:1
+PASS  [neon/dark] contraste del nombre de gráfica desactivada >= 4.5:1
+PASS  [neon/dark] casilla temática: appearance:none, esquinas cuadradas (<=2px)
+PASS  [neon/dark] casilla marcada rellena con el acento del tema
+PASS  [neon/dark] presets agrupados: grupo con título + segmento + aria-pressed (temp activo)
+PASS  [neon/dark] filas con asa de arrastre (aria-hidden, fuera del Tab) y draggable sólo las activas
+PASS  [neon/dark] Enter en ↓ de cpu_temp: la mueve una posición
+PASS  [neon/dark] foco conservado en el mismo botón (cpu_temp ↓) tras re-render
+PASS  [neon/dark] cpu_temp llega al final (3 pulsaciones)
+PASS  [neon/dark] en el borde el foco pasa al botón opuesto (cpu_temp ↑), no se pierde
+PASS  [neon/dark] Alt+↑ en la fila mueve gpu_power arriba
+PASS  [neon/dark] Alt+↑ conserva el foco en la casilla de esa fila
+PASS  [neon/dark] Alt+↓ la devuelve
+PASS  [neon/dark] Alt+↑ en la 1ª fila: sin cambio ni error
+PASS  [neon/dark] Enter en ↑ aparentemente deshabilitado (aria-disabled) no hace nada
+PASS  [neon/dark] Espacio en casilla de ram_gb la activa (al final)
+PASS  [neon/dark] foco conservado en la casilla tras el toggle
+PASS  [neon/dark] Espacio otra vez la quita; foco sigue en su casilla
+PASS  [neon/dark] preset «uso» por teclado aplica el conjunto
+PASS  [neon/dark] foco conservado en el botón de preset
+PASS  [neon/dark] aria-pressed del segmento sigue al conjunto activo
+PASS  [neon/dark] preset «temp» vuelve al conjunto de temperatura
+PASS  [neon/dark] la última gráfica activa no se puede quitar (casilla sigue marcada)
+PASS  [neon/dark] arrastrar cpu_temp sobre gpu_power -> la deja en la última posición
+PASS  [neon/dark] arrastrar gpu_power sobre cpu_power -> la deja primera
+PASS  [neon/dark] soltar sobre una fila desactivada no cambia nada
+PASS  [neon/dark] el orden arrastrado queda en localStorage sin duplicados
+PASS  [neon/dark] localStorage guarda exactamente el orden activo
+PASS  [neon/dark] tras recargar, el orden es el mismo (gráficas dibujadas)
+PASS  [neon/dark] tras recargar, sin duplicados ni desapariciones
+PASS  [neon/dark] sin botón «ampliar» ni cabecera de tarjeta, sin #chart-modal / #chart-big / #chart-modal-close
+PASS  [neon/dark] cada tarjeta es etiqueta + canvas, sin controles
+PASS  [neon/dark] abrir con Enter: editor visible y foco en su primer control
+PASS  [neon/dark] Escape cierra el editor
+PASS  [neon/dark] Escape devuelve el foco a #hist-edit
+PASS  [neon/dark] aria-expanded=false tras Escape
+PASS  [neon/dark] el editor no usa tabindex positivo
+PASS  [neon/dark] Tab recorre los 26 controles en orden del DOM, sin saltos
+PASS  [neon/dark] Shift+Tab recorre en sentido inverso
+PASS  [neon/dark] Shift+Tab desde el primer control sale del editor hacia #hist-edit
+PASS  [neon/dark] envenenado ["constructor"]: la app arranca y usa ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+PASS  [neon/dark] envenenado ["__proto__","toString"]: la app arranca y usa ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+PASS  [neon/dark] envenenado ["constructor","ram_gb","hasOwnProperty"]: la app arranca y usa ["ram_gb"]
+PASS  [neon/dark] envenenado {"a":1}: la app arranca y usa ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+
+==== magma/dark ====
+PASS  [magma/dark] tema aplicado de verdad (data-theme=magma, data-mode=dark)
+PASS  [magma/dark] arranque con preset de temperatura
+PASS  [magma/dark] editor abierto, aria-expanded=true
+PASS  [magma/dark] al abrir, foco en el primer control (casilla de la 1ª fila)
+PASS  [magma/dark] 8 filas en el editor (activas primero)
+PASS  [magma/dark] hit target >=28x28 en TODOS los botones ↑/↓ (16)
+PASS  [magma/dark] fila/etiqueta de casilla clicable >=28px de alto
+PASS  [magma/dark] aria-label de ↑/↓ lleva el NOMBRE de la gráfica (todas las filas)
+PASS  [magma/dark] no existen las claves i18n chart.expand / chart.collapse
+PASS  [magma/dark] ↑ de la 1ª fila: aria-disabled="true", NO disabled nativo, visible (no oculto)
+PASS  [magma/dark] contraste del icono ↑ aparentemente deshabilitado >= 4.5:1
+PASS  [magma/dark] contraste del icono ↓ habilitado >= 4.5:1
+PASS  [magma/dark] contraste del nombre de gráfica desactivada >= 4.5:1
+PASS  [magma/dark] casilla temática: appearance:none, esquinas cuadradas (<=2px)
+PASS  [magma/dark] casilla marcada rellena con el acento del tema
+PASS  [magma/dark] presets agrupados: grupo con título + segmento + aria-pressed (temp activo)
+PASS  [magma/dark] filas con asa de arrastre (aria-hidden, fuera del Tab) y draggable sólo las activas
+PASS  [magma/dark] Enter en ↓ de cpu_temp: la mueve una posición
+PASS  [magma/dark] foco conservado en el mismo botón (cpu_temp ↓) tras re-render
+PASS  [magma/dark] cpu_temp llega al final (3 pulsaciones)
+PASS  [magma/dark] en el borde el foco pasa al botón opuesto (cpu_temp ↑), no se pierde
+PASS  [magma/dark] Alt+↑ en la fila mueve gpu_power arriba
+PASS  [magma/dark] Alt+↑ conserva el foco en la casilla de esa fila
+PASS  [magma/dark] Alt+↓ la devuelve
+PASS  [magma/dark] Alt+↑ en la 1ª fila: sin cambio ni error
+PASS  [magma/dark] Enter en ↑ aparentemente deshabilitado (aria-disabled) no hace nada
+PASS  [magma/dark] Espacio en casilla de ram_gb la activa (al final)
+PASS  [magma/dark] foco conservado en la casilla tras el toggle
+PASS  [magma/dark] Espacio otra vez la quita; foco sigue en su casilla
+PASS  [magma/dark] preset «uso» por teclado aplica el conjunto
+PASS  [magma/dark] foco conservado en el botón de preset
+PASS  [magma/dark] aria-pressed del segmento sigue al conjunto activo
+PASS  [magma/dark] preset «temp» vuelve al conjunto de temperatura
+PASS  [magma/dark] la última gráfica activa no se puede quitar (casilla sigue marcada)
+PASS  [magma/dark] arrastrar cpu_temp sobre gpu_power -> la deja en la última posición
+PASS  [magma/dark] arrastrar gpu_power sobre cpu_power -> la deja primera
+PASS  [magma/dark] soltar sobre una fila desactivada no cambia nada
+PASS  [magma/dark] el orden arrastrado queda en localStorage sin duplicados
+PASS  [magma/dark] localStorage guarda exactamente el orden activo
+PASS  [magma/dark] tras recargar, el orden es el mismo (gráficas dibujadas)
+PASS  [magma/dark] tras recargar, sin duplicados ni desapariciones
+PASS  [magma/dark] sin botón «ampliar» ni cabecera de tarjeta, sin #chart-modal / #chart-big / #chart-modal-close
+PASS  [magma/dark] cada tarjeta es etiqueta + canvas, sin controles
+PASS  [magma/dark] abrir con Enter: editor visible y foco en su primer control
+PASS  [magma/dark] Escape cierra el editor
+PASS  [magma/dark] Escape devuelve el foco a #hist-edit
+PASS  [magma/dark] aria-expanded=false tras Escape
+PASS  [magma/dark] el editor no usa tabindex positivo
+PASS  [magma/dark] Tab recorre los 26 controles en orden del DOM, sin saltos
+PASS  [magma/dark] Shift+Tab recorre en sentido inverso
+PASS  [magma/dark] Shift+Tab desde el primer control sale del editor hacia #hist-edit
+PASS  [magma/dark] envenenado ["constructor"]: la app arranca y usa ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+PASS  [magma/dark] envenenado ["constructor","ram_gb"]: la app arranca y usa ["ram_gb"]
+
+==== magma/light ====
+PASS  [magma/light] tema aplicado de verdad (data-theme=magma, data-mode=light)
+PASS  [magma/light] arranque con preset de temperatura
+PASS  [magma/light] editor abierto, aria-expanded=true
+PASS  [magma/light] al abrir, foco en el primer control (casilla de la 1ª fila)
+PASS  [magma/light] 8 filas en el editor (activas primero)
+PASS  [magma/light] hit target >=28x28 en TODOS los botones ↑/↓ (16)
+PASS  [magma/light] fila/etiqueta de casilla clicable >=28px de alto
+PASS  [magma/light] aria-label de ↑/↓ lleva el NOMBRE de la gráfica (todas las filas)
+PASS  [magma/light] no existen las claves i18n chart.expand / chart.collapse
+PASS  [magma/light] ↑ de la 1ª fila: aria-disabled="true", NO disabled nativo, visible (no oculto)
+PASS  [magma/light] contraste del icono ↑ aparentemente deshabilitado >= 4.5:1
+PASS  [magma/light] contraste del icono ↓ habilitado >= 4.5:1
+PASS  [magma/light] contraste del nombre de gráfica desactivada >= 4.5:1
+PASS  [magma/light] casilla temática: appearance:none, esquinas cuadradas (<=2px)
+PASS  [magma/light] casilla marcada rellena con el acento del tema
+PASS  [magma/light] presets agrupados: grupo con título + segmento + aria-pressed (temp activo)
+PASS  [magma/light] filas con asa de arrastre (aria-hidden, fuera del Tab) y draggable sólo las activas
+PASS  [magma/light] Enter en ↓ de cpu_temp: la mueve una posición
+PASS  [magma/light] foco conservado en el mismo botón (cpu_temp ↓) tras re-render
+PASS  [magma/light] cpu_temp llega al final (3 pulsaciones)
+PASS  [magma/light] en el borde el foco pasa al botón opuesto (cpu_temp ↑), no se pierde
+PASS  [magma/light] Alt+↑ en la fila mueve gpu_power arriba
+PASS  [magma/light] Alt+↑ conserva el foco en la casilla de esa fila
+PASS  [magma/light] Alt+↓ la devuelve
+PASS  [magma/light] Alt+↑ en la 1ª fila: sin cambio ni error
+PASS  [magma/light] Enter en ↑ aparentemente deshabilitado (aria-disabled) no hace nada
+PASS  [magma/light] Espacio en casilla de ram_gb la activa (al final)
+PASS  [magma/light] foco conservado en la casilla tras el toggle
+PASS  [magma/light] Espacio otra vez la quita; foco sigue en su casilla
+PASS  [magma/light] preset «uso» por teclado aplica el conjunto
+PASS  [magma/light] foco conservado en el botón de preset
+PASS  [magma/light] aria-pressed del segmento sigue al conjunto activo
+PASS  [magma/light] preset «temp» vuelve al conjunto de temperatura
+PASS  [magma/light] la última gráfica activa no se puede quitar (casilla sigue marcada)
+PASS  [magma/light] arrastrar cpu_temp sobre gpu_power -> la deja en la última posición
+PASS  [magma/light] arrastrar gpu_power sobre cpu_power -> la deja primera
+PASS  [magma/light] soltar sobre una fila desactivada no cambia nada
+PASS  [magma/light] el orden arrastrado queda en localStorage sin duplicados
+PASS  [magma/light] localStorage guarda exactamente el orden activo
+PASS  [magma/light] tras recargar, el orden es el mismo (gráficas dibujadas)
+PASS  [magma/light] tras recargar, sin duplicados ni desapariciones
+PASS  [magma/light] sin botón «ampliar» ni cabecera de tarjeta, sin #chart-modal / #chart-big / #chart-modal-close
+PASS  [magma/light] cada tarjeta es etiqueta + canvas, sin controles
+PASS  [magma/light] abrir con Enter: editor visible y foco en su primer control
+PASS  [magma/light] Escape cierra el editor
+PASS  [magma/light] Escape devuelve el foco a #hist-edit
+PASS  [magma/light] aria-expanded=false tras Escape
+PASS  [magma/light] el editor no usa tabindex positivo
+PASS  [magma/light] Tab recorre los 26 controles en orden del DOM, sin saltos
+PASS  [magma/light] Shift+Tab recorre en sentido inverso
+PASS  [magma/light] Shift+Tab desde el primer control sale del editor hacia #hist-edit
+PASS  [magma/light] envenenado ["constructor"]: la app arranca y usa ["cpu_temp","cpu_power","gpu_temp","gpu_power"]
+PASS  [magma/light] envenenado ["constructor","ram_gb"]: la app arranca y usa ["ram_gb"]
+
+==== todos los temas ====
+PASS  [todos los temas] contraste >= 4.5:1 (flecha sin recorrido, flecha activa, nombre off/on) en 12 temas x 2 modos
+
+162 PASS / 0 FAIL de 162 aserciones
+RESULT: PASS

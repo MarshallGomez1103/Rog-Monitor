@@ -638,7 +638,7 @@ const HIST_PRESETS = {
   usage: ['cpu_usage', 'ram_gb', 'swap_gb', 'gpu_util'],
 };
 
-const CE = window.RogChartEditor;   // lista/orden/toggle/presets/expandir: chart-editor-model.js (puro, con tests)
+const CE = window.RogChartEditor;   // lista/orden/toggle/presets: chart-editor-model.js (puro, con tests)
 const CHART_KEYS = Object.keys(CHART_CATALOG);
 
 /* Lista válida guardada: solo claves PROPIAS del catálogo, sin repetidas, ≥1; corrupta → temperatura. */
@@ -646,7 +646,7 @@ function histCharts(saved) { return CE.normalizeChartList(saved, CHART_KEYS, HIS
 
 let histList = histCharts(lsGet('histCharts') || (lsGet('histMode') === 'usage' ? HIST_PRESETS.usage : null));
 
-/* Dibuja la serie `key` en `canvas` (tarjeta del historial o modal ampliado, chart-editor-ui.js). */
+/* Dibuja la serie `key` en `canvas` (tarjeta del historial). */
 function drawHistChart(canvas, key, series, sys) {
   const [color, opts] = CHART_CATALOG[key];
   drawChart(canvas, series[key], cssVar(color), opts.maxKey ? { ...opts, max: sys[opts.maxKey] } : opts);
@@ -657,13 +657,13 @@ function setHistCharts(list) {
   lsSet('histCharts', JSON.stringify(histList));
   const row = document.querySelector('#history-block .chart-row');
   row.innerHTML = histList.map((k) =>
-    `<div class="chart"><div class="chart-head"><label data-i18n="${CHART_CATALOG[k][2]}">${escapeHtml(t(CHART_CATALOG[k][2]))}</label><button type="button" class="chart-expand" data-act="expand" data-chart="${k}"></button></div><canvas id="chart-${k}"></canvas></div>`).join('');
+    `<div class="chart"><label data-i18n="${CHART_CATALOG[k][2]}">${escapeHtml(t(CHART_CATALOG[k][2]))}</label><canvas id="chart-${k}"></canvas></div>`).join('');
   histList.forEach((k) => wireChartHover(`chart-${k}`, CHART_CATALOG[k][1].unit));
   // el botón rápido alterna entre los dos conjuntos predefinidos
   const btn = $('hist-mode');
   btn.dataset.i18n = CE.presetOf(histList, HIST_PRESETS) === 'usage' ? 'chart.mode_temp' : 'chart.mode_usage';
   btn.textContent = t(btn.dataset.i18n);
-  window.RogChartEditorUI?.sync();   // editor + modal ampliado (chart-editor-ui.js)
+  window.RogChartEditorUI?.sync();   // repinta el editor (chart-editor-ui.js)
   if (lastStats) update(lastStats);
 }
 
@@ -2038,7 +2038,6 @@ function update(stats) {
         if (lbl.dataset.i18n !== k) { lbl.dataset.i18n = k; lbl.textContent = t(k); }
       }
     });
-    window.RogChartEditorUI?.draw(series, sys);   // canvas del modal ampliado
   }
 
   $('rapl-note').classList.toggle('hidden', !!stats.rapl_available);

@@ -88,8 +88,7 @@ effect on a machine after reinstalling with `install-system.sh` (needs root, run
 * [x] **RAM, swap and disk-full alerts**: the RAM / Disk event filters finally have producers.
 * [x] Disk panel shows IOPS and % busy.
 * [x] **History chart editor**: reorder charts with SVG arrows, a drag handle or the keyboard,
-  hide / show each one, and **expand** any chart into a large modal; Escape closes it and gives
-  the focus back.
+  hide / show each one; Escape closes the editor and gives the focus back.
 * [x] **NO DATA states**: if the backend stops sending samples the app shows "NO DATA · N s"
   after 6 s and dims the panels (the overlay too); a value that cannot be read shows N/A
   instead of a fake 0.

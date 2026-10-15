@@ -1,6 +1,6 @@
 // Mide estilos estables: sin transiciones/animaciones CSS (se reinyecta tras cada recarga).
 const NOANIM = `(()=>{if(!document.getElementById('cdp-noanim')){const s=document.createElement('style');s.id='cdp-noanim';s.textContent='*,*::before,*::after{transition:none!important;animation:none!important}';document.head.appendChild(s)}})();`;
-// check-editor2.mjs — CDP del editor de gráficas del historial (S02-2 · N-A3-01/02/03 + F4-09 corte editor).
+// check-editor2.mjs — CDP del editor de gráficas del historial (S02-2 · N-A3-01/02 + F4-09 corte editor; «expandir» retirado en UIFIX-01).
 // Uso:  ROG_APP_ROOT=<raíz del repo/worktree> OUT=<carpeta PNG> TAG=RED|GREEN \
 //         node <repo>/.ai/private/rog-v22/tools/cdp.mjs <ruta-absoluta>/check-editor2.mjs
 // Necesita el backend (Python): en un worktree enlaza <worktree>/.venv -> <repo principal>/.venv.
@@ -11,7 +11,6 @@ const NOANIM = `(()=>{if(!document.getElementById('cdp-noanim')){const s=documen
 // Contrato DOM que verifica (ver docs/agent-work/v22/checkpoints/S02-EDITOR.md):
 //   #hist-editor .hist-edit-row[data-key] { .hist-edit-grip, input[data-act=toggle], button[data-act=up|down] }
 //   .hist-edit-presets [data-act=preset][data-preset][aria-pressed]
-//   #history-block .chart button.chart-expand[data-chart] -> #chart-modal (canvas #chart-big, #chart-modal-close)
 import { mkdirSync } from 'node:fs';
 
 export default async ({ ev: evRaw, shot, sleep, call }) => {
@@ -147,16 +146,13 @@ export default async ({ ev: evRaw, shot, sleep, call }) => {
     const small = JSON.parse((await ev(`JSON.stringify([...document.querySelectorAll('#hist-editor [data-act=up],#hist-editor [data-act=down]')].map(b=>{const r=b.getBoundingClientRect();return [b.closest('[data-key]').dataset.key+':'+b.dataset.act, Math.round(r.width), Math.round(r.height)]}).filter(a=>a[1]<28||a[2]<28))`)) || '[["sin botones",0,0]]');
     const nbtn = await ev(`document.querySelectorAll('#hist-editor [data-act=up],#hist-editor [data-act=down]').length`);
     check('hit target >=28x28 en TODOS los botones ↑/↓ (16)', nbtn === 16 && small.length === 0, `n=${nbtn} pequeños=${J(small.slice(0, 3))}`);
-    const smallE = JSON.parse((await ev(`JSON.stringify([...document.querySelectorAll('#history-block button.chart-expand')].map(b=>{const r=b.getBoundingClientRect();return [Math.round(r.width), Math.round(r.height)]}))`)) || '[]');
-    check('botón expandir por gráfica (4) con hit target >=28x28', smallE.length === 4 && smallE.every(([w, h]) => w >= 28 && h >= 28), J(smallE));
     const lblH = await ev(`(() => { const l = ${q('#hist-editor .hist-edit-row label')}; return l ? Math.round(l.getBoundingClientRect().height) : 0; })()`);
     check('fila/etiqueta de casilla clicable >=28px de alto', lblH >= 28, String(lblH));
 
     const names = JSON.parse((await ev(`JSON.stringify(Object.fromEntries(${J(rows)}.map(k=>[k, window.__h.name(k)])))`)) || '{}');
     const labs = JSON.parse((await ev(`JSON.stringify(${J(rows)}.map(k=>{const r=document.querySelector('#hist-editor [data-key="'+k+'"]'); return [k, r.querySelector('[data-act=up]')?.getAttribute('aria-label'), r.querySelector('[data-act=down]')?.getAttribute('aria-label')]}))`)) || '[]');
     check('aria-label de ↑/↓ lleva el NOMBRE de la gráfica (todas las filas)', labs.length === 8 && labs.every(([k, u, d]) => u && d && u.includes(names[k]) && d.includes(names[k]) && !/\{chart\}/.test(u + d)), J(labs[0]));
-    const expLabs = JSON.parse((await ev(`JSON.stringify([...document.querySelectorAll('#history-block button.chart-expand')].map(b=>[b.dataset.chart, b.getAttribute('aria-label')]))`)) || '[]');
-    check('aria-label de expandir lleva el nombre', expLabs.length === 4 && expLabs.every(([k, l]) => l && l.includes(names[k])), J(expLabs[0]));
+    check('no existen las claves i18n chart.expand / chart.collapse', (await ev(`(() => { const d = i18n.dump(); return !('chart.expand' in d) && !('chart.collapse' in d); })()`)) === true);
 
     const dis = JSON.parse((await ev(`JSON.stringify((() => { const b = ${q('#hist-editor [data-key=cpu_temp] [data-act=up]')}; if (!b) return null; const r = b.getBoundingClientRect(); const cs = getComputedStyle(b);
       return { ariaDisabled: b.getAttribute('aria-disabled'), nativeDisabled: b.disabled, w: r.width, h: r.height, op: cs.opacity, vis: cs.visibility, disp: cs.display }; })())`)) || 'null');
@@ -243,72 +239,10 @@ export default async ({ ev: evRaw, shot, sleep, call }) => {
     check('tras recargar, el orden es el mismo (gráficas dibujadas)', eq(after.canv, before) && eq(after.list, before), J(after));
     check('tras recargar, sin duplicados ni desapariciones', uniq(after.canv) && after.canv.length === before.length, J(after.canv));
 
-    // ---------- E. expandir / contraer ----------
-    const target = after.list[1];
-    for (const [vw, vh] of [[1280, 720], [1920, 1080]]) {
-      const sz = `${vw}x${vh}`;
-      await setView(vw, vh); await sleep(700);
-      await ev(`window.scrollBy(0, document.getElementById('history-block').getBoundingClientRect().top - 90); 0`); await sleep(300);
-      await focus(`#history-block button.chart-expand[data-chart="${target}"]`);
-      await key('Enter'); await sleep(900);
-      const m = JSON.parse((await ev(`JSON.stringify((() => { const md = ${q('#chart-modal')}; if (!md) return null; const card = md.querySelector('.modal-card'); const cv = ${q('#chart-big')};
-        const c = card && card.getBoundingClientRect(), k = cv && cv.getBoundingClientRect();
-        let ink = 0; if (cv && cv.width) { const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; for (let i = 3; i < d.length; i += 4 * 7) if (d[i] > 0) ink++; }
-        return { hidden: md.classList.contains('hidden'), role: md.getAttribute('role') || (card && card.getAttribute('role')), modalAttr: md.getAttribute('aria-modal') || (card && card.getAttribute('aria-modal')),
-          card: c && { x: c.x, y: c.y, r: c.right, b: c.bottom }, cw: cv && cv.clientWidth, ch: cv && cv.clientHeight, drawn: typeof chartState !== 'undefined' && chartState.has('chart-big'), ink,
-          title: (md.querySelector('#chart-modal-title') || {}).textContent, inModal: md.contains(document.activeElement) }; })())`)) || 'null');
-      check(`[${sz}] clic/Enter en el botón abre el modal grande`, m && !m.hidden, J(m));
-      check(`[${sz}] modal accesible (role=dialog, aria-modal)`, m && m.role === 'dialog' && m.modalAttr === 'true', J(m && [m.role, m.modalAttr]));
-      check(`[${sz}] título del modal = nombre de la gráfica`, m && m.title && m.title.includes(names[target]), J(m && m.title));
-      check(`[${sz}] tarjeta del modal cabe en la ventana`, m && m.card && m.card.x >= 0 && m.card.y >= 0 && m.card.r <= vw + 0.5 && m.card.b <= vh + 0.5, J(m && m.card));
-      const minH = vh === 720 ? 240 : 400;
-      check(`[${sz}] canvas propio grande (>= ${Math.round(vw * 0.55)}x${minH}) y dibujado en el bucle`, m && m.cw >= vw * 0.55 && m.ch >= minH && m.drawn && m.ink > 50, J(m && [m.cw, m.ch, m.drawn, m.ink]));
-      check(`[${sz}] foco dentro del modal al abrir`, m && m.inModal, await act());
-      // hover propio
-      const cr = await rect('#chart-big');
-      if (cr) {
-        await call('Input.dispatchMouseEvent', { type: 'mouseMoved', x: cr.x + cr.w * 0.5, y: cr.y + cr.h * 0.5 });
-        await call('Input.dispatchMouseEvent', { type: 'mouseMoved', x: cr.x + cr.w * 0.52, y: cr.y + cr.h * 0.5 });
-        await sleep(250);
-      }
-      const tip = JSON.parse((await ev(`JSON.stringify({ hov: chartHover.canvasId, shown: !document.getElementById('chart-tip').classList.contains('hidden'), txt: document.getElementById('chart-tip').textContent })`)) || '{}');
-      check(`[${sz}] hover propio del canvas ampliado (crosshair + tip)`, tip.hov === 'chart-big' && tip.shown && tip.txt.length > 0, J(tip));
-      await key('Tab');
-      check(`[${sz}] Tab dentro del modal no escapa (foco atrapado)`, await ev(`${q('#chart-modal')}.contains(document.activeElement)`), await act());
-      await key('Tab', { shift: true });
-      check(`[${sz}] Shift+Tab tampoco escapa`, await ev(`${q('#chart-modal')}.contains(document.activeElement)`), await act());
-      if (vw === 1280) {
-        await shotOf(`${OUT}/${TAG}-modal-${sz}-${theme}-${mode}.png`, '#chart-modal .modal-card', 0);
-        // redimensionar con el modal abierto
-        const w0 = ((await rect('#chart-big')) || { w: 0 }).w;
-        await setView(1920, 1080); await sleep(900);
-        const rs = JSON.parse((await ev(`JSON.stringify({ cw: (${q('#chart-big')} || {}).clientWidth || 0, sw: (chartState.get('chart-big') || {}).w || -1 })`)) || '{}');
-        check('[resize] el canvas ampliado se redibuja al cambiar el tamaño de ventana', rs.cw > w0 && w0 > 0 && Math.abs(rs.sw - rs.cw) <= 1, J([w0, rs]));
-        await setView(vw, vh); await sleep(500);
-      } else {
-        await shotOf(`${OUT}/${TAG}-modal-${sz}-${theme}-${mode}.png`, '#chart-modal .modal-card', 0);
-      }
-      await key('Escape'); await sleep(300);
-      const closed = await ev(`${q('#chart-modal')}.classList.contains('hidden')`);
-      check(`[${sz}] Escape cierra el modal`, closed === true, String(closed));
-      check(`[${sz}] Escape devuelve el foco al botón expandir de esa gráfica`, (await act()) === `chart:${target}|expand`, await act());
-    }
-    // cerrar con botón/ratón y con fondo
-    await setView(1500, 900); await sleep(500);
-    await mclick(`#history-block button.chart-expand[data-chart="${target}"]`); await sleep(500);
-    check('clic de ratón en expandir abre el modal', (await ev(`!${q('#chart-modal')}.classList.contains('hidden')`)) === true);
-    await mclick('#chart-modal-close'); await sleep(300);
-    check('botón cerrar del modal lo cierra y devuelve el foco al expandir', (await ev(`${q('#chart-modal')}.classList.contains('hidden')`)) === true && (await act()) === `chart:${target}|expand`, await act());
-    await mclick(`#history-block button.chart-expand[data-chart="${target}"]`); await sleep(400);
-    await call('Input.dispatchMouseEvent', { type: 'mousePressed', x: 4, y: 4, button: 'left', clickCount: 1 });
-    await call('Input.dispatchMouseEvent', { type: 'mouseReleased', x: 4, y: 4, button: 'left', clickCount: 1 }); await sleep(300);
-    check('clic en el fondo cierra el modal', (await ev(`${q('#chart-modal')}.classList.contains('hidden')`)) === true);
-    // reconcileExpanded: quitar la gráfica expandida
-    await mclick(`#history-block button.chart-expand[data-chart="${target}"]`); await sleep(400);
-    await ev(`setHistCharts(histList.filter((k) => k !== ${J(target)})); 0`); await sleep(400);
-    check('si la gráfica expandida se quita de la lista, el modal se cierra (reconcile)', (await ev(`${q('#chart-modal')}.classList.contains('hidden')`)) === true);
-    check('…y no queda canvas ampliado en chartState', (await ev(`!chartState.has('chart-big')`)) === true);
-    await ev(`setHistCharts(${J(after.list)}); 0`); await sleep(300);
+    // ---------- E. sin «expandir» (UIFIX-01: retirado a petición del propietario) ----------
+    check('sin botón «ampliar» ni cabecera de tarjeta, sin #chart-modal / #chart-big / #chart-modal-close', (await ev(`document.querySelectorAll('#history-block .chart-expand, #history-block .chart-head, #chart-modal, #chart-big, #chart-modal-close').length`)) === 0);
+    check('cada tarjeta es etiqueta + canvas, sin controles', (await ev(`[...document.querySelectorAll('#history-block .chart')].every((c) => !c.querySelector('button') && c.querySelector('label') && c.querySelector('canvas'))`)) === true);
+    await setView(1500, 900); await sleep(300);
 
     // ---------- F. Escape del editor + restauración de foco ----------
     await ev(`document.activeElement && document.activeElement.blur(); 0`);
@@ -369,7 +303,7 @@ export default async ({ ev: evRaw, shot, sleep, call }) => {
     await sleep(160);
     const r = JSON.parse((await ev(`JSON.stringify((() => { const g = (s) => document.querySelector(s); const c = (s) => { const e = g(s); return e ? window.__h.cr(e) : 0; };
       return { disUp: c('#hist-editor [data-key] [data-act=up][aria-disabled=true]'), up: c('#hist-editor [data-act=down][aria-disabled=false]'), off: c('#hist-editor .hist-edit-row.off label'),
-        on: c('#hist-editor .hist-edit-row:not(.off) label'), hint: c('#hist-editor .note'), expand: window.__h.crVar('--dim', g('#history-block .chart-expand') || document.body) }; })())`)) || '{}');
+        on: c('#hist-editor .hist-edit-row:not(.off) label'), hint: c('#hist-editor .note') }; })())`)) || '{}');
     for (const k of ['disUp', 'up', 'off', 'on']) if (!(r[k] >= 4.5)) low.push(`${th}/${md}:${k}=${Number(r[k]).toFixed(2)}`);
   }
   check(`contraste >= 4.5:1 (flecha sin recorrido, flecha activa, nombre off/on) en ${themeIds.length} temas x 2 modos`, themeIds.length === 12 && low.length === 0, low.slice(0, 8).join(' | '));
