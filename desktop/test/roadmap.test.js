@@ -161,7 +161,7 @@ test('la cabecera y la versión actual no están viejas; v22 aparece en la app y
   assert.match(MD_SRC, /^## Current \(done\) — through v21/m);
   // La entrada v22 es la última de HECHO y las fechas no retroceden.
   assert.match(ROADMAP_DONE[ROADMAP_DONE.length - 1].version, /^v22/);
-  const dates = ROADMAP_DONE.map((d) => d.date);
+  const dates = Array.from(ROADMAP_DONE, (d) => d.date);
   assert.deepStrictEqual([...dates].sort(), dates);
 });
 
