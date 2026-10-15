@@ -1,0 +1,160 @@
+PASS  [arranque] el primer estado de CPU es loading (sin muestra todavía)
+PASS  [arranque] la secuencia de CPU hasta la 1.ª muestra no pasa por error/stale/empty
+PASS  [arranque] termina en ok/empty tras la 1.ª muestra real
+PASS  [neon-dark] todo-null: CPU empty/reader_unavailable (no «sin sensor» de hardware)
+PASS  [neon-dark] todo-null: GPU con mode null => empty/unknown y NO dice «dGPU apagada»
+PASS  [neon-dark] todo-null: fans [] => empty/no_fans, sistema => reader_unavailable, procs => no_data
+PASS  [neon-dark] todo-null: cada aviso es visible, con título y pista distintos del texto de otro motivo
+PASS  [neon-dark] todo-null: textos por motivo (CPU lector / sistema lector / procesos vacíos)
+PASS  [neon-dark] todo-null: «Ver diagnóstico» solo donde hay algo que diagnosticar (CPU/GPU/sistema sí; procesos vacíos y fans sin hardware no)
+PASS  [neon-dark] todo-null: ningún campo muestra un 0 falso (todos sin dato)
+PASS  [neon-dark] todo-null: hot90, throttle, uptime, red, carga, RAM en «--»
+PASS  [neon-dark] todo-null: fuente de energía desconocida («—»), no «Batería»
+PASS  [neon-dark] todo-null: cabecera = sensores parciales (nivel warn) y NO «sensores OK»
+PASS  [neon-dark] cabecera: #backend-state role=status aria-live=polite aria-atomic
+PASS  [neon-dark] #events es role=log (sin re-anunciar toda la lista)
+PASS  [neon-dark] todo-null: la cabecera anuncia UNA vez (ok->parcial = 1 cambio de texto en 2 muestras)
+PASS  [neon-dark] contraste ≥ 4.5 del título del aviso y de la cabecera
+PASS  [neon-dark] contraste ≥ 4.5 de la pista y del meta (texto atenuado)
+PASS  [neon-dark] GPU Integrated sin activa => unsupported (CSS propio, no empty) y SÍ dice apagada
+PASS  [neon-dark] GPU unsupported: el aviso es visible y el contenido del bloque queda oculto
+PASS  [neon-dark] GPU mode «error» NO se atribuye a hardware (empty/unknown, sin «apagada»)
+PASS  [neon-dark] GPU mode vacío => empty/unknown
+PASS  [neon-dark] CPU sin temperatura => empty/no_temp con data-partial y el uso sigue legible
+PASS  [neon-dark] CPU sin temperatura: no ofrece «diagnóstico» (no hay nada roto)
+PASS  [neon-dark] 0 legítimo: CPU, ventiladores, sistema y procesos siguen en ok (no pasan a empty por tener 0)
+PASS  [neon-dark] 0 legítimo: uso 0%, >90 °C = 0, throttle 0, red ↓0.0 ↑0.0, uptime 0m
+PASS  [neon-dark] 0 legítimo: fuente «batería» (on_ac false real) con 0 %
+PASS  [neon-dark] ventilador rpm 0 => PARADO real (fan-is-stopped); rpm null => sin lectura, NO parado
+PASS  [neon-dark] 0 legítimo: todo bien => la barra NO muestra estado (texto vacío, sin marcador, región ≤1 px fuera del flujo, nivel ok)
+PASS  [neon-dark] todo bien: la región viva sigue en el DOM (role=status, aria-live=polite) para avisar de un problema futuro
+PASS  [neon-dark] no existe ninguna clave i18n «status.ok» ni texto «sensores OK» en el pie (8 idiomas)
+PASS  [neon-dark] stale: a 5,9 s todos siguen ok y la cabecera es «OK»
+PASS  [neon-dark] stale: a 6,1 s los 5 bloques pasan a stale
+PASS  [neon-dark] stale: cabecera «Sin datos recientes» (warn) con los segundos solo en #backend-meta
+PASS  [neon-dark] stale: lámpara «SIN DATOS · N s» y body.stale por reloj de llegada
+PASS  [neon-dark] stale anunciado UNA vez: 4 ticks seguidos no cambian el texto de la región viva
+PASS  [neon-dark] stale: los chips de error NO se anuncian (aria-hidden) y no hay chip visible
+PASS  [neon-dark] caído: los 5 bloques en error con chip visible
+PASS  [neon-dark] caído: cabecera «backend caído» (nivel error)
+PASS  [neon-dark] caído + «reconectando» = UN solo anuncio (mismo estado, mismo texto)
+PASS  [neon-dark] reconexión: error -> ok directo en todos los bloques (sin loading/empty/stale intermedios)
+PASS  [neon-dark] reconexión: cabecera vuelve a OK con UN anuncio
+PASS  [neon-dark] stale -> ok al reconectar: secuencia exacta [stale, ok] por bloque, sin destellos
+PASS  [neon-dark] stale -> ok: cabecera vuelve a «OK» con UN anuncio
+PASS  [neon-dark] antidestello: 1 muestra vacía suelta se retiene (ok); 2 seguidas => empty; recuperar es inmediato
+PASS  [magma-dark] todo-null: CPU empty/reader_unavailable (no «sin sensor» de hardware)
+PASS  [magma-dark] todo-null: GPU con mode null => empty/unknown y NO dice «dGPU apagada»
+PASS  [magma-dark] todo-null: fans [] => empty/no_fans, sistema => reader_unavailable, procs => no_data
+PASS  [magma-dark] todo-null: cada aviso es visible, con título y pista distintos del texto de otro motivo
+PASS  [magma-dark] todo-null: textos por motivo (CPU lector / sistema lector / procesos vacíos)
+PASS  [magma-dark] todo-null: «Ver diagnóstico» solo donde hay algo que diagnosticar (CPU/GPU/sistema sí; procesos vacíos y fans sin hardware no)
+PASS  [magma-dark] todo-null: ningún campo muestra un 0 falso (todos sin dato)
+PASS  [magma-dark] todo-null: hot90, throttle, uptime, red, carga, RAM en «--»
+PASS  [magma-dark] todo-null: fuente de energía desconocida («—»), no «Batería»
+PASS  [magma-dark] todo-null: cabecera = sensores parciales (nivel warn) y NO «sensores OK»
+PASS  [magma-dark] cabecera: #backend-state role=status aria-live=polite aria-atomic
+PASS  [magma-dark] #events es role=log (sin re-anunciar toda la lista)
+PASS  [magma-dark] todo-null: la cabecera anuncia UNA vez (ok->parcial = 1 cambio de texto en 2 muestras)
+PASS  [magma-dark] contraste ≥ 4.5 del título del aviso y de la cabecera
+PASS  [magma-dark] contraste ≥ 4.5 de la pista y del meta (texto atenuado)
+PASS  [magma-dark] GPU Integrated sin activa => unsupported (CSS propio, no empty) y SÍ dice apagada
+PASS  [magma-dark] GPU unsupported: el aviso es visible y el contenido del bloque queda oculto
+PASS  [magma-dark] GPU mode «error» NO se atribuye a hardware (empty/unknown, sin «apagada»)
+PASS  [magma-dark] GPU mode vacío => empty/unknown
+PASS  [magma-dark] CPU sin temperatura => empty/no_temp con data-partial y el uso sigue legible
+PASS  [magma-dark] CPU sin temperatura: no ofrece «diagnóstico» (no hay nada roto)
+PASS  [magma-dark] 0 legítimo: CPU, ventiladores, sistema y procesos siguen en ok (no pasan a empty por tener 0)
+PASS  [magma-dark] 0 legítimo: uso 0%, >90 °C = 0, throttle 0, red ↓0.0 ↑0.0, uptime 0m
+PASS  [magma-dark] 0 legítimo: fuente «batería» (on_ac false real) con 0 %
+PASS  [magma-dark] ventilador rpm 0 => PARADO real (fan-is-stopped); rpm null => sin lectura, NO parado
+PASS  [magma-dark] 0 legítimo: todo bien => la barra NO muestra estado (texto vacío, sin marcador, región ≤1 px fuera del flujo, nivel ok)
+PASS  [magma-dark] todo bien: la región viva sigue en el DOM (role=status, aria-live=polite) para avisar de un problema futuro
+PASS  [magma-dark] no existe ninguna clave i18n «status.ok» ni texto «sensores OK» en el pie (8 idiomas)
+PASS  [magma-dark] stale: a 5,9 s todos siguen ok y la cabecera es «OK»
+PASS  [magma-dark] stale: a 6,1 s los 5 bloques pasan a stale
+PASS  [magma-dark] stale: cabecera «Sin datos recientes» (warn) con los segundos solo en #backend-meta
+PASS  [magma-dark] stale: lámpara «SIN DATOS · N s» y body.stale por reloj de llegada
+PASS  [magma-dark] stale anunciado UNA vez: 4 ticks seguidos no cambian el texto de la región viva
+PASS  [magma-dark] stale: los chips de error NO se anuncian (aria-hidden) y no hay chip visible
+PASS  [magma-dark] caído: los 5 bloques en error con chip visible
+PASS  [magma-dark] caído: cabecera «backend caído» (nivel error)
+PASS  [magma-dark] caído + «reconectando» = UN solo anuncio (mismo estado, mismo texto)
+PASS  [magma-dark] reconexión: error -> ok directo en todos los bloques (sin loading/empty/stale intermedios)
+PASS  [magma-dark] reconexión: cabecera vuelve a OK con UN anuncio
+PASS  [magma-dark] stale -> ok al reconectar: secuencia exacta [stale, ok] por bloque, sin destellos
+PASS  [magma-dark] stale -> ok: cabecera vuelve a «OK» con UN anuncio
+PASS  [magma-dark] antidestello: 1 muestra vacía suelta se retiene (ok); 2 seguidas => empty; recuperar es inmediato
+PASS  [magma-light] todo-null: CPU empty/reader_unavailable (no «sin sensor» de hardware)
+PASS  [magma-light] todo-null: GPU con mode null => empty/unknown y NO dice «dGPU apagada»
+PASS  [magma-light] todo-null: fans [] => empty/no_fans, sistema => reader_unavailable, procs => no_data
+PASS  [magma-light] todo-null: cada aviso es visible, con título y pista distintos del texto de otro motivo
+PASS  [magma-light] todo-null: textos por motivo (CPU lector / sistema lector / procesos vacíos)
+PASS  [magma-light] todo-null: «Ver diagnóstico» solo donde hay algo que diagnosticar (CPU/GPU/sistema sí; procesos vacíos y fans sin hardware no)
+PASS  [magma-light] todo-null: ningún campo muestra un 0 falso (todos sin dato)
+PASS  [magma-light] todo-null: hot90, throttle, uptime, red, carga, RAM en «--»
+PASS  [magma-light] todo-null: fuente de energía desconocida («—»), no «Batería»
+PASS  [magma-light] todo-null: cabecera = sensores parciales (nivel warn) y NO «sensores OK»
+PASS  [magma-light] cabecera: #backend-state role=status aria-live=polite aria-atomic
+PASS  [magma-light] #events es role=log (sin re-anunciar toda la lista)
+PASS  [magma-light] todo-null: la cabecera anuncia UNA vez (ok->parcial = 1 cambio de texto en 2 muestras)
+PASS  [magma-light] contraste ≥ 4.5 del título del aviso y de la cabecera
+PASS  [magma-light] contraste ≥ 4.5 de la pista y del meta (texto atenuado)
+PASS  [magma-light] GPU Integrated sin activa => unsupported (CSS propio, no empty) y SÍ dice apagada
+PASS  [magma-light] GPU unsupported: el aviso es visible y el contenido del bloque queda oculto
+PASS  [magma-light] GPU mode «error» NO se atribuye a hardware (empty/unknown, sin «apagada»)
+PASS  [magma-light] GPU mode vacío => empty/unknown
+PASS  [magma-light] CPU sin temperatura => empty/no_temp con data-partial y el uso sigue legible
+PASS  [magma-light] CPU sin temperatura: no ofrece «diagnóstico» (no hay nada roto)
+PASS  [magma-light] 0 legítimo: CPU, ventiladores, sistema y procesos siguen en ok (no pasan a empty por tener 0)
+PASS  [magma-light] 0 legítimo: uso 0%, >90 °C = 0, throttle 0, red ↓0.0 ↑0.0, uptime 0m
+PASS  [magma-light] 0 legítimo: fuente «batería» (on_ac false real) con 0 %
+PASS  [magma-light] ventilador rpm 0 => PARADO real (fan-is-stopped); rpm null => sin lectura, NO parado
+PASS  [magma-light] 0 legítimo: todo bien => la barra NO muestra estado (texto vacío, sin marcador, región ≤1 px fuera del flujo, nivel ok)
+PASS  [magma-light] todo bien: la región viva sigue en el DOM (role=status, aria-live=polite) para avisar de un problema futuro
+PASS  [magma-light] no existe ninguna clave i18n «status.ok» ni texto «sensores OK» en el pie (8 idiomas)
+PASS  [magma-light] stale: a 5,9 s todos siguen ok y la cabecera es «OK»
+PASS  [magma-light] stale: a 6,1 s los 5 bloques pasan a stale
+PASS  [magma-light] stale: cabecera «Sin datos recientes» (warn) con los segundos solo en #backend-meta
+PASS  [magma-light] stale: lámpara «SIN DATOS · N s» y body.stale por reloj de llegada
+PASS  [magma-light] stale anunciado UNA vez: 4 ticks seguidos no cambian el texto de la región viva
+PASS  [magma-light] stale: los chips de error NO se anuncian (aria-hidden) y no hay chip visible
+PASS  [magma-light] caído: los 5 bloques en error con chip visible
+PASS  [magma-light] caído: cabecera «backend caído» (nivel error)
+PASS  [magma-light] caído + «reconectando» = UN solo anuncio (mismo estado, mismo texto)
+PASS  [magma-light] reconexión: error -> ok directo en todos los bloques (sin loading/empty/stale intermedios)
+PASS  [magma-light] reconexión: cabecera vuelve a OK con UN anuncio
+PASS  [magma-light] stale -> ok al reconectar: secuencia exacta [stale, ok] por bloque, sin destellos
+PASS  [magma-light] stale -> ok: cabecera vuelve a «OK» con UN anuncio
+PASS  [magma-light] antidestello: 1 muestra vacía suelta se retiene (ok); 2 seguidas => empty; recuperar es inmediato
+PASS  [vram] vram warming_up: texto traducido por código (no el reason fijo) y pista en la tabla
+PASS  [vram] vram warming_up: «Reintentar» solo en errores recuperables
+PASS  [vram] vram no_nvidia: texto traducido por código (no el reason fijo) y pista en la tabla
+PASS  [vram] vram no_nvidia: «Reintentar» solo en errores recuperables
+PASS  [vram] vram dgpu_asleep: texto traducido por código (no el reason fijo) y pista en la tabla
+PASS  [vram] vram dgpu_asleep: «Reintentar» solo en errores recuperables
+PASS  [vram] vram dgpu_inactive: texto traducido por código (no el reason fijo) y pista en la tabla
+PASS  [vram] vram dgpu_inactive: «Reintentar» solo en errores recuperables
+PASS  [vram] vram nvml_error: texto traducido por código (no el reason fijo) y pista en la tabla
+PASS  [vram] vram nvml_error: «Reintentar» solo en errores recuperables
+PASS  [vram] vram smi_error: texto traducido por código (no el reason fijo) y pista en la tabla
+PASS  [vram] vram smi_error: «Reintentar» solo en errores recuperables
+PASS  [vram] vram no_nvidia_tools: texto traducido por código (no el reason fijo) y pista en la tabla
+PASS  [vram] vram no_nvidia_tools: «Reintentar» solo en errores recuperables
+PASS  [vram] vram reader_unavailable: texto traducido por código (no el reason fijo) y pista en la tabla
+PASS  [vram] vram reader_unavailable: «Reintentar» solo en errores recuperables
+PASS  [vram] vram: código desconocido => usa el reason del backend como respaldo
+PASS  [aura] aura null (lector caído) muestra «no se pudo leer», no «instala asusctl»
+PASS  [aura] aura {available:false} (sin controladores) conserva el mensaje de instalación (solo texto)
+PASS  [i18n] 34 claves nuevas resuelven en los 8 idiomas
+PASS  [i18n] status.partial distinto en cada idioma (traducciones reales, no copias del inglés)
+PASS  [contraste-12-temas] contraste mínimo del título del aviso ≥ 4.5 en 12 temas x 2 modos
+PASS  [contraste-12-temas] contraste mínimo de la pista del aviso ≥ 4.5
+PASS  [contraste-12-temas] contraste mínimo de la cabecera y su meta ≥ 4.5
+PASS  [contraste-12-temas] contraste mínimo del botón «Ver diagnóstico» ≥ 4.5
+INFO  contrastes mínimos: {"title":13.63,"hint":5.08,"hdr":13.63,"meta":5.08,"why":10.21}
+PASS  [accion] el botón tiene área ≥ 24 px de alto
+PASS  [accion] clic real en «Ver diagnóstico» abre el modal de diagnóstico
+
+156/156 aserciones OK
+RESULT: PASS

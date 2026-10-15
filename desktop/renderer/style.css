@@ -1224,15 +1224,16 @@ html.fan-eco .fan-blades { animation-timing-function: steps(10); }
 
 /* Estado de sensores: la región viva (#backend-state) solo cambia de texto cuando cambia el
    estado; reloj y versión viven aparte en #backend-meta (sin spam de anuncios). El nivel se
-   comunica con forma + color: ok = cuadrado, warn = triángulo, error = rombo, info = punto. */
+   comunica con forma + color: warn = triángulo, error = rombo, info = punto; ok = nada. */
 #backend-state { display: inline-flex; align-items: center; gap: 8px; }
 #backend-state::before {
   content: ""; flex: 0 0 auto; width: 9px; height: 9px;
   background: var(--dim);
   clip-path: circle(38% at 50% 50%);
 }
-#backend-state[data-level="ok"] { color: var(--ink); }
-#backend-state[data-level="ok"]::before { background: var(--okstate); clip-path: none; }
+/* ok = sin texto ni marcador y fuera del flujo (la hora/versión queda a la izquierda); la región viva sigue en el DOM */
+#backend-state[data-level="ok"] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+#backend-state[data-level="ok"]::before { display: none; }
 #backend-state[data-level="warn"] { color: var(--ink); }
 #backend-state[data-level="warn"]::before { background: var(--hot); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
 #backend-state[data-level="error"] { color: var(--ink); }

@@ -1891,7 +1891,7 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) { lastStatsAt = Date.now(); lastResumeAt = lastStatsAt; }
 });
 
-/* Cabecera "sensores OK" desde el modelo de estados (lógica y textos en widget-status-view.js). */
+/* Cabecera de estado de sensores desde el modelo de estados (lógica y textos en widget-status-view.js; vacía si todo va bien). */
 const headerView = SV.createHeaderView({ $, t, ws: () => window.RogWidgetStates });
 function renderHeader(stats) {
   headerView(stats, { now: Date.now(), lastRxAt: lastStatsAt, resumedAt: lastResumeAt, backendDown, backendReconnecting, hidden: document.hidden });

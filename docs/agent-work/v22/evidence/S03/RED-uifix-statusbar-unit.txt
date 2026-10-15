@@ -1,0 +1,6 @@
+not ok 17 - headerStatus: prioridad down > reconnecting > connecting > stale > partial > ok
+not ok 21 - createHeaderView: ok => texto, nivel y meta (core + hora); sin muestra => connecting
+not ok 23 - createHeaderView: parcial lista los paneles traducidos y exige 2 muestras
+not ok 24 - createHeaderView: solo un problema real escribe texto; al volver a OK la región viva se vacía
+# pass 21
+# fail 4

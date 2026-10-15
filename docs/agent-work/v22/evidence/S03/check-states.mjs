@@ -125,7 +125,7 @@ export default async ({ ev, shot, sleep, call }) => {
           stopped: x.classList.contains('fan-is-stopped'), noread: x.classList.contains('fan-no-reading') }));
         return { blocks, f, fans, body: { stale: document.body.classList.contains('stale') },
           hdr: { text: tx.textContent, level: hs.dataset.level, role: hs.getAttribute('role'), live: hs.getAttribute('aria-live'), atomic: hs.getAttribute('aria-atomic'),
-            meta: mt ? mt.textContent : '' },
+            meta: mt ? mt.textContent : '', inner: hs.innerText || '', marker: getComputedStyle(hs, '::before').display, w: Math.round(hs.getBoundingClientRect().width), pos: getComputedStyle(hs).position },
           events: { role: document.getElementById('events').getAttribute('role'), live: document.getElementById('events').getAttribute('aria-live') } };
       },
       cr, op, BLOCKS,
@@ -259,7 +259,9 @@ export default async ({ ev, shot, sleep, call }) => {
     check('0 legítimo: uso 0%, >90 °C = 0, throttle 0, red ↓0.0 ↑0.0, uptime 0m', r.f['cpu-util'] === '0%' && r.f['cpu-hot'] === '0' && r.f['cpu-throttle'] === '0' && r.f.net === '↓0.0 ↑0.0 Mb/s' && r.f['cpu-uptime'] === '0m', J(r.f));
     check('0 legítimo: fuente «batería» (on_ac false real) con 0 %', /bater/i.test(r.f['power-source']), r.f['power-source']);
     check('ventilador rpm 0 => PARADO real (fan-is-stopped); rpm null => sin lectura, NO parado', r.fans[0].stopped && !r.fans[0].noread && r.fans[0].rpm === '0' && !r.fans[1].stopped && r.fans[1].noread && r.fans[1].rpm === '--' && r.fans[1].pct === '--', J(r.fans));
-    check('0 legítimo: cabecera «sensores OK» (nivel ok)', r.hdr.level === 'ok' && /OK|正常|bon|ok/i.test(r.hdr.text), J(r.hdr));
+    check('0 legítimo: todo bien => la barra NO muestra estado (texto vacío, sin marcador, región ≤1 px fuera del flujo, nivel ok)', r.hdr.level === 'ok' && r.hdr.text === '' && r.hdr.inner.trim() === '' && r.hdr.marker === 'none' && r.hdr.w <= 1 && r.hdr.pos === 'absolute', J(r.hdr));
+    check('todo bien: la región viva sigue en el DOM (role=status, aria-live=polite) para avisar de un problema futuro', r.hdr.role === 'status' && r.hdr.live === 'polite' && r.hdr.atomic === 'true', J(r.hdr));
+    check('no existe ninguna clave i18n «status.ok» ni texto «sensores OK» en el pie (8 idiomas)', await ev(`(() => !('status.ok' in i18n.dump()) && !/sensores ok|sensors ok|capteurs ok|sensori ok|传感器正常|センサー正常|센서 정상/i.test(document.querySelector('footer').innerText))()`) === true);
     });
 
     // ===== 5) STALE: 5,9 s no / 6,1 s sí; un solo anuncio =====
@@ -352,14 +354,14 @@ export default async ({ ev, shot, sleep, call }) => {
 
   cur = 'i18n';
   {
-    const keys = await run(`return Object.keys(i18n.dump()).filter((k) => /^(vram\\.|status\\.(ok|partial|stale|reconnecting)|widget\\.(cpu_|fans_|sys_|procs_|fan_|why))/.test(k));`);
+    const keys = await run(`return Object.keys(i18n.dump()).filter((k) => /^(vram\\.|status\\.(partial|stale|reconnecting)|widget\\.(cpu_|fans_|sys_|procs_|fan_|why))/.test(k));`);
     const langs = ['es', 'en', 'fr', 'it', 'pt', 'zh', 'ja', 'ko'];
     let bad = [];
     for (const L of langs) {
       const miss = await run(`i18n.set(${J(L)}); const m = ${J(keys)}.filter((k) => { const v = t(k, { list: 'x' }); return !v || v === k; }); return m;`);
       if (miss.length) bad.push(L + ':' + miss.join(','));
     }
-    check(`${keys.length} claves nuevas resuelven en los 8 idiomas`, keys.length >= 35 && !bad.length, bad.join(' | '));
+    check(`${keys.length} claves nuevas resuelven en los 8 idiomas`, keys.length >= 34 && !bad.length, bad.join(' | '));
     const diff = await run(`const out = {}; ['es','en','fr','it','pt','zh','ja','ko'].forEach((L) => { i18n.set(L); out[L] = t('status.partial', { list: 'CPU' }); }); i18n.set('es'); return out;`);
     check('status.partial distinto en cada idioma (traducciones reales, no copias del inglés)', new Set(Object.values(diff)).size === 8, J(diff));
   }

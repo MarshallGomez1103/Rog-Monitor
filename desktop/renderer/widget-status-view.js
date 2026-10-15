@@ -1,6 +1,7 @@
 /* ROG Monitor — widget-status-view.js  (N-A4-03 / N-A4-04)
    Presentador PURO de estados: formatos que no inventan ceros, estado de la cabecera
-   "sensores OK", razones de VRAM por código y vista de ventiladores.
+   (vacío cuando todo va bien; texto solo ante un problema real),
+   razones de VRAM por código y vista de ventiladores.
 
    Regla de oro (N-DEF-02): `null` = la fuente no se pudo leer; `0` es un valor real.
    Nada de este archivo toca el DOM ni el reloj: app.js solo cablea (lee el resultado y
@@ -128,7 +129,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /*  Cabecera "sensores OK" a partir del modelo de widget-states         */
+  /*  Cabecera de estado de sensores a partir del modelo de widget-states  */
   /* ------------------------------------------------------------------ */
   const HEADER_PANELS = Object.freeze(['cpu', 'gpu', 'fans', 'system', 'procs']);
   /* "vacío" que NO es un fallo: el equipo simplemente no tiene ese hardware / no hay nada que listar */
@@ -156,7 +157,7 @@
     else {
       list = partialPanels(models);
       if (list.length) { kind = 'partial'; level = 'warn'; key = 'status.partial'; }
-      else { kind = 'ok'; level = 'ok'; key = 'status.ok'; }
+      else { kind = 'ok'; level = 'ok'; key = null; }   // todo bien: la barra no muestra estado
     }
     return { kind, level, key, list, sig: list.length ? `${kind}:${list.join(',')}` : kind };
   }
@@ -190,7 +191,7 @@
       const h = settle(headerStatus({ models, down: st.backendDown, reconnecting: st.backendReconnecting }));
       const txt = env.$('backend-state-text');
       txt.removeAttribute('data-i18n');   // el texto lo manda el estado, no el idioma estático
-      const text = env.t(h.key, { list: h.list.map((p) => env.t(`block.${p}`)).join(', ') });
+      const text = h.key ? env.t(h.key, { list: h.list.map((p) => env.t(`block.${p}`)).join(', ') }) : '';   // OK = vacío
       if (txt.textContent !== text) txt.textContent = text;
       env.$('backend-state').dataset.level = h.level;
       let meta = '';

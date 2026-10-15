@@ -178,7 +178,7 @@ test('auraView: null/undefined (lector caído) != available:false (sin asusctl)'
 test('headerStatus: prioridad down > reconnecting > connecting > stale > partial > ok', () => {
   const ok = models(SNAP());
   const h = (o) => V.headerStatus(Object.assign({ models: ok }, o));
-  assert.deepStrictEqual([h({}).kind, h({}).level, h({}).key], ['ok', 'ok', 'status.ok']);
+  assert.deepStrictEqual([h({}).kind, h({}).level, h({}).key], ['ok', 'ok', null], 'todo bien: sin clave de texto (no se muestra estado)');
   assert.strictEqual(h({ down: true }).kind, 'down');
   assert.strictEqual(h({ down: true }).key, 'status.backend_down');
   assert.strictEqual(h({ down: true }).level, 'error');
@@ -230,7 +230,7 @@ function fakeHeader() {
   let writes = 0;
   let txt = '';
   Object.defineProperty(els['backend-state-text'], 'textContent', { get: () => txt, set: (v) => { writes++; txt = v; } });
-  const dict = { 'status.ok': 'Sensores OK', 'status.partial': 'Parciales: {list}', 'status.stale': 'Sin datos recientes', 'status.backend_down': 'caído',
+  const dict = { 'status.partial': 'Parciales: {list}', 'status.stale': 'Sin datos recientes', 'status.backend_down': 'caído',
     'status.connecting': 'conectando', 'status.reconnecting': 'reconectando', 'thermal.stale': 'SIN DATOS · {v} s', 'block.cpu': 'CPU', 'block.procs': 'Procesos' };
   const t = (k, v) => (dict[k] || k).replace('{list}', (v && v.list) || '').replace('{v}', (v && v.v) || '');
   const view = V.createHeaderView({ $: (id) => els[id], t, ws: () => WS });
@@ -244,7 +244,7 @@ test('createHeaderView: ok => texto, nivel y meta (core + hora); sin muestra => 
   assert.strictEqual(f.els['backend-state-text'].textContent, 'conectando');
   assert.strictEqual(f.els['backend-state'].dataset.level, 'info');
   f.view(SNAP({ version: '9.9' }), ST({}));
-  assert.strictEqual(f.els['backend-state-text'].textContent, 'Sensores OK');
+  assert.strictEqual(f.els['backend-state-text'].textContent, '', 'todo bien: la barra no muestra texto de estado');
   assert.strictEqual(f.els['backend-state'].dataset.level, 'ok');
   assert.match(f.els['backend-meta'].textContent, /^core v9\.9 · /);
   assert.strictEqual(f.els['backend-state-text'].removed, 'data-i18n');
@@ -273,10 +273,31 @@ test('createHeaderView: parcial lista los paneles traducidos y exige 2 muestras'
   const bad = SNAP({ cpu: { avg: null, usage: null, cores: [] }, procs: [] });
   f.view(SNAP(), ST({}));
   f.view(bad, ST({}));
-  assert.strictEqual(f.els['backend-state-text'].textContent, 'Sensores OK');
+  assert.strictEqual(f.els['backend-state-text'].textContent, '', 'parcial aún no confirmado: sigue sin texto');
   f.view(bad, ST({}));
   assert.strictEqual(f.els['backend-state-text'].textContent, 'Parciales: CPU, Procesos');
   assert.strictEqual(f.els['backend-state'].dataset.level, 'warn');
+});
+
+test('createHeaderView: solo un problema real escribe texto; al volver a OK la región viva se vacía', () => {
+  const f = fakeHeader();
+  const text = () => f.els['backend-state-text'].textContent;
+  f.view(SNAP(), ST({}));
+  assert.strictEqual(text(), '', 'OK: nada');
+  f.view(SNAP({ ts: NOW / 1000 - 8 }), ST({}));
+  assert.strictEqual(text(), 'Sin datos recientes');
+  f.view(SNAP(), ST({}));
+  assert.strictEqual(text(), '', 'recuperado: se borra el aviso');
+  assert.strictEqual(f.els['backend-state'].dataset.level, 'ok');
+  f.view(SNAP(), ST({ backendReconnecting: true }));
+  assert.strictEqual(text(), 'reconectando');
+  f.view(SNAP(), ST({}));
+  assert.strictEqual(text(), '');
+  f.view(SNAP(), ST({ backendDown: true }));
+  assert.strictEqual(text(), 'caído');
+  f.view(SNAP(), ST({}));
+  assert.strictEqual(text(), '');
+  assert.match(f.els['backend-meta'].textContent, /^core v/, 'versión y hora (meta) siguen, no son estado');
 });
 
 test('createHeaderView: sin RogWidgetStates cae a connecting sin lanzar', () => {
