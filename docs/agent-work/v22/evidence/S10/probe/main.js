@@ -3,11 +3,11 @@
 // createOverlay() de desktop/main.js sobre una ventana pequena con titulo fijo.
 //
 // Uso (ELECTRON = binario de electron del proyecto):
-//   ELECTRON <esta-carpeta> --title="ROG Overlay Probe" --display=0 \
+//   ELECTRON <esta-carpeta> --title="ROG Overlay Probe" --monitor=0 \
 //            --corner=top-right --secs=6 [--fullscreen] [--margin=16]
-//            [--w=232 --h=150] [--workarea]
+//            [--w=232 --h=150] [--workarea] [--type=notification|dock|toolbar]
 //   Anadir --ozone-platform=x11 para forzar XWayland.
-// --display=N indexa los monitores ordenados por x, luego y (0 = el de mas a
+// --monitor=N indexa los monitores ordenados por x, luego y (0 = el de mas a
 // la izquierda). Imprime una linea "PROBE {json}" con displays, posicion
 // pedida y bounds reportados por Electron justo tras setPosition y a 1,5 s.
 const { app, BrowserWindow, screen } = require('electron');
@@ -27,11 +27,14 @@ const margin = Number(args.margin || 16);
 const w = Number(args.w || 232);
 const h = Number(args.h || 150);
 const corner = args.corner || 'top-right';
-const dispIdx = Number(args.display || 0);
+const dispIdx = Number(args.monitor || 0);
 const fullscreen = !!args.fullscreen;
+const bg = args.bg || null; // color CSS del fondo (p. ej. --bg=rgba(255,0,255,0.5))
 const useWorkArea = !!args.workarea; // por defecto bounds; --workarea como el producto
 
-app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'rog-overlay-probe-')));
+const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'rog-overlay-probe-'));
+app.setPath('userData', userData);
+app.on('quit', () => { try { fs.rmSync(userData, { recursive: true, force: true }); } catch (_) { /* best effort */ } });
 
 function target(d) {
   const r = useWorkArea ? d.workArea : d.bounds;
@@ -60,6 +63,7 @@ app.whenReady().then(() => {
     frame: false, transparent: true, resizable: false, movable: false,
     minimizable: false, maximizable: false, skipTaskbar: true, focusable: false,
     hasShadow: false, alwaysOnTop: true, backgroundColor: '#00000000',
+    ...(args.type ? { type: args.type } : {}),
   });
   if (!fullscreen) {
     win.setAlwaysOnTop(true, 'screen-saver');
@@ -67,7 +71,7 @@ app.whenReady().then(() => {
     win.setIgnoreMouseEvents(true);
   }
   win.loadURL('data:text/html,' + encodeURIComponent(
-    `<title>${title}</title><body style="margin:0;background:${fullscreen ? '#202020' : 'rgba(0,0,0,.55)'};color:#0f0;font:14px monospace"><div style="padding:8px">${title}</div></body>`));
+    `<title>${title}</title><body style="margin:0;background:${bg || (fullscreen ? '#202020' : 'rgba(0,0,0,.55)')};color:#0f0;font:14px monospace"><div style="padding:8px">${title}</div></body>`));
   const report = {
     title, fullscreen, corner, dispIdx,
     args: process.argv.slice(1).filter((a) => a.startsWith('--')),

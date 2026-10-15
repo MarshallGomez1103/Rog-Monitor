@@ -9,7 +9,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ELECTRON="${ELECTRON:?definir ELECTRON}"
 SECS="${PROBE_SECS:-7}"
 LOG="$(mktemp "${TMPDIR:-/tmp}/rogprobe-case-XXXXXX.log")"
-ARGS=(--display="$DISP" --secs="$SECS")
+ARGS=(--monitor="$DISP" --secs="$SECS")
 if [ "$CORNER" = fullscreen ]; then ARGS+=(--fullscreen --title="ROG Overlay Probe FS"); else ARGS+=(--corner="$CORNER"); fi
 PLAT=()
 [ "$MODE" = x11 ] && PLAT=(--ozone-platform=x11)
