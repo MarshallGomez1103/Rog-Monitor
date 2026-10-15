@@ -1,3 +1,5 @@
+// Mide estilos estables: sin transiciones/animaciones CSS (se reinyecta tras cada recarga).
+const NOANIM = `(()=>{if(!document.getElementById('cdp-noanim')){const s=document.createElement('style');s.id='cdp-noanim';s.textContent='*,*::before,*::after{transition:none!important;animation:none!important}';document.head.appendChild(s)}})();`;
 // check-editor2.mjs — CDP del editor de gráficas del historial (S02-2 · N-A3-01/02/03 + F4-09 corte editor).
 // Uso:  ROG_APP_ROOT=<raíz del repo/worktree> OUT=<carpeta PNG> TAG=RED|GREEN \
 //         node <repo>/.ai/private/rog-v22/tools/cdp.mjs <ruta-absoluta>/check-editor2.mjs
@@ -12,7 +14,8 @@
 //   #history-block .chart button.chart-expand[data-chart] -> #chart-modal (canvas #chart-big, #chart-modal-close)
 import { mkdirSync } from 'node:fs';
 
-export default async ({ ev, shot, sleep, call }) => {
+export default async ({ ev: evRaw, shot, sleep, call }) => {
+  const ev = (expr) => evRaw(NOANIM + expr);
   const OUT = process.env.OUT || '/tmp/rog-s02-editor';
   const TAG = process.env.TAG || 'RUN';
   mkdirSync(OUT, { recursive: true });

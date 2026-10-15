@@ -1,3 +1,5 @@
+// Mide estilos estables: sin transiciones/animaciones CSS (se reinyecta tras cada recarga).
+const NOANIM = `(()=>{if(!document.getElementById('cdp-noanim')){const s=document.createElement('style');s.id='cdp-noanim';s.textContent='*,*::before,*::after{transition:none!important;animation:none!important}';document.head.appendChild(s)}})();`;
 // check-tables.mjs — CDP de coherencia entre las 3 tablas de procesos (S01 · N-A2-02).
 // Uso:  ROG_APP_ROOT=<raíz del repo> OUT=<carpeta para PNG> \
 //         node <ruta>/.ai/private/rog-v22/tools/cdp.mjs <ruta-absoluta>/check-tables.mjs
@@ -10,7 +12,8 @@
 // <worktree>/.venv -> <repo principal>/.venv (el HOME aislado de cdp.mjs oculta ~/.local).
 // No toca procesos reales: solo hace click en <th>, nunca en filas.
 import { mkdirSync } from 'node:fs';
-export default async ({ ev, shot, sleep }) => {
+export default async ({ ev: evRaw, shot, sleep }) => {
+  const ev = (expr) => evRaw(NOANIM + expr);
   const OUT = process.env.OUT || '/tmp/rog-s01-tables';
   mkdirSync(OUT, { recursive: true });
   await sleep(3500);
