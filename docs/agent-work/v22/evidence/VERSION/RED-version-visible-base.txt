@@ -1,0 +1,24 @@
+FAIL  hay 0 apariciones de la versión con todos los modales cerrados  -> 2
+FAIL  el pie no tiene #versions
+FAIL  #backend-meta no lleva versión ni "core v"  -> "core v21.0.0 · 11:14:45 PM"
+FAIL  la barra de estado no lleva versión  -> "Sensors OK\ncore v21.0.0 · 11:14:45 PM\nROG Monitor v21.0.0 · /tmp/claude-1000/-var-home-marshall/858bf48b-cb9d-4c58-9335-ece219287091/scratchpad/base"
+FAIL  menú Ayuda abierto: 0 apariciones y existe ACERCA DE
+FAIL  Acerca de abierto: la versión aparece en 1 sola línea  -> 2
+FAIL  texto "ROG Monitor X · núcleo X" con la versión de VERSION
+FAIL  menú de Ayuda cerrado al abrir Acerca de
+FAIL  la carpeta de la app sale en el modal
+FAIL  idioma es: "núcleo" y versión  -> ""
+FAIL  idioma en: "core" y versión  -> ""
+FAIL  idioma fr: "noyau" y versión  -> ""
+FAIL  idioma it: "nucleo" y versión  -> ""
+FAIL  idioma pt: "núcleo" y versión  -> ""
+FAIL  idioma zh: "核心" y versión  -> ""
+FAIL  idioma ja: "コア" y versión  -> ""
+FAIL  idioma ko: "코어" y versión  -> ""
+FAIL  cerrar con el botón: 0 apariciones
+FAIL  Escape cierra Acerca de: 0 apariciones
+FAIL  el pill del roadmap no lleva versión  -> "v21.0.0 — Armoury Crate para Linux — seguro, bonito, todo-en-uno, sin telemetría"
+FAIL  roadmap cerrado: otra vez 0 apariciones
+
+0/21 aserciones OK
+RESULT: FAIL

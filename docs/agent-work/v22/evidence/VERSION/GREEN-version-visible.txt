@@ -1,0 +1,24 @@
+PASS  hay 0 apariciones de la versión con todos los modales cerrados
+PASS  el pie no tiene #versions
+PASS  #backend-meta no lleva versión ni "core v"
+PASS  la barra de estado no lleva versión
+PASS  menú Ayuda abierto: 0 apariciones y existe ACERCA DE
+PASS  Acerca de abierto: la versión aparece en 1 sola línea
+PASS  texto "ROG Monitor X · núcleo X" con la versión de VERSION
+PASS  menú de Ayuda cerrado al abrir Acerca de
+PASS  la carpeta de la app sale en el modal
+PASS  idioma es: "núcleo" y versión
+PASS  idioma en: "core" y versión
+PASS  idioma fr: "noyau" y versión
+PASS  idioma it: "nucleo" y versión
+PASS  idioma pt: "núcleo" y versión
+PASS  idioma zh: "核心" y versión
+PASS  idioma ja: "コア" y versión
+PASS  idioma ko: "코어" y versión
+PASS  cerrar con el botón: 0 apariciones
+PASS  Escape cierra Acerca de: 0 apariciones
+PASS  el pill del roadmap no lleva versión
+PASS  roadmap cerrado: otra vez 0 apariciones
+
+21/21 aserciones OK
+RESULT: PASS
