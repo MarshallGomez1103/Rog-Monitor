@@ -4,7 +4,7 @@ not ok 34 - cableado: acción "por qué" (data-why) solo si hay algo que diagnos
 not ok 35 - cableado: el botón "por qué" abre el diagnóstico existente (delegado en el documento)
 not ok 36 - cableado: vacío transitorio no parpadea (ok -> vacío exige 2 muestras); loading/stale/error/unsupported son inmediatos
 not ok 38 - autoarranque en el navegador: expone la instancia (window.RogWidgetStates.wiring) para pruebas CDP
-# Error: Cannot find module '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a6e17efcaec20e805/desktop/renderer/widget-status-view.js'
+# Error: Cannot find module '<worktree>/desktop/renderer/widget-status-view.js'
 not ok 2 - desktop/test/widget-status-view.test.js
 # tests 39
 # pass 32
