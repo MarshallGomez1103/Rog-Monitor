@@ -38,6 +38,11 @@ GUARDIAN_STATE_FILE = DATA_DIR / "thermal-guardian-state.json"
 # siempre si el servicio murió). Falla-segura: se reporta como desconocido,
 # nunca como "silencio".
 GUARDIAN_STATE_MAX_AGE = 30.0
+# Tolerancia (s) a un `updated` ligeramente en el futuro (deriva entre el
+# reloj del guardián y el de la app). Más allá, un `updated` futuro (reloj
+# movido / salto NTP) NO es fresco: antes daba edad negativa < MAX_AGE y el
+# guardián figuraba "vivo" (y el tope de Gaming aplicado) indefinidamente.
+GUARDIAN_CLOCK_SKEW = 5.0
 # JSON cap keys (cpu/gpu/mid) → hwmon fan labels.
 CAP_KEY = {"cpu_fan": "cpu", "gpu_fan": "gpu", "mid_fan": "mid"}
 
@@ -240,6 +245,16 @@ def save_profiles(profiles: dict) -> None:
     _save_raw(existing)
 
 
+def _state_is_fresh(updated, now: float | None = None) -> bool:
+    """True si `updated` (epoch) es reciente: -GUARDIAN_CLOCK_SKEW <= edad
+    < GUARDIAN_STATE_MAX_AGE. El límite superior es estricto, igual que en
+    rog-profile-sync.sh. Bool/NaN/no numérico → False."""
+    if isinstance(updated, bool) or not isinstance(updated, (int, float)):
+        return False
+    age = (time.time() if now is None else now) - updated
+    return -GUARDIAN_CLOCK_SKEW <= age < GUARDIAN_STATE_MAX_AGE
+
+
 def _gaming_cap() -> int | None:
     """Tope de Gaming (`gaming_cap_rpm`) si el guardián está en modo gaming y
     fresco; mismo criterio que rog-profile-sync.sh. Solo lectura."""
@@ -250,7 +265,7 @@ def _gaming_cap() -> int | None:
             st = json.load(fh) or {}
         if (isinstance(cap, (int, float)) and cap > 0
                 and st.get("guardian_mode") == "gaming"
-                and time.time() - float(st.get("updated", 0)) < GUARDIAN_STATE_MAX_AGE):
+                and _state_is_fresh(st.get("updated"))):
             return int(cap)
     except (OSError, ValueError, TypeError, AttributeError):
         pass
@@ -321,8 +336,7 @@ def guardian_status() -> dict:
     except (OSError, ValueError):
         return {"mode": None, "running": False}
     updated = data.get("updated")
-    fresh = isinstance(updated, (int, float)) and (time.time() - updated) < GUARDIAN_STATE_MAX_AGE
-    if not fresh:
+    if not _state_is_fresh(updated):
         return {"mode": None, "running": False}
     return {
         "mode": data.get("mode"),
