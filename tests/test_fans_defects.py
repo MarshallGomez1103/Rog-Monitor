@@ -149,5 +149,35 @@ class InvalidStoredMax(Base):
         self.assertEqual(r.max_rpm["cpu_fan"], 8000)
 
 
+class CapRejectsNonRpm(Base):
+    def test_bool_caps_rejected(self):
+        self.put_curves({"cap_rpm": {"cpu": True, "gpu": 5000}})
+        self.assertEqual(fans.load_caps(), {"gpu_fan": 5000})
+
+    def test_nan_inf_negative_caps_rejected(self):
+        self.curves.write_text(
+            '{"cap_rpm": {"cpu": NaN, "gpu": Infinity, "mid": -3}, '
+            '"max_rpm": {"cpu": -Infinity, "gpu": NaN, "mid": 6800}}')
+        self.assertEqual(fans.load_caps(), {})
+        self.assertEqual(fans.load_measured_max(), {"mid_fan": 6800})
+
+    def test_bool_profile_override_rejected(self):
+        self.put_curves({"cap_rpm": {"cpu": 6000},
+                         "profiles": {"quiet": {"cap_rpm": {"cpu": True}}}})
+        # el override inválido se ignora: rige el cap global
+        self.assertEqual(fans.load_caps("quiet"), {"cpu_fan": 6000})
+
+    def test_bool_gaming_cap_rejected(self):
+        self.put_curves({"gaming_cap_rpm": True, "cap_rpm": {"cpu": 6000}})
+        self.put_state({"guardian_mode": "gaming", "updated": NOW})
+        self.assertIsNone(fans._gaming_cap())
+        self.assertEqual(fans.load_caps(), {"cpu_fan": 6000})
+
+    def test_inf_gaming_cap_rejected(self):
+        self.curves.write_text('{"gaming_cap_rpm": Infinity}')
+        self.put_state({"guardian_mode": "gaming", "updated": NOW})
+        self.assertIsNone(fans._gaming_cap())
+
+
 if __name__ == "__main__":
     unittest.main()

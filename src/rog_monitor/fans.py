@@ -272,7 +272,7 @@ def _gaming_cap() -> int | None:
             cap = (json.load(fh) or {}).get("gaming_cap_rpm")
         with open(GUARDIAN_STATE_FILE) as fh:
             st = json.load(fh) or {}
-        if (isinstance(cap, (int, float)) and cap > 0
+        if (_valid_rpm(cap)
                 and st.get("guardian_mode") == "gaming"
                 and _state_is_fresh(st.get("updated"))):
             return int(cap)
@@ -298,12 +298,14 @@ def _store_section(name: str, profile: str | None = None) -> dict:
         per_profile = (data.get("profiles") or {}).get(profile) or {}
         override = per_profile.get("cap_rpm")
         if isinstance(override, dict):
-            section = {**section, **override}
+            # un override inválido se ignora (cae al valor global), no lo tapa
+            section = {**section, **{k: v for k, v in override.items()
+                                     if _valid_rpm(v)}}
     gaming = _gaming_cap() if name == "cap_rpm" else None
     out = {}
     for label, key in CAP_KEY.items():
         value = gaming or section.get(key)
-        if isinstance(value, (int, float)) and value > 0:
+        if _valid_rpm(value):
             out[label] = int(value)
     return out
 
