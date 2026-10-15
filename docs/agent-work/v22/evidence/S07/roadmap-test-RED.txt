@@ -1,0 +1,606 @@
+TAP version 13
+# Subtest: hay textos que revisar (el recorrido no es vacío)
+ok 1 - hay textos que revisar (el recorrido no es vacío)
+  ---
+  duration_ms: 1.252491
+  type: 'test'
+  ...
+# Subtest: ningún campo traducible del roadmap es un string suelto (todo es mapa de 8 idiomas)
+ok 2 - ningún campo traducible del roadmap es un string suelto (todo es mapa de 8 idiomas)
+  ---
+  duration_ms: 0.45162
+  type: 'test'
+  ...
+# Subtest: cada texto tiene exactamente es,en,fr,it,pt,zh,ja,ko y ninguno vacío
+ok 3 - cada texto tiene exactamente es,en,fr,it,pt,zh,ja,ko y ninguno vacío
+  ---
+  duration_ms: 0.380699
+  type: 'test'
+  ...
+# Subtest: las traducciones son reales: distintas del inglés (salvo nombres propios) y con el alfabeto correcto
+ok 4 - las traducciones son reales: distintas del inglés (salvo nombres propios) y con el alfabeto correcto
+  ---
+  duration_ms: 0.683173
+  type: 'test'
+  ...
+# Subtest: las etiquetas estáticas registradas (título, HECHO, POR HACER, Cerrar) existen en los 8 idiomas
+ok 5 - las etiquetas estáticas registradas (título, HECHO, POR HACER, Cerrar) existen en los 8 idiomas
+  ---
+  duration_ms: 0.152799
+  type: 'test'
+  ...
+# Subtest: el modal renderiza en cada idioma con el texto de ese idioma (no cae a español/inglés)
+ok 6 - el modal renderiza en cada idioma con el texto de ese idioma (no cae a español/inglés)
+  ---
+  duration_ms: 10.066602
+  type: 'test'
+  ...
+# Subtest: _loc cae a es, luego a en, si el idioma activo no existe
+ok 7 - _loc cae a es, luego a en, si el idioma activo no existe
+  ---
+  duration_ms: 0.224189
+  type: 'test'
+  ...
+# Subtest: la cabecera y la versión actual no están viejas; v22 aparece en la app y en el .md
+not ok 8 - la cabecera y la versión actual no están viejas; v22 aparece en la app y en el .md
+  ---
+  duration_ms: 0.606355
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:156:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /Roadmap \(v22\)/. Input:
+    
+    '/* ROG Monitor — Roadmap (v17).'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '/* ROG Monitor — Roadmap (v17).'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:157:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: pendiente «overlay»: partial y en P1 en el .md y en la app
+ok 9 - pendiente «overlay»: partial y en P1 en el .md y en la app
+  ---
+  duration_ms: 0.287864
+  type: 'test'
+  ...
+# Subtest: pendiente «per-game»: todo y en P1 en el .md y en la app
+ok 10 - pendiente «per-game»: todo y en P1 en el .md y en la app
+  ---
+  duration_ms: 0.283404
+  type: 'test'
+  ...
+# Subtest: pendiente «benchmarks»: partial y en P1 en el .md y en la app
+ok 11 - pendiente «benchmarks»: partial y en P1 en el .md y en la app
+  ---
+  duration_ms: 0.111211
+  type: 'test'
+  ...
+# Subtest: pendiente «guardian2»: future y en P1 en el .md y en la app
+not ok 12 - pendiente «guardian2»: future y en P1 en el .md y en la app
+  ---
+  duration_ms: 0.336114
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:231:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    .md: «**Guardian 2.0** — *partial*. **Done (v21):** simulation mod»
+    + actual - expected
+    
+    + 'partial'
+    - 'future'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'future'
+  actual: 'partial'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:234:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: pendiente «helper»: future y en P1 en el .md y en la app
+not ok 13 - pendiente «helper»: future y en P1 en el .md y en la app
+  ---
+  duration_ms: 0.10936
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:231:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    .md: «**Single privileged helper** — *partial*. **Done (v21):** on»
+    + actual - expected
+    
+    + 'partial'
+    - 'future'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'future'
+  actual: 'partial'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:234:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: pendiente «amd»: todo y en P2 en el .md y en la app
+ok 14 - pendiente «amd»: todo y en P2 en el .md y en la app
+  ---
+  duration_ms: 0.086923
+  type: 'test'
+  ...
+# Subtest: pendiente «flatpak»: todo y en P2 en el .md y en la app
+ok 15 - pendiente «flatpak»: todo y en P2 en el .md y en la app
+  ---
+  duration_ms: 0.032415
+  type: 'test'
+  ...
+# Subtest: pendiente «disk-depth»: todo y en P2 en el .md y en la app
+not ok 16 - pendiente «disk-depth»: todo y en P2 en el .md y en la app
+  ---
+  duration_ms: 0.088162
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:231:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    la app debe tener exactamente 1 ítem (hay 0)
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:237:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: pendiente «provenance»: todo y en P2 en el .md y en la app
+ok 17 - pendiente «provenance»: todo y en P2 en el .md y en la app
+  ---
+  duration_ms: 0.066797
+  type: 'test'
+  ...
+# Subtest: pendiente «drivers»: todo y en P2 en el .md y en la app
+ok 18 - pendiente «drivers»: todo y en P2 en el .md y en la app
+  ---
+  duration_ms: 0.049332
+  type: 'test'
+  ...
+# Subtest: pendiente «layout»: todo y en P2 en el .md y en la app
+ok 19 - pendiente «layout»: todo y en P2 en el .md y en la app
+  ---
+  duration_ms: 0.051028
+  type: 'test'
+  ...
+# Subtest: pendiente «coolercontrol»: todo y en P2 en el .md y en la app
+ok 20 - pendiente «coolercontrol»: todo y en P2 en el .md y en la app
+  ---
+  duration_ms: 0.066958
+  type: 'test'
+  ...
+# Subtest: pendiente «rgb»: todo y en P2 en el .md y en la app
+ok 21 - pendiente «rgb»: todo y en P2 en el .md y en la app
+  ---
+  duration_ms: 0.048356
+  type: 'test'
+  ...
+# Subtest: pendiente «history»: todo y en P3 en el .md y en la app
+ok 22 - pendiente «history»: todo y en P3 en el .md y en la app
+  ---
+  duration_ms: 0.049171
+  type: 'test'
+  ...
+# Subtest: pendiente «crowd»: todo y en P3 en el .md y en la app
+ok 23 - pendiente «crowd»: todo y en P3 en el .md y en la app
+  ---
+  duration_ms: 0.066668
+  type: 'test'
+  ...
+# Subtest: pendiente «plasma»: todo y en P3 en el .md y en la app
+ok 24 - pendiente «plasma»: todo y en P3 en el .md y en la app
+  ---
+  duration_ms: 0.039178
+  type: 'test'
+  ...
+# Subtest: pendiente «windows»: todo y en P3 en el .md y en la app
+ok 25 - pendiente «windows»: todo y en P3 en el .md y en la app
+  ---
+  duration_ms: 0.034856
+  type: 'test'
+  ...
+# Subtest: PARCIAL/FUTURO se dicen en los 8 idiomas en la primera línea de cada ítem con estado
+not ok 26 - PARCIAL/FUTURO se dicen en los 8 idiomas en la primera línea de cada ítem con estado
+  ---
+  duration_ms: 0.275201
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:243:1'
+  failureType: 'testCodeFailure'
+  error: 'guardian2.es: falta «FUTURO» en «Estado: PARCIAL — hecho (v21): simulación (activa »'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:252:14)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Guardian 2.0 y helper único figuran como FUTURO (decisión del propietario) en ambos documentos
+not ok 27 - Guardian 2.0 y helper único figuran como FUTURO (decisión del propietario) en ambos documentos
+  ---
+  duration_ms: 0.162201
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:261:1'
+  failureType: 'testCodeFailure'
+  error: '.md: /\\*\\*Guardian 2\\.0\\*\\*/'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:264:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: overlay y benchmarks siguen PARCIALES con su lista de lo que falta; Path Tracing no se anuncia
+not ok 28 - overlay y benchmarks siguen PARCIALES con su lista de lo que falta; Path Tracing no se anuncia
+  ---
+  duration_ms: 0.38823
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:282:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /Missing:[^]*CPU usage/i. Input:
+    
+    'Status: PARTIAL — done: opt-in click-through overlay, row or box, monitor picker, 7 positions and show CPU/GPU/fans/FPS (MangoHud). Missing: themes, free placement, RAM/VRAM/disks/battery, order, preview and a real test on KDE Wayland over a game'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'Status: PARTIAL — done: opt-in click-through overlay, row or box, monitor picker, 7 positions and show CPU/GPU/fans/FPS (MangoHud). Missing: themes, free placement, RAM/VRAM/disks/battery, order, preview and a real test on KDE Wayland over a game'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:294:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: alineaciones puntuales: telemetría local del Guardián y métricas de CPU del overlay en ambos documentos
+not ok 29 - alineaciones puntuales: telemetría local del Guardián y métricas de CPU del overlay en ambos documentos
+  ---
+  duration_ms: 0.160885
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:307:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /local telemetry/i. Input:
+    
+    '**Guardian 2.0** — *partial*. **Done (v21):** simulation mode (on by default the first time), every decision logged with its reason, gradual and crash-safe power restore. **Missing:** one owner per fan/power attribute (asusd also writes curves), a scheduled "silent" mode and configurable response curves.'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '**Guardian 2.0** — *partial*. **Done (v21):** simulation mode (on by default the first time), every decision logged with its reason, gradual and crash-safe power restore. **Missing:** one owner per fan/power attribute (asusd also writes curves), a scheduled "silent" mode and configurable response curves.'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:309:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: batería: límite de carga HECHO en ambos y fuera de POR HACER
+not ok 30 - batería: límite de carga HECHO en ambos y fuera de POR HACER
+  ---
+  duration_ms: 0.254061
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:323:1'
+  failureType: 'testCodeFailure'
+  error: '.md: debe estar [x] en Current'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:326:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: v22 hecho «metrics-cpu» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+ok 31 - v22 hecho «metrics-cpu» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+  ---
+  duration_ms: 0.140523
+  type: 'test'
+  ...
+# Subtest: v22 hecho «fans-stuck» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+ok 32 - v22 hecho «fans-stuck» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+  ---
+  duration_ms: 0.07951
+  type: 'test'
+  ...
+# Subtest: v22 hecho «alerts-iops» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+ok 33 - v22 hecho «alerts-iops» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+  ---
+  duration_ms: 0.032298
+  type: 'test'
+  ...
+# Subtest: v22 hecho «chart-editor» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+not ok 34 - v22 hecho «chart-editor» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+  ---
+  duration_ms: 0.097475
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:358:3'
+  failureType: 'testCodeFailure'
+  error: '.md: falta en la sección v22'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:360:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: v22 hecho «no-data» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+not ok 35 - v22 hecho «no-data» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+  ---
+  duration_ms: 0.071266
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:358:3'
+  failureType: 'testCodeFailure'
+  error: '.md: falta en la sección v22'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:360:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: v22 hecho «bench-undo» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+not ok 36 - v22 hecho «bench-undo» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+  ---
+  duration_ms: 0.049257
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:358:3'
+  failureType: 'testCodeFailure'
+  error: '.md: falta en la sección v22'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:360:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: v22 hecho «proc-tables» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+not ok 37 - v22 hecho «proc-tables» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+  ---
+  duration_ms: 0.041003
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:358:3'
+  failureType: 'testCodeFailure'
+  error: '.md: falta en la sección v22'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:360:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: v22 hecho «fans-reactive» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+not ok 38 - v22 hecho «fans-reactive» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+  ---
+  duration_ms: 0.04004
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:358:3'
+  failureType: 'testCodeFailure'
+  error: '.md: falta en la sección v22'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:360:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: v22 hecho «robustness» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+not ok 39 - v22 hecho «robustness» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+  ---
+  duration_ms: 0.037396
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:358:3'
+  failureType: 'testCodeFailure'
+  error: '.md: falta en la sección v22'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:360:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: v22 hecho «battery-uah» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+not ok 40 - v22 hecho «battery-uah» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+  ---
+  duration_ms: 0.040812
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:358:3'
+  failureType: 'testCodeFailure'
+  error: '.md: falta en la sección v22'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:360:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: v22 hecho «coverage-ci» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+not ok 41 - v22 hecho «coverage-ci» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+  ---
+  duration_ms: 0.068538
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:358:3'
+  failureType: 'testCodeFailure'
+  error: '.md: falta en la sección v22'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:360:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: v22 hecho «electron» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+not ok 42 - v22 hecho «electron» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+  ---
+  duration_ms: 0.041617
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:358:3'
+  failureType: 'testCodeFailure'
+  error: '.md: falta en la sección v22'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:360:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: v22 hecho «atomic-tui» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+not ok 43 - v22 hecho «atomic-tui» figura [x] en el .md y en la entrada v22 de la app, en 8 idiomas
+  ---
+  duration_ms: 0.041742
+  type: 'test'
+  location: '/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:358:3'
+  failureType: 'testCodeFailure'
+  error: 'app: falta en la entrada v22'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/var/home/marshall/MyFiles/Dev/Rog-Monitor/.claude/worktrees/agent-a429f9e93b3f2101a/desktop/test/roadmap.test.js:363:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: lo parcial/pendiente de v22 no se cuela como hecho: nada de Guardian real, helper, Path Tracing ni overlay completo en v22
+ok 44 - lo parcial/pendiente de v22 no se cuela como hecho: nada de Guardian real, helper, Path Tracing ni overlay completo en v22
+  ---
+  duration_ms: 0.160473
+  type: 'test'
+  ...
+1..44
+# tests 44
+# suites 0
+# pass 25
+# fail 19
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 73.318136
