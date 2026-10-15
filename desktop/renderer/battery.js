@@ -186,7 +186,11 @@
       applying = true; button.disabled = true;
       const result = await window.rog.setBatteryLimit(Number(select.value));
       applying = false; button.disabled = false;
-      if (!result || !result.ok) alert((result && result.err) || t('battery.limit_apply_error'));
+      if (!result || !result.ok) {
+        // toast de la app (no alert() nativo: bloquea la ventana y no sigue el tema)
+        const msg = (result && result.err) || t('battery.limit_apply_error');
+        if (typeof window.toast === 'function') window.toast(msg, 'err'); else console.error(msg);
+      }
     });
   }
 

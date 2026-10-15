@@ -20,10 +20,11 @@ const code = [
   grab(/^function chartRuns\(data\) \{[\s\S]*?^\}/m, 'chartRuns'),
   grab(/^const CHART_CATALOG = \{[\s\S]*?^\};/m, 'CHART_CATALOG'),
   grab(/^const HIST_PRESETS = \{[\s\S]*?^\};/m, 'HIST_PRESETS'),
-  grab(/^function clampPct\(v\) \{[\s\S]*?^\}/m, 'clampPct'),
 ].join('\n');
-const { CHART_MAX_POINTS, chartTail, chartRange, chartRuns, clampPct, CHART_CATALOG, HIST_PRESETS } =
-  new Function(`${code}; return { CHART_MAX_POINTS, chartTail, chartRange, chartRuns, clampPct, CHART_CATALOG, HIST_PRESETS };`)();
+const { CHART_MAX_POINTS, chartTail, chartRange, chartRuns, CHART_CATALOG, HIST_PRESETS } =
+  new Function(`${code}; return { CHART_MAX_POINTS, chartTail, chartRange, chartRuns, CHART_CATALOG, HIST_PRESETS };`)();
+// clampPct vive ahora en widget-status-view.js (S03-2); app.js lo desestructura de window.RogStatusView
+const { clampPct } = require('../renderer/widget-status-view.js');
 const CE = require('../renderer/chart-editor-model.js');
 
 test('chartRange salta null/NaN y no los trata como 0', () => {

@@ -39,6 +39,10 @@
     return p == null ? '--' : `${p.toFixed(digits)}%`;
   }
 
+  function fmtDeg(v, digits = 0) {
+    return isNum(v) ? `${Number(v).toFixed(digits)}°` : '--';
+  }
+
   function fmtUptime(seconds) {
     if (!isNum(seconds) || Number(seconds) < 0) return '--';
     const total = Math.floor(Number(seconds));
@@ -174,9 +178,32 @@
     };
   }
 
+  /* Vista de la cabecera (DOM inyectado: $, t, ws = () => RogWidgetStates). Devuelve render(stats, st) con
+     st = {now, lastRxAt, resumedAt, backendDown, backendReconnecting, hidden}. El texto de #backend-state-text
+     (región viva) solo se reescribe cuando cambia el estado; reloj/versión/segundos van en #backend-meta. */
+  function createHeaderView(env) {
+    const settle = createHeaderSettler();
+    return function render(stats, st) {
+      const WS = env.ws && env.ws();
+      const ctx = { now: st.now, lastRxAt: st.lastRxAt, resumedAt: st.resumedAt, backendDown: st.backendDown, hidden: st.hidden };
+      const models = WS && stats ? WS.evaluateAll(stats, ctx) : null;
+      const h = settle(headerStatus({ models, down: st.backendDown, reconnecting: st.backendReconnecting }));
+      const txt = env.$('backend-state-text');
+      txt.removeAttribute('data-i18n');   // el texto lo manda el estado, no el idioma estático
+      const text = env.t(h.key, { list: h.list.map((p) => env.t(`block.${p}`)).join(', ') });
+      if (txt.textContent !== text) txt.textContent = text;
+      env.$('backend-state').dataset.level = h.level;
+      let meta = '';
+      if (h.kind === 'ok' || h.kind === 'partial') meta = `core v${(stats && stats.version) || '?'} · ${new Date().toLocaleTimeString()}`;
+      else if (h.kind === 'stale') meta = env.t('thermal.stale', { v: Math.round((WS.sampleAgeMs(stats, ctx) || 0) / 1000) });
+      const m = env.$('backend-meta');
+      if (m.textContent !== meta) m.textContent = meta;
+    };
+  }
+
   const api = {
-    isNum, fmtNum, pctOrNull, clampPct, fmtPct, fmtUptime, uptimeSeconds, fmtNet, fmtLoad, fmtRam,
-    powerSource, fanView, vramView, auraView, partialPanels, headerStatus, createHeaderSettler,
+    isNum, fmtNum, pctOrNull, clampPct, fmtPct, fmtDeg, fmtUptime, uptimeSeconds, fmtNet, fmtLoad, fmtRam,
+    powerSource, fanView, vramView, auraView, partialPanels, headerStatus, createHeaderSettler, createHeaderView,
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

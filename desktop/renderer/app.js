@@ -551,11 +551,9 @@ function cssVar(name) {
 
 /* ---------- helpers ---------- */
 
-function fmt(value, digits = 0, fallback = '--') {
-  return (value === null || value === undefined || Number.isNaN(value))
-    ? fallback
-    : Number(value).toFixed(digits);
-}
+// Formatos puros en widget-status-view.js (null/'' /NaN => '--', nunca un 0 falso)
+const SV = window.RogStatusView;
+const { fmtNum: fmt, fmtUptime, clampPct } = SV;
 
 function fmtGbFromMb(value, digits = 1) {
   return value === null || value === undefined || Number.isNaN(value)
@@ -566,24 +564,13 @@ function fmtGbFromMb(value, digits = 1) {
 function fmtGbPairFromMb(used, total, digits = 1) {
   return total === null || total === undefined || Number.isNaN(total)
     ? '--'
-    : `${fmt(Number(used || 0) / 1024, digits)}/${fmt(Number(total) / 1024, 0)} GiB`;
+    : `${used == null ? '--' : fmt(Number(used) / 1024, digits)}/${fmt(Number(total) / 1024, 0)} GiB`;
 }
 
 function fmtMb(value) {
   return value === null || value === undefined || Number.isNaN(value)
     ? '--'
     : `${Math.round(Number(value))} MiB`;
-}
-
-function fmtUptime(seconds) {
-  const total = Math.max(0, Math.floor(Number(seconds) || 0));
-  if (!total) return '--';
-  const days = Math.floor(total / 86400);
-  const hours = Math.floor((total % 86400) / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  if (days > 0) return `${days}d ${hours}h`;
-  if (hours > 0) return `${hours}h ${String(minutes).padStart(2, '0')}m`;
-  return `${minutes}m`;
 }
 
 // Contrato con CSS (Agente A2): #cpu-temp/#gpu-temp SIEMPRE deben llevar
@@ -718,12 +705,6 @@ function chartRuns(data) {
     else if (!ok && start >= 0) { runs.push([start, i - 1]); start = -1; }
   }
   return runs;
-}
-
-/* Porcentaje siempre en 0-100 (null/NaN → 0) para barras y textos. */
-function clampPct(v) {
-  const n = Number(v);
-  return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 0;
 }
 
 function drawChart(canvas, values, color, opts = {}) {
@@ -954,14 +935,16 @@ function renderFans(fans) {
   }
   fans.forEach((fan, i) => {
     const el = $(`fan-${i}`);
-    el.dataset.fanRpm = fan.rpm;  // v17-D: store rpm for resume logic
-    el.querySelector('.rpm').textContent = fan.rpm ?? '--';
-    el.querySelector('label').textContent = fan.label.replace('_fan', '').toUpperCase();
-    el.querySelector('.pct').textContent = fan.percent + '%';
+    const fv = SV.fanView(fan);   // rpm null = sin lectura (no PARADO); rpm 0 = parado
+    el.dataset.fanRpm = fan.rpm ?? '';  // v17-D: store rpm for resume logic
+    el.classList.toggle('fan-no-reading', fv.state === 'nodata');
+    el.querySelector('.rpm').textContent = fv.rpm;
+    el.querySelector('label').textContent = String(fan.label || '').replace('_fan', '').toUpperCase();
+    el.querySelector('.pct').textContent = fv.pct;
     const g = el.querySelector('.fan-blades');
     // Don't override animationPlayState if the user is currently grabbing this fan
     if (!_fanGrabbed.has(i)) {
-      if (fan.rpm > 0) {
+      if (fv.state === 'spinning') {
         g.style.animationDuration = Math.max(fanEco() ? 0.8 : 0.15, 60 / (fan.rpm / 25)).toFixed(2) + 's';
         g.style.animationPlayState = 'running';
       } else {
@@ -1168,6 +1151,13 @@ function renderAura(aura, resetForm = false) {
   // Solo reconstruir el DOM cuando cambió algo real: el stream manda un
   // snapshot por segundo y rehacer los chips destruía el botón a mitad de
   // clic (por eso "elegía Rainbow y quedaba Static").
+  if (SV.auraView(aura) === 'reader') {
+    $('aura-note').textContent = t('aura.reader_error');
+    $('aura-apply').disabled = true;
+    $('aura-music').disabled = true;
+    lastAuraSig = null;
+    return;
+  }
   const sig = auraSignature(aura);
   auraState = aura;
   if (!resetForm && sig === lastAuraSig) return;
@@ -1892,24 +1882,39 @@ let lastProcsSig = null;
 
 // F2-08: sin muestras en STALE_MS (backend colgado o reiniciando) → lámpara gris
 // "SIN DATOS · N s" y paneles atenuados: nunca mostrar números viejos como en vivo.
-// Oculta, el backend está pausado a propósito: no cuenta.
-const STALE_MS = 6000;
+// Oculta, el backend está pausado a propósito: no cuenta. Umbral ÚNICO: RogWidgetStates.STALE_MS.
 let lastStatsAt = Date.now();
-document.addEventListener('visibilitychange', () => { if (!document.hidden) lastStatsAt = Date.now(); });
-setInterval(() => {
+let lastResumeAt = 0;
+let backendDown = false;
+let backendReconnecting = false;
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) { lastStatsAt = Date.now(); lastResumeAt = lastStatsAt; }
+});
+
+/* Cabecera "sensores OK" desde el modelo de estados (lógica y textos en widget-status-view.js). */
+const headerView = SV.createHeaderView({ $, t, ws: () => window.RogWidgetStates });
+function renderHeader(stats) {
+  headerView(stats, { now: Date.now(), lastRxAt: lastStatsAt, resumedAt: lastResumeAt, backendDown, backendReconnecting, hidden: document.hidden });
+}
+
+function staleTick() {
   const age = Date.now() - lastStatsAt;
-  const stale = !document.hidden && age > STALE_MS;
+  const stale = !document.hidden && age > (window.RogWidgetStates?.STALE_MS ?? 6000);
   document.body.classList.toggle('stale', stale);
-  if (!stale) return;
-  $('thermal-lamp').className = 'lamp';
-  const label = $('thermal-label');
-  label.className = 'lamp-label';
-  label.textContent = t('thermal.stale', { v: Math.round(age / 1000) });
-}, 1000);
+  if (stale) {
+    $('thermal-lamp').className = 'lamp';
+    const label = $('thermal-label');
+    label.className = 'lamp-label';
+    label.textContent = t('thermal.stale', { v: Math.round(age / 1000) });
+  }
+  renderHeader(lastStats);
+}
+setInterval(staleTick, 1000);
 
 function update(stats) {
   lastStats = stats;
   lastStatsAt = Date.now();
+  backendDown = backendReconnecting = false;
   document.body.classList.remove('stale');
   const cpu = stats.cpu || {};
   const sys = stats.sys || {};
@@ -1936,11 +1941,11 @@ function update(stats) {
   cpuTemp.textContent = fmt(cpu.avg, 1);
   cpuTemp.className = tempClass(cpu.avg, limits.cpu);
   // Uso total (None en la 1ª muestra → '--', nunca un 0 falso)
-  $('cpu-util').textContent = cpu.usage == null ? '--' : fmt(clampPct(cpu.usage), 0) + '%';
+  $('cpu-util').textContent = SV.fmtPct(cpu.usage);
   const cpuMax = $('cpu-max');
-  cpuMax.textContent = fmt(cpu.max, 0) + '°';
-  cpuMax.title = `${t('common.min')} ${fmt(cpu.min, 0)}°`;
-  $('cpu-pkg').textContent = fmt(cpu.package, 0) + '°';
+  cpuMax.textContent = SV.fmtDeg(cpu.max);
+  cpuMax.title = `${t('common.min')} ${SV.fmtDeg(cpu.min)}`;
+  $('cpu-pkg').textContent = SV.fmtDeg(cpu.package);
   $('cpu-hot').textContent = cpu.hot90 ?? '--';
   $('cpu-freq').textContent = fmt(cpu.freq_ghz, 2);
   const cpuWatts = $('cpu-watts');
@@ -1952,7 +1957,7 @@ function update(stats) {
   const epp = $('cpu-epp');
   epp.textContent = EPP_SHORT[cpu.epp] || cpu.epp || '--';
   epp.title = cpu.epp ? `EPP (energy_performance_preference): ${cpu.epp}` : '';
-  $('cpu-uptime').textContent = fmtUptime(sys.uptime_s ?? (sys.uptime_h ? sys.uptime_h * 3600 : 0));
+  $('cpu-uptime').textContent = fmtUptime(SV.uptimeSeconds(sys));
 
   /* gpu */
   const gpu = stats.gpu || {};
@@ -1967,7 +1972,7 @@ function update(stats) {
     const gt = $('gpu-temp');
     gt.textContent = fmt(active.temp, 0);
     gt.className = tempClass(active.temp, limits.gpu);
-    $('gpu-util').textContent = fmt(active.util == null ? null : clampPct(active.util), 0) + '%';
+    $('gpu-util').textContent = SV.fmtPct(active.util);
     $('gpu-watts').textContent = fmt(active.power, 1);
     $('gpu-clock').textContent = fmt(active.clock_mhz, 0);
     $('gpu-vram-clock').textContent = fmt(active.vram_clock_mhz, 0);
@@ -2016,7 +2021,8 @@ function update(stats) {
 
   /* fans */
   renderFans(stats.fans || []);
-  if (stats.aura && !musicModeActive && !auraDirty && !auraFocused) renderAura(stats.aura);
+  // aura null = el lector falló (no es «falta asusctl»): solo se muestra si aún no hay estado previo
+  if ((stats.aura || !auraState) && !musicModeActive && !auraDirty && !auraFocused) renderAura(stats.aura);
 
   /* charts — con la ventana oculta/minimizada no se pinta (visibilitychange repinta al volver) */
   const visible = !document.hidden;
@@ -2038,11 +2044,11 @@ function update(stats) {
   $('rapl-note').classList.toggle('hidden', !!stats.rapl_available);
 
   /* system */
-  $('ram-label').textContent = `${fmt(sys.ram_used_gb, 1)}/${fmt(sys.ram_total_gb, 0)} GiB`;
+  $('ram-label').textContent = SV.fmtRam(sys);
   $('ram-bar').style.width = clampPct(sys.ram_percent) + '%';
   const vramTotal = active?.vram_total;
   const vramUsed = active?.vram_used;
-  const vramPercent = vramTotal ? Math.round(clampPct((vramUsed || 0) * 100 / vramTotal)) : 0;
+  const vramPercent = vramTotal && vramUsed != null ? Math.round(clampPct(vramUsed * 100 / vramTotal)) : 0;
   $('vram-label').textContent = vramTotal ? fmtGbPairFromMb(vramUsed, vramTotal) : '--';
   $('vram-bar').style.width = `${vramPercent}%`;
   $('vram-meter').classList.toggle('disabled', !vramTotal);
@@ -2052,8 +2058,8 @@ function update(stats) {
     window.disksModule.render(sys.disks || [], sys.nvme_temps || []);
   }
 
-  $('net').textContent = `↓${fmt(sys.rx_mbps, 1)} ↑${fmt(sys.tx_mbps, 1)} Mb/s`;
-  $('load').textContent = (sys.load || []).map((l) => l.toFixed(2)).join(' ');
+  $('net').textContent = SV.fmtNet(sys);
+  $('load').textContent = SV.fmtLoad(sys.load);
   const bat = stats.battery;
   $('battery').textContent = bat && bat.capacity != null
     ? `${bat.capacity}%${bat.charge_limit ? ' (' + t('battery.charge_limit_inline', { pct: bat.charge_limit }) + ')' : ''}`
@@ -2063,14 +2069,16 @@ function update(stats) {
 
   /* power source */
   const src = $('power-source');
-  if (bat) {
-    const pct = bat.capacity != null ? bat.capacity : '--';
-    src.textContent = bat.on_ac ? t('topbar.ac') : t('topbar.battery');
-    src.title = bat.on_ac
+  const ps = SV.powerSource(bat);   // on_ac null (sin adaptador legible) NO es «batería»
+  if (bat && ps.kind !== 'unknown') {
+    const pct = ps.pct;
+    const onAc = ps.kind === 'ac';
+    src.textContent = onAc ? t('topbar.ac') : t('topbar.battery');
+    src.title = onAc
       ? t('topbar.power_source_ac_title', { pct })
       : t('topbar.power_source_battery_title', { pct });
     src.setAttribute('aria-label', src.title);
-    src.className = 'power-source ' + (bat.on_ac ? 'ac' : 'bat');
+    src.className = 'power-source ' + (onAc ? 'ac' : 'bat');
   } else {
     src.textContent = '—';
     src.title = t('topbar.power_source_unknown_title');
@@ -2115,8 +2123,8 @@ function update(stats) {
   fitProcsRows();
   }
 
-  $('backend-state').textContent =
-    `sensores OK · core v${stats.version || '?'} · ${new Date().toLocaleTimeString()}`;
+  renderHeader(stats);
+  if (!$('vram-modal').classList.contains('hidden')) fillVramModal();   // «reintenta solo»: el modal se refresca
 
   /* v18: diagnóstico hub — actualizar cards si el modal está abierto */
   try { if (typeof window.diagUpdateInfo === 'function') window.diagUpdateInfo(stats); } catch (_) {}
@@ -2318,15 +2326,18 @@ window.rog.onStats(update);
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && lastStats) update(lastStats);
 });
-window.rog.onBackendDown(() => {
-  $('backend-state').textContent = t('status.backend_down');
+window.rog.onBackendDown(onBackendDown);
+function onBackendDown() {
+  backendDown = true;
+  renderHeader(lastStats);
   recordLocalError('backend-down', { message: 'backend down — restarting' });
-});
+}
 // Watchdog / exit handler emits this before auto-recover fires so the pill
 // shows feedback immediately instead of freezing silently.
 if (window.rog.onBackendReconnecting) {
   window.rog.onBackendReconnecting(() => {
-    $('backend-state').textContent = t('status.reconnecting') || 'reconectando…';
+    backendReconnecting = true;
+    renderHeader(lastStats);
   });
 }
 window.rog.onMusicStopped(() => {
@@ -3711,22 +3722,30 @@ $('ram-procs-body').addEventListener('click', async (e) => {
 
 /* ---------- VRAM detail ---------- */
 
-function openVramModal() {
+// procs_vram.reason_code -> texto traducido (el `reason` en español del backend es solo respaldo)
+function fillVramModal() {
   const info = lastStats?.procs_vram || {};
   const procs = info.procs || [];
+  const v = SV.vramView(info);
+  const why = v.key ? t(v.key) : (v.fallback || t('modal.vram_none'));
+  const hint = v.hintKey ? t(v.hintKey) : why;
   const note = $('vram-procs-note');
-  note.textContent = info.available === false
-    ? (info.reason || t('modal.vram_none'))
-    : t('modal.vram_sub');
+  note.textContent = v.state === 'ok' ? t('modal.vram_sub') : why;
+  $('vram-retry').classList.toggle('hidden', v.action !== 'retry');
   $('vram-procs-body').innerHTML = procs.length
     ? procs.map((p) => `
       <tr data-pid="${escapeHtml(p.pid)}" data-name="${escapeHtml(p.name)}" title="${escapeHtml(t('procs.kill', { name: p.name }))}">
         <td class="pid">${escapeHtml(p.pid)}</td><td>${escapeHtml(p.name)}</td>
         <td class="mem r">${fmtMb(p.vram_mb)}</td>
         <td class="r">${escapeHtml(p.type || '—')}</td></tr>`).join('')
-    : `<tr><td colspan="4" class="dim">${escapeHtml(info.reason || t('modal.vram_none'))}</td></tr>`;
+    : `<tr><td colspan="4" class="dim">${escapeHtml(v.state === 'ok' ? t('modal.vram_none') : hint)}</td></tr>`;
+}
+
+function openVramModal() {
+  fillVramModal();
   $('vram-modal').classList.remove('hidden');
 }
+$('vram-retry').addEventListener('click', fillVramModal);   // acción «reintentar»: relee la última muestra
 
 $('vram-meter')?.addEventListener('click', openVramModal);
 $('gpu-vram-stat')?.addEventListener('click', openVramModal);
