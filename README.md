@@ -115,7 +115,8 @@ Threat model and reporting process: [SECURITY.md](SECURITY.md).
   [Fans and the stuck-fan watchdog](#fans-and-the-stuck-fan-watchdog)).
 - **System**: RAM and swap (GiB and %), real disks with NVMe temperature, IOPS and
   % busy, network, load, uptime, and battery charge limit.
-- **Processes**: as many top consumers as fit in the block (up to 25), with CPU %,
+- **Processes**: as many top consumers as fit in the block (up to 25 in the desktop
+  app; the TUI shows 5), with CPU %,
   cores used (for example `2.35` instead of `235 %`) and RAM, and confirmation
   before closing a process.
 - **SMART health**: `smartctl` through one explicit `pkexec` prompt.
