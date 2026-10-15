@@ -20,6 +20,20 @@ Conciliación de estados (prevalece ficha + git sobre filas antiguas):
 | F1-08, F1-09, F1-10, F6-01, F7-10 | BLOCKED_OWNER (VM / root / Wayland / guardián real) | – |
 Defectos nuevos: N-DEF-01..05 (ver S00-BASE.md). Siguiente: **S01** (N-A1-01).
 
+## Tanda 3 (2026-10-14) — S02 cerrado, S03 en cableado, S07 en curso · HEAD 781b6c6
+py 95,17 % (983 tests); node 132/132; i18n 1034×8; e2e 31/31; CDP check-editor2 (243 PASS/0 FAIL), check-bench, check-tables PASS sobre HEAD integrado.
+| CP | Estado | Nota |
+|---|---|---|
+| N-A3-01 cableado + aspecto editor (flechas 28 px, AA en 12 temas × 2 modos, checkbox temático, presets agrupados) | TESTED | S02-EDITOR.md |
+| N-A3-02 / F4-06 reordenar ratón (DnD nativo) + teclado (Alt+↑/↓), persistente | TESTED (DnD verificado con eventos sintéticos; prueba manual con ratón = propietario) | F4-06 deja de ser PARTIAL |
+| N-A3-03 expandir en modal grande 1280×720/1920×1080 | TESTED | |
+| F4-09 (corte editor) Escape + foco | TESTED (solo editor, no otros modales) | |
+| N-A4-01 inventario estados | TESTED | N-A4-01.md |
+| N-A4-02 modelo widget-states (stale 6 s único, unsupported) + overlay stale | TESTED (módulo); cableado S03-2 en curso | N-A4-02.md |
+| N-DEF-02 backend null en vez de 0 falso + reason_code | FIXED | N-DEF-02.md |
+| BUG-fans-reactive despliegue | **DESPLEGADO** (hash instalado = repo fc68ccdbf06e, 2026-10-14 12:31, servicio activo; comprobación de solo lectura) — falta validación de campo del propietario (OWNER-09) | |
+Riesgo nuevo R10: VERSION sigue en 21.0.0 aunque cambiaron scripts root en v22 → la app no pide reinstalar (main.js:288). Bump de VERSION = decisión del propietario (release).
+
 ## Tanda 2 (2026-10-14) — S01 cerrado + S04/S05/S06 (prioridad B) · HEAD b5343a3
 Cobertura py **94,90 %** (4173 stmts, 213 miss; 951 tests, 1 skip opt-in GPU). **Piso CI 50 → 80** (22171b7; CI remoto 868 tests / 90 % en py3.12, verde). node 84/84; i18n 1029×8; e2e 31/31; CDP S01 check-bench/check-tables PASS sobre HEAD integrado.
 | CP | Estado | Commits |

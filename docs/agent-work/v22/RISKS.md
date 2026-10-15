@@ -16,3 +16,4 @@ cadenas de log propias: no llega a la app ni a datos de terceros. Revisar cuando
 | R7 | Cobertura 52.28 → 80 % exige ~1117 sentencias nuevas cubiertas; tentación de tests triviales | media | medio | Revisión Opus por tanda: cada test afirma resultado; nunca bajar piso ni excluir |
 | R8 | `.ai/private/rog-v22/tools/check-stale.mjs` usa `pgrep -n` no aislado: puede mandar SIGSTOP al backend real | media | medio | Prohibido a agentes; aislar por PID del proceso hijo antes de reutilizar |
 | R9 | Un test de un agente leyó NVML real una vez (dGPU ya activa, solo lectura) | ocurrió | bajo | Guard de módulo en test_gpu_sleep.py; test_live_shape a opt-in ROG_LIVE_GPU=1 |
+| R10 | VERSION 21.0.0 sin bump aunque cambiaron scripts root en v22: la app no avisa reinstalar (main.js:288) | cierta | medio | Documentar en README; bump en release con permiso del propietario |
