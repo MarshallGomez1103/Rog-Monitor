@@ -1,39 +1,150 @@
 # Changelog
 
-## Unreleased (v22 in progress)
+## Unreleased (v22)
 
-After the post-90 audit (`docs/audits/post90/`). Root-side fixes need
-`sudo bash scripts/install-system.sh` once.
+After the post-90 audit (`docs/audits/post90/`). **Root-side scripts changed without a
+`VERSION` bump** (`rog-profile-sync.sh`, `rog-ctl.sh` paths and the fan watchdog), so the
+app cannot detect old installed copies: run `sudo bash scripts/install-system.sh` once
+after updating (`--dry-run` first). `VERSION` is still 21.0.0 on purpose; the release
+number is the owner's decision. Short SHAs below point at a representative commit; the
+full list is `git log 7d49333..HEAD`.
+
+### Security
+- The Python path to `pkexec` now verifies `VERSION` and root ownership of the helper,
+  like `desktop/priv.js` already did (`c0ca804`). Running as root from the installed
+  copy no longer compares `VERSION` against the user's checkout, which had made
+  per-profile power limits fail with "needs install" (`14da3e4`).
+- Recovery: uninstall and `docs/RECOVERY.md` use the root-owned safe-mode script, and
+  power is restored through the calibrated profile (`335aa55`). ADR-0006 (host safety)
+  documents the rules for testing on a real machine.
+- The known `npm audit` finding in `electron-builder` (no patch available, only affects
+  packaging) is recorded instead of ignored (`067bda7`).
 
 ### Fixed
-- **Fans stuck at full speed after the machine cooled down** (the firmware kept the old
-  speed until the curve was rewritten): `rog-profile-sync` compares each fan with what
-  its curve asks at its temperature (calibrated RPM; GPU read without waking it) and
-  re-applies all curves if one stays >1200 RPM too high for 60 s. Cold → all down.
-- **Per-profile power limits almost never applied**: the firmware answers EBUSY right
-  after a profile switch; the service now retries every ≤30 s (5 tries).
-- Network rate could go negative after a counter reset; TUI spun at ~94 % CPU with no
-  terminal; a paused backend could be left stopped (state T) on restart.
-- E-core usage bars were invisible in the CPU cores view; EPP text overlapped Uptime.
-- CI: Electron 42 binary is downloaded explicitly and the job uses Node 22; the E2E
-  smoke now runs green on GitHub.
+- **Fans stuck high after the machine cooled down** (the firmware kept the old speed until
+  the curve was rewritten). The `rog-profile-sync` watchdog now covers all three profiles:
+  it looks at fans spinning at **3000 rpm or more** and compares each with what its own
+  curve asks for at the **hottest** of CPU package and dGPU temperature (dGPU read without
+  waking it), using the calibrated PWM-to-RPM table. A fan is "stuck" when it is above that
+  by more than `max(900 rpm, 25 %)` for **60 s**; then all curves of the active profile are
+  re-applied, with a **180 s** cooldown and a journal line saying whether the fans came back
+  (`34f710d`, `15cf096`, `2b6d9d6`). An earlier iteration of the watchdog only looked at
+  fans at >=4500 rpm, so quiet and balanced never triggered. The firmware behavior was observed on one ROG laptop; the
+  watchdog logic is unit-tested with a fake sysfs but **not yet validated on real hardware**.
+- Curve comparison covers all 8 points (a change in the low part of a curve was not
+  applied until the next profile switch), and enabling a curve retries once on `EINVAL`
+  (race with `asusd`) (`2b6d9d6`).
+- The quiet profile never received its PL1/PL2: Dynamic Boost is now clamped to the live
+  firmware range (quiet allows 0..0) instead of refusing the whole set (`2b6d9d6`).
+- **Per-profile power limits almost never applied**: the firmware answers EBUSY right after
+  a profile switch; the service now retries every <=30 s (5 tries) (`2fede12`).
+- Values with no source no longer pretend to be `0`: `cpu.hot90`, `cpu.throttle_count`,
+  `battery.on_ac`, RAM and swap, `uptime` and the network rate are `null` when `/proc` or
+  sysfs cannot be read, and the TUI shows `N/A` (`4fe4693`, `884b3de`, `a1cecf9`,
+  `3747691`). `procs_vram` carries a stable `reason_code` (`c90c80c`). Schema stays 1.
+- Battery `charge_*` (uAh) was reported as Wh (`37356f0`). A reused PID could give negative
+  CPU in the full process list (`405d1f3`). Network rate could go negative after a counter
+  reset; TUI spun at ~94 % CPU with no terminal; a paused backend could be left stopped
+  (state T) on restart (`5b0052f`, `58cee5e`).
+- Robustness against malformed files and readers that fail: a bad `config.json`,
+  `device.json`, `power-baseline.json`, `aura.json`, MangoHud CSV, game-session JSON or
+  settings payload (NaN, Infinity, wrong types) no longer produces a traceback or breaks
+  snapshots (`dae1295`, `4a54ad5`, `b94771e`, `ed2d6d8`, `41e9691`, `c8bc6af`, `1f9f53d`).
+  A NaN/inf reading no longer contaminates benchmark maxima and the result JSON
+  (`3eb4868`). Each reader in a sampling tick is isolated: one failing reader no longer
+  discards the whole tick, and `BrokenPipeError` ends `--json-stream` cleanly
+  (`8762d8c`, `a4562ee`, `fc80a33`, `b5343a3`).
+- Desktop: benchmark cards were clipped and the list did not scroll (`a76b699`); EXPAND was
+  too faint (`a50bc5b`); E-core usage bars were invisible in the CPU cores view; EPP text
+  overlapped Uptime (`17cb34d`).
+- CI: the Electron binary is downloaded explicitly and the job uses Node 22, so the E2E
+  smoke runs green on GitHub (`c878859`).
+
+### Changed
+- **Electron 44.7.0** (from 42.11.12) and GitHub Actions bumped to `checkout` 7,
+  `setup-python` 7, `setup-node` 7 and `upload-artifact` 7 (Dependabot, `9d1a483`,
+  `d1733b1`).
+- Default fan curves start at **50 C** and are identical in the service and the app; the
+  editor axis spans 40-105 C (`2b6d9d6`).
+- Fan animation is smooth by default; Configuration -> "Fan animation in saver mode"
+  switches it to stepped frames (`2dd4f66`).
+- Process tables (`#procs`, `#ram-procs`, `#allprocs`) share one sort model and one style
+  rule, and expose `aria-sort` (`49ef464`, `d322915`, `d7944ae`).
+- Benchmark delete no longer destroys the result immediately (see **Added**), and EXPAND and
+  delete are real buttons with their own `aria-label` (`5715ea9`).
+- The history chart editor was rebuilt on a pure model (`chart-editor-model.js`); legacy
+  chart keys are rejected instead of shown (`2d22a2c`, `e67f82e`).
+- The sampling cadence follows the monotonic clock (1.00 s instead of ~1.13 s) (`a8f68cd`).
 
 ### Added
-- CPU card shows **usage %**; processes show **cores used** (2.35) instead of "235 %"
-  and fill the available space (up to 25).
-- History usage mode: CPU % and GPU % on 0–100, **RAM and swap in GiB on 0..total**.
-- **RAM, swap and disk-full alerts** (the RAM/Disk event filters now have producers).
-- IOPS and % busy in the disk panel. "GPU mode" explained and hidden when unknown.
-- Configuration → "Fan animation in saver mode" (smooth by default).
+- **Chart editor** (History -> Charts): choose which charts show, reorder them with the
+  arrow buttons, Up/Down or Alt+Up/Down, or drag by the handle; quick presets; **expand any
+  chart into a large modal** with its own canvas; Escape closes the editor and returns
+  focus to its button (`2227049`, `521b6b4`, `3a47326`, `9cae37e`).
+- **`NO DATA · N s` notice** and dimmed panels when the backend stops sending samples
+  (threshold 6 s, visible window only); every snapshot carries `ts` (`22aed9a`). The gaming
+  overlay dims too, and shows FPS as N/A when it was requested (`8a30bc4`).
+- **Six panel states** (`loading`, `ok`, `empty`, `unsupported`, `error`, `stale`) as a pure
+  model in `desktop/renderer/widget-states.js`, replacing the old four (`3f04ff5`). The
+  `unsupported` state is still drawn like `empty` until the CSS supports it.
+- **Undo** (6 s toast) when deleting a benchmark result (`5715ea9`).
+- CPU card shows **usage %**; processes show **cores used** (2.35) instead of "235 %" and
+  fill the available space (up to 25 in the desktop app; the TUI keeps 5) (`563cf4c`,
+  `2dd4f66`).
+- History usage mode: CPU % and GPU % on 0-100, **RAM and swap in GiB on 0..total**.
+- **RAM, swap and disk-full alerts** (the RAM/Disk event filters now have producers)
+  (`95810a1`). IOPS and % busy in the disk panel (`00d00a5`).
+- "GPU mode" explained and hidden when `supergfxd` does not report it (`d38c191`).
+- `README.md`: Requirements, widget states, chart editor, fan watchdog, opt-in thermal
+  guardian, quality gates and an honest note on which screenshots are old.
+  `scripts/check-docs.mjs` fails if those facts drift.
+
+### Tests & CI
+- **Python coverage 52.28 % -> about 90 %**: CI floor raised **50 -> 80 %** (`22171b7`,
+  measured 90.54 % on Python 3.12 in CI when the floor was raised). New suites exercise
+  `cli`, `procs`, `fps`, `settings`, `gpu`/NVML, `power`, `power_control`, `fans`,
+  `game_session`, `aura`, `benchmarks` and `app` orchestration with fake sysfs, clocks and
+  runners (`751919e` ... `e491ee2`). The live-GPU shape test is now opt-in
+  (`ROG_LIVE_GPU=1`) because it could wake the dGPU (`e89e1f6`).
+- **Node coverage** floor 90 % of lines (CI: `node --test --experimental-test-coverage`);
+  `desktop/test/*.test.js` also covers the pure models for processes, chart editor,
+  widget states, the overlay stale state, benchmarks and this docs checker.
+- `scripts/check-docs.mjs` (README/CHANGELOG facts, personal paths, relative links) runs
+  with `node scripts/check-docs.mjs`; it is **not wired into CI yet**.
+- Baseline before the v22 work: 162 Python tests, 46 Node tests, E2E 29/29; dependency
+  versions pinned in `requirements-lock.txt` (`4c49a4d`).
 
 ### Performance
 - Exact sampling cadence (1.00 s instead of ~1.13 s).
-- Atomic writes for config, fan curves and autostart; timeouts on blocking calls.
+- Atomic writes for config, fan curves and autostart; timeouts on blocking calls (`6b89e8d`).
+- The per-process VRAM list refreshes in the background: the tick no longer waits up to
+  6.5 s for `nvidia-smi` (`e41b5c4`).
+- Measured with the app visible on the maintainer's machine (Wayland, one machine, not a
+  general benchmark): smooth fan animation ~58 % CPU, stepped "saver" animation ~18 %, no
+  animation ~11 % (`2dd4f66`, `77885ea`). Smooth is the default.
 
 ### Docs
-- Roadmap: v21 current, v22 in progress, P1 items marked **partial** with what is done
-  and what is missing. `docs/RECOVERY.md` uses the root-owned safe-mode and restores
-  power through the calibrated profile. ADR-0006 (host safety).
+- Roadmap: v21 current, v22 in progress, overlay and benchmarks marked **partial** with
+  what is done and what is missing; Guardian 2.0 and the single privileged helper stay
+  future work. The unproven promise of an overlay over KDE/Wayland was removed (`98f1883`).
+- `docs/RECOVERY.md` uses the root-owned safe-mode and restores power through the
+  calibrated profile. ADR-0006 (host safety). The v22 plan, status and checkpoint notes
+  live in `docs/agent-work/v22/`.
+
+### Known limits / pending validation
+- **Wayland overlay not validated**: the gaming overlay has not been verified over
+  fullscreen games on KDE Wayland.
+- **Installer in a clean VM not validated**: `install-system.sh` was only exercised with
+  `--dry-run` and on the maintainer's machine, not on a fresh VM.
+- **Mouse drag in the chart editor** was validated only with synthetic events, not with a
+  physical mouse.
+- **Real thermal test of the fan watchdog pending**: the owner still has to run a heat and
+  cool-down test on hardware after installing the new root scripts
+  (`journalctl -u rog-profile-sync | grep -i fan`).
+- Overlay (opt-in) and benchmarks are **partial**; the roadmap lists what is missing in each
+  (for benchmarks: the extra GPU stress test, a per-core CPU split and a stable /
+  throttling verdict). Guardian 2.0 and a single polkit helper are future work, not shipped.
+- Screenshots `01`-`07` and the demo GIF in the README predate v22.
 
 ## 21.0.0 — 2026-10-10
 
