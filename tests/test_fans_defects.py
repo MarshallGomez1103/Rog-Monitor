@@ -127,5 +127,27 @@ class SchemaVersionContract(Base):
         self.assertNotIn("1 si falta", fans.load_schema_version.__doc__)
 
 
+class InvalidStoredMax(Base):
+    def reader(self, stored):
+        return fans.FanReader(hwmon.scan(), FakeConfig({"fan_max_rpm": stored}))
+
+    def test_non_dict_stored_uses_defaults(self):
+        for bad in ([1, 2], "7000", 7000, True):
+            r = self.reader(bad)
+            self.assertEqual(r.max_rpm, fans.DEFAULT_MAX, bad)
+
+    def test_non_numeric_entries_dropped(self):
+        r = self.reader({"cpu_fan": "alto", "gpu_fan": True, "mid_fan": -5,
+                         "extra": 4000.0})
+        self.assertEqual(r.max_rpm["cpu_fan"], fans.DEFAULT_MAX["cpu_fan"])
+        self.assertEqual(r.max_rpm["gpu_fan"], fans.DEFAULT_MAX["gpu_fan"])
+        self.assertEqual(r.max_rpm["mid_fan"], fans.DEFAULT_MAX["mid_fan"])
+        self.assertEqual(r.max_rpm["extra"], 4000)
+
+    def test_valid_stored_still_wins_over_defaults(self):
+        r = self.reader({"cpu_fan": 8000})
+        self.assertEqual(r.max_rpm["cpu_fan"], 8000)
+
+
 if __name__ == "__main__":
     unittest.main()

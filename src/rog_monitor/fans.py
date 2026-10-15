@@ -246,6 +246,14 @@ def save_profiles(profiles: dict) -> None:
     _save_raw(existing)
 
 
+def _valid_rpm(value) -> bool:
+    """True si `value` es un RPM utilizable: número real finito y > 0.
+    Rechaza bool (isinstance(True, int) es True: `true` valdría 1 rpm),
+    NaN, ±inf, negativos y cero."""
+    return (not isinstance(value, bool) and isinstance(value, (int, float))
+            and math.isfinite(value) and value > 0)
+
+
 def _state_is_fresh(updated, now: float | None = None) -> bool:
     """True si `updated` (epoch) es reciente: -GUARDIAN_CLOCK_SKEW <= edad
     < GUARDIAN_STATE_MAX_AGE. El límite superior es estricto, igual que en
@@ -377,7 +385,11 @@ class FanReader:
                 for dev in paths
                 if any(dev.glob("fan*_input"))
             ]
-        stored = config.get("fan_max_rpm") or {}
+        stored = config.get("fan_max_rpm")
+        # config.json es editable a mano: un valor que no sea dict (lista,
+        # texto, número) o entradas no numéricas se ignoran → defaults.
+        stored = ({k: v for k, v in stored.items() if _valid_rpm(v)}
+                  if isinstance(stored, dict) else {})
         # measured maximums (fan-curves.json) win over observed/defaults
         self.max_rpm = {**DEFAULT_MAX, **stored, **load_measured_max()}
         self._active_profile: str | None = None
