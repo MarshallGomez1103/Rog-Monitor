@@ -40,13 +40,12 @@ const ERROR_LOG_PATH = path.join(DATA_DIR_PATH, 'errors.jsonl');
 const LAST_ISSUE_REPORT_PATH = path.join(DATA_DIR_PATH, 'last-issue-report.txt');
 
 function readVersion() {
-  const envVersion = String(process.env.ROG_MONITOR_VERSION || '').trim();
-  if (envVersion) return envVersion;
+  // VERSION es la única fuente (V22-D10); package.json se mantiene con scripts/bump-version.mjs.
   try {
     const version = fs.readFileSync(VERSION_FILE, 'utf-8').trim();
     if (version) return version;
-  } catch (_) { /* fallback below */ }
-  return require('./package.json').version;
+  } catch (_) { /* sin VERSION: 0.0.0-dev, como el núcleo Python */ }
+  return '0.0.0-dev';
 }
 
 const APP_VERSION = readVersion();
@@ -767,7 +766,7 @@ const CONFIG_FILES = ['fan-curves.json', 'aura.json', 'config.json'];
 ipcMain.handle('export-config', async () => {
   const bundle = {
     app: 'rog-monitor',
-    version: require('./package.json').version,
+    version: APP_VERSION,
     exported_at: new Date().toISOString(),
     configs: {},
   };

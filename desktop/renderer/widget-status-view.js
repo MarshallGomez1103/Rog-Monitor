@@ -181,7 +181,7 @@
 
   /* Vista de la cabecera (DOM inyectado: $, t, ws = () => RogWidgetStates). Devuelve render(stats, st) con
      st = {now, lastRxAt, resumedAt, backendDown, backendReconnecting, hidden}. El texto de #backend-state-text
-     (región viva) solo se reescribe cuando cambia el estado; reloj/versión/segundos van en #backend-meta. */
+     (región viva) solo se reescribe cuando cambia el estado; reloj/segundos van en #backend-meta (la versión solo en Ayuda > Acerca de). */
   function createHeaderView(env) {
     const settle = createHeaderSettler();
     return function render(stats, st) {
@@ -195,7 +195,7 @@
       if (txt.textContent !== text) txt.textContent = text;
       env.$('backend-state').dataset.level = h.level;
       let meta = '';
-      if (h.kind === 'ok' || h.kind === 'partial') meta = `core v${(stats && stats.version) || '?'} · ${new Date().toLocaleTimeString()}`;
+      if (h.kind === 'ok' || h.kind === 'partial') meta = new Date().toLocaleTimeString();
       else if (h.kind === 'stale') meta = env.t('thermal.stale', { v: Math.round((WS.sampleAgeMs(stats, ctx) || 0) / 1000) });
       const m = env.$('backend-meta');
       if (m.textContent !== meta) m.textContent = meta;

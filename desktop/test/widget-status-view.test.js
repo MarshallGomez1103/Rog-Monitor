@@ -238,7 +238,7 @@ function fakeHeader() {
 }
 const ST = (o) => Object.assign({ now: NOW, lastRxAt: NOW, resumedAt: 0, backendDown: false, backendReconnecting: false, hidden: false }, o);
 
-test('createHeaderView: ok => texto, nivel y meta (core + hora); sin muestra => connecting', () => {
+test('createHeaderView: ok => texto, nivel y meta (solo hora, sin versión); sin muestra => connecting', () => {
   const f = fakeHeader();
   f.view(null, ST({}));
   assert.strictEqual(f.els['backend-state-text'].textContent, 'conectando');
@@ -246,7 +246,8 @@ test('createHeaderView: ok => texto, nivel y meta (core + hora); sin muestra => 
   f.view(SNAP({ version: '9.9' }), ST({}));
   assert.strictEqual(f.els['backend-state-text'].textContent, '', 'todo bien: la barra no muestra texto de estado');
   assert.strictEqual(f.els['backend-state'].dataset.level, 'ok');
-  assert.match(f.els['backend-meta'].textContent, /^core v9\.9 · /);
+  assert.match(f.els['backend-meta'].textContent, /^\d{1,2}[:.]\d{2}/, 'meta = hora');
+  assert.doesNotMatch(f.els['backend-meta'].textContent, /9\.9|core|v\d/i, 'la versión no sale en la barra');
   assert.strictEqual(f.els['backend-state-text'].removed, 'data-i18n');
 });
 
@@ -297,7 +298,7 @@ test('createHeaderView: solo un problema real escribe texto; al volver a OK la r
   assert.strictEqual(text(), 'caído');
   f.view(SNAP(), ST({}));
   assert.strictEqual(text(), '');
-  assert.match(f.els['backend-meta'].textContent, /^core v/, 'versión y hora (meta) siguen, no son estado');
+  assert.match(f.els['backend-meta'].textContent, /\d/, 'la hora (meta) sigue, no es estado');
 });
 
 test('createHeaderView: sin RogWidgetStates cae a connecting sin lanzar', () => {

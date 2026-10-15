@@ -13,7 +13,6 @@ const vm = require('node:vm');
 const ROOT = path.join(__dirname, '..', '..');
 const JS_SRC = fs.readFileSync(path.join(ROOT, 'desktop', 'renderer', 'roadmap.js'), 'utf8');
 const MD_SRC = fs.readFileSync(path.join(ROOT, 'docs', 'roadmap.md'), 'utf8');
-const PKG = JSON.parse(fs.readFileSync(path.join(ROOT, 'desktop', 'package.json'), 'utf8'));
 const LANGS = ['es', 'en', 'fr', 'it', 'pt', 'zh', 'ja', 'ko'];
 
 // ---------- carga de roadmap.js ----------
@@ -155,7 +154,7 @@ test('_loc cae a es, luego a en, si el idioma activo no existe', () => {
 // ---------- (3) versiones ----------
 test('la cabecera y la versión actual no están viejas; v22 aparece en la app y en el .md', () => {
   assert.match(JS_SRC.split('\n')[0], /Roadmap \(v22\)/);
-  assert.strictEqual(ROADMAP_CURRENT.version, `v${PKG.version}`);
+  assert.strictEqual(ROADMAP_CURRENT.version, undefined, 'el pill no lleva versión (solo Ayuda > Acerca de)');
   assert.ok(ROADMAP_DONE.some((d) => /^v22/.test(d.version)), 'falta la entrada v22 en HECHO');
   assert.match(MD_SRC, /^## In progress — v22/m);
   assert.match(MD_SRC, /^## Current \(done\) — through v21/m);

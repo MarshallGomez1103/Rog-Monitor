@@ -15,9 +15,7 @@
    Para actualizar: edita estos objetos; el render es automático.
    ============================================================ */
 
-// NOTA: mantener esta versión (v21.0.0) sincronizada con desktop/package.json ("version").
 const ROADMAP_CURRENT = {
-  version: 'v21.0.0',
   label: {
     es: 'Armoury Crate para Linux — seguro, bonito, todo-en-uno, sin telemetría',
     en: 'Armoury Crate for Linux — safe, beautiful, all-in-one, no telemetry',
@@ -2524,7 +2522,7 @@ function _buildCurrentStatus() {
     .map((f) => `<li>${_escHtml(_loc(f))}</li>`)
     .join('');
   return `
-    <div class="roadmap-status-pill">${_escHtml(ROADMAP_CURRENT.version)} — ${_escHtml(_loc(ROADMAP_CURRENT.label))}</div>
+    <div class="roadmap-status-pill">${_escHtml(_loc(ROADMAP_CURRENT.label))}</div>
     <ul class="roadmap-current-list">${features}</ul>
   `;
 }

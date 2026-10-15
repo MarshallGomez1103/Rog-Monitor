@@ -1223,7 +1223,7 @@ html.fan-eco .fan-blades { animation-timing-function: steps(10); }
 }
 
 /* Estado de sensores: la región viva (#backend-state) solo cambia de texto cuando cambia el
-   estado; reloj y versión viven aparte en #backend-meta (sin spam de anuncios). El nivel se
+   estado; el reloj vive aparte en #backend-meta (sin spam de anuncios). El nivel se
    comunica con forma + color: warn = triángulo, error = rombo, info = punto; ok = nada. */
 #backend-state { display: inline-flex; align-items: center; gap: 8px; }
 #backend-state::before {

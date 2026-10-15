@@ -49,6 +49,19 @@ test('el comprobador del script no encuentra ninguna copia divergente en el repo
   assert.deepEqual(mod.checkVersions(ROOT), []);
 });
 
+test('main.js lee la versión solo de VERSION (sin package.json ni variable de entorno)', () => {
+  const main = read('desktop/main.js');
+  assert.ok(!/require\(['"]\.\/package\.json['"]\)\.version/.test(main), 'main.js no debe leer la versión de package.json');
+  assert.ok(!/ROG_MONITOR_VERSION/.test(main), 'sin ROG_MONITOR_VERSION');
+});
+
+test('ROADMAP_CURRENT ya no lleva literal de versión (el pill no la muestra)', () => {
+  const js = read('desktop/renderer/roadmap.js');
+  const cur = js.slice(js.indexOf('const ROADMAP_CURRENT'), js.indexOf('features:'));
+  assert.ok(!/version\s*:/.test(cur), 'ROADMAP_CURRENT.version debe desaparecer');
+  assert.ok(!/NOTA: mantener esta versión/.test(js));
+});
+
 // ---------------------------------------------------------------- comprobador
 test('checkVersions detecta package.json, lock raíz y lock packages[""] divergentes', () => {
   for (const [opts, needle] of [

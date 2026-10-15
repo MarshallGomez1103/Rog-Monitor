@@ -38,6 +38,11 @@
     'topbar.help':           { es: 'AYUDA', en: 'HELP', fr: 'AIDE', it: 'AIUTO', pt: 'AJUDA', zh: '帮助', ja: 'ヘルプ', ko: '도움말' },
     'topbar.wizard':         { es: 'VER TUTORIAL', en: 'TUTORIAL', fr: 'TUTORIEL', it: 'TUTORIAL', pt: 'TUTORIAL', zh: '教程', ja: 'チュートリアル', ko: '튜토리얼' },
     'topbar.roadmap':        { es: 'ROADMAP', en: 'ROADMAP', fr: 'FEUILLE DE ROUTE', it: 'ROADMAP', pt: 'ROADMAP', zh: '路线图', ja: 'ロードマップ', ko: '로드맵' },
+    'topbar.about':          { es: 'ACERCA DE', en: 'ABOUT', fr: 'À PROPOS', it: 'INFORMAZIONI', pt: 'SOBRE', zh: '关于', ja: 'バージョン情報', ko: '정보' },
+    'tip.about':             { es: 'Versión instalada y carpeta de la app', en: 'Installed version and app folder', fr: "Version installée et dossier de l'app", it: "Versione installata e cartella dell'app", pt: 'Versão instalada e pasta do app', zh: '已安装版本与应用目录', ja: 'インストール済みバージョンとアプリのフォルダー', ko: '설치된 버전과 앱 폴더' },
+    'about.title':           { es: 'Acerca de ROG Monitor', en: 'About ROG Monitor', fr: 'À propos de ROG Monitor', it: 'Informazioni su ROG Monitor', pt: 'Sobre o ROG Monitor', zh: '关于 ROG Monitor', ja: 'ROG Monitor について', ko: 'ROG Monitor 정보' },
+    'about.version':         { es: 'ROG Monitor {app} · núcleo {core}', en: 'ROG Monitor {app} · core {core}', fr: 'ROG Monitor {app} · noyau {core}', it: 'ROG Monitor {app} · nucleo {core}', pt: 'ROG Monitor {app} · núcleo {core}', zh: 'ROG Monitor {app} · 核心 {core}', ja: 'ROG Monitor {app} · コア {core}', ko: 'ROG Monitor {app} · 코어 {core}' },
+    'about.folder':          { es: 'Carpeta: {repo}', en: 'Folder: {repo}', fr: 'Dossier : {repo}', it: 'Cartella: {repo}', pt: 'Pasta: {repo}', zh: '目录：{repo}', ja: 'フォルダー: {repo}', ko: '폴더: {repo}' },
     'topbar.lang':           { es: 'Idioma', en: 'Language', fr: 'Langue', it: 'Lingua', pt: 'Idioma', zh: '语言', ja: '言語', ko: '언어' },
 
     /* ---- tooltips (atributo title) ---- */

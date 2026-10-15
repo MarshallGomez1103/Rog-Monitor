@@ -30,6 +30,10 @@ class VersionSingleSourceTests(unittest.TestCase):
         ).stdout.strip()
         self.assertEqual(out, VERSION)
 
+    def test_no_env_override_for_version(self):
+        src = (ROOT / "src" / "rog_monitor" / "__init__.py").read_text(encoding="utf-8")
+        self.assertNotIn("ROG_MONITOR_VERSION", src)
+
     def test_node_package_files_equal_version_file(self):
         pkg = json.loads((ROOT / "desktop" / "package.json").read_text(encoding="utf-8"))
         lock = json.loads((ROOT / "desktop" / "package-lock.json").read_text(encoding="utf-8"))

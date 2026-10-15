@@ -2345,8 +2345,19 @@ window.rog.onMusicStopped(() => {
   markAuraDirty(false);
   refreshAuraState();
 });
-window.rog.appInfo().then((info) => {
-  $('versions').textContent = `ROG Monitor v${info.appVersion} · ${info.repo}`;
+/* Ayuda > Acerca de: la versión solo se muestra aquí (V22-D10). */
+let aboutInfo = null;
+function renderAbout() {
+  if (!aboutInfo) return;
+  $('about-version').textContent = t('about.version', { app: aboutInfo.appVersion, core: aboutInfo.coreVersion });
+  $('about-folder').textContent = t('about.folder', { repo: aboutInfo.repo });
+}
+window.rog.appInfo().then((info) => { aboutInfo = info; renderAbout(); });
+$('about-btn').addEventListener('click', () => { closeControlMenus(); renderAbout(); $('about-modal').classList.remove('hidden'); });
+$('about-close').addEventListener('click', () => $('about-modal').classList.add('hidden'));
+$('about-modal').addEventListener('click', (e) => { if (e.target === $('about-modal')) $('about-modal').classList.add('hidden'); });
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('about-modal').classList.contains('hidden')) $('about-modal').classList.add('hidden');
 });
 window.addEventListener('resize', () => lastStats && update(lastStats));
 
@@ -2430,6 +2441,7 @@ if (window.i18n) {
   let langSaveTimer = null;
   window.i18n.onChange((lang) => {
     window.i18n.apply();
+    renderAbout();
     buildLangGrid();
     renderThemeGrid();
     // Re-pintar contenido dinámico ya visible (estados que no son data-i18n).

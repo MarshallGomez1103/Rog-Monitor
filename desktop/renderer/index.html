@@ -82,6 +82,7 @@
           <button id="wizard-btn" class="ghost" data-i18n="topbar.wizard" data-i18n-attr="title:tip.wizard" title="Volver a ver el asistente de primera vez">VER TUTORIAL</button>
           <button id="roadmap-btn" class="ghost" data-i18n="topbar.roadmap" data-i18n-attr="title:tip.roadmap" title="Roadmap: lo hecho y lo que viene">ROADMAP</button>
           <button id="commands-btn" class="ghost" data-i18n="topbar.commands" data-i18n-attr="title:tip.commands" title="Lista transparente de cada comando que la app ejecuta con permisos de administrador">COMANDOS DEL SISTEMA</button>
+          <button id="about-btn" class="ghost" data-i18n="topbar.about" data-i18n-attr="title:tip.about" title="Versión instalada y carpeta de la app">ACERCA DE</button>
         </div>
       </div>
 
@@ -421,7 +422,6 @@
   <footer id="statusbar">
     <span id="backend-state" role="status" aria-live="polite" aria-atomic="true" data-level="info"><span id="backend-state-text" data-i18n="status.connecting">conectando con sensores…</span></span>
     <span id="backend-meta"></span>
-    <span id="versions"></span>
   </footer>
 
   <div id="toast" class="hidden" role="status" aria-live="polite"></div>
@@ -451,6 +451,15 @@
         <!-- Llenado por i18n.js al arrancar -->
       </div>
       <button class="ghost modal-close" id="lang-close" data-i18n="common.close">Cerrar</button>
+    </div>
+  </div>
+  <!-- Ayuda > Acerca de: único sitio de la UI donde se ve la versión (V22-D10) -->
+  <div id="about-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="about-modal-title">
+    <div class="modal-card about-card">
+      <h3 data-i18n="about.title" id="about-modal-title">Acerca de ROG Monitor</h3>
+      <p class="note dim" id="about-version"></p>
+      <p class="note dim" id="about-folder"></p>
+      <button class="ghost modal-close" id="about-close" data-i18n="common.close">Cerrar</button>
     </div>
   </div>
   <div id="roadmap-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="roadmap-modal-title">

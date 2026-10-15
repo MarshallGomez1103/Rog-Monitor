@@ -2,15 +2,10 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 
 def _read_version() -> str:
-    env_version = os.environ.get("ROG_MONITOR_VERSION")
-    if env_version:
-        return env_version.strip()
-
     version_file = Path(__file__).resolve().parents[2] / "VERSION"
     try:
         version = version_file.read_text(encoding="utf-8").strip()
