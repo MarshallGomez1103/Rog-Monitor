@@ -70,7 +70,7 @@ export const RULES = [
   { id: 'readme-calibrated-user', file: 'README', ok: has(/(after|once) (you run|running) (the )?(fan )?calibration/i), why: '"calibrated" depende de que el usuario calibre' },
   { id: 'readme-reinstall-v22', file: 'README', ok: (t) => /v22/.test(t) && /without a `?VERSION`? bump/i.test(t) && /install-system\.sh/.test(t),
     why: 'falta la nota: en v22 los scripts root cambiaron sin subir VERSION; ejecutar install-system.sh' },
-  { id: 'readme-old-screenshots', file: 'README', ok: has(/older (than v22|release)|predate v22|not (yet )?refreshed/i), why: 'debe decir en texto que las capturas 01-07/demo son anteriores a v22' },
+  { id: 'readme-old-screenshots', file: 'README', ok: has(/have\s+not\s+been\s+refreshed|older\s+than\s+v22/i), why: 'debe decir en texto que las capturas 01-07/demo son anteriores a v22' },
   { id: 'readme-no-powers-claim', file: 'README', ok: lacks(/the app does not change power or GPU mode\s+on its own/i), why: '"no cambia la potencia por sí misma" debe matizarse con el Guardián opt-in' },
   { id: 'readme-no-path-tracing', file: 'README', ok: lacks(/path.?tracing/i), why: 'Path Tracing no está verificado: no anunciarlo' },
   // ------------------------------------------------------------- CHANGELOG
