@@ -20,6 +20,19 @@ Conciliación de estados (prevalece ficha + git sobre filas antiguas):
 | F1-08, F1-09, F1-10, F6-01, F7-10 | BLOCKED_OWNER (VM / root / Wayland / guardián real) | – |
 Defectos nuevos: N-DEF-01..05 (ver S00-BASE.md). Siguiente: **S01** (N-A1-01).
 
+## Tanda 5 (2026-10-15) — feedback del propietario, 22.0.0, S08 parcial, S10 spike · HEAD e8d4ce6 · TRASPASO A CODEX
+py 95,2 %; node 302/302; i18n 1072×8; e2e 31/31; CDP PASS; CI remoto verde.
+| CP | Estado | Ficha |
+|---|---|---|
+| UIFIX-01 quitar "ampliar", arrastre con Pointer Events (ratón real CDP 20/20), sin "Sensores OK" | TESTED; validación manual = propietario | UIFIX-01.md |
+| N-DEF-10 + 3 defectos de fans.py | FIXED | N-DEF-10.md |
+| VERSION-01 fuente única + bump-version.mjs + 22.0.0 (solo visible en Acerca de) | TESTED | VERSION-01.md |
+| F3-01 límites modulares | TESTED (doc) | F3-01.md |
+| F3-02 charts-catalog.js + fan-curve-model.js | TESTED | F3-02.md |
+| F3-03 c1 / F3-04 backend-bridge.js | TESTED; minimizar/restaurar = propietario | F3-03-F3-04.md |
+| F6-01 (preparatoria) / F6-02 ADR-0007 proposed | TESTED (medido en 2 monitores); juegos reales = OWNER-03 | F6-01-F6-02.md |
+Reparto: overlay reservado a Claude; resto a Codex según CODEX-TRASPASO.md.
+
 ## Tanda 4 (2026-10-14) — S03 y S07 cerrados · ver git log -1
 py 95,17 %; node 215/215; i18n 1070×8; check-docs OK (en CI); e2e 31/31; CDP check-states 150/150, check-editor2, check-bench, check-tables PASS (3/3 corridas tras quitar transiciones del arnés).
 | CP | Estado | Nota |

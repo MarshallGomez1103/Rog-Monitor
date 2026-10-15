@@ -1,12 +1,15 @@
 # HANDOFF v22
-Actualizado: 2026-10-15 (S08 cortes F3-02 y F3-03/04 integrados; S10 spike + ADR-0007 propuesto).
-- Plan vigente: `docs/agent-work/v22/PLAN-SIGUIENTE.md` (S00–S18). Plan maestro histórico movido a esta carpeta (V22-D7).
-- Rama `feat/v22`; origin/master = 45cb9dc (PR #9). Push normal a feat/v22 autorizado (V22-D6).
-- S00 ACCEPTED: baseline py 206 OK / 52.28 %, node 50/50, i18n 1026×8, e2e 31/31. Fichas: checkpoints/S00-BASE.md, F2-01.md.
-- Archivos calientes: todos libres.
-- Bloqueos humanos: sudo install-system.sh (ventiladores), F1-08/09 VM, F6-01 Wayland, F7-10.
-- Hecho 2026-10-15: charts-catalog.js + fan-curve-model.js (app.js 4066→3886), backend-bridge.js (main.js 1845→1736), ADR-0007 overlay (medido: Wayland nativo ignora anclaje/monitor y queda debajo de fullscreen; XWayland respeta 8/8 y queda encima 3/3; MangoHud 0.8.4 para pantalla completa). Siguiente: decidir A2 (modo compatibilidad con reinicio) vs A3 (proceso aparte), luego implementar overlay + overlay-window.js; validación OWNER-03 con juegos reales (lista en checkpoints/F6-01-F6-02.md).
-  `cd ~/MyFiles/Dev/Rog-Monitor && git status --short --branch && sed -n 1,40p docs/agent-work/v22/STATUS.md`
+Actualizado: 2026-10-15 · **Traspaso Claude → Codex**: leer `docs/agent-work/v22/CODEX-TRASPASO.md` primero.
+- Rama `feat/v22`, HEAD `e8d4ce6` + commit de traspaso, CI remoto verde. VERSION 22.0.0. origin/master = 45cb9dc.
+- Último CP hecho: S08 F3-02 (charts-catalog, fan-curve-model) y F3-03/04 (backend-bridge); S10 spike + ADR-0007 (proposed).
+- CP en curso: ninguno. Archivos sin commit: ninguno. Worktrees: ninguno.
+- Siguiente para Codex: S09 schema 2 (F2-08 gate → N-F2-SCHEMA-01). Cola completa en CODEX-TRASPASO.md §2.
+- Reservado a Claude: overlay (ADR-0007 A2 vs A3, implementación, overlay-window.js, S11/S12).
+- Calientes: app.js, main.js, style.css, i18n.js, src/rog_monitor/app.py — un solo dueño por tanda.
+- Bloqueos de Marshall: sudo install-system.sh (22.0.0); validar arrastre, Acerca de, minimizar/restaurar; overlay con juegos; VM; carga térmica.
+- Push: confirmar con Marshall (V22-D6 autorizó a Claude; el playbook pide permiso por acción). Nunca force ni master.
+- Siguiente comando seguro:
+  `cd ~/MyFiles/Dev/Rog-Monitor && git status --short --branch && sed -n 1,80p docs/agent-work/v22/CODEX-TRASPASO.md`
 
 ## Historial
 Actualizado: 2026-10-15 (S08 cortes F3-02 y F3-03/04 integrados; S10 spike + ADR-0007 propuesto).
