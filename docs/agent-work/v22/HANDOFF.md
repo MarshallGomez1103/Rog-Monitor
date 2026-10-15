@@ -1,15 +1,15 @@
 # HANDOFF v22
-Actualizado: 2026-10-15 (v22.0.0 en VERSION; S00–S07 cerrados; S08 en curso; HEAD 1a64414).
+Actualizado: 2026-10-15 (S08 cortes F3-02 y F3-03/04 integrados; S10 spike + ADR-0007 propuesto).
 - Plan vigente: `docs/agent-work/v22/PLAN-SIGUIENTE.md` (S00–S18). Plan maestro histórico movido a esta carpeta (V22-D7).
 - Rama `feat/v22`; origin/master = 45cb9dc (PR #9). Push normal a feat/v22 autorizado (V22-D6).
 - S00 ACCEPTED: baseline py 206 OK / 52.28 %, node 50/50, i18n 1026×8, e2e 31/31. Fichas: checkpoints/S00-BASE.md, F2-01.md.
 - Archivos calientes: todos libres.
 - Bloqueos humanos: sudo install-system.sh (ventiladores), F1-08/09 VM, F6-01 Wayland, F7-10.
-- En curso (2026-10-15, relanzados tras corte por límite; los worktrees anteriores se perdieron sin commits): S08 F3-02 (charts-catalog + fan-curve-model, dueño app.js), S08 F3-03/04 (backend-bridge, dueño main.js), S10 spike overlay (ADR-0007, sin archivos de producto). Después: implementación overlay (botón visible, anclaje/monitor real, rediseño, modo MangoHud) + corte overlay-window.js. Propietario: sudo bash scripts/install-system.sh tras 22.0.0; validar arrastre de gráficas y Acerca de.
+- Hecho 2026-10-15: charts-catalog.js + fan-curve-model.js (app.js 4066→3886), backend-bridge.js (main.js 1845→1736), ADR-0007 overlay (medido: Wayland nativo ignora anclaje/monitor y queda debajo de fullscreen; XWayland respeta 8/8 y queda encima 3/3; MangoHud 0.8.4 para pantalla completa). Siguiente: decidir A2 (modo compatibilidad con reinicio) vs A3 (proceso aparte), luego implementar overlay + overlay-window.js; validación OWNER-03 con juegos reales (lista en checkpoints/F6-01-F6-02.md).
   `cd ~/MyFiles/Dev/Rog-Monitor && git status --short --branch && sed -n 1,40p docs/agent-work/v22/STATUS.md`
 
 ## Historial
-Actualizado: 2026-10-15 (v22.0.0 en VERSION; S00–S07 cerrados; S08 en curso; HEAD 1a64414).
+Actualizado: 2026-10-15 (S08 cortes F3-02 y F3-03/04 integrados; S10 spike + ADR-0007 propuesto).
 - Rama: `feat/v22` (base master 7d49333 = origin/master), pusheada a origin/feat/v22 el 2026-10-12 con permiso; CI verde.
 - Último CP completado: F0-10. F0 cerrada con excepciones D-01 (CI e2e) y D-02 (app visible 25–52 % CPU).
 - Tests ejecutados (rc): unittest 162 OK (0), node 46/46 (0), i18n (0), node --check/bash -n (0), e2e 29/29 local (0). CI remoto master: rojo solo en e2e (D-01).
