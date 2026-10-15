@@ -110,9 +110,11 @@
             <div class="skel-line xshort"></div><div class="skel-line"></div>
           </div>
         </div>
-        <div class="widget-empty-msg" aria-hidden="true">
+        <div class="widget-empty-msg" role="note" aria-hidden="true">
           <span class="empty-icon">&#x1F321;</span>
-          <span data-i18n="widget.no_cpu">Sin datos de CPU</span>
+          <span class="empty-title" data-i18n="widget.no_cpu">Sin datos de CPU</span>
+          <span class="empty-hint" data-i18n="widget.cpu_reader_hint">El monitor no pudo leer la CPU; reintenta solo</span>
+          <button type="button" class="widget-why ghost" data-i18n="widget.why" data-i18n-attr="title:widget.why_title">Ver diagnóstico</button>
         </div>
         <div class="widget-error-chip" aria-hidden="true">
           <div class="error-badge">&#x26A0; <span data-i18n="widget.backend_down">BACKEND CAÍDO</span></div>
@@ -149,10 +151,11 @@
             <div class="skel-line xshort"></div><div class="skel-line"></div>
           </div>
         </div>
-        <div class="widget-empty-msg" aria-hidden="true">
+        <div class="widget-empty-msg" role="note" aria-hidden="true">
           <span class="empty-icon">&#x1F4A4;</span>
-          <span data-i18n="widget.gpu_off">dGPU apagada (modo Integrated)</span>
-          <span style="font-size:11px;color:var(--dim)" data-i18n="widget.gpu_switch_hint">Cambia a Hybrid o dGPU para ver datos</span>
+          <span class="empty-title" data-i18n="widget.gpu_nodata">Sin datos de GPU</span>
+          <span class="empty-hint" data-i18n="widget.gpu_nodata_hint">La GPU no está reportando lecturas ahora mismo</span>
+          <button type="button" class="widget-why ghost" data-i18n="widget.why" data-i18n-attr="title:widget.why_title">Ver diagnóstico</button>
         </div>
         <div class="widget-error-chip" aria-hidden="true">
           <div class="error-badge">&#x26A0; <span data-i18n="widget.backend_down">BACKEND CAÍDO</span></div>
@@ -168,7 +171,7 @@
           <div><label>VRAM MHz</label><b id="gpu-vram-clock" class="small" data-i18n-attr="title:tip.gpu_vram_clock" title="Frecuencia actual de la memoria de video">--</b></div>
           <div id="gpu-mode-stat" class="hidden" data-i18n-attr="title:tip.gpu_mode" title="Modo de gráficos (supergfxctl): Integrated = solo la gráfica integrada, Hybrid = integrada + NVIDIA bajo demanda, dGPU = solo NVIDIA"><label data-i18n="gpu.mode_label">Modo GPU</label><b id="gpu-mode" class="small">--</b></div>
         </div>
-        <p id="gpu-off-note" class="note hidden" data-i18n="widget.gpu_off">dGPU apagada (modo Integrated)</p>
+        <p id="gpu-off-note" class="note hidden" data-i18n="widget.gpu_nodata">Sin datos de GPU</p>
       </article>
 
       <article class="block clickable" id="fans-block" data-block="fans" data-i18n-attr="title:tip.fans_block" title="Clic para configurar caps y curvas de ventilación">
@@ -185,6 +188,12 @@
           <div class="error-detail" data-i18n="widget.reconnecting">Reconectando con los sensores…</div>
         </div>
         <h2><i class="dash-num"></i> <span data-i18n="block.fans">Ventiladores</span> <small data-i18n="block.fans_sub">clic para configurar</small></h2>
+        <div class="widget-empty-msg inline" role="note" aria-hidden="true">
+          <span class="empty-icon" aria-hidden="true">&#x25CC;</span>
+          <span class="empty-title" data-i18n="widget.fans_none">Sin ventiladores detectados</span>
+          <span class="empty-hint" data-i18n="widget.fans_none_hint">Este equipo no expone ventiladores controlables</span>
+          <button type="button" class="widget-why ghost" data-i18n="widget.why" data-i18n-attr="title:widget.why_title">Ver diagnóstico</button>
+        </div>
         <div class="fans" id="fans"></div>
       </article>
 
@@ -288,6 +297,12 @@
           <div class="error-detail" data-i18n="widget.reconnecting">Reconectando con los sensores…</div>
         </div>
         <h2><i class="dash-num"></i> <span data-i18n="block.system">Sistema</span></h2>
+        <div class="widget-empty-msg inline" role="note" aria-hidden="true">
+          <span class="empty-icon" aria-hidden="true">&#x25CC;</span>
+          <span class="empty-title" data-i18n="widget.sys_reader">Lector del sistema no disponible</span>
+          <span class="empty-hint" data-i18n="widget.sys_reader_hint">No se pudo leer RAM ni carga; reintenta solo</span>
+          <button type="button" class="widget-why ghost" data-i18n="widget.why" data-i18n-attr="title:widget.why_title">Ver diagnóstico</button>
+        </div>
         <div class="sysrow">
           <div class="sys-meters">
             <div class="meter clickable" id="ram-meter" role="button" tabindex="0" data-i18n-attr="title:tip.ram_meter" title="Clic para ver qué está consumiendo la RAM"><label>RAM <span id="ram-label"></span></label><div class="track"><div id="ram-bar"></div></div></div>
@@ -355,7 +370,7 @@
           <h2><i class="dash-num"></i> <span data-i18n="block.events">Eventos</span>
             <button id="export-events" class="ghost" data-i18n="common.export" data-i18n-attr="title:tip.export_events" title="Guardar el registro de eventos como .txt">EXPORTAR</button>
           </h2>
-          <ul id="events"><li class="dim" data-i18n="events.none">sin eventos</li></ul>
+          <ul id="events" role="log" aria-live="off" aria-relevant="additions" data-i18n-attr="aria-label:block.events" aria-label="Eventos"><li class="dim" data-i18n="events.none">sin eventos</li></ul>
           <p class="note dim" id="events-help" data-i18n="events.help">🌡 <b>Thermal throttling</b> = la CPU
             baja su frecuencia un instante para no pasar de su temperatura límite
             (~100 °C). Es una protección normal del procesador bajo carga fuerte.
@@ -378,6 +393,12 @@
           </div>
           <h2><i class="dash-num"></i> <span data-i18n="block.procs">Procesos</span>
             <small data-i18n="block.procs_sub2">los que más usan · clic en una fila para cerrarla</small></h2>
+        <div class="widget-empty-msg inline" role="note" aria-hidden="true">
+          <span class="empty-icon" aria-hidden="true">&#x25CC;</span>
+          <span class="empty-title" data-i18n="widget.procs_none">Sin datos de procesos</span>
+          <span class="empty-hint" data-i18n="widget.procs_none_hint">La lista de procesos llegó vacía</span>
+          <button type="button" class="widget-why ghost" data-i18n="widget.why" data-i18n-attr="title:widget.why_title">Ver diagnóstico</button>
+        </div>
           <div class="procs-toolbar">
             <button id="procs-all-btn" class="ghost procs-tool-btn" data-i18n="procs.view_all" data-i18n-attr="title:tip.procs_all" title="Ver TODOS los procesos en una ventana ampliada">VER TODOS</button>
             <button id="procs-cores-btn" class="ghost procs-tool-btn" data-i18n="cores.btn" data-i18n-attr="title:tip.procs_cores" title="Ver uso por núcleo individual">NÚCLEOS</button>
@@ -398,7 +419,8 @@
   </main>
 
   <footer id="statusbar">
-    <span id="backend-state" data-i18n="status.connecting">conectando con sensores…</span>
+    <span id="backend-state" role="status" aria-live="polite" aria-atomic="true" data-level="info"><span id="backend-state-text" data-i18n="status.connecting">conectando con sensores…</span></span>
+    <span id="backend-meta"></span>
     <span id="versions"></span>
   </footer>
 
@@ -462,6 +484,7 @@
     <div class="modal-card">
       <h3 data-i18n="modal.vram" id="vram-modal-title">¿Qué está usando la VRAM?</h3>
       <p class="sub" id="vram-procs-note" data-i18n="modal.vram_sub">Memoria de video por proceso cuando el driver la expone (clic para cerrar uno).</p>
+      <button type="button" class="ghost hidden" id="vram-retry" data-i18n="vram.retry">Reintentar</button>
       <table id="vram-procs">
         <!-- v17-D: (i) icon explains C/G/CG mode values -->
         <thead><tr><th>PID</th><th data-i18n="procs.col_name">proceso</th><th class="r">VRAM</th><th class="r"><span data-i18n="common.mode">Modo</span> <span class="vram-mode-info" data-i18n-attr="title:tip.vram_modes" title="C=cómputo, G=gráficos, CG=ambos">(i)</span></th></tr></thead>
@@ -857,6 +880,7 @@
   <script src="battery.js"></script>
   <script src="disks.js"></script>
   <script src="procs-table.js"></script>
+  <script src="widget-status-view.js"></script>
   <script src="chart-editor-model.js"></script>
   <script src="app.js"></script>
   <script src="chart-editor-ui.js"></script>

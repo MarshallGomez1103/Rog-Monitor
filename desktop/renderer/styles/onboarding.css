@@ -111,13 +111,81 @@
   font-size: 28px;
   opacity: .4;
 }
-[data-state="empty"] .widget-empty-msg {
+/* empty = no hay lectura; unsupported = el hardware/configuración lo explica (S03-2).
+   Mismo tratamiento base; el motivo (data-reason) matiza el color del icono. */
+:is([data-state="empty"], [data-state="unsupported"]) .widget-empty-msg {
   display: flex;
 }
-[data-state="empty"] > *:not(.widget-empty-msg) {
+:is([data-state="empty"], [data-state="unsupported"]) > *:not(.widget-empty-msg) {
   opacity: 0;
   pointer-events: none;
 }
+.widget-empty-msg .empty-title {
+  color: var(--ink);
+  font-weight: 600;
+  letter-spacing: .3px;
+}
+.widget-empty-msg .empty-hint {
+  max-width: 36ch;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--dim);
+}
+/* lector que falla (no es el hardware): ámbar, para distinguirlo de «no hay ese hardware» */
+:is([data-reason="reader_unavailable"], [data-reason="no_reading"], [data-reason="unknown"]) .widget-empty-msg .empty-icon {
+  opacity: .9;
+  color: var(--hot);
+}
+[data-state="unsupported"] .widget-empty-msg .empty-icon { opacity: .55; }
+/* El icono de la GPU solo es «zzz» cuando de verdad duerme/está apagada; sin modo fiable es un punto neutro */
+#gpu-block .widget-empty-msg .empty-icon { font-size: 0; }
+#gpu-block .widget-empty-msg .empty-icon::before { content: "\25CC"; font-size: 28px; }
+#gpu-block[data-partial] .widget-empty-msg .empty-icon::before { font-size: 14px; }
+#gpu-block:is([data-reason="gpu_off"], [data-reason="gpu_asleep"]) .widget-empty-msg .empty-icon::before { content: "\1F4A4"; }
+
+/* Acción «Ver diagnóstico»: solo cuando hay algo que diagnosticar (data-why="diag"). Explica, no repara. */
+.widget-why {
+  display: none;
+  pointer-events: auto;
+  margin-top: 4px;
+  min-height: 26px;
+  padding: 3px 12px;
+  font-size: 11px;
+  letter-spacing: .6px;
+}
+[data-why="diag"] .widget-why { display: inline-flex; align-items: center; }
+
+/* Aviso en línea (ventiladores / sistema / procesos y datos parciales): no tapa el bloque,
+   lo atenúa y se queda arriba */
+.widget-empty-msg.inline,
+:is([data-state="empty"], [data-state="unsupported"])[data-partial] .widget-empty-msg {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 2px 10px;
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  background: none;
+  border-left: 3px solid var(--hair);
+  text-align: left;
+  font-size: 12px;
+}
+.widget-empty-msg.inline .empty-icon,
+[data-partial] .widget-empty-msg .empty-icon { font-size: 14px; }
+:is([data-state="empty"], [data-state="unsupported"])[data-partial] .widget-empty-msg { border-left-color: var(--hot); }
+:is([data-reason="reader_unavailable"], [data-reason="no_reading"], [data-reason="no_data"]) .widget-empty-msg.inline { border-left-color: var(--hot); }
+:is([data-state="empty"], [data-state="unsupported"]):has(> .widget-empty-msg.inline) > *:not(.widget-empty-msg):not(.skeleton-overlay):not(.widget-error-chip),
+:is([data-state="empty"], [data-state="unsupported"])[data-partial] > *:not(.widget-empty-msg):not(.skeleton-overlay):not(.widget-error-chip) {
+  opacity: .45;
+  pointer-events: auto;
+}
+
+/* Cambios de estado suaves: al reconectar el contenido aparece con un fundido, sin destello (N-A4-04) */
+.block > * { transition: opacity .18s ease; }
 
 /* ---- Estado ERROR: chip rojo ---- */
 .widget-error-chip {
@@ -179,21 +247,29 @@
   opacity: .55;
   filter: saturate(.5);
 }
+/* stale ya atenúa todo <main> (body.stale): el bloque no se atenúa por segunda vez */
+body.stale [data-state="stale"] > *:not(h2):not(.skeleton-overlay):not(.widget-empty-msg):not(.widget-error-chip) {
+  opacity: 1;
+}
 [data-state="stale"] > h2::after {
   content: "\25F7";
   flex: 0 0 auto;
   height: auto;
   min-width: 0;
   padding: 1px 7px;
-  border: 1px solid var(--state-hot);
+  border: 1px solid var(--hot);
   border-left-width: 3px;
-  background: color-mix(in srgb, var(--state-hot) 12%, transparent);
-  color: var(--state-hot);
+  background: color-mix(in srgb, var(--hot) 12%, transparent);
+  color: var(--hot);
   font-family: var(--mono);
   font-size: var(--font-size-xs);
   line-height: 1.2;
   letter-spacing: 0;
 }
+
+/* Ventilador sin lectura (rpm null): no es PARADO. Aspas atenuadas, RPM «--». */
+.fan.fan-no-reading .fan-blades { opacity: .35; }
+.fan.fan-no-reading .rpm { color: var(--dim); }
 
 /* Ventilador parado: etiqueta PARADO visible dentro del fan card */
 .fan-stopped-label {

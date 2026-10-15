@@ -1222,6 +1222,23 @@ html.fan-eco .fan-blades { animation-timing-function: steps(10); }
   color: var(--dim);
 }
 
+/* Estado de sensores: la región viva (#backend-state) solo cambia de texto cuando cambia el
+   estado; reloj y versión viven aparte en #backend-meta (sin spam de anuncios). El nivel se
+   comunica con forma + color: ok = cuadrado, warn = triángulo, error = rombo, info = punto. */
+#backend-state { display: inline-flex; align-items: center; gap: 8px; }
+#backend-state::before {
+  content: ""; flex: 0 0 auto; width: 9px; height: 9px;
+  background: var(--dim);
+  clip-path: circle(38% at 50% 50%);
+}
+#backend-state[data-level="ok"] { color: var(--ink); }
+#backend-state[data-level="ok"]::before { background: var(--okstate); clip-path: none; }
+#backend-state[data-level="warn"] { color: var(--ink); }
+#backend-state[data-level="warn"]::before { background: var(--hot); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+#backend-state[data-level="error"] { color: var(--ink); }
+#backend-state[data-level="error"]::before { background: var(--crit); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+#backend-meta { color: var(--dim); }
+
 /* ---------- toast ---------- */
 #toast {
   position: fixed; bottom: 48px; left: 50%; transform: translateX(-50%);
@@ -1514,8 +1531,8 @@ html[data-mode="dark"][data-theme="neon-nights"] .block::before {
 .maint-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin: .5rem 0; }
 /* Botón peligroso UNIFORME con los demás (mismo borde/forma que "Cerrar"); solo
    el texto lleva un matiz rojo de aviso, y al pasar el mouse se llena de rojo. */
-.ghost.danger { color: var(--state-hot); }
-.ghost.danger:hover { background: var(--state-hot); color: var(--bg); border-color: var(--state-hot); }
+.ghost.danger { color: var(--hot); }
+.ghost.danger:hover { background: var(--hot); color: var(--bg); border-color: var(--hot); }
 
 /* Celdas de texto de las tarjetas (EPP, modo…): nunca invaden la celda vecina */
 .statgrid b.small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
