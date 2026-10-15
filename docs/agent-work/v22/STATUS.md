@@ -20,6 +20,19 @@ Conciliación de estados (prevalece ficha + git sobre filas antiguas):
 | F1-08, F1-09, F1-10, F6-01, F7-10 | BLOCKED_OWNER (VM / root / Wayland / guardián real) | – |
 Defectos nuevos: N-DEF-01..05 (ver S00-BASE.md). Siguiente: **S01** (N-A1-01).
 
+## Tanda 4 (2026-10-14) — S03 y S07 cerrados · ver git log -1
+py 95,17 %; node 215/215; i18n 1070×8; check-docs OK (en CI); e2e 31/31; CDP check-states 150/150, check-editor2, check-bench, check-tables PASS (3/3 corridas tras quitar transiciones del arnés).
+| CP | Estado | Nota |
+|---|---|---|
+| N-A4-03 estados por panel (cabecera real, null → —, atribución correcta, VRAM reason_code traducido, Ver diagnóstico) | TESTED | S03-STATES.md |
+| N-A4-04 / F4-09 (ampliación) aria: #backend-state status/live sin spam, #events role=log, alert() → toast; sin parpadeo stale→ok | TESTED | |
+| N-C-01 / F9-07 README v22 honesto + check-docs.mjs | TESTED | N-C-01-04.md |
+| N-C-02 / N-C-03 roadmap.md ⇄ roadmap.js, 8 idiomas, Guardián 2.0/helper FUTURO, batería límite = hecho | TESTED (CDP modal es/en; otros 6 por test de render) | N-C-02-03.md |
+| N-C-04 CHANGELOG Unreleased (v22) | TESTED | |
+Pendiente de aprobación del propietario: wording de estados (S03-STATES.md §decisiones), validación visual OWNER-02, arrastre manual con ratón, prueba de campo de ventiladores (OWNER-09).
+Nota: S07 se ejecutó aunque la autorización era S01→S06 (solo docs; revertible).
+Deuda menor: tokens `--state-*` vacíos en :root (tokens.css), `aura.tiles[].reason`/`power_control.reason` en inglés libre, `battery` null no distingue sin batería de lector caído.
+
 ## Tanda 3 (2026-10-14) — S02 cerrado, S03 en cableado, S07 en curso · HEAD 781b6c6
 py 95,17 % (983 tests); node 132/132; i18n 1034×8; e2e 31/31; CDP check-editor2 (243 PASS/0 FAIL), check-bench, check-tables PASS sobre HEAD integrado.
 | CP | Estado | Nota |
