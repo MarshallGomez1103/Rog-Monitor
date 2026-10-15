@@ -9,6 +9,7 @@ const fs = require('fs');
 const os = require('os');
 const priv = require('./priv');
 const smartCache = require('./smart');
+const { createBackendBridge } = require('./backend-bridge');
 
 // En dev: la raíz del repo es el padre de desktop/. Empaquetado (AppImage): el
 // backend Python, scripts y VERSION viajan como extraResources en resourcesPath.
@@ -85,8 +86,7 @@ let isQuitting = false;
 let overlayCfg = { enabled: false, displayId: null, corner: 'top-center', show: null, layout: 'row', accent: null };
 // Últimos umbrales [lo, mid, hi] de temperatura recibidos del backend; el
 // overlay los usa para colorear por nivel (mismos valores que el dashboard).
-let lastTempLimits = null;
-let backend = null;
+let lastTempLimits = null; // espejo de bridge.lastTempLimits (lo lee pushOverlayConfig)
 let musicProc = null;
 let musicMode = {
   active: false,
@@ -110,7 +110,7 @@ if (!gotSingleInstanceLock) {
 } else {
   app.on('second-instance', () => {
     if (!win || win.isDestroyed()) return;
-    mainVisible = true;
+    bridge.setMainVisible(true);
     try {
       if (win.isMinimized()) win.restore();
       win.show();
@@ -143,135 +143,34 @@ function closeAction() {
 
 let closePromptOpen = false;
 
-function startBackend() {
-  if (backend) {
-    backend.removeAllListeners();
-    // Un proceso en SIGSTOP no atiende SIGTERM hasta reanudarse: sin SIGCONT quedaba
-    // en estado T para siempre al reiniciar con la ventana oculta (ARC-03 / F3-05).
-    try { backend.kill('SIGCONT'); } catch (_) { /* ya murió */ }
-    backend.kill();
-    backendPaused = false;
-  }
-  backend = spawn(PYTHON, ['-m', 'rog_monitor', '--json-stream', '--interval', '1'], {
-    env: PY_ENV,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-
-  let buffer = '';
-  backend.stdout.on('data', (chunk) => {
-    buffer += chunk.toString();
-    let idx;
-    while ((idx = buffer.indexOf('\n')) >= 0) {
-      const line = buffer.slice(0, idx).trim();
-      buffer = buffer.slice(idx + 1);
-      if (!line) continue;
-      try {
-        const stats = JSON.parse(line);
-        lastStatsAt = Date.now(); // watchdog: reset on every good stats line
-        // Recordar los umbrales de temperatura vivos (cpu/gpu) para que el
-        // overlay pueda colorear por nivel con los MISMOS valores que el
-        // dashboard, vía pushOverlayConfig (el stream no manda temp_colors).
-        if (stats.limits) lastTempLimits = stats.limits;
-        if (win && !win.isDestroyed()) win.webContents.send('stats', stats);
-        if (overlay && !overlay.isDestroyed()) overlay.webContents.send('stats', stats);
-      } catch (_) { /* partial line, ignore */ }
-    }
-  });
-  backend.stderr.on('data', (d) => {
-    const text = d.toString().trim();
-    console.error('[backend]', text);
-    if (text) appendErrorLog('backend-stderr', { message: text });
-  });
-  backend.on('exit', (code) => {
-    console.error('[backend] exited', code);
-    appendErrorLog('backend-exit', { code });
-    backendPaused = false;
-    if (win && !win.isDestroyed()) {
-      win.webContents.send('backend-down', code);
-      win.webContents.send('backend-reconnecting'); // show reconnecting indicator
-      setTimeout(startBackend, 3000); // auto-recover
-    }
-  });
-}
-
-/* ---------- Ahorro de energía: congelar el backend cuando nadie lo ve ----------
-   Con la ventana minimizada/oculta y SIN overlay activo, el proceso Python no
-   necesita leer /proc ni sensores. Lo pausamos con SIGSTOP (literalmente 0% de
-   CPU) y lo reanudamos con SIGCONT al volver. Así "solo tener la app abierta"
-   (minimizada o en bandeja) no se nota en consumo. El renderer, al estar oculto,
-   ya lo throttlea Electron, así que entre ambos el costo en reposo es ínfimo. */
-let backendPaused = false;
-let mainVisible = true;
-// Watchdog: timestamp of last stats line received from the backend.
-// Reset on every valid JSON stats line; checked every WATCHDOG_INTERVAL ms.
-let lastStatsAt = Date.now();
-const WATCHDOG_INTERVAL = 5000; // ms between checks
-const WATCHDOG_STALE_MS = 5000; // tolerate up to 5s silence before acting
-
+/* ---------- Backend Python: fachada sobre desktop/backend-bridge.js ----------
+   El módulo hace spawn, parseo NDJSON, respawn, pausa SIGSTOP/SIGCONT y watchdog
+   (ahorro de energía: con la ventana oculta y sin overlay el backend queda congelado).
+   Aquí solo se cablean los efectos de Electron: enviar a la ventana y al overlay. */
 function overlayNeedsBackend() {
   return !!(overlay && !overlay.isDestroyed()); // si existe, está mostrándose en juego
 }
 
-// OJO: ChildProcess.killed pasa a true con CUALQUIER señal entregada (también
-// SIGSTOP), así que no sirve para saber si sigue vivo; exitCode/signalCode sí.
-function backendAlive() {
-  return !!backend && backend.exitCode === null && backend.signalCode === null;
-}
+const sendToWin = (channel, ...a) => { if (win && !win.isDestroyed()) win.webContents.send(channel, ...a); };
 
-function setBackendPaused(paused) {
-  if (!backendAlive() || paused === backendPaused) return;
-  try {
-    backend.kill(paused ? 'SIGSTOP' : 'SIGCONT');
-    backendPaused = paused;
-    // Reset the watchdog clock on resume: the first stat after SIGCONT takes
-    // up to 1 s to arrive; give it a fresh WATCHDOG_STALE_MS window.
-    if (!paused) lastStatsAt = Date.now();
-  } catch (_) { /* pudo morir; el auto-recover lo recrea */ }
-}
+const bridge = createBackendBridge({
+  spawn,
+  command: PYTHON,
+  args: ['-m', 'rog_monitor', '--json-stream', '--interval', '1'],
+  env: PY_ENV,
+  recordError: appendErrorLog,
+  hasWindow: () => !!(win && !win.isDestroyed()),
+  overlayNeeded: overlayNeedsBackend,
+  onStats(stats) {
+    lastTempLimits = bridge.lastTempLimits;
+    sendToWin('stats', stats);
+    if (overlay && !overlay.isDestroyed()) overlay.webContents.send('stats', stats);
+  },
+  onDown: (code) => sendToWin('backend-down', code),
+  onReconnecting: () => sendToWin('backend-reconnecting'), // indicador "reconectando"
+});
 
-function updateBackendPower() {
-  setBackendPaused(!(mainVisible || overlayNeedsBackend()));
-}
-
-/* ---------- Watchdog: fuerza SIGCONT si la ventana está visible pero los
-   stats se detuvieron. Cubre el caso en que SIGSTOP se disparó (minimize/hide)
-   pero el SIGCONT nunca llegó porque los eventos del window manager no se
-   emitieron (KDE/GNOME a veces dispara `focus` sin `show` o viceversa).
-   Lógica minimalista: un solo setInterval; resetea lastStatsAt cada stat.
-   Si detecta silencio > WATCHDOG_STALE_MS cuando la ventana debería correr:
-   1. fuerza SIGCONT (puede que solo estuviera pausado por error de evento)
-   2. si pasados otros 3 s sigue sin stats, mata y respawnea el proceso */
-function startWatchdog() {
-  setInterval(() => {
-    if (!mainVisible && !overlayNeedsBackend()) return; // ok, está pausado a propósito
-    if (!backendAlive()) return; // el exit handler ya maneja esto
-    if (backendPaused) {
-      // El flag dice pausado pero la ventana es visible → estado inconsistente.
-      // Forzar SIGCONT para corregir cualquier misfire del window manager.
-      console.warn('[watchdog] backend paused but window visible — forcing SIGCONT');
-      appendErrorLog('watchdog-force-cont', {});
-      setBackendPaused(false);
-      lastStatsAt = Date.now(); // darle un ciclo antes de declararlo muerto
-      return;
-    }
-    const stale = Date.now() - lastStatsAt;
-    if (stale < WATCHDOG_STALE_MS) return; // stats llegando con normalidad
-    // Silencio anormal: intentar SIGCONT primero (podría estar en SIGSTOP no registrado)
-    console.warn(`[watchdog] no stats for ${stale}ms — sending SIGCONT`);
-    appendErrorLog('watchdog-stale', { staleMs: stale });
-    if (win && !win.isDestroyed()) win.webContents.send('backend-reconnecting');
-    try { backend.kill('SIGCONT'); } catch (_) { /* ya murió */ }
-    backendPaused = false;
-    // Si en 3 s sigue sin stats, matar y respawnear
-    const snapStatsAt = lastStatsAt;
-    setTimeout(() => {
-      if (lastStatsAt !== snapStatsAt) return; // llegó algo, ok
-      console.warn('[watchdog] still no stats after SIGCONT — respawning backend');
-      appendErrorLog('watchdog-respawn', {});
-      startBackend();
-    }, 3000);
-  }, WATCHDOG_INTERVAL);
-}
+function updateBackendPower() { bridge.updatePower(); }
 
 function run(cmd, args, timeoutMs = 10000, env = APP_ENV) {
   return new Promise((resolve) => {
@@ -432,7 +331,7 @@ ipcMain.handle('do-update', async () => {
   if (!pull.ok) return pull;
   await run(path.join(REPO, '.venv', 'bin', 'pip'),
     ['install', '--quiet', '--upgrade', '-r', 'requirements.txt'], 120000);
-  startBackend();
+  bridge.restart();
   return { ok: true, out: pull.out };
 });
 
@@ -821,7 +720,7 @@ ipcMain.handle('import-config', async () => {
     return { ok: false, err: String(err.message) };
   }
   if (!imported.length) return { ok: false, err: 'El archivo no traía configuraciones.' };
-  startBackend(); // recarga umbrales/colores
+  bridge.restart(); // recarga umbrales/colores
   return { ok: true, items: imported };
 });
 
@@ -934,7 +833,7 @@ ipcMain.handle('save-settings', async (_e, payload) => {
   const res = await runJsonModule('rog_monitor.settings', ['update', '--json', JSON.stringify(payload)], 6000);
   // AlertEngine reads config.json once at startup; restart the backend so the
   // new thresholds, colors, language and notification setting take effect.
-  if (res.ok && settingsNeedBackendRestart(payload)) startBackend();
+  if (res.ok && settingsNeedBackendRestart(payload)) bridge.restart();
   return res;
 });
 
@@ -1296,7 +1195,7 @@ ipcMain.handle('get-autostart', () => {
 ipcMain.handle('reinstall-app', async () => {
   // Reinstala dependencias de usuario (venv) y reinicia el backend. Sin sudo.
   const res = await run('bash', [path.join(REPO, 'scripts', 'install.sh')], 180000);
-  if (res.ok) startBackend();
+  if (res.ok) bridge.restart();
   if (!res.ok || privHelper('rog-ctl.sh').ok) return res;
   // Integración de sistema ausente o de otra versión: se ofrece instalarla
   // (diálogo nativo explícito; es la única acción que ejecuta el repo como root).
@@ -1515,7 +1414,7 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
   win.once('ready-to-show', () => {
     if (START_MINIMIZED) {
-      mainVisible = false;
+      bridge.setMainVisible(false);
       win.showInactive();   // aparece en la barra de tareas…
       win.minimize();        // …pero minimizada, sin robar foco
       updateBackendPower();  // congela el backend hasta que la abras
@@ -1526,8 +1425,8 @@ function createWindow() {
   // Ahorro: congelar/reanudar el backend según se vea o no la ventana.
   // OJO: al ocultar a bandeja se dispara `hide` → mainVisible=false → SIGSTOP
   // del backend. Así la app en bandeja NO consume CPU (comportamiento preservado).
-  ['minimize', 'hide'].forEach((ev) => win.on(ev, () => { mainVisible = false; updateBackendPower(); }));
-  ['restore', 'show', 'focus'].forEach((ev) => win.on(ev, () => { mainVisible = true; updateBackendPower(); }));
+  ['minimize', 'hide'].forEach((ev) => win.on(ev, () => bridge.setMainVisible(false)));
+  ['restore', 'show', 'focus'].forEach((ev) => win.on(ev, () => bridge.setMainVisible(true)));
 
   // El botón X respeta la preferencia del usuario. Por defecto sale de verdad;
   // quien quiera comportamiento tipo Steam puede elegir "bandeja" en Config.
@@ -1595,11 +1494,7 @@ function createTray() {
 function realQuit() {
   isQuitting = true;
   if (overlay && !overlay.isDestroyed()) { try { overlay.close(); } catch (_) {} }
-  if (backend) {
-    // si estaba congelado (SIGSTOP), reanudar para que reciba el SIGTERM
-    if (backendPaused) { try { backend.kill('SIGCONT'); } catch (_) {} }
-    try { backend.kill(); } catch (_) {}
-  }
+  bridge.stop(); // SIGCONT antes de SIGTERM si estaba congelado; sin respawn
   stopMusicMode(false);
   if (tray) { try { tray.destroy(); } catch (_) {} tray = null; }
   app.quit();
@@ -1824,8 +1719,8 @@ if (gotSingleInstanceLock) {
   app.whenReady().then(() => {
     createWindow();
     createTray();
-    startBackend();
-    startWatchdog();
+    bridge.start();
+    bridge.startWatchdog();
     applyAuraStartupWithRetry().catch(() => {});
   });
 }
@@ -1835,11 +1730,7 @@ if (gotSingleInstanceLock) {
 app.on('before-quit', () => { isQuitting = true; });
 
 app.on('window-all-closed', () => {
-  if (backend) {
-    // si estaba congelado (SIGSTOP), reanudar para que reciba el SIGTERM
-    if (backendPaused) { try { backend.kill('SIGCONT'); } catch (_) {} }
-    backend.kill();
-  }
+  bridge.stop();
   stopMusicMode(false);
   app.quit();
 });

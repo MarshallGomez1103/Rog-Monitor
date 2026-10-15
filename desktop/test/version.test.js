@@ -49,10 +49,14 @@ test('el comprobador del script no encuentra ninguna copia divergente en el repo
   assert.deepEqual(mod.checkVersions(ROOT), []);
 });
 
-test('main.js lee la versión solo de VERSION (sin package.json ni variable de entorno)', () => {
-  const main = read('desktop/main.js');
-  assert.ok(!/require\(['"]\.\/package\.json['"]\)\.version/.test(main), 'main.js no debe leer la versión de package.json');
-  assert.ok(!/ROG_MONITOR_VERSION/.test(main), 'sin ROG_MONITOR_VERSION');
+test('el proceso principal lee la versión solo de VERSION (main.js y los módulos desktop/*.js)', () => {
+  const files = fs.readdirSync(path.join(ROOT, 'desktop')).filter((f) => f.endsWith('.js'));
+  assert.ok(files.includes('main.js') && files.includes('backend-bridge.js'));
+  for (const f of files) {
+    const src = read(`desktop/${f}`);
+    assert.ok(!/require\(['"]\.\/package\.json['"]\)\.version/.test(src), `${f} no debe leer la versión de package.json`);
+    assert.ok(!/ROG_MONITOR_VERSION/.test(src), `${f}: sin ROG_MONITOR_VERSION`);
+  }
 });
 
 test('ROADMAP_CURRENT ya no lleva literal de versión (el pill no la muestra)', () => {
