@@ -31,6 +31,8 @@ done
 sleep 1
 # FS_OUTPUT (opcional): mueve el fullscreen a esa salida de KWin (p. ej. HDMI-A-3)
 [ -n "${FS_OUTPUT:-}" ] && { "$HERE/kwin-move.sh" "ROG Overlay Probe FS" "$FS_OUTPUT"; sleep 1; }
+# OV_OUTPUT (opcional): en Wayland nativo el overlay no elige monitor; lo movemos al del fullscreen para comparar apilado
+[ -n "${OV_OUTPUT:-}" ] && { "$HERE/kwin-move.sh" "ROG Overlay Probe" "$OV_OUTPUT"; sleep 1; }
 # el juego real seria la ventana activa: damos foco al fullscreen de prueba
 if [ "${NO_ACTIVATE:-0}" != 1 ]; then
   for _ in 1 2 3 4 5; do

@@ -5,7 +5,7 @@
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Wayland nativo: overlay y fullscreen nativos (fullscreen en HDMI-A-3 al estar activo ese monitor)
 NO_ACTIVATE=1 "$HERE/fs-case.sh" wayland 1 1
-FS_OUTPUT=HDMI-A-3 "$HERE/fs-case.sh" wayland 1 1
+FS_OUTPUT=HDMI-A-3 OV_OUTPUT=HDMI-A-3 "$HERE/fs-case.sh" wayland 1 1
 # XWayland: overlay x11 sobre fullscreen x11, en cada monitor
 "$HERE/fs-case.sh" x11 0 0
 "$HERE/fs-case.sh" x11 1 1

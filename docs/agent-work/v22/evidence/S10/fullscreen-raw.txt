@@ -1,20 +1,18 @@
 === FSCASE mode=wayland fs-platform=wayland fullscreen-monitor=1 overlay-monitor=1 extra= ===
 KW|ACTIVE=ROG Overlay Probe
-KW|ROG Overlay Probe FS|0,0 1600x1000|keepAbove=false|fullScreen=true|layer=5|stack=10/11|out=eDP-1|class=rog-overlay-probe|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
-KW|ROG Overlay Probe|2444,442 232x150|keepAbove=false|fullScreen=false|layer=2|stack=7/11|out=HDMI-A-3|class=rog-overlay-probe|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
+KW|ROG Overlay Probe FS|0,0 1600x1000|keepAbove=false|fullScreen=true|layer=2|stack=8/12|out=eDP-1|class=rog-overlay-probe|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
+KW|ROG Overlay Probe|684,402 232x150|keepAbove=false|fullScreen=false|layer=2|stack=9/12|out=eDP-1|class=rog-overlay-probe|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
 SHOT intento=1
 SHOT size=7040x2160
-SHOT mezcla: n=0
-SHOT magenta: n=44 bbox=(5126,1020)-(5177,1033)
-SHOT azul_fs: n=6396388 bbox=(0,0)-(3199,1999)
+SHOT mezcla: n=134975 bbox=(1369,804)-(1830,1102)
+SHOT magenta: n=0
+SHOT azul_fs: n=5962224 bbox=(0,0)-(3199,1907)
 ELECTRON|{"title":"ROG Overlay Probe FS","fullscreen":true,"corner":"top-right","dispIdx":1,"args":["--fullscreen","--monitor=1","--secs=16","--title=ROG Overlay Probe FS","--bg=#0000a0"],"requested":null,"afterSet":{"x":1600,"y":0,"width":1600,"height":1000},"afterSettle":{"x":0,"y":0,"width":1600,"height":1000},"displays":[{"id":66,"bounds":{"x":0,"y":0,"width":1600,"height":1000},"workArea":{"x":0,"y":0,"width":16
 ELECTRON|{"title":"ROG Overlay Probe","fullscreen":false,"corner":"top-right","dispIdx":1,"args":["--corner=top-right","--monitor=1","--secs=12","--bg=rgba(255,0,255,0.5)"],"requested":[3272,16],"afterSet":{"x":3272,"y":16,"width":232,"height":150},"afterSettle":{"x":0,"y":0,"width":232,"height":150},"displays":[{"id":66,"bounds":{"x":0,"y":0,"width":1600,"height":1000},"workArea":{"x":0,"y":0,"width":1600,"height":1
 === FSCASE mode=wayland fs-platform=wayland fullscreen-monitor=1 overlay-monitor=1 extra= ===
 KW|ACTIVE=ROG Overlay Probe FS
-KW|ROG Overlay Probe FS|1600,0 1920x1080|keepAbove=false|fullScreen=true|layer=5|stack=11/13|out=HDMI-A-3|class=rog-overlay-probe|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
-KW|ACTIVE=ROG Overlay Probe FS
-KW|ROG Overlay Probe FS|1600,0 1920x1080|keepAbove=false|fullScreen=true|layer=5|stack=11/13|out=HDMI-A-3|class=rog-overlay-probe|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
-KW|ROG Overlay Probe|684,402 232x150|keepAbove=false|fullScreen=false|layer=2|stack=7/13|out=eDP-1|class=rog-overlay-probe|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
+KW|ROG Overlay Probe FS|1600,0 1920x1080|keepAbove=false|fullScreen=true|layer=5|stack=11/12|out=HDMI-A-3|class=rog-overlay-probe|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
+KW|ROG Overlay Probe|2444,442 232x150|keepAbove=false|fullScreen=false|layer=2|stack=8/12|out=HDMI-A-3|class=rog-overlay-probe|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
 SHOT intento=1
 SHOT size=7040x2160
 SHOT mezcla: n=0
@@ -25,22 +23,18 @@ ELECTRON|{"title":"ROG Overlay Probe","fullscreen":false,"corner":"top-right","d
 === FSCASE mode=x11 fs-platform=x11 fullscreen-monitor=0 overlay-monitor=0 extra= ===
 KW|ACTIVE=ROG Overlay Probe FS
 KW|ROG Overlay Probe FS|0,0 1600x1000|keepAbove=false|fullScreen=true|layer=5|stack=10/12|out=eDP-1|class=rog-overlay-probe|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
-KW|ACTIVE=ROG Overlay Probe FS
-KW|ROG Overlay Probe FS|0,0 1600x1000|keepAbove=false|fullScreen=true|layer=5|stack=10/12|out=eDP-1|class=rog-overlay-probe|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
 XTREE|0x4c00004 "ROG Overlay Probe": ("rog-overlay-probe" "rog-overlay-probe")  286x187+1621+19  +1621+19
 XTREE|0x4200004 "ROG Overlay Probe FS": ("rog-overlay-probe" "rog-overlay-probe")  1920x1200+0+0  +0+0
 SHOT intento=1
 SHOT size=7040x2160
-SHOT mezcla: n=0
+SHOT mezcla: n=144841 bbox=(2702,32)-(3177,342)
 SHOT magenta: n=0
-SHOT azul_fs: n=6246776 bbox=(0,0)-(3199,1999)
+SHOT azul_fs: n=6246772 bbox=(0,0)-(3199,1999)
 ELECTRON|{"title":"ROG Overlay Probe FS","fullscreen":true,"corner":"top-right","dispIdx":0,"args":["--ozone-platform=x11","--fullscreen","--monitor=0","--secs=16","--title=ROG Overlay Probe FS","--bg=#0000a0"],"requested":null,"afterSet":{"x":0,"y":0,"width":1596,"height":998},"afterSettle":{"x":0,"y":0,"width":1596,"height":998},"displays":[{"id":33,"bounds":{"x":0,"y":0,"width":1596,"height":998},"workArea":{"x":0
 ELECTRON|{"title":"ROG Overlay Probe","fullscreen":false,"corner":"top-right","dispIdx":0,"args":["--ozone-platform=x11","--corner=top-right","--monitor=0","--secs=12","--bg=rgba(255,0,255,0.5)"],"requested":[1348,16],"afterSet":{"x":1347,"y":15,"width":239,"height":157},"afterSettle":{"x":1347,"y":15,"width":239,"height":157},"displays":[{"id":33,"bounds":{"x":0,"y":0,"width":1596,"height":998},"workArea":{"x":0,"y"
 === FSCASE mode=x11 fs-platform=x11 fullscreen-monitor=1 overlay-monitor=1 extra= ===
 KW|ACTIVE=ROG Overlay Probe FS
 KW|ROG Overlay Probe FS|1600,0 1920x1080|keepAbove=false|fullScreen=true|layer=5|stack=10/12|out=HDMI-A-3|class=rog-overlay-probe|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
-KW|ACTIVE=(otra ventana)
-KW|ROG Overlay Probe FS|1600,0 1920x1080|keepAbove=false|fullScreen=true|layer=2|stack=8/13|out=HDMI-A-3|class=rog-overlay-probe|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
 XTREE|0x4c00004 "ROG Overlay Probe": ("rog-overlay-probe" "rog-overlay-probe")  286x187+3925+19  +3925+19
 XTREE|0x4200004 "ROG Overlay Probe FS": ("rog-overlay-probe" "rog-overlay-probe")  2304x1296+1920+0  +1920+0
 SHOT intento=1
@@ -59,24 +53,26 @@ SHOT size=7040x2160
 SHOT mezcla: n=145304 bbox=(6542,32)-(7017,343)
 SHOT magenta: n=0
 SHOT azul_fs: n=8142400 bbox=(3200,0)-(7039,2159)
-ELECTRON|{"title":"ROG Overlay Probe FS","fullscreen":true,"corner":"top-right","dispIdx":1,"args":["--fullscreen","--monitor=1","--secs=16","--title=ROG Overlay Probe FS","--bg=#0000a0"],"requested":null,"afterSet":{"x":1600,"y":0,"width":1600,"height":1000},"afterSettle":{"x":0,"y":0,"width":1600,"height":1000},"displays":[{"id":66,"bounds":{"x":0,"y":0,"width":1600,"height":1000},"workArea":{"x":0,"y":0,"width":16
+ELECTRON|{"title":"ROG Overlay Probe FS","fullscreen":true,"corner":"top-right","dispIdx":1,"args":["--fullscreen","--monitor=1","--secs=16","--title=ROG Overlay Probe FS","--bg=#0000a0"],"requested":null,"afterSet":{"x":0,"y":0,"width":1920,"height":1080},"afterSettle":{"x":0,"y":0,"width":1920,"height":1080},"displays":[{"id":66,"bounds":{"x":0,"y":0,"width":1600,"height":1000},"workArea":{"x":0,"y":0,"width":1600,
 ELECTRON|{"title":"ROG Overlay Probe","fullscreen":false,"corner":"top-right","dispIdx":1,"args":["--ozone-platform=x11","--corner=top-right","--monitor=1","--secs=12","--bg=rgba(255,0,255,0.5)"],"requested":[3263,16],"afterSet":{"x":3262,"y":15,"width":239,"height":157},"afterSettle":{"x":3262,"y":15,"width":239,"height":157},"displays":[{"id":33,"bounds":{"x":0,"y":0,"width":1596,"height":998},"workArea":{"x":0,"y"
 === MANGO position=top-right wsi=xcb ===
 KW|ACTIVE=Vkcube X11
 KW|Vkcube X11|83,83 417x445|keepAbove=false|fullScreen=false|layer=2|stack=8/11|out=eDP-1|class=|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
+KW|ACTIVE=Vkcube X11
+KW|Vkcube X11|83,83 417x445|keepAbove=false|fullScreen=false|layer=2|stack=8/11|out=eDP-1|class=|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
 SHOT size=7040x2160
-SHOT magenta: n=96892 bbox=(479,241)-(982,494)
+SHOT magenta: n=97027 bbox=(479,241)-(982,493)
 === MANGO position=bottom-left wsi=xcb ===
 KW|ACTIVE=Vkcube X11
 KW|Vkcube X11|83,83 417x445|keepAbove=false|fullScreen=false|layer=2|stack=8/11|out=eDP-1|class=|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
 KW|ACTIVE=Vkcube X11
 KW|Vkcube X11|83,83 417x445|keepAbove=false|fullScreen=false|layer=2|stack=8/11|out=eDP-1|class=|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
 SHOT size=7040x2160
-SHOT magenta: n=96908 bbox=(184,786)-(687,1038)
+SHOT magenta: n=96990 bbox=(184,786)-(687,1038)
 === MANGO position=top-right wsi=wayland ===
 KW|ACTIVE=vkcube
 KW|vkcube|550,212 500x528|keepAbove=false|fullScreen=false|layer=2|stack=8/11|out=eDP-1|class=vkcube|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
 KW|ACTIVE=vkcube
 KW|vkcube|550,212 500x528|keepAbove=false|fullScreen=false|layer=2|stack=8/11|out=eDP-1|class=vkcube|noBorder=false|onAllDesktops=false|skipTaskbar=false|type=0
 SHOT size=7040x2160
-SHOT magenta: n=138091 bbox=(1475,501)-(2078,804)
+SHOT magenta: n=138225 bbox=(1475,501)-(2078,804)
