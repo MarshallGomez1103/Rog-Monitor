@@ -1,0 +1,24 @@
+{
+  "es": {
+    "modalVisible": true,
+    "pill": "v21.0.0 — Armoury Crate para Linux — seguro, bonito, todo-en-uno, sin telemetría",
+    "v22": true,
+    "titulo": true,
+    "parcial": true,
+    "futuro": true,
+    "guardian20EnHecho": false,
+    "bateriaPendiente": false,
+    "cerrado": true
+  },
+  "en": {
+    "modalVisible": true,
+    "pill": "v21.0.0 — Armoury Crate for Linux — safe, beautiful, all-in-one, no telemetry",
+    "v22": true,
+    "titulo": true,
+    "parcial": true,
+    "futuro": true,
+    "guardian20EnHecho": false,
+    "bateriaPendiente": false,
+    "cerrado": true
+  }
+}
