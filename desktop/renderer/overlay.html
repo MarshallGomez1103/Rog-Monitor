@@ -5,18 +5,21 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'">
   <title>ROG Overlay</title>
   <style>
+    /* S11: rediseño sobrio, cuadrado (Carbon/ROG). Legible sobre cualquier juego: fondo oscuro
+       semitransparente, texto claro con sombra; el acento lo manda el tema activo (overlay-config).
+       La ventana se ajusta a .card (overlay.js -> overlayFit), así el anclaje cae en el borde real. */
     :root {
-      --ok:    #4cd964;
-      --warn:  #ffcc33;
-      --hot:   #ff8a3d;
-      --crit:  #ff453a;
-      --ink:   #f2f4f8;
-      --dim:   #7a8398;
-      --label: #c4ccda;   /* gris claro legible para etiquetas CPU/GPU */
-      --bg:    rgba(10, 12, 18, 0.88);
-      --border: rgba(255, 255, 255, 0.08);
+      --ok:    #42be65;
+      --warn:  #f1c21b;
+      --hot:   #ff832b;
+      --crit:  #fa4d56;
+      --ink:   #f4f4f4;
+      --dim:   #a8a8a8;
+      --label: #c6c6c6;
+      --bg:    rgba(22, 22, 22, 0.78);
+      --border: rgba(255, 255, 255, 0.16);
       --accent: #c8f;
-      --radius: 10px;
+      --mono: "IBM Plex Mono", "JetBrains Mono", "DejaVu Sans Mono", monospace;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -27,166 +30,120 @@
       -webkit-app-region: no-drag;
     }
     body {
-      font-family: "JetBrains Mono", "DejaVu Sans Mono", "Cascadia Code", monospace;
+      font-family: "IBM Plex Sans", "Inter", "Noto Sans", system-ui, sans-serif;
       color: var(--ink);
-      padding: 4px;
-      min-width: 170px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
     }
 
-    /* ---- Tarjeta principal ---- */
+    /* ---- tarjeta ---- */
     .card {
+      display: inline-block;
+      width: max-content;
+      min-width: 150px;
       background: var(--bg);
       border: 1px solid var(--border);
-      border-top: 2px solid var(--accent);
-      border-radius: var(--radius);
-      padding: 8px 10px 6px;
-      backdrop-filter: blur(6px);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      border-left: 3px solid var(--accent);
+      padding: 8px 12px 8px 10px;
     }
 
-    /* ---- Encabezado ---- */
     .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 16px;
       margin-bottom: 6px;
-      padding-bottom: 4px;
+      padding-bottom: 5px;
       border-bottom: 1px solid var(--border);
     }
     .header-brand {
-      font-size: 8px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--accent);
+      font-size: 10px;
       font-weight: 700;
-      opacity: 0.85;
+      letter-spacing: 1.5px;
+      color: var(--accent);
     }
     .header-profile {
-      font-size: 8px;
+      font-size: 10px;
       letter-spacing: 1px;
       text-transform: uppercase;
       color: var(--dim);
-      font-variant-numeric: tabular-nums;
     }
 
-    /* ---- Filas de datos ---- */
+    /* ---- filas ---- */
     .row {
       display: flex;
       align-items: baseline;
-      gap: 0;
-      margin: 4px 0;
+      gap: 5px;
+      margin: 3px 0;
     }
     .row-label {
-      font-size: 9px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
       color: var(--label);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      width: 34px;
+      width: 32px;
       flex-shrink: 0;
     }
     .row-value {
-      font-size: 23px;
-      font-weight: 700;
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 600;
       font-variant-numeric: tabular-nums;
       line-height: 1;
-      min-width: 44px;
-    }
-    .row-unit {
-      font-size: 9px;
-      color: var(--dim);
-      margin-left: 1px;
-      align-self: flex-end;
-      margin-bottom: 2px;
-    }
-    .row-sub {
-      font-size: 9px;
-      color: var(--dim);
-      margin-left: auto;
-      font-variant-numeric: tabular-nums;
+      min-width: 2ch;
       text-align: right;
     }
-
-    /* ---- Fila FPS — ligeramente destacada ---- */
-    #fps-row .row-value {
-      color: var(--ok);
-    }
-    #fps-row .row-label {
-      color: var(--ok);
-      opacity: 0.7;
-    }
-
-    /* ---- Divider entre CPU/GPU y fans ---- */
-    .divider {
-      height: 1px;
-      background: var(--border);
-      margin: 5px 0 4px;
-    }
-
-    /* ---- Fila de ventiladores ---- */
-    .fans-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    .fans-label {
-      font-size: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+    .row-unit { font-size: 11px; color: var(--dim); }
+    .row-sub {
+      font-family: var(--mono);
+      font-size: 11px;
       color: var(--dim);
-      margin-right: 2px;
+      margin-left: auto;
+      padding-left: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+    #fps-row .row-label { color: var(--accent); }
+
+    .divider { height: 1px; background: var(--border); margin: 6px 0 5px; }
+
+    /* ---- ventiladores ---- */
+    .fans-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+    .fans-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--label);
     }
     .fan-chip {
-      font-size: 9px;
+      font-family: var(--mono);
+      font-size: 12px;
       font-variant-numeric: tabular-nums;
       color: var(--ink);
-      display: flex;
-      align-items: center;
-      gap: 2px;
     }
-    .fan-chip .fan-key {
-      color: var(--dim);
-      font-size: 8px;
-    }
-    .fan-chip .fan-pct {
-      opacity: 0.55;
-      font-size: 8px;
-    }
-    .fans-none {
-      font-size: 9px;
-      color: var(--dim);
-    }
+    .fan-chip .fan-key { color: var(--dim); font-size: 10px; }
+    .fan-chip .fan-pct { color: var(--dim); font-size: 10px; }
+    .fans-none { font-size: 12px; color: var(--dim); }
 
-    /* ============ Modo FILA (default): una línea delgada arriba-centro ============
-       Reusa los mismos IDs; solo cambia el layout a horizontal y oculta el
-       encabezado/divisor para estorbar lo mínimo en pantalla. */
-    body.layout-row { padding: 3px; min-width: 0; }
+    /* ============ FILA (por defecto): una franja; segmentos separados por una línea ============ */
     body.layout-row .card {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 16px;
-      padding: 6px 16px;
-      border-top: 1px solid var(--border);
-      border-left: 3px solid var(--accent);
-      border-radius: 999px;
+      padding: 6px 0;
     }
     body.layout-row .header,
     body.layout-row .divider { display: none; }
-    body.layout-row .row { margin: 0; gap: 4px; align-items: baseline; }
-    body.layout-row .row-label { width: auto; font-size: 10px; }
-    body.layout-row .row-value { font-size: 22px; min-width: 0; }
-    body.layout-row .row-sub { margin-left: 5px; text-align: left; font-size: 10px; }
-    body.layout-row #fans-section { display: flex; align-items: center; }
-    body.layout-row .fans-row { flex-wrap: nowrap; }
-    /* separador sutil entre bloques en modo fila */
-    body.layout-row .row + .row::before,
-    body.layout-row #fans-section::before {
-      content: "";
-      width: 1px;
-      height: 14px;
-      background: var(--border);
-      margin-right: 12px;
+    body.layout-row .row,
+    body.layout-row #fans-section {
+      margin: 0;
+      padding: 0 12px;
+      border-left: 1px solid var(--border);
     }
+    body.layout-row .seg-first { border-left: 0; }
+    body.layout-row .row-label { width: auto; }
+    body.layout-row .row-value { font-size: 20px; }
+    body.layout-row .row-sub { margin-left: 4px; padding-left: 0; }
+    body.layout-row .fans-row { flex-wrap: nowrap; }
+    body.layout-row #stale-mark { padding: 0 12px; }
   </style>
 </head>
 <body>

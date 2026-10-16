@@ -1,0 +1,29 @@
+# Salida de measure-overlay-x11.mjs (2026-10-15, KDE Plasma 6.7.5 Wayland + XWayland :0, Electron 44.7.0,
+# 2 monitores). Ventana REAL del producto (no la sonda de S10), relanzada sola por config.json
+# {overlay_xwayland:true}. Comando: ELECTRON=<electron> ROG_APP_ROOT=<worktree> node measure-overlay-x11.mjs
+PASS  la app arranca (página principal)
+PASS  relanzada sola con --ozone-platform=x11 (config overlay_xwayland:true)
+INFO  modo {"session":"wayland","xwayland":true,"x11Active":true,"compat":true} monitores [{"index":0,"id":33,"width":1596,"height":998,"primary":false,"name":"Built-in display"},{"index":1,"id":35,"width":1916,"height":1078,"primary":true,"name":""}]
+PASS  main informa x11Active=true
+INFO  X11 root {"w":4224,"h":1296} monitores X11 [{"w":1920,"h":1200,"x":0,"y":0,"name":"eDP-1"},{"w":2304,"h":1296,"x":1920,"y":0,"name":"HDMI-A-3"}]
+PASS  monitor 1 (eDP-1) top-right: dentro del monitor y en la esquina  {"win":{"x":1251,"y":21,"w":648,"h":41,"override":true,"mapped":true},"gaps":{"l":1251,"r":21,"t":21,"b":1138}}
+PASS  monitor 1 top-right: override-redirect (sin foco ni barra de tareas)
+PASS  monitor 1 (eDP-1) top-left: dentro del monitor y en la esquina  {"win":{"x":21,"y":21,"w":648,"h":41,"override":true,"mapped":true},"gaps":{"l":21,"r":1251,"t":21,"b":1138}}
+PASS  monitor 1 top-left: override-redirect (sin foco ni barra de tareas)
+PASS  monitor 1 (eDP-1) bottom-right: dentro del monitor y en la esquina  {"win":{"x":1251,"y":1138,"w":648,"h":41,"override":true,"mapped":true},"gaps":{"l":1251,"r":21,"t":1138,"b":21}}
+PASS  monitor 1 bottom-right: override-redirect (sin foco ni barra de tareas)
+PASS  monitor 2 (HDMI-A-3) top-right: dentro del monitor y en la esquina  {"win":{"x":3555,"y":21,"w":648,"h":41,"override":true,"mapped":true},"gaps":{"l":1635,"r":21,"t":21,"b":1234}}
+PASS  monitor 2 top-right: override-redirect (sin foco ni barra de tareas)
+PASS  monitor 2 (HDMI-A-3) top-left: dentro del monitor y en la esquina  {"win":{"x":1940,"y":21,"w":648,"h":41,"override":true,"mapped":true},"gaps":{"l":20,"r":1636,"t":21,"b":1234}}
+PASS  monitor 2 top-left: override-redirect (sin foco ni barra de tareas)
+PASS  monitor 2 (HDMI-A-3) bottom-right: dentro del monitor y en la esquina  {"win":{"x":3555,"y":1234,"w":648,"h":41,"override":true,"mapped":true},"gaps":{"l":1635,"r":21,"t":1234,"b":21}}
+PASS  monitor 2 bottom-right: override-redirect (sin foco ni barra de tareas)
+PASS  apagar cierra la ventana del overlay
+PASS  no queda ningún proceso lanzado
+
+17/17 PASS
+RESULT: PASS
+# Lectura: margen pedido 18 DIP = 21-22 px X11 (escala global XWayland 1.203125). La ventana mide
+# 648x41 px X11 (≈539x34 DIP) = tamaño de la tarjeta informado por overlay.js (overlayFit), así que
+# el borde visible del contenido cae a 18 DIP del borde del monitor. Capturas de la página del
+# overlay (fila/cuadro) revisadas y borradas; no se guardan.
