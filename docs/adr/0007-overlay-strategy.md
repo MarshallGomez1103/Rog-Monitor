@@ -1,7 +1,8 @@
 # ADR-0007: Overlay strategy on KDE Wayland (Electron window vs. in-game HUD)
 
-- Status: proposed (S10 / F6-01 + F6-02). Not accepted until the owner runs the
-  checks in "What the owner must validate" with a real game.
+- Status: **accepted (A2 + layer B)** on 2026-10-15 (S11; the owner delegated the
+  choice: "acábalo"). Real-game behaviour stays **Not verified** until the owner runs
+  the checks in "What the owner must validate" (S12, OWNER-03).
 - Applies to: `desktop/main.js` (`createOverlay`, `positionOverlay`), the
   overlay editor planned for S11, the real-game validation of S12.
 - Evidence: `docs/agent-work/v22/evidence/S10/` (raw outputs and the isolated
@@ -60,7 +61,41 @@ Other measured facts:
   shows `position=top-left`). There is no `center` and no way to pick a monitor:
   the HUD follows the game window.
 
-## Decision (proposed)
+## Decision (accepted 2026-10-15, S11)
+
+Layer A uses **A2** and layer B ships as "game mode". Implementation:
+`desktop/overlay-window.js` (geometry, window options, XWayland decision),
+`desktop/mangohud-block.js` (layer B), `desktop/renderer/overlay-prefs.js` +
+`overlay-editor.js` (UI), wired in `desktop/main.js`. Evidence:
+`docs/agent-work/v22/checkpoints/S11-OVERLAY.md`.
+
+One measured correction to the A2 mechanism described below:
+`app.commandLine.appendSwitch('ozone-platform','x11')` called from `main.js`
+**does not** switch the platform in Electron 44.7.0 (the displays keep the native
+Wayland scale factors 1.2 / 1, and the GPU process crashed with exit code 139),
+because the ozone platform is chosen before `main.js` runs. A2 is therefore
+implemented as an **early self-relaunch**: when `config.json` has
+`overlay_xwayland: true`, the session is Wayland with XWayland (`DISPLAY` set)
+and the process was started without `--ozone-platform=x11`, `main.js` calls
+`app.relaunch()` with the flag (the `.AppImage` path when `APPIMAGE` is set) and
+`app.exit(0)` before creating any window or taking the single-instance lock.
+Measured with the product window: the relaunched app reports the XWayland scale
+(1.203125), and the overlay lands on the requested monitor and corner as an
+override-redirect window (17/17, `evidence/S11/measure-x11-raw.txt`).
+Switching the setting in the overlay modal saves it and asks to restart
+(`app.relaunch()` + quit, only after the user confirms).
+
+Other accepted details: monitor chosen by a stable index (displays sorted by x,
+then y; "Monitor 1" is the left-most), 7 anchors plus an X/Y offset, placement on
+`bounds` + 18 DIP margin (never `workArea`), the window resized to the measured
+card so the anchor is the visible edge, re-placement on `display-added` /
+`display-removed` / `display-metrics-changed`, and fallback to the primary
+monitor (with a notice) when the chosen one is gone. Layer B writes only its own
+marked block (`# --- ROG Monitor modo juego ... ---`) at the end of
+`~/.config/MangoHud/MangoHud.conf`, never `exec=`, with `center` mapped to
+`top-center` and the UI listing the rows MangoHud cannot show (fans).
+
+## Decision (as proposed in S10)
 
 Two layers, because no single window type covers every case:
 
