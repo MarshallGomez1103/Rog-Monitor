@@ -9,13 +9,15 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const SRC = fs.readFileSync(path.join(__dirname, '..', 'renderer', 'overlay.js'), 'utf8');
+const METRICS_SRC = fs.readFileSync(path.join(__dirname, '..', 'renderer', 'overlay-metrics.js'), 'utf8');
 const NOW = 1_800_000_000_000;
 
 function fakeEl() {
   return {
-    style: {}, textContent: '', innerHTML: '', className: '', id: '', children: [],
+    style: {}, textContent: '', innerHTML: '', className: '', id: '', children: [], dataset: {},
     classList: { toggle() {}, add() {}, remove() {} },
     appendChild(c) { this.children.push(c); c.parent = this; return c; },
+    replaceChildren(...cs) { this.children = []; cs.forEach((c) => this.appendChild(c)); },
     remove() { if (this.parent) this.parent.children = this.parent.children.filter((x) => x !== this); this.parent = null; },
     querySelectorAll() { return []; },
   };
@@ -24,9 +26,7 @@ function fakeEl() {
 function load(opts) {
   opts = opts || {};
   const els = {};
-  for (const id of ['prof', 'cpu-t', 'cpu-w', 'fps-row', 'fps-v', 'gpu-t', 'gpu-w', 'fans-row', 'fans-none',
-    'cpu-row', 'gpu-row', 'fans-section', 'cpu-label', 'gpu-label', 'fps-label', 'fans-label']) els[id] = fakeEl();
-  els['fps-row'].style.display = 'none';
+  for (const id of ['prof', 'rows']) els[id] = fakeEl();
   const card = fakeEl();
   const clock = { t: NOW };
   const h = {};
@@ -37,7 +37,7 @@ function load(opts) {
     querySelector: (sel) => (sel === '.card' ? card : null),
     createElement: () => fakeEl(),
     addEventListener: (ev, fn) => { h[ev] = fn; },
-    documentElement: { style: { setProperty() {} } },
+    documentElement: { style: { props: {}, setProperty(k, v) { this.props[k] = v; } } },
     body: { classList: { toggle() {} } },
   };
   const rog = {
@@ -53,9 +53,15 @@ function load(opts) {
     Date: { now: () => clock.t },
     setInterval: (fn, ms) => { intervals.push([fn, ms]); },
   };
-  vm.runInNewContext(SRC, sandbox);
+  vm.createContext(sandbox);
+  vm.runInContext(METRICS_SRC, sandbox);
+  vm.runInContext(SRC, sandbox);
   const mark = () => card.children.find((c) => c.id === 'stale-mark') || null;
-  return { doc, els, card, clock, h, intervals, mark, tick: () => intervals.forEach(([fn]) => fn()) };
+  // filas pintadas: [[fila, color, [[métrica, valor, unidad, color del valor], ...]], ...]
+  const painted = () => els.rows.children.map((r) => [r.dataset.row, r.children[0].style.color,
+    r.children.slice(1).map((c) => [c.dataset.metric, c.children.at(-2).textContent, c.children.at(-1).textContent, c.children.at(-2).style.color || ''])]);
+  const cell = (m) => painted().flatMap((r) => r[2]).find((c) => c[0] === m) || null;
+  return { doc, els, card, clock, h, intervals, mark, painted, cell, tick: () => intervals.forEach(([fn]) => fn()) };
 }
 
 const snap = (extra) => Object.assign({
@@ -146,38 +152,61 @@ test('overlay: la marca no se duplica en ticks sucesivos', () => {
   assert.match(o.mark().textContent, /8 s$/);
 });
 
-/* FPS ---------------------------------------------------------------------- */
-test('FPS: con dato se muestra; sin dato y sin pedirlo la fila se oculta (decisión documentada)', () => {
+/* S11b: métricas elegibles, vertical, "—" sin dato --------------------------- */
+test('S11b: por defecto CPU (uso, temp, W) y GPU (uso, temp, W), FPS y FAN; una fila por componente', () => {
   const o = load();
-  o.h.stats(snap({ fps: 144 }));
-  assert.strictEqual(o.els['fps-row'].style.display, '');
-  assert.strictEqual(o.els['fps-v'].textContent, '144');
-  o.h.stats(snap({ fps: null }));
-  assert.strictEqual(o.els['fps-row'].style.display, 'none');
+  o.h.stats(snap({ cpu: { usage: 37.4, avg: 55 }, rapl_available: true, cpu_watts: 21.6, fans: [{ label: 'cpu_fan', rpm: 3100 }] }));
+  assert.deepStrictEqual(o.painted().map((r) => r[0]), ['cpu', 'gpu', 'fps', 'fan']);
+  assert.deepStrictEqual(o.painted()[0][2].map((c) => c.slice(0, 3)), [['cpu_usage', '37', '%'], ['cpu_temp', '55', '°C'], ['cpu_power', '22', 'W']]);
+  assert.deepStrictEqual(o.cell('fan').slice(1, 3), ['3100', 'RPM']);
+  assert.strictEqual(o.painted()[0][1], '#4fb3ff', 'etiqueta CPU con su color fijo');
+  assert.strictEqual(o.els.prof.textContent, 'BALANCED');
 });
 
-test('FPS: 0 es un valor real (no se oculta)', () => {
+test('S11b: sin dato se ve "—" (nunca 0 falso), también FPS sin MangoHud', () => {
+  const o = load();
+  o.h.stats(snap({ cpu: {}, gpu: { active: {} }, fps: null, asus_profile: null }));
+  for (const m of ['cpu_usage', 'cpu_temp', 'cpu_power', 'gpu_usage', 'gpu_temp', 'gpu_power', 'fps', 'fan']) {
+    assert.strictEqual(o.cell(m)[1], '—', m);
+  }
+  assert.strictEqual(o.els.prof.textContent, '—');
+});
+
+test('S11b: la config elige métricas sueltas; una fila sin métricas no se pinta', () => {
+  const o = load();
+  o.h.stats(snap({ cpu: { freq_ghz: 4.21, usage: 9 }, gpu: { active: { clock_mhz: 1830, temp: 50 } } }));
+  o.h.config({ metrics: ['cpu_freq', 'gpu_freq'] });
+  assert.deepStrictEqual(o.painted().map((r) => [r[0], r[2].map((c) => c.slice(0, 3))]),
+    [['cpu', [['cpu_freq', '4.2', 'GHz']]], ['gpu', [['gpu_freq', '1830', 'MHz']]]]);
+  o.h.config({ metrics: ['ram', 'vram'] });
+  o.h.stats(snap({ sys: { ram_used_gb: 7.25 }, gpu: { active: { vram_used: 2048 } } }));
+  assert.deepStrictEqual(o.painted().map((r) => r[0]), ['ram', 'vram']);
+  assert.deepStrictEqual(o.cell('vram').slice(1, 3), ['2.0', 'GB']);
+});
+
+test('S11b: temperatura blanca en rango normal; color de nivel solo por encima del umbral del dashboard', () => {
+  const o = load();
+  o.h.config({ temp_colors: { cpu: [70, 85, 92], gpu: [60, 75, 83] } });
+  o.h.stats(snap({ cpu: { avg: 50 }, gpu: { active: { temp: 90 } } }));
+  assert.strictEqual(o.cell('cpu_temp')[3], '');
+  assert.strictEqual(o.cell('gpu_temp')[3], '#ff6b6b');
+});
+
+test('S11b: escala S/M/L/XL -> variable CSS --scale; default M (1.25) sin reiniciar', () => {
+  const o = load();
+  assert.strictEqual(o.doc.documentElement.style.props['--scale'], '1.25');
+  o.h.config({ scale: 'XL' });
+  assert.strictEqual(o.doc.documentElement.style.props['--scale'], '2');
+  o.h.config({ scale: 'S' });
+  assert.strictEqual(o.doc.documentElement.style.props['--scale'], '1');
+  o.h.config({ scale: 'bogus' });
+  assert.strictEqual(o.doc.documentElement.style.props['--scale'], '1.25');
+});
+
+test('FPS: 0 es un valor real (no "—")', () => {
   const o = load();
   o.h.stats(snap({ fps: 0 }));
-  assert.strictEqual(o.els['fps-row'].style.display, '');
-  assert.strictEqual(o.els['fps-v'].textContent, '0');
-});
-
-test('FPS: si el usuario lo eligió (show.fps === true) y no hay dato => fila visible con N/D', () => {
-  const o = load();
-  o.h.config({ show: { cpu: true, gpu: true, fans: true, fps: true } });
-  o.h.stats(snap({ fps: null }));
-  assert.strictEqual(o.els['fps-row'].style.display, '');
-  assert.strictEqual(o.els['fps-v'].textContent, 'N/D');
-  const en = load({ lang: 'en' });
-  en.h.config({ show: { fps: true } });
-  en.h.stats(snap({ fps: null }));
-  assert.strictEqual(en.els['fps-v'].textContent, 'N/A');
-});
-
-test('FPS: show.fps === false oculta la fila aunque haya dato', () => {
-  const o = load();
-  o.h.config({ show: { fps: false } });
-  o.h.stats(snap({ fps: 60 }));
-  assert.strictEqual(o.els['fps-row'].style.display, 'none');
+  assert.strictEqual(o.cell('fps')[1], '0');
+  o.h.stats(snap({ fps: 143.6 }));
+  assert.strictEqual(o.cell('fps')[1], '144');
 });

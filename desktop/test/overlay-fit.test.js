@@ -9,10 +9,11 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const SRC = fs.readFileSync(path.join(__dirname, '..', 'renderer', 'overlay.js'), 'utf8');
+const METRICS_SRC = fs.readFileSync(path.join(__dirname, '..', 'renderer', 'overlay-metrics.js'), 'utf8');
 
 function el() {
-  return { style: {}, textContent: '', innerHTML: '', children: [], classList: { toggle() {}, add() {}, remove() {} },
-    appendChild(c) { this.children.push(c); return c; }, querySelectorAll() { return []; } };
+  return { style: {}, textContent: '', innerHTML: '', children: [], dataset: {}, classList: { toggle() {}, add() {}, remove() {} },
+    appendChild(c) { this.children.push(c); return c; }, replaceChildren(...c) { this.children = c; }, querySelectorAll() { return []; } };
 }
 
 function load({ withObserver = true, withFit = true } = {}) {
@@ -21,7 +22,6 @@ function load({ withObserver = true, withFit = true } = {}) {
   card.getBoundingClientRect = () => card.rect;
   const fits = [];
   const observers = [];
-  const bodyClasses = new Set();
   const sandbox = {
     document: {
       hidden: false,
@@ -30,7 +30,6 @@ function load({ withObserver = true, withFit = true } = {}) {
       createElement: () => el(),
       addEventListener() {},
       documentElement: { style: { setProperty() {} } },
-      body: { classList: { toggle: (c, on) => (on ? bodyClasses.add(c) : bodyClasses.delete(c)) } },
     },
     window: { rog: { onStats() {}, onOverlayConfig(fn) { sandbox.cfg = fn; } } },
     localStorage: { getItem: () => 'es' },
@@ -43,8 +42,10 @@ function load({ withObserver = true, withFit = true } = {}) {
   if (withObserver) {
     sandbox.ResizeObserver = function (cb) { observers.push(cb); this.observe = (t) => { this.target = t; }; };
   }
-  vm.runInNewContext(SRC, sandbox);
-  return { card, fits, fire: () => observers.forEach((cb) => cb([])), sandbox, bodyClasses };
+  vm.createContext(sandbox);
+  vm.runInContext(METRICS_SRC, sandbox);
+  vm.runInContext(SRC, sandbox);
+  return { card, fits, fire: () => observers.forEach((cb) => cb([])), sandbox };
 }
 
 test('overlay-fit: al cambiar la tarjeta pide su tamaño redondeado hacia arriba', () => {
@@ -66,11 +67,4 @@ test('overlay-fit: sin ResizeObserver o sin overlayFit (página abierta suelta) 
   assert.doesNotThrow(() => load({ withObserver: false }));
   const o = load({ withFit: false });
   assert.doesNotThrow(() => o.fire());
-});
-
-test('overlay: layout fila por defecto; cuadro con config layout=box', () => {
-  const o = load();
-  assert.ok(o.bodyClasses.has('layout-row'));
-  o.sandbox.cfg({ layout: 'box', show: { cpu: true } });
-  assert.ok(!o.bodyClasses.has('layout-row'));
 });
