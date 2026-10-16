@@ -129,8 +129,41 @@ function relaunchArgs(argv, x11) {
   return x11 ? rest.concat(X11_FLAG) : rest;
 }
 
+const DEFAULT_CFG = {
+  enabled: false, monitor: null, displayId: null, corner: DEFAULT_ANCHOR, offsetX: 0, offsetY: 0,
+  show: { cpu: true, gpu: true, fans: true }, layout: 'row', accent: null,
+};
+const SHOW_KEYS = ['cpu', 'gpu', 'fans', 'fps'];
+const OFFSET_MAX = 2000;
+// el acento acaba en style.setProperty del overlay: solo hex o rgb()/rgba() numéricos
+const ACCENT_RE = /^(#[0-9a-f]{3,8}|rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*(,\s*[\d.]+\s*)?\))$/i;
+
+// Preferencias del overlay que llegan por IPC: se valida campo a campo; lo inválido conserva `prev`.
+function normalizeCfg(cfg, prev) {
+  const p = prev || DEFAULT_CFG;
+  const c = cfg || {};
+  const offset = (v, old) => (Number.isFinite(Number(v)) && v !== null && v !== ''
+    ? clamp(Math.round(Number(v)), -OFFSET_MAX, OFFSET_MAX) : old);
+  const show = { ...p.show };
+  for (const k of SHOW_KEYS) if (c.show && typeof c.show[k] === 'boolean') show[k] = c.show[k];
+  let monitor = p.monitor;
+  if (c.monitor === null) monitor = null;
+  else if (Number.isInteger(c.monitor) && c.monitor >= 0) monitor = c.monitor;
+  return {
+    enabled: !!c.enabled,
+    monitor,
+    displayId: Number.isFinite(c.displayId) ? c.displayId : p.displayId,
+    corner: ANCHORS.includes(c.corner) ? c.corner : p.corner,
+    offsetX: offset(c.offsetX, p.offsetX),
+    offsetY: offset(c.offsetY, p.offsetY),
+    show,
+    layout: c.layout === 'box' || c.layout === 'row' ? c.layout : p.layout,
+    accent: typeof c.accent === 'string' && ACCENT_RE.test(c.accent.trim()) ? c.accent.trim() : p.accent,
+  };
+}
+
 module.exports = {
-  ANCHORS, DEFAULT_ANCHOR, MARGIN, X11_FLAG, DEFAULT_SIZE,
-  sortDisplays, pickDisplay, overlayPosition, fitSize, displaySummary, windowOptions,
+  ANCHORS, DEFAULT_ANCHOR, MARGIN, X11_FLAG, DEFAULT_SIZE, DEFAULT_CFG,
+  normalizeCfg, sortDisplays, pickDisplay, overlayPosition, fitSize, displaySummary, windowOptions,
   sessionInfo, needsX11Relaunch, relaunchArgs,
 };

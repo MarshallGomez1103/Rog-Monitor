@@ -113,6 +113,20 @@ test('needsX11Relaunch: solo Linux + Wayland + XWayland + preferencia activa + a
   assert.strictEqual(W.needsX11Relaunch(null, env, ['.'], 'linux'), false);
 });
 
+test('normalizeCfg: valida lo que llega por IPC y conserva lo anterior si falta o es inválido', () => {
+  const d = W.normalizeCfg(undefined);
+  assert.deepStrictEqual(d, { enabled: false, monitor: null, displayId: null, corner: 'top-right', offsetX: 0, offsetY: 0,
+    show: { cpu: true, gpu: true, fans: true }, layout: 'row', accent: null });
+  const a = W.normalizeCfg({ enabled: 1, monitor: 1, corner: 'bottom-left', offsetX: 12.6, offsetY: -9000, show: { cpu: false, fps: true, evil: 'x' }, layout: 'box', accent: '#ff5a1f' }, d);
+  assert.deepStrictEqual(a, { enabled: true, monitor: 1, displayId: null, corner: 'bottom-left', offsetX: 13, offsetY: -2000,
+    show: { cpu: false, gpu: true, fans: true, fps: true }, layout: 'box', accent: '#ff5a1f' });
+  const b = W.normalizeCfg({ enabled: false, monitor: -1, corner: 'x', layout: 'grid', accent: 'red;background:url(x)', offsetX: 'a' }, a);
+  assert.deepStrictEqual(b, { ...a, enabled: false, offsetX: 13 });
+  assert.strictEqual(W.normalizeCfg({ accent: 'rgb(10, 20, 30)' }).accent, 'rgb(10, 20, 30)');
+  assert.strictEqual(W.normalizeCfg({ displayId: 22 }).displayId, 22);
+  assert.strictEqual(W.normalizeCfg({ monitor: null }, a).monitor, null, 'null explícito = primario');
+});
+
 test('relaunchArgs: añade o quita la bandera sin tocar los demás argumentos', () => {
   assert.deepStrictEqual(W.relaunchArgs(['.', '--minimized'], true), ['.', '--minimized', '--ozone-platform=x11']);
   assert.deepStrictEqual(W.relaunchArgs(['.', '--ozone-platform=x11', '--minimized'], true), ['.', '--minimized', '--ozone-platform=x11']);

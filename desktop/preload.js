@@ -66,6 +66,13 @@ contextBridge.exposeInMainWorld('rog', {
   setOverlay: (cfg) => ipcRenderer.invoke('set-overlay', cfg),
   getFpsLogging: () => ipcRenderer.invoke('get-fps-logging'),
   setFpsLogging: (enabled) => ipcRenderer.invoke('set-fps-logging', enabled),
+  getGameMode: () => ipcRenderer.invoke('get-game-mode'),
+  setGameMode: (enabled) => ipcRenderer.invoke('set-game-mode', enabled),
+  setOverlayCompat: (on) => ipcRenderer.invoke('set-overlay-compat', on),
+  relaunchApp: () => ipcRenderer.invoke('relaunch-app'),
+  onOverlayState: subscribe('overlay-state'),
+  // la ventana del overlay informa el tamaño de su tarjeta para ajustarse y anclarse bien
+  overlayFit: (size) => ipcRenderer.send('overlay-fit', size),
   exportConfig: () => ipcRenderer.invoke('export-config'),
   importConfig: () => ipcRenderer.invoke('import-config'),
   zoom: (delta) => {

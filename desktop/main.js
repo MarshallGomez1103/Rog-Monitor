@@ -10,6 +10,8 @@ const os = require('os');
 const priv = require('./priv');
 const smartCache = require('./smart');
 const { createBackendBridge } = require('./backend-bridge');
+const overlayWin = require('./overlay-window');
+const mango = require('./mangohud-block');
 
 // En dev: la raíz del repo es el padre de desktop/. Empaquetado (AppImage): el
 // backend Python, scripts y VERSION viajan como extraResources en resourcesPath.
@@ -83,7 +85,7 @@ let tray = null;
 // Salir-de-verdad vs minimizar-a-bandeja: el botón "Salir"/Quit pone esto en
 // true para que el handler de `close` deje cerrar la ventana en vez de ocultarla.
 let isQuitting = false;
-let overlayCfg = { enabled: false, displayId: null, corner: 'top-center', show: null, layout: 'row', accent: null };
+let overlayCfg = overlayWin.normalizeCfg();
 // Últimos umbrales [lo, mid, hi] de temperatura recibidos del backend; el
 // overlay los usa para colorear por nivel (mismos valores que el dashboard).
 let lastTempLimits = null; // espejo de bridge.lastTempLimits (lo lee pushOverlayConfig)
@@ -104,7 +106,21 @@ if (process.platform === 'linux') {
   app.setDesktopName('rog-monitor.desktop');
 }
 
-const gotSingleInstanceLock = app.requestSingleInstanceLock();
+// Modo compatibilidad del overlay (ADR-0007 A2): la plataforma ozone solo cambia desde la línea de
+// órdenes (appendSwitch aquí no surte efecto en Electron 44, medido), así que se relanza con la bandera.
+// En AppImage process.execPath vive en un montaje temporal: se relanza el propio .AppImage.
+function relaunchApp(x11) {
+  const opts = { args: overlayWin.relaunchArgs(process.argv.slice(1), x11) };
+  if (process.env.APPIMAGE) opts.execPath = process.env.APPIMAGE;
+  app.relaunch(opts);
+}
+const RELAUNCH_X11 = overlayWin.needsX11Relaunch(readAppConfig(), process.env, process.argv, process.platform);
+if (RELAUNCH_X11) {
+  relaunchApp(true);
+  app.exit(0);
+}
+
+const gotSingleInstanceLock = !RELAUNCH_X11 && app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
   app.quit();
 } else {
@@ -608,52 +624,36 @@ ipcMain.handle('fan-benchmark', async () => {
   return { ok: true, max, calibration, raw: res.out };
 });
 
-/* ---------- FPS via MangoHud logging ----------
-   Only MangoHud (inside the game) knows the real FPS. With logging enabled it
-   appends CSV rows while playing; the backend tails the freshest file. */
+/* ---------- MangoHud: registro de FPS + "modo juego" (capa B, ADR-0007) ----------
+   Solo MangoHud (dentro del juego) conoce los FPS reales: con el registro activo escribe CSV y el
+   backend lee el más reciente. El modo juego dibuja el HUD de MangoHud con las métricas y el anclaje
+   del overlay. Ambos son bloques marcados propios en MangoHud.conf (mangohud-block.js). */
 
 const MANGOHUD_CONF = path.join(os.homedir(), '.config', 'MangoHud', 'MangoHud.conf');
 const FPS_LOG_DIR = path.join(os.homedir(), '.local', 'share', 'rog-monitor', 'mangohud-logs');
-const FPS_BLOCK_START = '# --- ROG Monitor FPS (autogenerado, no editar) ---';
-const FPS_BLOCK_END = '# --- /ROG Monitor FPS ---';
-
-function fpsLoggingEnabled() {
-  try {
-    return fs.readFileSync(MANGOHUD_CONF, 'utf-8').includes(FPS_BLOCK_START);
-  } catch (_) {
-    return false;
-  }
-}
 
 ipcMain.handle('get-fps-logging', () => ({
   ok: true,
-  enabled: fpsLoggingEnabled(),
+  enabled: mango.readEnabled(MANGOHUD_CONF, mango.FPS_MARKERS),
   mangohud: !!whichBin('mangohud'),
 }));
 
 ipcMain.handle('set-fps-logging', (_e, enabled) => {
-  let conf = '';
-  try { conf = fs.readFileSync(MANGOHUD_CONF, 'utf-8'); } catch (_) { /* new file */ }
-  const blockRe = new RegExp(`\\n?${FPS_BLOCK_START}[\\s\\S]*?${FPS_BLOCK_END}\\n?`);
-  conf = conf.replace(blockRe, '\n');
-  if (enabled) {
-    conf = conf.trimEnd() + [
-      '', FPS_BLOCK_START,
-      `output_folder=${FPS_LOG_DIR}`,
-      'autostart_log=1',
-      'log_interval=500',
-      FPS_BLOCK_END, '',
-    ].join('\n');
-  }
-  try {
-    fs.mkdirSync(path.dirname(MANGOHUD_CONF), { recursive: true });
-    fs.mkdirSync(FPS_LOG_DIR, { recursive: true });
-    writeAtomic(MANGOHUD_CONF, conf.trimStart());
-  } catch (err) {
-    return { ok: false, err: `No pude editar ${MANGOHUD_CONF}: ${err.message}` };
-  }
-  return { ok: true, enabled };
+  if (enabled) { try { fs.mkdirSync(FPS_LOG_DIR, { recursive: true }); } catch (_) { /* lo reporta MangoHud */ } }
+  return mango.writeBlock(MANGOHUD_CONF, mango.FPS_MARKERS,
+    enabled ? [`output_folder=${FPS_LOG_DIR}`, 'autostart_log=1', 'log_interval=500'] : null);
 });
+
+ipcMain.handle('get-game-mode', () => ({
+  ok: true,
+  enabled: mango.readEnabled(MANGOHUD_CONF, mango.GAME_MARKERS),
+  mangohud: !!whichBin('mangohud'),
+  missing: mango.missingRows(overlayCfg.show),
+}));
+
+// Las métricas/anclaje salen de overlayCfg (ya validado en set-overlay), no del renderer.
+ipcMain.handle('set-game-mode', (_e, enabled) =>
+  mango.writeBlock(MANGOHUD_CONF, mango.GAME_MARKERS, enabled ? mango.gameModeLines(overlayCfg) : null));
 
 /* ---------- config export / import ----------
    Toda la configuración del usuario vive en ~/.config/rog-monitor (curvas y
@@ -1255,101 +1255,51 @@ ipcMain.handle('set-autostart', (_e, enabled) => {
   }
 });
 
-/* ---------- gaming overlay (always-on-top stats) ----------
-   A frameless, click-through, transparent window pinned to a corner of the
-   chosen monitor. It stays above fullscreen games so you can watch temps and
-   fan RPM while playing. No undervolt/overclock here — only read-only stats. */
+/* ---------- overlay para juegos (S11 / ADR-0007) ----------
+   Ventana transparente, click-through y sin foco con stats de solo lectura. La geometría
+   (monitor por índice, 7 anclajes sobre bounds, tamaño) vive en overlay-window.js. En Wayland
+   nativo KWin ignora la posición: el modo compatibilidad (XWayland) la respeta (medido en S10). */
 
-const OVERLAY_MARGIN = 18;
+let overlayFitSize = null; // tamaño medido de la tarjeta (lo manda overlay.js)
 
-function displayList() {
-  const primaryId = screen.getPrimaryDisplay().id;
-  return screen.getAllDisplays().map((d, i) => ({
-    id: d.id,
-    label: `Monitor ${i + 1} (${d.size.width}×${d.size.height})${d.id === primaryId ? ' · principal' : ''}`,
-    primary: d.id === primaryId,
-  }));
-}
-
-function pickDisplay(displayId) {
-  const all = screen.getAllDisplays();
-  return all.find((d) => d.id === displayId) || screen.getPrimaryDisplay();
+function overlayMode() {
+  return { ...overlayWin.sessionInfo(process.env, process.argv), compat: readAppConfig().overlay_xwayland === true };
 }
 
 function positionOverlay() {
   if (!overlay || overlay.isDestroyed()) return;
-  const d = pickDisplay(overlayCfg.displayId);
-  const wa = d.workArea; // respects panels/taskbars
-  const { width, height } = overlay.getBounds();
-  const right = wa.x + wa.width - width - OVERLAY_MARGIN;
-  const bottom = wa.y + wa.height - height - OVERLAY_MARGIN;
-  const left = wa.x + OVERLAY_MARGIN;
-  const top = wa.y + OVERLAY_MARGIN;
-  const centerX = wa.x + Math.round((wa.width - width) / 2);
-  const centerY = wa.y + Math.round((wa.height - height) / 2);
-  const pos = {
-    'top-left': [left, top],
-    'top-center': [centerX, top],
-    'top-right': [right, top],
-    'center': [centerX, centerY],
-    'bottom-left': [left, bottom],
-    'bottom-center': [centerX, bottom],
-    'bottom-right': [right, bottom],
-  }[overlayCfg.corner] || [centerX, top];
-  overlay.setPosition(Math.round(pos[0]), Math.round(pos[1]));
-}
-
-// Tamaño según layout: fila delgada (default) o cuadro clásico.
-function overlaySize() {
-  return overlayCfg.layout === 'box'
-    ? { width: 232, height: 150 }
-    : { width: 540, height: 58 };
+  const pick = overlayWin.pickDisplay(screen.getAllDisplays(), overlayCfg, screen.getPrimaryDisplay().id);
+  if (!pick) return;
+  const size = overlayWin.fitSize(overlayFitSize, overlayCfg.layout);
+  const pos = overlayWin.overlayPosition(pick.display.bounds, size, overlayCfg.corner,
+    { x: overlayCfg.offsetX, y: overlayCfg.offsetY });
+  overlay.setBounds({ ...pos, ...size });
 }
 
 function createOverlay() {
-  const { width, height } = overlaySize();
-  overlay = new BrowserWindow({
-    width,
-    height,
-    frame: false,
-    transparent: true,
-    resizable: false,
-    movable: false,
-    minimizable: false,
-    maximizable: false,
-    skipTaskbar: true,
-    focusable: false,
-    hasShadow: false,
-    alwaysOnTop: true,
-    backgroundColor: '#00000000',
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-  // float above fullscreen games on every virtual desktop
+  const size = overlayWin.fitSize(overlayFitSize, overlayCfg.layout);
+  overlay = new BrowserWindow(overlayWin.windowOptions(size, path.join(__dirname, 'preload.js')));
+  // encima de juegos a pantalla completa en todos los escritorios virtuales
   overlay.setAlwaysOnTop(true, 'screen-saver');
   overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  overlay.setIgnoreMouseEvents(true); // click-through so it never grabs the game
+  overlay.setIgnoreMouseEvents(true); // click-through: nunca se queda con el ratón del juego
   overlay.loadFile(path.join(__dirname, 'renderer', 'overlay.html'));
   overlay.once('ready-to-show', () => {
     positionOverlay();
     pushOverlayConfig();
+    overlay.showInactive(); // sin robar el foco
   });
   overlay.on('closed', () => { overlay = null; });
 }
 
-// El overlay decide qué filas pintar, el layout (fila/cuadro) y el acento del
-// tema según lo que mande el modal.
+// El overlay decide qué filas pintar, el layout (fila/cuadro) y el acento del tema.
 function pushOverlayConfig() {
   if (overlay && !overlay.isDestroyed()) {
     overlay.webContents.send('overlay-config', {
-      show: overlayCfg.show || { cpu: true, gpu: true, fans: true },
-      layout: overlayCfg.layout || 'row',
-      accent: overlayCfg.accent || null,
-      // Umbrales de color por nivel (cpu/gpu) — si aún no hay stats, va null y
-      // el overlay degrada a sus defaults estáticos.
+      show: overlayCfg.show,
+      layout: overlayCfg.layout,
+      accent: overlayCfg.accent,
+      // Umbrales de color por nivel (cpu/gpu); sin stats aún va null y el overlay usa sus defaults.
       temp_colors: lastTempLimits || null,
     });
   }
@@ -1367,24 +1317,48 @@ function applyOverlay() {
   updateBackendPower();
 }
 
-ipcMain.handle('list-displays', () => ({ ok: true, displays: displayList(), current: overlayCfg }));
+function toggleOverlay() {
+  overlayCfg = { ...overlayCfg, enabled: !overlayCfg.enabled };
+  applyOverlay();
+  sendToWin('overlay-state', { enabled: overlayCfg.enabled });
+}
+
+ipcMain.handle('list-displays', () => {
+  const primaryId = screen.getPrimaryDisplay().id;
+  const all = screen.getAllDisplays();
+  const pick = overlayWin.pickDisplay(all, overlayCfg, primaryId);
+  return { ok: true, displays: overlayWin.displaySummary(all, primaryId), current: overlayCfg,
+    active: pick && pick.index, fallback: !!(pick && pick.fallback), mode: overlayMode() };
+});
 
 ipcMain.handle('set-overlay', (_e, cfg) => {
-  const layoutChanged = cfg.layout && cfg.layout !== overlayCfg.layout;
-  overlayCfg = {
-    enabled: !!cfg.enabled,
-    displayId: cfg.displayId ?? overlayCfg.displayId,
-    corner: cfg.corner || overlayCfg.corner,
-    show: cfg.show || overlayCfg.show,
-    layout: cfg.layout || overlayCfg.layout,
-    accent: cfg.accent ?? overlayCfg.accent,
-  };
-  // Si cambió el layout, redimensionar la ventana antes de reposicionar.
-  if (layoutChanged && overlay && !overlay.isDestroyed()) {
-    overlay.setBounds(overlaySize());
-  }
+  overlayCfg = overlayWin.normalizeCfg(cfg, overlayCfg);
   applyOverlay();
+  // el modo juego refleja las mismas métricas/anclaje (solo si ya estaba activo)
+  if (mango.readEnabled(MANGOHUD_CONF, mango.GAME_MARKERS)) {
+    mango.writeBlock(MANGOHUD_CONF, mango.GAME_MARKERS, mango.gameModeLines(overlayCfg));
+  }
   return { ok: true, current: overlayCfg };
+});
+
+ipcMain.on('overlay-fit', (e, size) => {
+  if (!overlay || overlay.isDestroyed() || e.sender !== overlay.webContents) return;
+  overlayFitSize = size;
+  positionOverlay();
+});
+
+ipcMain.handle('set-overlay-compat', (_e, on) => {
+  const mode = overlayMode();
+  if (on && !mode.xwayland) return { ok: false, code: 'no_xwayland' };
+  writeAppConfig({ overlay_xwayland: !!on });
+  return { ok: true, compat: !!on, restart: mode.session === 'wayland' && !!on !== mode.x11Active };
+});
+
+// Reinicio pedido por la UI tras cambiar el modo compatibilidad (con confirmación del usuario).
+ipcMain.handle('relaunch-app', () => {
+  relaunchApp(overlayMode().compat);
+  realQuit();
+  return { ok: true };
 });
 
 // Arranque minimizado: lo usa la entrada de autostart (start.sh --minimized).
@@ -1484,6 +1458,7 @@ function createTray() {
     { label: 'ROG Monitor', enabled: false },
     { type: 'separator' },
     { label: 'Mostrar / Ocultar', click: toggleMainWindow },
+    { label: 'Overlay: mostrar / ocultar', click: toggleOverlay },
     { label: 'Salir / Quit', click: realQuit },
   ]);
   tray.setContextMenu(menu);
@@ -1719,6 +1694,8 @@ if (gotSingleInstanceLock) {
   app.whenReady().then(() => {
     createWindow();
     createTray();
+    // monitores conectados/desconectados o reescalados: recolocar el overlay (cae al primario)
+    for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, positionOverlay);
     bridge.start();
     bridge.startWatchdog();
     applyAuraStartupWithRetry().catch(() => {});
