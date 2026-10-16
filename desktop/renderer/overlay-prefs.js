@@ -64,6 +64,26 @@
     return { key: 'overlay.notice_wayland', level: 'warn', action: 'enable' };
   }
 
+  // res = respuesta de list-displays. `disable` no lleva botón: el modo activo se apaga con la casilla.
+  function noticeView(res, t) {
+    const mode = (res && res.mode) || {};
+    const n = notice(mode);
+    const fallback = !!(res && res.fallback);
+    const action = n && n.action !== 'disable' ? n.action : '';
+    return {
+      text: [fallback ? t('overlay.notice_fallback') : '', n ? t(n.key) : ''].filter(Boolean).join(' '),
+      level: fallback ? 'warn' : (n ? n.level : ''),
+      action,
+      actionLabel: t(action === 'restart' ? 'overlay.restart_now' : 'overlay.enable_compat'),
+      offerCompat: mode.session === 'wayland' && !!mode.xwayland, // sin XWayland no se ofrece
+    };
+  }
+
+  function missingText(missing, t) {
+    return missing && missing.length
+      ? t('overlay.game_missing', { rows: missing.map((r) => t(`overlay.row_${r}`)).join(', ') }) : '';
+  }
+
   function isToggleShortcut(e) {
     return !!(e && e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey && (e.code === 'KeyO' || String(e.key).toLowerCase() === 'o'));
   }
@@ -105,7 +125,7 @@
 
   if (root && root.i18n && typeof root.i18n.register === 'function') root.i18n.register(STRINGS);
 
-  const api = { ANCHORS, STRINGS, defaults, normalize, parse, monitorOptions, notice, isToggleShortcut };
+  const api = { ANCHORS, STRINGS, defaults, normalize, parse, monitorOptions, notice, noticeView, missingText, isToggleShortcut };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.RogOverlayPrefs = api;
 })(typeof window !== 'undefined' ? window : null);

@@ -58,6 +58,26 @@ test('notice: aviso honesto según sesión y modo compatibilidad', () => {
   assert.strictEqual(P.notice(null), null);
 });
 
+test('noticeView: lo que pinta el modal (texto, nivel, acción, si ofrece compatibilidad)', () => {
+  const W = { session: 'wayland', xwayland: true, x11Active: false, compat: false };
+  assert.deepStrictEqual(P.noticeView({ mode: W, fallback: false }, t), {
+    text: 'overlay.notice_wayland', level: 'warn', action: 'enable', actionLabel: 'overlay.enable_compat', offerCompat: true });
+  assert.deepStrictEqual(P.noticeView({ mode: { ...W, compat: true }, fallback: true }, t), {
+    text: 'overlay.notice_fallback overlay.notice_restart', level: 'warn', action: 'restart', actionLabel: 'overlay.restart_now', offerCompat: true });
+  assert.deepStrictEqual(P.noticeView({ mode: { ...W, x11Active: true, compat: true } }, t), {
+    text: 'overlay.notice_compat_on', level: 'ok', action: '', actionLabel: 'overlay.enable_compat', offerCompat: true });
+  assert.deepStrictEqual(P.noticeView({ mode: { ...W, xwayland: false } }, t).offerCompat, false);
+  assert.deepStrictEqual(P.noticeView({ mode: { session: 'x11' } }, t), {
+    text: '', level: '', action: '', actionLabel: 'overlay.enable_compat', offerCompat: false });
+  assert.strictEqual(P.noticeView({}, t).text, '');
+});
+
+test('missingText: filas que MangoHud no muestra, traducidas; vacío si no falta nada', () => {
+  assert.strictEqual(P.missingText(['fans'], t), 'overlay.game_missing{"rows":"overlay.row_fans"}');
+  assert.strictEqual(P.missingText([], t), '');
+  assert.strictEqual(P.missingText(undefined, t), '');
+});
+
 test('isToggleShortcut: Ctrl+Shift+O (sin Alt/Meta), tecla o código', () => {
   assert.strictEqual(P.isToggleShortcut({ ctrlKey: true, shiftKey: true, key: 'O' }), true);
   assert.strictEqual(P.isToggleShortcut({ ctrlKey: true, shiftKey: true, key: 'x', code: 'KeyO' }), true);
