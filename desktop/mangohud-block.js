@@ -8,6 +8,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { writeAtomic } = require('./fsutil');
+const OM = require('./renderer/overlay-metrics.js');
 
 const FPS_MARKERS = {
   start: '# --- ROG Monitor FPS (autogenerado, no editar) ---',
@@ -49,28 +50,32 @@ function mergeBlock(conf, m, lines) {
   return rest + '\n' + (block ? '\n' + block : '');
 }
 
-function accentHex(accent) {
-  const m = /^#?([0-9a-f]{6})$/i.exec(String(accent || '').trim());
-  return m ? m[1].toUpperCase() : null;
-}
+const hex = (c) => c.replace('#', '').toUpperCase();
 
-// Mismas métricas que el overlay de la app (FPS siempre: es para lo que existe MangoHud).
+// S11b: las mismas métricas elegidas que el overlay de la app, cada una con su clave de MangoHud;
+// las no elegidas se apagan con `=0` (el bloque va al final: gana a los defaults y a líneas previas).
+// MangoHud solo dibuja la fila CPU/GPU con cpu_stats/gpu_stats, así que cualquier métrica de esa
+// fila la enciende (y con ella su % de uso). Vertical (sin `horizontal`), fuente 24 x escala.
 function gameModeLines(prefs) {
   const p = prefs || {};
-  const show = p.show || {};
-  const lines = [`position=${mapAnchor(p.corner)}`, 'fps', 'frametime'];
-  if (show.cpu !== false) lines.push('cpu_stats', 'cpu_temp', 'cpu_power');
-  if (show.gpu !== false) lines.push('gpu_stats', 'gpu_temp', 'gpu_power');
-  if (p.layout !== 'box') lines.push('horizontal');
-  lines.push('font_size=20', 'background_alpha=0.6', 'round_corners=0', 'text_outline=1');
-  const hex = accentHex(p.accent);
-  if (hex) lines.push(`cpu_color=${hex}`, `gpu_color=${hex}`);
+  const on = OM.normalizeMetrics(p.metrics);
+  const keys = new Set(on.map((m) => OM.MANGO_KEYS[m]).filter(Boolean));
+  if (on.some((m) => m.startsWith('cpu_'))) keys.add('cpu_stats');
+  if (on.some((m) => m.startsWith('gpu_'))) keys.add('gpu_stats');
+  if (keys.has('fps')) keys.add('frametime');
+  const all = [...new Set(Object.values(OM.MANGO_KEYS).filter(Boolean)), 'frametime'];
+  const lines = [`position=${mapAnchor(p.corner)}`, ...all.map((k) => (keys.has(k) ? k : `${k}=0`))];
+  const color = Object.fromEntries(OM.ROWS.map((r) => [r.id, hex(r.color)]));
+  lines.push(`font_size=${Math.round(24 * OM.scaleFactor(p.scale))}`,
+    `background_alpha=${OM.PALETTE.bgAlpha}`, `background_color=${hex(OM.PALETTE.bg)}`, `text_color=${hex(OM.PALETTE.value)}`,
+    'round_corners=0', 'text_outline=1',
+    `cpu_color=${color.cpu}`, `gpu_color=${color.gpu}`, `ram_color=${color.ram}`, `vram_color=${color.vram}`);
   return lines;
 }
 
-// Filas del overlay que MangoHud no puede mostrar (no tiene métrica de ventiladores ASUS).
-function missingRows(show) {
-  return (show || {}).fans === false ? [] : ['fans'];
+// Métricas del overlay que MangoHud no puede mostrar (no tiene RPM de ventiladores ASUS).
+function missingRows(metrics) {
+  return OM.normalizeMetrics(metrics).includes('fan') ? ['fans'] : [];
 }
 
 function readEnabled(file, m) {
