@@ -3,6 +3,7 @@
 ## 22.0.0 — 2026-10-14
 
 - Overlay: botón OVERLAY en la barra (Ctrl+Shift+O, bandeja); modo compatibilidad XWayland que respeta monitor y esquina (requiere reiniciar); modo juego MangoHud; rediseño. Parcial hasta probarlo con juegos reales.
+- Overlay v2: estilo MangoHud de alto contraste (fondo negro 85 %, números blancos en negrita, color por fila, contraste ≥ 4.5:1 comprobado), tamaños S/M/L/XL en vivo (M por defecto), disposición vertical y cada métrica activable por separado (uso %, temperatura, W y frecuencia de CPU/GPU, RAM, VRAM, FPS, ventiladores). El modo juego MangoHud usa las mismas métricas y tamaño.
 
 After the post-90 audit (`docs/audits/post90/`). **Root-side scripts changed** in this
 release (`rog-profile-sync.sh`, `rog-ctl.sh` paths and the fan watchdog) and `VERSION` is
