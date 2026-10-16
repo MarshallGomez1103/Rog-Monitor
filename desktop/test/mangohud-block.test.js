@@ -79,22 +79,32 @@ test('mapAnchor: los 6 anclajes de MangoHud pasan igual; center -> top-center; d
   assert.strictEqual(M.mapAnchor('x'), 'top-right');
 });
 
-test('gameModeLines: métricas equivalentes, anclaje mapeado, look legible y acento del tema', () => {
-  const lines = M.gameModeLines({ corner: 'center', show: { cpu: true, gpu: true, fans: true }, layout: 'row', accent: '#ff5a1f' });
+test('gameModeLines: cada métrica elegida -> su clave; las no elegidas se apagan (=0); vertical; anclaje mapeado', () => {
+  const lines = M.gameModeLines({ corner: 'center', metrics: ['cpu_usage', 'cpu_temp', 'cpu_power', 'gpu_usage', 'gpu_temp', 'gpu_power', 'fps', 'fan'], scale: 'M' });
   assert.strictEqual(lines[0], 'position=top-center');
-  for (const k of ['fps', 'cpu_stats', 'cpu_temp', 'cpu_power', 'gpu_stats', 'gpu_temp', 'gpu_power', 'horizontal', 'round_corners=0', 'cpu_color=FF5A1F', 'gpu_color=FF5A1F']) {
-    assert.ok(lines.includes(k), k);
-  }
-  const box = M.gameModeLines({ corner: 'top-right', show: { cpu: false, gpu: true }, layout: 'box', accent: 'rgb(1,2,3)' });
-  assert.ok(!box.includes('horizontal'));
-  assert.ok(!box.some((l) => l.startsWith('cpu_')));
-  assert.ok(!box.some((l) => l.endsWith('_color=')));
-  assert.ok(box.includes('gpu_temp'));
+  for (const k of ['cpu_stats', 'cpu_temp', 'cpu_power', 'cpu_mhz=0', 'gpu_stats', 'gpu_temp', 'gpu_power', 'gpu_core_clock=0',
+    'ram=0', 'vram=0', 'fps', 'frametime', 'round_corners=0']) assert.ok(lines.includes(k), k);
+  assert.ok(!lines.includes('horizontal'), 'disposición vertical como el overlay');
+  const all = M.gameModeLines({ metrics: ['cpu_freq', 'gpu_freq', 'ram', 'vram'] });
+  for (const k of ['cpu_mhz', 'gpu_core_clock', 'ram', 'vram', 'fps=0', 'frametime=0', 'cpu_temp=0', 'gpu_power=0']) assert.ok(all.includes(k), k);
+  // MangoHud solo dibuja la fila CPU/GPU con cpu_stats/gpu_stats: una métrica suelta la necesita
+  assert.ok(all.includes('cpu_stats') && all.includes('gpu_stats'));
+  const none = M.gameModeLines({ metrics: [] });
+  for (const k of ['cpu_stats=0', 'gpu_stats=0', 'fps=0']) assert.ok(none.includes(k), k);
   assert.deepStrictEqual(M.gameModeLines(null)[0], 'position=top-right');
+  assert.ok(M.gameModeLines(null).includes('cpu_temp'), 'sin prefs: métricas por defecto (temperatura incluida)');
+});
+
+test('gameModeLines: escala -> font_size (24 x escala) y look MangoHud de alto contraste con los colores del overlay', () => {
+  const size = (scale) => M.gameModeLines({ scale }).find((l) => l.startsWith('font_size='));
+  assert.deepStrictEqual(['S', 'M', 'L', 'XL', 'nope'].map(size), ['font_size=24', 'font_size=30', 'font_size=36', 'font_size=48', 'font_size=30']);
+  const l = M.gameModeLines({});
+  for (const k of ['background_alpha=0.85', 'background_color=000000', 'text_color=FFFFFF', 'text_outline=1',
+    'cpu_color=4FB3FF', 'gpu_color=42D77D', 'ram_color=FF85C0', 'vram_color=C4A1FF']) assert.ok(l.includes(k), k);
 });
 
 test('gameModeLines: nunca exec= ni saltos de línea inyectados; solo claves conocidas', () => {
-  const evil = M.gameModeLines({ corner: 'top-left\nexec=rm -rf ~', accent: '#ffffff\nexec=x', layout: 'row\nexec=y', show: { cpu: true } });
+  const evil = M.gameModeLines({ corner: 'top-left\nexec=rm -rf ~', scale: 'M\nexec=x', metrics: ['cpu_temp\nexec=y', 'exec'] });
   for (const l of evil) {
     assert.match(l, /^[a-z_]+(=[A-Za-z0-9.-]+)?$/, l);
     assert.ok(!l.startsWith('exec'), l);
@@ -102,9 +112,9 @@ test('gameModeLines: nunca exec= ni saltos de línea inyectados; solo claves con
 });
 
 test('missingRows: lo que MangoHud no puede mostrar (ventiladores ASUS) se dice, no se inventa', () => {
-  assert.deepStrictEqual(M.missingRows({ cpu: true, gpu: true, fans: true }), ['fans']);
-  assert.deepStrictEqual(M.missingRows({ fans: false }), []);
-  assert.deepStrictEqual(M.missingRows(null), ['fans']);
+  assert.deepStrictEqual(M.missingRows(['cpu_temp', 'fan']), ['fans']);
+  assert.deepStrictEqual(M.missingRows(['cpu_temp']), []);
+  assert.deepStrictEqual(M.missingRows(null), ['fans'], 'sin prefs: defaults (incluyen FAN)');
 });
 
 test('writeBlock: crea la carpeta, escribe atómico, conserva al usuario y quitar no crea archivo', () => {

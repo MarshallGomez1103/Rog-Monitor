@@ -72,6 +72,7 @@ run('widget-status-view.js');   // app.js la desestructura al cargar (N-A4-03); 
 run('chart-editor-model.js');   // app.js usa window.RogChartEditor al cargar (N-A3-01); no registra claves
 run('charts-catalog.js');   // app.js la desestructura al cargar (F3-02); no registra claves
 run('fan-curve-model.js');   // app.js la desestructura al cargar (F3-02); no registra claves
+run('overlay-metrics.js');   // overlay-prefs.js lo usa al cargar (S11b); registra overlay.m_*, size*
 run('overlay-prefs.js');   // app.js usa window.RogOverlayPrefs al cargar (S11); registra overlay.*
 
 // El resto de archivos que registran claves.

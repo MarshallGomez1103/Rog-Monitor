@@ -697,12 +697,10 @@
         <label><span data-i18n="overlay.offset_y">Desplazamiento vertical (px)</span>
           <input type="number" id="overlay-offset-y" min="-2000" max="2000" step="1" value="0">
         </label>
-        <label><span data-i18n="overlay.format">Formato</span>
-          <select id="overlay-layout">
-            <option value="row" data-i18n="overlay.layout_row">Fila delgada (estorba menos)</option>
-            <option value="box" data-i18n="overlay.layout_box">Cuadro (más detalle)</option>
-          </select>
-        </label>
+      </div>
+      <div class="ov-size" role="group" aria-labelledby="ov-size-label">
+        <span id="ov-size-label" data-i18n="overlay.size">Tamaño</span>
+        <div id="ov-scale" class="ov-seg"></div>
       </div>
       <div id="overlay-compat-row" class="ov-compat hidden">
         <label class="check-row" for="overlay-compat">
@@ -713,21 +711,11 @@
       </div>
 
       <h4 class="ov-section" data-i18n="overlay.show_label">¿Qué quieres ver en el overlay?</h4>
-      <label class="check-row" for="ov-show-cpu">
-        <input type="checkbox" id="ov-show-cpu" checked>
-        <span data-i18n="overlay.show_cpu">CPU — temperatura promedio de los núcleos y vatios del paquete</span>
-      </label>
-      <label class="check-row" for="ov-show-gpu">
-        <input type="checkbox" id="ov-show-gpu" checked>
-        <span data-i18n="overlay.show_gpu">GPU — temperatura, vatios y % de uso</span>
-      </label>
-      <label class="check-row" for="ov-show-fans">
-        <input type="checkbox" id="ov-show-fans" checked>
-        <span data-i18n="overlay.show_fans">Ventiladores — RPM en vivo</span>
-      </label>
+      <p class="sub" data-i18n="overlay.metrics_hint">Activa cada dato por separado. Una fila sin datos activos no se muestra; si un dato no está disponible se ve «—».</p>
+      <div id="ov-metrics" class="ov-metrics"></div>
       <label class="check-row" for="fps-logging">
         <input type="checkbox" id="fps-logging">
-        <span data-i18n="overlay.show_fps">FPS del juego</span>
+        <span data-i18n="overlay.fps_logging">Registrar FPS con MangoHud (necesario para ver los FPS)</span>
       </label>
       <p class="sub" id="fps-note" data-i18n="overlay.fps_note">Los FPS solo puede medirlos algo que corre
         <b>dentro</b> del juego; en Linux eso es <b>MangoHud</b>.</p>
@@ -917,6 +905,7 @@
   <script src="chart-editor-model.js"></script>
   <script src="charts-catalog.js"></script>
   <script src="fan-curve-model.js"></script>
+  <script src="overlay-metrics.js"></script>
   <script src="overlay-prefs.js"></script>
   <script src="app.js"></script>
   <script src="overlay-editor.js"></script>

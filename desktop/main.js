@@ -648,7 +648,7 @@ ipcMain.handle('get-game-mode', () => ({
   ok: true,
   enabled: mango.readEnabled(MANGOHUD_CONF, mango.GAME_MARKERS),
   mangohud: !!whichBin('mangohud'),
-  missing: mango.missingRows(overlayCfg.show),
+  missing: mango.missingRows(overlayCfg.metrics),
 }));
 
 // Las métricas/anclaje salen de overlayCfg (ya validado en set-overlay), no del renderer.
@@ -1270,14 +1270,14 @@ function positionOverlay() {
   if (!overlay || overlay.isDestroyed()) return;
   const pick = overlayWin.pickDisplay(screen.getAllDisplays(), overlayCfg, screen.getPrimaryDisplay().id);
   if (!pick) return;
-  const size = overlayWin.fitSize(overlayFitSize, overlayCfg.layout);
+  const size = overlayWin.fitSize(overlayFitSize);
   const pos = overlayWin.overlayPosition(pick.display.bounds, size, overlayCfg.corner,
     { x: overlayCfg.offsetX, y: overlayCfg.offsetY });
   overlay.setBounds({ ...pos, ...size });
 }
 
 function createOverlay() {
-  const size = overlayWin.fitSize(overlayFitSize, overlayCfg.layout);
+  const size = overlayWin.fitSize(overlayFitSize);
   overlay = new BrowserWindow(overlayWin.windowOptions(size, path.join(__dirname, 'preload.js')));
   // encima de juegos a pantalla completa en todos los escritorios virtuales
   overlay.setAlwaysOnTop(true, 'screen-saver');
@@ -1292,13 +1292,12 @@ function createOverlay() {
   overlay.on('closed', () => { overlay = null; });
 }
 
-// El overlay decide qué filas pintar, el layout (fila/cuadro) y el acento del tema.
+// El overlay pinta las métricas elegidas (vertical, una por fila) a la escala S/M/L/XL (S11b).
 function pushOverlayConfig() {
   if (overlay && !overlay.isDestroyed()) {
     overlay.webContents.send('overlay-config', {
-      show: overlayCfg.show,
-      layout: overlayCfg.layout,
-      accent: overlayCfg.accent,
+      metrics: overlayCfg.metrics,
+      scale: overlayCfg.scale,
       // Umbrales de color por nivel (cpu/gpu); sin stats aún va null y el overlay usa sus defaults.
       temp_colors: lastTempLimits || null,
     });

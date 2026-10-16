@@ -9,30 +9,40 @@ const P = require('../renderer/overlay-prefs.js');
 const LANGS = ['en', 'es', 'fr', 'it', 'pt', 'zh', 'ja', 'ko'];
 const t = (k, v) => (v ? `${k}${JSON.stringify(v)}` : k);
 
-test('parse: JSON corrupto o vacío -> defaults seguros (anclaje arriba-derecha, fila, todo visible)', () => {
-  for (const raw of [null, '', '{', '[]', '42', '"x"']) {
-    assert.deepStrictEqual(P.parse(raw), { v: 2, enabled: false, monitor: null, displayId: null, corner: 'top-right',
-      offsetX: 0, offsetY: 0, layout: 'row', show: { cpu: true, gpu: true, fans: true } }, String(raw));
-  }
+const OM = require('../renderer/overlay-metrics.js');
+const DEF = { v: 2, enabled: false, monitor: null, displayId: null, corner: 'top-right', offsetX: 0, offsetY: 0,
+  metrics: OM.DEFAULT_METRICS, scale: 'M' };
+
+test('parse: JSON corrupto o vacío -> defaults seguros (arriba-derecha, métricas por defecto, tamaño M)', () => {
+  for (const raw of [null, '', '{', '[]', '42', '"x"']) assert.deepStrictEqual(P.parse(raw), DEF, String(raw));
 });
 
-test('parse: preferencias antiguas (v1: displayId, sin offsets) se migran sin perder lo elegido', () => {
+test('parse: preferencias antiguas (v1/S11: displayId, layout, show por filas, sin escala) se migran sin perder lo elegido', () => {
   const old = JSON.stringify({ enabled: true, displayId: 22, corner: 'top-center', layout: 'box', show: { fans: false }, accent: '#fff' });
-  assert.deepStrictEqual(P.parse(old), { v: 2, enabled: true, monitor: null, displayId: 22, corner: 'top-center',
-    offsetX: 0, offsetY: 0, layout: 'box', show: { cpu: true, gpu: true, fans: false } });
+  assert.deepStrictEqual(P.parse(old), { ...DEF, enabled: true, displayId: 22, corner: 'top-center',
+    metrics: ['cpu_usage', 'cpu_temp', 'cpu_power', 'gpu_usage', 'gpu_temp', 'gpu_power', 'fps'] });
+  // S11 v2 sin escala -> M; layout viejo se ignora (siempre vertical)
+  const v2 = P.parse(JSON.stringify({ v: 2, layout: 'row', show: { cpu: true, gpu: false, fans: true } }));
+  assert.strictEqual(v2.scale, 'M');
+  assert.strictEqual('layout' in v2, false);
+  assert.strictEqual('show' in v2, false);
+  assert.deepStrictEqual(v2.metrics, ['cpu_usage', 'cpu_temp', 'cpu_power', 'fps', 'fan']);
 });
 
 test('normalize: valores fuera de rango o de tipo incorrecto se corrigen', () => {
-  const p = P.normalize({ enabled: 'yes', monitor: 2.5, corner: 'middle', offsetX: 99999, offsetY: '-12', layout: 'grid', show: { cpu: 0, gpu: false } });
+  const p = P.normalize({ enabled: 'yes', monitor: 2.5, corner: 'middle', offsetX: 99999, offsetY: '-12', scale: 'XXL', metrics: ['gpu_freq', 'evil', 'cpu_freq'] });
   assert.strictEqual(p.enabled, false);
   assert.strictEqual(p.monitor, null);
   assert.strictEqual(p.corner, 'top-right');
   assert.strictEqual(p.offsetX, 2000);
   assert.strictEqual(p.offsetY, -12);
-  assert.strictEqual(p.layout, 'row');
-  assert.deepStrictEqual(p.show, { cpu: true, gpu: false, fans: true });
+  assert.strictEqual(p.scale, 'M');
+  assert.deepStrictEqual(p.metrics, ['cpu_freq', 'gpu_freq']);
   assert.strictEqual(P.normalize({ monitor: 1 }).monitor, 1);
-  assert.strictEqual(P.normalize({ show: { fps: true } }).show.fps, true);
+  assert.strictEqual(P.normalize({ scale: 'XL' }).scale, 'XL');
+  assert.deepStrictEqual(P.normalize({ metrics: [] }).metrics, [], 'todo apagado es una elección válida');
+  // las métricas guardadas mandan sobre un show viejo que quedara al lado
+  assert.deepStrictEqual(P.normalize({ metrics: ['ram'], show: { cpu: true } }).metrics, ['ram']);
 });
 
 test('monitorOptions: "Monitor N" por índice estable, tamaño, conector y principal', () => {

@@ -66,8 +66,11 @@ test('fitSize: tamaño pedido por el overlay redondeado y acotado', () => {
   assert.deepStrictEqual(W.fitSize({ width: 312.4, height: 41.6 }), { width: 313, height: 42 });
   assert.deepStrictEqual(W.fitSize({ width: 5, height: 5 }), { width: 80, height: 24 });
   assert.deepStrictEqual(W.fitSize({ width: 9000, height: 9000 }), { width: 1200, height: 600 });
-  assert.deepStrictEqual(W.fitSize(null), W.DEFAULT_SIZE.row);
-  assert.deepStrictEqual(W.fitSize({ width: NaN, height: 30 }, 'box'), W.DEFAULT_SIZE.box);
+  assert.deepStrictEqual(W.fitSize(null), W.DEFAULT_SIZE);
+  assert.deepStrictEqual(W.fitSize({ width: NaN, height: 30 }), W.DEFAULT_SIZE);
+  // S11b: vertical, una métrica por fila -> más alto que en fila; XL (200 %) cabe sin recortar
+  assert.ok(W.DEFAULT_SIZE.height > W.DEFAULT_SIZE.width / 2);
+  assert.deepStrictEqual(W.fitSize({ width: 760, height: 470 }), { width: 760, height: 470 });
 });
 
 test('displaySummary: índice estable, tamaño, primario y nombre del conector si existe', () => {
@@ -114,15 +117,17 @@ test('needsX11Relaunch: solo Linux + Wayland + XWayland + preferencia activa + a
 });
 
 test('normalizeCfg: valida lo que llega por IPC y conserva lo anterior si falta o es inválido', () => {
+  const DEF = require('../renderer/overlay-metrics.js').DEFAULT_METRICS;
   const d = W.normalizeCfg(undefined);
   assert.deepStrictEqual(d, { enabled: false, monitor: null, displayId: null, corner: 'top-right', offsetX: 0, offsetY: 0,
-    show: { cpu: true, gpu: true, fans: true }, layout: 'row', accent: null });
-  const a = W.normalizeCfg({ enabled: 1, monitor: 1, corner: 'bottom-left', offsetX: 12.6, offsetY: -9000, show: { cpu: false, fps: true, evil: 'x' }, layout: 'box', accent: '#ff5a1f' }, d);
+    metrics: DEF, scale: 'M' });
+  const a = W.normalizeCfg({ enabled: 1, monitor: 1, corner: 'bottom-left', offsetX: 12.6, offsetY: -9000,
+    metrics: ['cpu_freq', 'evil', 'fan'], scale: 'XL', layout: 'box', show: { cpu: false }, accent: '#ff5a1f' }, d);
   assert.deepStrictEqual(a, { enabled: true, monitor: 1, displayId: null, corner: 'bottom-left', offsetX: 13, offsetY: -2000,
-    show: { cpu: false, gpu: true, fans: true, fps: true }, layout: 'box', accent: '#ff5a1f' });
-  const b = W.normalizeCfg({ enabled: false, monitor: -1, corner: 'x', layout: 'grid', accent: 'red;background:url(x)', offsetX: 'a' }, a);
+    metrics: ['cpu_freq', 'fan'], scale: 'XL' });
+  const b = W.normalizeCfg({ enabled: false, monitor: -1, corner: 'x', scale: 'huge', metrics: 'cpu_temp', offsetX: 'a' }, a);
   assert.deepStrictEqual(b, { ...a, enabled: false, offsetX: 13 });
-  assert.strictEqual(W.normalizeCfg({ accent: 'rgb(10, 20, 30)' }).accent, 'rgb(10, 20, 30)');
+  assert.deepStrictEqual(W.normalizeCfg({ metrics: [] }, a).metrics, []);
   assert.strictEqual(W.normalizeCfg({ displayId: 22 }).displayId, 22);
   assert.strictEqual(W.normalizeCfg({ monitor: null }, a).monitor, null, 'null explícito = primario');
 });

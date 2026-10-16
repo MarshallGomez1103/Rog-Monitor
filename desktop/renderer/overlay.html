@@ -5,20 +5,18 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'">
   <title>ROG Overlay</title>
   <style>
-    /* S11: rediseño sobrio, cuadrado (Carbon/ROG). Legible sobre cualquier juego: fondo oscuro
-       semitransparente, texto claro con sombra; el acento lo manda el tema activo (overlay-config).
+    /* S11b: estilo MangoHud de alto contraste. Fondo negro al 85 %, valores blanco puro en negrita,
+       etiqueta de color fijo por fila (overlay-metrics.js; contraste >= 4.5:1 comprobado en test),
+       esquinas cuadradas y borde mínimo. Todo escala con --scale (S/M/L/XL = 1/1.25/1.5/2).
        La ventana se ajusta a .card (overlay.js -> overlayFit), así el anclaje cae en el borde real. */
     :root {
-      --ok:    #42be65;
-      --warn:  #f1c21b;
-      --hot:   #ff832b;
-      --crit:  #fa4d56;
-      --ink:   #f4f4f4;
-      --dim:   #a8a8a8;
-      --label: #c6c6c6;
-      --bg:    rgba(22, 22, 22, 0.78);
-      --border: rgba(255, 255, 255, 0.16);
-      --accent: #c8f;
+      --scale: 1.25;
+      --bg: rgba(0, 0, 0, 0.85);
+      --value: #ffffff;
+      --unit: #d0d0d0;
+      --profile: #ffab5c;
+      --warn: #f1c21b;
+      --border: rgba(255, 255, 255, 0.22);
       --mono: "IBM Plex Mono", "JetBrains Mono", "DejaVu Sans Mono", monospace;
     }
 
@@ -31,162 +29,76 @@
     }
     body {
       font-family: "IBM Plex Sans", "Inter", "Noto Sans", system-ui, sans-serif;
-      color: var(--ink);
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+      color: var(--value);
+      text-shadow: 0 0 2px #000, 0 1px 1px #000;
     }
 
-    /* ---- tarjeta ---- */
     .card {
       display: inline-block;
       width: max-content;
-      min-width: 150px;
       background: var(--bg);
       border: 1px solid var(--border);
-      border-left: 3px solid var(--accent);
-      padding: 8px 12px 8px 10px;
+      padding: calc(5px * var(--scale)) calc(10px * var(--scale)) calc(6px * var(--scale));
     }
 
     .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 6px;
-      padding-bottom: 5px;
-      border-bottom: 1px solid var(--border);
-    }
-    .header-brand {
-      font-size: 10px;
+      font-size: calc(12px * var(--scale));
       font-weight: 700;
-      letter-spacing: 1.5px;
-      color: var(--accent);
-    }
-    .header-profile {
-      font-size: 10px;
       letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--dim);
+      color: var(--profile);
+      margin-bottom: calc(2px * var(--scale));
     }
 
-    /* ---- filas ---- */
+    /* una fila por componente (vertical, como MangoHud) */
     .row {
       display: flex;
       align-items: baseline;
-      gap: 5px;
-      margin: 3px 0;
+      gap: calc(9px * var(--scale));
+      line-height: 1.2;
+      white-space: nowrap;
     }
     .row-label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.8px;
-      color: var(--label);
-      width: 32px;
+      width: calc(48px * var(--scale));
       flex-shrink: 0;
+      font-size: calc(14px * var(--scale));
+      font-weight: 800;
+      letter-spacing: 0.5px;
     }
-    .row-value {
-      font-family: var(--mono);
-      font-size: 22px;
-      font-weight: 600;
-      font-variant-numeric: tabular-nums;
-      line-height: 1;
-      min-width: 2ch;
+    .cell { display: inline-flex; align-items: baseline; gap: calc(2px * var(--scale)); }
+    .v {
+      min-width: 3ch;
       text-align: right;
-    }
-    .row-unit { font-size: 11px; color: var(--dim); }
-    .row-sub {
       font-family: var(--mono);
-      font-size: 11px;
-      color: var(--dim);
-      margin-left: auto;
-      padding-left: 12px;
+      font-size: calc(22px * var(--scale));
+      font-weight: 700;
       font-variant-numeric: tabular-nums;
+      color: var(--value);
     }
-    #fps-row .row-label { color: var(--accent); }
-
-    .divider { height: 1px; background: var(--border); margin: 6px 0 5px; }
-
-    /* ---- ventiladores ---- */
-    .fans-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-    .fans-label {
-      font-size: 11px;
+    .cell[data-metric="gpu_freq"] .v, .cell[data-metric="fan"] .v, .cell[data-metric="ram"] .v { min-width: 4ch; }
+    .u, .k {
+      font-size: calc(13px * var(--scale));
       font-weight: 600;
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-      color: var(--label);
+      color: var(--unit);
     }
-    .fan-chip {
-      font-family: var(--mono);
-      font-size: 12px;
-      font-variant-numeric: tabular-nums;
-      color: var(--ink);
-    }
-    .fan-chip .fan-key { color: var(--dim); font-size: 10px; }
-    .fan-chip .fan-pct { color: var(--dim); font-size: 10px; }
-    .fans-none { font-size: 12px; color: var(--dim); }
+    .k { margin-right: calc(2px * var(--scale)); }
 
-    /* ============ FILA (por defecto): una franja; segmentos separados por una línea ============ */
-    body.layout-row .card {
-      display: inline-flex;
-      align-items: center;
-      padding: 6px 0;
+    #stale-mark {
+      margin-top: calc(3px * var(--scale));
+      font-size: calc(12px * var(--scale));
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--warn);
+      white-space: nowrap;
     }
-    body.layout-row .header,
-    body.layout-row .divider { display: none; }
-    body.layout-row .row,
-    body.layout-row #fans-section {
-      margin: 0;
-      padding: 0 12px;
-      border-left: 1px solid var(--border);
-    }
-    body.layout-row .seg-first { border-left: 0; }
-    body.layout-row .row-label { width: auto; }
-    body.layout-row .row-value { font-size: 20px; }
-    body.layout-row .row-sub { margin-left: 4px; padding-left: 0; }
-    body.layout-row .fans-row { flex-wrap: nowrap; }
-    body.layout-row #stale-mark { padding: 0 12px; }
   </style>
 </head>
 <body>
   <div class="card">
-    <!-- Encabezado: marca + perfil activo -->
-    <div class="header">
-      <span class="header-brand" id="brand-label">ROG MONITOR</span>
-      <span class="header-profile" id="prof">--</span>
-    </div>
-
-    <!-- FPS (MangoHud, solo cuando hay dato) -->
-    <div class="row" id="fps-row" style="display:none">
-      <span class="row-label" id="fps-label">FPS</span>
-      <span class="row-value" id="fps-v">--</span>
-      <span class="row-sub" id="fps-source">MangoHud</span>
-    </div>
-
-    <!-- CPU -->
-    <div class="row" id="cpu-row">
-      <span class="row-label" id="cpu-label">CPU</span>
-      <span class="row-value" id="cpu-t">--</span>
-      <span class="row-unit">°</span>
-      <span class="row-sub" id="cpu-w">-- W</span>
-    </div>
-
-    <!-- GPU -->
-    <div class="row" id="gpu-row">
-      <span class="row-label" id="gpu-label">GPU</span>
-      <span class="row-value" id="gpu-t">--</span>
-      <span class="row-unit">°</span>
-      <span class="row-sub" id="gpu-w">-- W · --%</span>
-    </div>
-
-    <!-- Ventiladores -->
-    <div id="fans-section">
-      <div class="divider"></div>
-      <div class="fans-row" id="fans-row">
-        <span class="fans-label" id="fans-label">Fans</span>
-        <span class="fans-none" id="fans-none">--</span>
-      </div>
-    </div>
+    <div class="header"><span id="prof">—</span></div>
+    <div id="rows"></div>
   </div>
 
+  <script src="overlay-metrics.js"></script>
   <script src="overlay.js"></script>
 </body>
 </html>

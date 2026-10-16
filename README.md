@@ -138,10 +138,13 @@ Threat model and reporting process: [SECURITY.md](SECURITY.md).
   **Alt+Up/Down**, or drag a row by its handle, and apply quick presets.
   The selection is saved by the app. Dragging uses Pointer Events (Escape cancels).
 - **Gaming overlay** (opt-in, **partial**): transparent, frameless, always-on-top,
-  click-through strip. The **OVERLAY** button in the top bar (or `Ctrl+Shift+O`,
-  or the tray menu) turns it on; the button next to it opens the settings:
-  monitor (Monitor 1 = left-most), one of 7 positions plus an offset, and which
-  metrics to show. On KDE Wayland the compositor ignores the position, so the
+  click-through panel in a high-contrast MangoHud style (near-black background,
+  bold white numbers, one coloured label per row). The **OVERLAY** button in the
+  top bar (or `Ctrl+Shift+O`, or the tray menu) turns it on; the button next to
+  it opens the settings: monitor (Monitor 1 = left-most), one of 7 positions
+  plus an offset, size **S/M/L/XL** (100–200 %, applied live) and each metric on
+  its own (CPU/GPU usage, temperature, watts and clock; RAM; VRAM; FPS; fan RPM;
+  a missing reading shows `—`). On KDE Wayland the compositor ignores the position, so the
   settings offer an **overlay compatibility mode (XWayland)** that restarts the
   app and then honours monitor and corner (measured on 2 monitors). A **game
   mode** writes its own marked block to `~/.config/MangoHud/MangoHud.conf` so

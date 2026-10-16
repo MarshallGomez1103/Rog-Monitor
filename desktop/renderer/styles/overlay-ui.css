@@ -82,3 +82,39 @@
 .ov-compat p.sub { margin: 2px 0 6px 26px; }
 .overlay-card .ov-missing:empty { display: none; }
 .overlay-card .ov-missing { color: var(--ink); }
+
+/* ---- S11b: tamaño S/M/L/XL (segmento cuadrado) y métricas por fila ---- */
+.ov-size {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0 4px;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+.ov-seg { display: inline-flex; border: 1px solid var(--hair); }
+.ov-seg .ghost {
+  min-width: 44px;
+  padding: 6px 10px;
+  border: 0;
+  border-left: 1px solid var(--hair);
+  border-radius: 0;
+  clip-path: none;
+  font-weight: 700;
+}
+.ov-seg .ghost:first-child { border-left: 0; }
+.ov-seg .ghost.active { color: var(--ink); background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.ov-seg .ghost:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.ov-metrics { display: grid; gap: 6px; margin: 8px 0 4px; }
+.ov-mrow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; }
+.ov-mrow .check-row { margin-top: 0; }
+/* la etiqueta se ve como en el overlay: color fijo sobre negro, sea cual sea el tema */
+.ov-mtag {
+  min-width: 52px;
+  padding: 3px 6px;
+  background: #000;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}

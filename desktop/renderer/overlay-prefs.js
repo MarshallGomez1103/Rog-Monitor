@@ -6,12 +6,14 @@
 (function (root) {
   'use strict';
 
+  // S11b: métricas elegibles y escala viven en overlay-metrics.js (cargado antes en index.html)
+  const OM = (root && root.RogOverlayMetrics) || require('./overlay-metrics.js');
   const ANCHORS = ['top-left', 'top-center', 'top-right', 'center', 'bottom-left', 'bottom-center', 'bottom-right'];
   const OFFSET_MAX = 2000;
 
   function defaults() {
     return { v: 2, enabled: false, monitor: null, displayId: null, corner: 'top-right', offsetX: 0, offsetY: 0,
-      layout: 'row', show: { cpu: true, gpu: true, fans: true } };
+      metrics: OM.DEFAULT_METRICS.slice(), scale: OM.DEFAULT_SCALE };
   }
 
   function offset(v) {
@@ -21,11 +23,11 @@
 
   // v1 guardaba displayId (id de Electron, cambia al reconectar) y no tenía offsets: se conserva
   // displayId como pista y main.js lo resuelve; el selector guarda desde ahora el índice estable.
+  // S11b: `show` (filas enteras) se migra a `metrics`; `layout` (fila/cuadro) se ignora: siempre
+  // vertical, una métrica por fila; sin `scale` -> M.
   function normalize(raw) {
     const d = defaults();
     const r = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
-    const show = { ...d.show };
-    for (const k of ['cpu', 'gpu', 'fans', 'fps']) if (r.show && typeof r.show[k] === 'boolean') show[k] = r.show[k];
     return {
       v: 2,
       enabled: r.enabled === true,
@@ -34,8 +36,8 @@
       corner: ANCHORS.includes(r.corner) ? r.corner : d.corner,
       offsetX: offset(r.offsetX),
       offsetY: offset(r.offsetY),
-      layout: r.layout === 'box' ? 'box' : 'row',
-      show,
+      metrics: Array.isArray(r.metrics) ? OM.normalizeMetrics(r.metrics) : OM.migrateShow(r.show),
+      scale: OM.normalizeScale(r.scale),
     };
   }
 
