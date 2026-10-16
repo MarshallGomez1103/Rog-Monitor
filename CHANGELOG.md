@@ -2,6 +2,8 @@
 
 ## 22.0.0 — 2026-10-14
 
+- Overlay: botón OVERLAY en la barra (Ctrl+Shift+O, bandeja); modo compatibilidad XWayland que respeta monitor y esquina (requiere reiniciar); modo juego MangoHud; rediseño. Parcial hasta probarlo con juegos reales.
+
 After the post-90 audit (`docs/audits/post90/`). **Root-side scripts changed** in this
 release (`rog-profile-sync.sh`, `rog-ctl.sh` paths and the fan watchdog) and `VERSION` is
 now **22.0.0**, so the app detects the old installed copies and asks you to reinstall them:

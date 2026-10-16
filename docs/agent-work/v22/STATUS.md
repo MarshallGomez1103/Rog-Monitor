@@ -20,6 +20,10 @@ Conciliación de estados (prevalece ficha + git sobre filas antiguas):
 | F1-08, F1-09, F1-10, F6-01, F7-10 | BLOCKED_OWNER (VM / root / Wayland / guardián real) | – |
 Defectos nuevos: N-DEF-01..05 (ver S00-BASE.md). Siguiente: **S01** (N-A1-01).
 
+## Tanda 6 (2026-10-15) — S11 overlay (Claude) integrado
+| S11 overlay (acceso visible, XWayland A2 por relanzamiento, rediseño, modo juego MangoHud) + S08 overlay-window.js | TESTED (S12 juego real BLOCKED_OWNER) | S11-OVERLAY.md | feat/v22-overlay 2e02084..fb3e8b6 |
+2026-10-15 S11 CP-1..9 · overlay-window.js, mangohud-block.js, overlay-prefs.js, overlay-editor.js, main.js, overlay.* · node --test 337/337, py 1009 OK 95.20 %, e2e 31/31, CDP S11/S02/S03 PASS, XWayland real 17/17 · TESTED (verificado de nuevo por root tras el merge)
+
 ## Tanda 5 (2026-10-15) — feedback del propietario, 22.0.0, S08 parcial, S10 spike · HEAD e8d4ce6 · TRASPASO A CODEX
 py 95,2 %; node 302/302; i18n 1072×8; e2e 31/31; CDP PASS; CI remoto verde.
 | CP | Estado | Ficha |
