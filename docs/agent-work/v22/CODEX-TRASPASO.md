@@ -10,7 +10,7 @@ git status --short --branch && git log --oneline -5
 sed -n 1,25p docs/agent-work/v22/HANDOFF.md
 sed -n 1,60p docs/agent-work/v22/STATUS.md
 ```
-Lectura obligatoria: `docs/agent-work/v22/PLAN-SIGUIENTE.md` (plan vigente S00–S18), `DECISIONS.md` (V22-D1..D13), `RISKS.md`, `docs/adr/0005`, `0006`, `0007`, y la ficha del CP que vayas a tocar en `checkpoints/`.
+Lectura obligatoria: `docs/agent-work/v22/PLAN-SIGUIENTE.md` (plan vigente S00–S18), `DECISIONS.md` (V22-D1..D14), `RISKS.md`, `docs/adr/0005`, `0006`, `0007`, y la ficha del CP que vayas a tocar en `checkpoints/`.
 `AGENTS.md` y `CLAUDE.md` están en `.gitignore`: existen solo en este checkout (no en worktrees ni en GitHub).
 
 ## 1. Dónde está el proyecto
@@ -24,13 +24,14 @@ Lectura obligatoria: `docs/agent-work/v22/PLAN-SIGUIENTE.md` (plan vigente S00�
 | S07 README, roadmap doble, CHANGELOG | TESTED (check-docs en CI) | N-C-01-04.md, N-C-02-03.md |
 | Versión única 22.0.0 | TESTED | VERSION-01.md |
 | S08 extracción modular | **EN CURSO**: hechos charts-catalog.js, fan-curve-model.js (app.js 4066→3886), backend-bridge.js (main.js 1845→1736) | F3-01.md, F3-02.md, F3-03-F3-04.md |
-| S10 overlay: spike medido + ADR-0007 (proposed) | TESTED (documental) | F6-01-F6-02.md |
-| S09, S11–S18 | TODO | PLAN-SIGUIENTE.md |
+| S10 overlay: spike medido + ADR-0007 | TESTED; ADR-0007 **accepted** | F6-01-F6-02.md |
+| S11 + S11b overlay (botón, XWayland A2, monitor/anclaje, estilo MangoHud, S/M/L/XL, métricas elegibles, modo juego) | **TESTED, terminado** (2026-10-16). S12 = solo validación del propietario con juegos (OWNER-03) | S11-OVERLAY.md, S11b-OVERLAY-V2.md |
+| S09, S13–S18 (y lo pendiente de S08) | TODO — cola de Codex (§2) | PLAN-SIGUIENTE.md |
 
 Números verificados (2026-10-15): Python 1009+ tests, cobertura 95,2 %; Node 302 tests (≥99 % líneas, piso 90); i18n 1072 claves × 8 idiomas; e2e 31/31; CDP S01/S02/S03 PASS.
 
-## 2. Reparto: qué es de Codex y qué queda reservado a Claude
-**Overlay: HECHO por Claude el 2026-10-15 (S11 TESTED, ADR-0007 accepted; ver checkpoints/S11-OVERLAY.md). Solo queda la validación con juegos reales (OWNER-03). Lo que sigue es histórico:** todo el **overlay** — decisión A2 vs A3 de ADR-0007, implementación (botón visible, anclaje/monitor real vía XWayland, rediseño, modo juego MangoHud), corte S08 `overlay-window.js`, S11/S12, y la validación visual del propietario (OWNER-02/03). **No toques** `desktop/renderer/overlay.*`, el bloque overlay de `desktop/main.js` (~1260-1390: `positionOverlay`, `createOverlay`, `applyOverlay`), ni el modal de overlay en `app.js` (`overlayPrefs`, `openOverlayModal`).
+## 2. Reparto
+**Overlay: TERMINADO** (S10, S11, S11b; ADR-0007 accepted). Solo queda que Marshall lo valide con juegos reales (OWNER-03, pasos en `checkpoints/S11b-OVERLAY-V2.md`). No es trabajo de Codex salvo que Marshall reporte un bug concreto; en ese caso, TDD como siempre y sin reescribir el diseño (`desktop/overlay-window.js`, `desktop/mangohud-block.js`, `desktop/renderer/overlay*.js`, `overlay.html`, `styles/overlay-ui.css`).
 
 **Para Codex — cola priorizada** (cada uno: RED primero, ficha `checkpoints/<ID>.md`, línea en STATUS, HANDOFF al día):
 1. **S09 — schema 2 con deltas (F2-08 gate, N-F2-SCHEMA-01/02, F2-10, N-F2-PERF-01).** Protocolo Python (`src/rog_monitor/app.py` + módulo nuevo `telemetry_protocol.py`) y consumidor JS (el parser ya vive en `desktop/backend-bridge.js`). Compatibilidad `schema:1` obligatoria; fixture `tests/fixtures/snapshot-v1.json` sin `ts` ni `ram_gb/swap_gb/gpu_util` (N-DEF-05). Medir bytes/tick antes y después.
@@ -87,5 +88,5 @@ Checks CDP versionados (todos con `RESULT: PASS|FAIL`): `evidence/S01/check-benc
 - `sudo bash scripts/install-system.sh` tras subir a 22.0.0 (la app lo pedirá).
 - Validar a mano: arrastre de gráficas en Historial, Ayuda > Acerca de, minimizar/restaurar (Python pasa a `T` y vuelve a `S`; lista en `checkpoints/F3-03-F3-04.md`).
 - Ventiladores: sigue probando en juego (V22-D13), reportar fallos.
-- Overlay con juegos reales (lista en `checkpoints/F6-01-F6-02.md`) — con Claude.
+- Overlay con juegos reales (pasos en `checkpoints/S11b-OVERLAY-V2.md`).
 - VM para instalador/recovery (F1-08/09), carga térmica de benchmarks (OWNER-04), merge a master/tag (OWNER-10).

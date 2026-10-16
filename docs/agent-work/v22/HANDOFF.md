@@ -2,8 +2,8 @@
 Actualizado: 2026-10-15 · **Traspaso Claude → Codex**: leer `docs/agent-work/v22/CODEX-TRASPASO.md` primero.
 - Rama `feat/v22`, HEAD `e8d4ce6` + commit de traspaso, CI remoto verde. VERSION 22.0.0. origin/master = 45cb9dc.
 - Último CP hecho: S08 F3-02 (charts-catalog, fan-curve-model) y F3-03/04 (backend-bridge); S10 spike + ADR-0007 (proposed).
-- Último CP Claude: S11 overlay (merge de feat/v22-overlay, fb3e8b6). CP en curso: ninguno. Archivos sin commit: ninguno. Worktrees: ninguno.
-- Siguiente para Codex: S09 schema 2 (F2-08 gate → N-F2-SCHEMA-01). Cola completa en CODEX-TRASPASO.md §2.
+- Último CP: S11b overlay v2 (merge d0e3adf + 4d6dea2). Overlay TERMINADO. CP en curso: ninguno. Archivos sin commit: ninguno. Worktrees: ninguno.
+- Siguiente (Codex): S09 schema 2 (F2-08 gate → N-F2-SCHEMA-01). Cola completa en CODEX-TRASPASO.md §2.
 - Overlay v2 S11b (estilo MangoHud, S/M/L/XL, métricas elegibles) integrado 2026-10-16 (`checkpoints/S11b-OVERLAY-V2.md`).
 - Overlay (Claude) **HECHO e integrado** 2026-10-15: S11 TESTED (ADR-0007 accepted: A2 por auto-relanzamiento + capa B MangoHud), ficha `checkpoints/S11-OVERLAY.md`. S12 con juego real = BLOCKED_OWNER (OWNER-03). Codex: no reescribir overlay-window.js, mangohud-block.js, overlay-metrics.js, overlay-prefs.js, overlay-editor.js, overlay.*.
 - Calientes: app.js, main.js, style.css, i18n.js, src/rog_monitor/app.py — un solo dueño por tanda.
