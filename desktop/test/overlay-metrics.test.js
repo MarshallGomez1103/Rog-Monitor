@@ -130,6 +130,17 @@ test('MangoHud: cada métrica tiene su clave equivalente (FAN no existe en Mango
   });
 });
 
+test('toggleMetric (editor): activa/desactiva una métrica suelta sin tocar las demás; orden del catálogo', () => {
+  assert.deepStrictEqual(M.toggleMetric(['cpu_temp', 'fan'], 'cpu_usage', true), ['cpu_usage', 'cpu_temp', 'fan']);
+  assert.deepStrictEqual(M.toggleMetric(['cpu_temp', 'fan'], 'cpu_temp', false), ['fan']);
+  assert.deepStrictEqual(M.toggleMetric(['fan'], 'fan', true), ['fan']);
+  assert.deepStrictEqual(M.toggleMetric(['fan'], 'evil', true), ['fan']);
+});
+
+test('scaleOptions (editor): S/M/L/XL con su porcentaje', () => {
+  assert.deepStrictEqual(plain(M.scaleOptions()), [{ id: 'S', pct: 100 }, { id: 'M', pct: 125 }, { id: 'L', pct: 150 }, { id: 'XL', pct: 200 }]);
+});
+
 test('i18n: los textos nuevos existen en los 8 idiomas', () => {
   assert.ok(Object.keys(M.STRINGS).length >= 10);
   for (const [k, v] of Object.entries(M.STRINGS)) {

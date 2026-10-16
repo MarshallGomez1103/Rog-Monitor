@@ -58,6 +58,16 @@
     return SCALES[normalizeScale(s)];
   }
 
+  // Editor: casilla de una métrica suelta.
+  function toggleMetric(list, m, on) {
+    const rest = normalizeMetrics(list).filter((x) => x !== m);
+    return normalizeMetrics(on ? rest.concat(m) : rest);
+  }
+
+  function scaleOptions() {
+    return SCALE_IDS.map((id) => ({ id, pct: Math.round(SCALES[id] * 100) }));
+  }
+
   function fmt(v, d) {
     if (v === null || v === undefined || v === '' || !Number.isFinite(Number(v))) return '—';
     return Number(v).toFixed(d || 0);
@@ -164,7 +174,7 @@
 
   const api = {
     ROWS, METRICS, DEFAULT_METRICS, SCALES, SCALE_IDS, DEFAULT_SCALE, PALETTE, DEFAULT_LIMITS, MANGO_KEYS, STRINGS,
-    normalizeMetrics, migrateShow, normalizeScale, scaleFactor, fmt, tempLevel, rows, luminance, contrast, composite, metricKey,
+    normalizeMetrics, migrateShow, normalizeScale, toggleMetric, scaleOptions, scaleFactor, fmt, tempLevel, rows, luminance, contrast, composite, metricKey,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.RogOverlayMetrics = api;
