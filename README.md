@@ -138,9 +138,16 @@ Threat model and reporting process: [SECURITY.md](SECURITY.md).
   **Alt+Up/Down**, or drag a row by its handle, and apply quick presets.
   The selection is saved by the app. Dragging uses Pointer Events (Escape cancels).
 - **Gaming overlay** (opt-in, **partial**): transparent, frameless, always-on-top,
-  click-through window; pick the monitor, one of 7 positions and which metrics to
-  show. It dims and shows `NO DATA` when samples stop for 6 s. Not yet verified
-  over fullscreen games on KDE Wayland (see roadmap).
+  click-through strip. The **OVERLAY** button in the top bar (or `Ctrl+Shift+O`,
+  or the tray menu) turns it on; the button next to it opens the settings:
+  monitor (Monitor 1 = left-most), one of 7 positions plus an offset, and which
+  metrics to show. On KDE Wayland the compositor ignores the position, so the
+  settings offer an **overlay compatibility mode (XWayland)** that restarts the
+  app and then honours monitor and corner (measured on 2 monitors). A **game
+  mode** writes its own marked block to `~/.config/MangoHud/MangoHud.conf` so
+  MangoHud draws the same metrics inside the game (`mangohud %command%`). It
+  dims and shows `NO DATA` when samples stop for 6 s. Not yet verified over real
+  fullscreen games (see roadmap and ADR-0007).
 - **First-run wizard**: detects fans, calibrates with `pkexec`, runs CPU/GPU
   benchmarks, and tours the app.
 - **Six widget states** per panel (below) and a `NO DATA` notice when the

@@ -1,0 +1,84 @@
+/* ROG Monitor — acceso rápido y editor del overlay (S11 / ADR-0007).
+   Botón OVERLAY + ajustes en la barra superior (segmento cuadrado, mismo corte que .segment)
+   y secciones/aviso del modal. Solo variables de tema: sirve en los 12 temas, claro y oscuro. */
+
+.overlay-quick {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--hair));
+  background: var(--chip);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%);
+}
+.overlay-quick .ghost {
+  border: 0;
+  border-radius: 0;
+  clip-path: none;
+  background: transparent;
+}
+.overlay-quick .overlay-gear {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 10px;
+  border-left: 1px solid var(--hair);
+}
+.overlay-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+/* lámpara cuadrada: apagada = solo contorno; encendida = acento sólido */
+.ov-lamp {
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--dim);
+  background: transparent;
+}
+.overlay-toggle.active { color: var(--ink); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.overlay-toggle.active .ov-lamp { background: var(--accent); border-color: var(--accent); }
+.overlay-quick .ghost:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* ---- modal ---- */
+.overlay-card .ov-section {
+  margin: 18px 0 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hair);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.overlay-card .ov-shortcut { margin-top: -6px; }
+.ov-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+  margin: 8px 0 4px;
+}
+.ov-grid label { display: grid; gap: 4px; font-size: 12.5px; color: var(--dim); }
+.ov-grid select, .ov-grid input { width: 100%; }
+.ov-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 4px 0 10px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--hot, #e8833a);
+  background: color-mix(in srgb, var(--hot, #e8833a) 10%, var(--chip));
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.ov-notice[data-level="ok"] {
+  border-left-color: var(--okstate, #34a853);
+  background: color-mix(in srgb, var(--okstate, #34a853) 10%, var(--chip));
+}
+.ov-notice.hidden { display: none; }
+.ov-notice #overlay-notice-text { flex: 1; }
+.ov-notice .ghost { flex: none; white-space: nowrap; }
+.ov-notice .ghost.hidden { display: none; }
+.ov-compat { margin-top: 6px; }
+.ov-compat.hidden { display: none; }
+.ov-compat p.sub { margin: 2px 0 6px 26px; }
+.overlay-card .ov-missing:empty { display: none; }
+.overlay-card .ov-missing { color: var(--ink); }

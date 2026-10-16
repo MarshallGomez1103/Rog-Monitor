@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="styles/disks.css" />
   <link rel="stylesheet" href="styles/diagnostics.css" />
   <link rel="stylesheet" href="styles/a11y.css" />
+  <link rel="stylesheet" href="styles/overlay-ui.css" />
 </head>
 <body>
   <header id="topbar">
@@ -51,6 +52,12 @@
           <button data-gpu="Hybrid">HYBRID</button>
           <button data-gpu="AsusMuxDgpu">dGPU</button>
         </div>
+      </div>
+
+      <!-- OVERLAY (S11): encender/apagar a 1 clic (Ctrl+Shift+O) + ajustes -->
+      <div class="overlay-quick" role="group" data-i18n-attr="aria-label:modal.overlay" aria-label="Overlay">
+        <button id="overlay-toggle" class="ghost overlay-toggle" type="button" aria-pressed="false" data-i18n-attr="title:overlay.toggle_tip" title="Mostrar u ocultar el overlay (Ctrl+Shift+O)"><span class="ov-lamp" aria-hidden="true"></span><span data-i18n="topbar.overlay">OVERLAY</span></button>
+        <button id="overlay-settings" class="ghost overlay-gear" type="button" data-i18n-attr="title:overlay.settings,aria-label:overlay.settings" title="Ajustes del overlay" aria-label="Ajustes del overlay"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 4h7M13 4h1M2 8h2M8 8h6M2 12h9M15 12h-1" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="9" y="2.5" width="3" height="3" fill="none" stroke="currentColor"/><rect x="4.5" y="6.5" width="3" height="3" fill="none" stroke="currentColor"/><rect x="11" y="10.5" width="3" height="3" fill="none" stroke="currentColor"/></svg></button>
       </div>
 
       <!-- TOOLS dropdown: POWER, OVERLAY, ALERTS, DIAGNÓSTICO -->
@@ -655,35 +662,57 @@
   </div>
 
   <div id="overlay-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="overlay-modal-title">
-    <div class="modal-card">
+    <div class="modal-card overlay-card">
       <h3 data-i18n="modal.overlay" id="overlay-modal-title">Overlay para juegos</h3>
-      <p class="sub" data-i18n="modal.overlay_sub">Una ventanita siempre encima con temperaturas, vatios y RPM.
-        No roba el foco del juego (es click-through) y aparece sobre pantalla completa.</p>
+      <p class="sub" data-i18n="modal.overlay_sub">Una franja siempre encima con temperaturas, vatios y RPM. No recibe clics ni teclado: el juego sigue con el foco.</p>
+      <p class="sub ov-shortcut" data-i18n="overlay.shortcut">Atajo: Ctrl+Shift+O con la app en primer plano, o el menú del icono de la bandeja mientras juegas.</p>
+
+      <h4 class="ov-section" data-i18n="overlay.section_window">Ventana encima del escritorio y los juegos</h4>
+      <div id="overlay-notice" class="ov-notice hidden" role="status" aria-live="polite">
+        <span id="overlay-notice-text"></span>
+        <button id="overlay-notice-action" class="ghost hidden" type="button"></button>
+      </div>
       <label class="check-row" for="overlay-enabled">
         <input type="checkbox" id="overlay-enabled">
         <span data-i18n="overlay.show">Mostrar overlay</span>
       </label>
-      <label><span data-i18n="overlay.format">Formato</span>
-        <select id="overlay-layout">
-          <option value="row" data-i18n="overlay.layout_row">Fila delgada (estorba menos)</option>
-          <option value="box" data-i18n="overlay.layout_box">Cuadro (más detalle)</option>
-        </select>
-      </label>
-      <label><span data-i18n="overlay.monitor">Monitor</span>
-        <select id="overlay-display"></select>
-      </label>
-      <label><span data-i18n="overlay.position">Posición</span>
-        <select id="overlay-corner">
-          <option value="top-left" data-i18n="overlay.pos_tl">Arriba izquierda</option>
-          <option value="top-center" data-i18n="overlay.pos_tc">Arriba centro</option>
-          <option value="top-right" data-i18n="overlay.pos_tr">Arriba derecha</option>
-          <option value="center" data-i18n="overlay.pos_c">Centro</option>
-          <option value="bottom-left" data-i18n="overlay.pos_bl">Abajo izquierda</option>
-          <option value="bottom-center" data-i18n="overlay.pos_bc">Abajo centro</option>
-          <option value="bottom-right" data-i18n="overlay.pos_br">Abajo derecha</option>
-        </select>
-      </label>
-      <h3 class="size-title" data-i18n="overlay.show_label">¿Qué quieres ver en el overlay?</h3>
+      <div class="ov-grid">
+        <label><span data-i18n="overlay.monitor">Monitor</span>
+          <select id="overlay-display"></select>
+        </label>
+        <label><span data-i18n="overlay.position">Posición</span>
+          <select id="overlay-corner">
+            <option value="top-left" data-i18n="overlay.pos_tl">Arriba izquierda</option>
+            <option value="top-center" data-i18n="overlay.pos_tc">Arriba centro</option>
+            <option value="top-right" data-i18n="overlay.pos_tr">Arriba derecha</option>
+            <option value="center" data-i18n="overlay.pos_c">Centro</option>
+            <option value="bottom-left" data-i18n="overlay.pos_bl">Abajo izquierda</option>
+            <option value="bottom-center" data-i18n="overlay.pos_bc">Abajo centro</option>
+            <option value="bottom-right" data-i18n="overlay.pos_br">Abajo derecha</option>
+          </select>
+        </label>
+        <label><span data-i18n="overlay.offset_x">Desplazamiento horizontal (px)</span>
+          <input type="number" id="overlay-offset-x" min="-2000" max="2000" step="1" value="0">
+        </label>
+        <label><span data-i18n="overlay.offset_y">Desplazamiento vertical (px)</span>
+          <input type="number" id="overlay-offset-y" min="-2000" max="2000" step="1" value="0">
+        </label>
+        <label><span data-i18n="overlay.format">Formato</span>
+          <select id="overlay-layout">
+            <option value="row" data-i18n="overlay.layout_row">Fila delgada (estorba menos)</option>
+            <option value="box" data-i18n="overlay.layout_box">Cuadro (más detalle)</option>
+          </select>
+        </label>
+      </div>
+      <div id="overlay-compat-row" class="ov-compat hidden">
+        <label class="check-row" for="overlay-compat">
+          <input type="checkbox" id="overlay-compat">
+          <span data-i18n="overlay.compat">Modo compatibilidad del overlay (XWayland)</span>
+        </label>
+        <p class="sub" data-i18n="overlay.compat_hint">Toda la app pasa a XWayland para poder poner el overlay en el monitor y la esquina elegidos sin robar el foco. Requiere reiniciar la app.</p>
+      </div>
+
+      <h4 class="ov-section" data-i18n="overlay.show_label">¿Qué quieres ver en el overlay?</h4>
       <label class="check-row" for="ov-show-cpu">
         <input type="checkbox" id="ov-show-cpu" checked>
         <span data-i18n="overlay.show_cpu">CPU — temperatura promedio de los núcleos y vatios del paquete</span>
@@ -701,13 +730,17 @@
         <span data-i18n="overlay.show_fps">FPS del juego</span>
       </label>
       <p class="sub" id="fps-note" data-i18n="overlay.fps_note">Los FPS solo puede medirlos algo que corre
-        <b>dentro</b> del juego; en Linux eso es <b>MangoHud</b> (incluido en
-        Bazzite, instalable en cualquier distro). Al activar esta casilla la app
-        lo configura sola; tú solo lanza el juego con MangoHud (en Steam:
-        clic derecho → Propiedades → Opciones de lanzamiento →
-        <code>mangohud %command%</code>) y los FPS aparecen en el overlay.</p>
+        <b>dentro</b> del juego; en Linux eso es <b>MangoHud</b>.</p>
+
+      <h4 class="ov-section" data-i18n="overlay.section_game">Modo juego (MangoHud, dibujado dentro del juego)</h4>
+      <label class="check-row" for="game-mode">
+        <input type="checkbox" id="game-mode">
+        <span data-i18n="overlay.game_mode">Activar modo juego</span>
+      </label>
+      <p class="sub" data-i18n="overlay.game_hint">Añade un bloque propio al final de tu MangoHud.conf con las mismas métricas y posición. En Steam: <code>mangohud %command%</code>.</p>
+      <p class="sub ov-missing" id="game-mode-missing"></p>
       <p class="sub" data-i18n="overlay.hide_capture">Para esconderlo durante una captura, desactiva «Mostrar overlay».</p>
-      <button class="ghost modal-close" id="overlay-close" data-i18n="common.close">Cerrar</button>
+      <button class="ghost modal-close" id="overlay-close" type="button" data-i18n="common.close">Cerrar</button>
     </div>
   </div>
 
@@ -884,7 +917,9 @@
   <script src="chart-editor-model.js"></script>
   <script src="charts-catalog.js"></script>
   <script src="fan-curve-model.js"></script>
+  <script src="overlay-prefs.js"></script>
   <script src="app.js"></script>
+  <script src="overlay-editor.js"></script>
   <script src="chart-editor-ui.js"></script>
   <script src="power.js"></script>
   <script src="widget-states.js"></script>

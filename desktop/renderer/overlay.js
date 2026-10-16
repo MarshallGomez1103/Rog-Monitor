@@ -68,6 +68,19 @@ let currentLang = getLang();
 // dashboard). Null hasta el primer config → se usan los defaults estáticos.
 let tempLimits = null;
 
+/* ---- primer segmento visible (en fila no lleva línea separadora a la izquierda) ---- */
+function markFirstSegment() {
+  const card = document.querySelector('.card');
+  if (!card || !card.children) return;
+  let first = true;
+  for (const c of Array.from(card.children)) {
+    if (!c.classList || !c.style || c.className === 'header') continue;
+    const visible = c.style.display !== 'none';
+    c.classList.toggle('seg-first', first && visible);
+    if (visible) first = false;
+  }
+}
+
 /* ---- aplicar visibilidad ---- */
 function applyShow() {
   const cpuRow = $('cpu-row');
@@ -76,6 +89,7 @@ function applyShow() {
   if (cpuRow) cpuRow.style.display = show.cpu === false ? 'none' : '';
   if (gpuRow) gpuRow.style.display = show.gpu === false ? 'none' : '';
   if (fansSection) fansSection.style.display = show.fans === false ? 'none' : '';
+  markFirstSegment();
 }
 
 /* ---- datos viejos (N-A4-02) ----
@@ -178,6 +192,8 @@ function render(stats) {
     }
   }
 
+  markFirstSegment(); // la fila FPS aparece/desaparece según haya dato
+
   /* GPU */
   const g = stats.gpu?.active || {};
   const gpuEl = $('gpu-t');
@@ -242,10 +258,28 @@ function applyAccent(accent) {
   if (accent) document.documentElement.style.setProperty('--accent', accent);
 }
 
+/* ---- tamaño (S11): la ventana se ajusta a la tarjeta ----
+   main.js ancla la VENTANA; si fuera más grande que la tarjeta, "arriba-derecha" dejaría hueco
+   transparente al borde. Se informa el tamaño real (redondeado hacia arriba) cada vez que cambia. */
+let lastFit = '';
+function reportFit() {
+  const card = document.querySelector('.card');
+  if (!card || !window.rog || !window.rog.overlayFit) return;
+  const r = card.getBoundingClientRect();
+  const size = { width: Math.ceil(r.width), height: Math.ceil(r.height) };
+  const sig = size.width + 'x' + size.height;
+  if (sig === lastFit) return;
+  lastFit = sig;
+  window.rog.overlayFit(size);
+}
+
 /* ---- inicialización ---- */
 applyLabels();
 applyShow();
 applyLayout('row');   // por defecto, fila
+if (typeof ResizeObserver !== 'undefined' && document.querySelector('.card')) {
+  new ResizeObserver(reportFit).observe(document.querySelector('.card'));
+}
 
 /* v17-D: guard against preload not being available (dev/open file mode) */
 if (window.rog && window.rog.onStats) {
