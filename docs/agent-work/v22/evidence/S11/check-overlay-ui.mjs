@@ -120,6 +120,23 @@ export default async ({ ev, sleep, call }) => {
   check('Escape cierra el modal', await waitFor(`document.querySelector('#overlay-modal').classList.contains('hidden')`));
   check('el foco vuelve al botón de ajustes', await ev(`document.activeElement && document.activeElement.id === 'overlay-settings'`));
 
+  // ---------- 8) ancho mínimo de la ventana (980 px): la barra no se desborda y el botón sigue visible ----------
+  await call('Emulation.setDeviceMetricsOverride', { width: 980, height: 760, deviceScaleFactor: 1, mobile: false });
+  await sleep(300);
+  const tb2 = await box('#overlay-toggle');
+  const over = JSON.parse(await ev(`(() => { const h = document.querySelector('header') || document.body;
+    return JSON.stringify({ page: document.documentElement.scrollWidth > window.innerWidth, header: h.scrollWidth > h.clientWidth + 1 }); })()`));
+  check('980 px: botón OVERLAY visible y sin scroll horizontal', tb2 && tb2.vis && tb2.x + tb2.w / 2 <= 980 && !over.page && !over.header, J({ tb2, over }));
+  if (process.env.SHOT) {
+    const { writeFileSync } = await import('node:fs');
+    for (const w of [1440, 980]) {
+      await call('Emulation.setDeviceMetricsOverride', { width: w, height: 760, deviceScaleFactor: 1, mobile: false });
+      await sleep(300);
+      const m = await call('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: w, height: 90, scale: 1 } });
+      writeFileSync(`${process.env.SHOT}-topbar-${w}.png`, Buffer.from(m.result.data, 'base64'));
+    }
+  }
+
   const ok = results.every(Boolean);
   console.log(`\n${results.filter(Boolean).length}/${results.length} PASS`);
   console.log(`RESULT: ${ok ? 'PASS' : 'FAIL'}`);
