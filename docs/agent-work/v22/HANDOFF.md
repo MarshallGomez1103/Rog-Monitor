@@ -1,7 +1,6 @@
 # HANDOFF v22
-Actualizado: 2026-10-15 · **Traspaso Claude → Codex**: leer `docs/agent-work/v22/CODEX-TRASPASO.md` primero.
-- Rama `feat/v22`, HEAD `e8d4ce6` + commit de traspaso, CI remoto verde. VERSION 22.0.0. origin/master = 45cb9dc.
-- Último CP hecho: S08 F3-02 (charts-catalog, fan-curve-model) y F3-03/04 (backend-bridge); S10 spike + ADR-0007 (proposed).
+Actualizado: 2026-10-16 · Claude terminó el overlay; **sigue Codex**: leer `docs/agent-work/v22/CODEX-TRASPASO.md` primero.
+- Rama `feat/v22`, HEAD = origin/feat/v22 (ver `git log -1`). VERSION 22.0.0. origin/master = 45cb9dc.
 - Último CP: S11b overlay v2 (merge d0e3adf + 4d6dea2). Overlay TERMINADO. CP en curso: ninguno. Archivos sin commit: ninguno. Worktrees: ninguno.
 - Siguiente (Codex): S09 schema 2 (F2-08 gate → N-F2-SCHEMA-01). Cola completa en CODEX-TRASPASO.md §2.
 - Overlay v2 S11b (estilo MangoHud, S/M/L/XL, métricas elegibles) integrado 2026-10-16 (`checkpoints/S11b-OVERLAY-V2.md`).
